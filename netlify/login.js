@@ -3,11 +3,11 @@
 exports.handler = async (event) => {
   // الحسابات المسموحة (تقدر تغيرهم زي ما بدك)
   const USERS = [
-    { username: "user1", password: "pass1" },
-    { username: "user2", password: "pass2" },
-    { username: "user3", password: "pass3" },
-    { username: "user4", password: "pass4" },
-    { username: "user5", password: "pass5" }
+    { username: "Mai", password: "M@123456" },
+    { username: "Ibrahim", password: "K#123123" },
+    { username: "Anati", password: "A@1995" },
+    { username: "Nimry", password: "N@2025" },
+    { username: "Nariman", password: "N#2025" }
   ];
 
   try {
