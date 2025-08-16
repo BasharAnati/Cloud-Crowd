@@ -121,7 +121,11 @@
       const ok = document.getElementById('ok');
       err.style.display = 'none';
       ok.style.display = 'block';
-      setTimeout(()=>{ ok.style.display = 'none'; alert('UI looks great! Next: connect to login API.'); }, 900);
+     setTimeout(()=>{
+  ok.style.display = 'none';
+  window.location.href = "dashboard.html";  // أو index.html إذا بدك
+}, 900);
+
     });
   </script>
 </body>
