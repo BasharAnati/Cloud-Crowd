@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Sign in</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0f172a; --card:#0b1220; --muted:#94a3b8; --text:#e2e8f0;
+      --primary:#4f46e5; --primary-2:#6366f1; --ring:#6366f1;
+      --ok:#10b981; --err:#ef4444;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      background:
+        radial-gradient(1200px 600px at 80% -100px,rgba(79,70,229,.35),transparent 60%),
+        radial-gradient(800px 400px at -10% 10%,rgba(99,102,241,.25),transparent 50%),
+        linear-gradient(180deg,#0f172a,#0b1220);
+      color:var(--text); display:grid; place-items:center; padding:24px;
+    }
+    .wrap{width:100%; max-width:980px; display:grid; grid-template-columns:1.1fr .9fr; gap:28px}
+    @media (max-width:860px){ .wrap{grid-template-columns:1fr} }
+    .brand{
+      align-self:center; padding:24px; border-radius:24px;
+      background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.06);
+      box-shadow:0 10px 40px rgba(0,0,0,.3);
+    }
+    .brand h1{margin:0 0 12px; font-weight:700; letter-spacing:.2px}
+    .brand p{margin:0; color:var(--muted)}
+    .bullets{margin-top:18px; display:grid; gap:10px; color:#cbd5e1; font-size:14px}
+    .bullets span{display:flex; align-items:center; gap:10px}
+    .bullets .dot{width:8px;height:8px;border-radius:50%;background:var(--ok); display:inline-block}
+
+    .card{
+      background:rgba(12,15,27,.7); backdrop-filter:blur(10px);
+      padding:28px; border-radius:20px; border:1px solid rgba(255,255,255,.08);
+      box-shadow:0 20px 60px rgba(0,0,0,.35)
+    }
+    .title{margin:0 0 6px; font-size:22px; font-weight:700}
+    .subtitle{margin:0 0 18px; color:var(--muted); font-size:14px}
+    label{display:block; font-size:13px; color:#cbd5e1; margin:12px 0 6px}
+    .input{
+      display:flex; align-items:center; gap:10px; background:#0a1020; border:1px solid rgba(255,255,255,.08);
+      border-radius:12px; padding:10px 12px; outline:none; transition:.15s;
+    }
+    .input:focus-within{border-color:var(--ring); box-shadow:0 0 0 4px rgba(99,102,241,.15)}
+    .input input{background:transparent; border:0; outline:0; color:var(--text); width:100%}
+    .row{display:flex; align-items:center; justify-content:space-between; margin-top:10px}
+    .checkbox{display:flex; align-items:center; gap:8px; color:#cbd5e1; font-size:13px; user-select:none}
+    .btn{
+      width:100%; padding:12px 14px; border:0; border-radius:12px; margin-top:16px;
+      background:linear-gradient(180deg,var(--primary),var(--primary-2)); color:#fff; font-weight:700; cursor:pointer;
+      transition:transform .05s ease; box-shadow:0 10px 30px rgba(79,70,229,.35)
+    }
+    .btn:active{transform:translateY(1px)}
+    .muted{color:var(--muted); font-size:12px; margin-top:12px}
+    .err{color:var(--err); font-size:13px; margin-top:10px; display:none}
+    .success{color:var(--ok); font-size:13px; margin-top:10px; display:none}
+    .topbar{position:fixed; top:16px; left:16px}
+    .home{color:#cbd5e1; text-decoration:none; font-size:13px; border:1px solid rgba(255,255,255,.15); padding:6px 10px; border-radius:10px}
+    .eye{cursor:pointer; opacity:.8}
+  </style>
+</head>
+<body>
+  <div class="topbar"><a class="home" href="/">← Back to site</a></div>
+
+  <div class="wrap">
+    <section class="brand">
+      <h1>Welcome back 👋</h1>
+      <p>Sign in to manage tickets, edits, and synced sheets — all in one place.</p>
+      <div class="bullets">
+        <span><i class="dot"></i> Five team accounts supported</span>
+        <span><i class="dot"></i> Smooth, secure sessions</span>
+        <span><i class="dot"></i> Ready for Netlify Functions</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="title">Sign in</h2>
+      <p class="subtitle">Use your team credentials to continue.</p>
+
+      <form id="form">
+        <label for="username">Username</label>
+        <div class="input"><input id="username" name="username" autocomplete="username" required placeholder="e.g. user1"></div>
+
+        <label for="password">Password</label>
+        <div class="input">
+          <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••">
+          <svg id="togglePwd" class="eye" width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </div>
+
+        <div class="row">
+          <label class="checkbox"><input type="checkbox" id="remember"> Remember me</label>
+          <a class="home" href="/">Back</a>
+        </div>
+
+        <button class="btn" type="submit">Continue</button>
+        <div id="error" class="err">Invalid credentials</div>
+        <div id="ok" class="success">Success! Redirecting…</div>
+        <p class="muted">Tip: this page UI is ready. We’ll connect it to the server in the next step.</p>
+      </form>
+    </section>
+  </div>
+
+  <script>
+    // Show / hide password
+    document.getElementById('togglePwd').addEventListener('click', ()=>{
+      const i = document.getElementById('password');
+      i.type = i.type === 'password' ? 'text' : 'password';
+    });
+
+    // TEMP: demo only (UI). Next step we'll wire it to Netlify Function.
+    const form = document.getElementById('form');
+    form.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const err = document.getElementById('error');
+      const ok = document.getElementById('ok');
+      err.style.display = 'none';
+      ok.style.display = 'block';
+      setTimeout(()=>{ ok.style.display = 'none'; alert('UI looks great! Next: connect to login API.'); }, 900);
+    });
+  </script>
+</body>
+</html>
