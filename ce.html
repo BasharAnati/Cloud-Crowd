@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <title>Cloud Crowd - Customer Experience</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="main.js" defer></script>
+</head>
+<body>
+  <header class="navbar" role="banner">
+    <div class="brand" aria-hidden="false">
+      <div class="logo" title="Cloud Crowd" onclick="window.location.href='dashboard.html'" style="cursor:pointer;">CC</div>
+      <div>
+        <h1>Cloud Crowd</h1>
+        <p>Customer Experience</p>
+      </div>
+    </div>
+    <img src="logo.png" alt="Company Logo" class="nav-center-logo" onclick="window.location.href='dashboard.html'">
+  </header>
+
+  <div class="container" id="main-content">
+    <div class="ticket-list" id="ticket-list">
+      <div class="buttons-container">
+        <button class="back-btn" onclick="goBack()">Back</button>
+        <button class="add-ticket-btn" onclick="openModal('ce')">Add New Ticket</button>
+      </div>
+      <div id="tickets"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <h2>Add New Ticket</h2>
+      <form id="ticket-form">
+        <div id="dynamic-form"></div>
+        <div class="form-actions">
+          <button type="submit" class="submit-btn">Submit</button>
+          <button type="button" class="cancel-btn" onclick="closeModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Details Drawer -->
+  <div class="drawer" id="ticket-drawer" aria-hidden="true">
+    <div class="drawer-backdrop" onclick="closeTicketDrawer()"></div>
+    <aside class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+      <div class="drawer-header">
+        <div>
+          <div class="drawer-case">Order Number: <span id="drawer-caseNumber"></span></div>
+          <h2 id="drawer-title">Details</h2>
+        </div>
+        <button class="drawer-close" onclick="closeTicketDrawer()" aria-label="Close">×</button>
+      </div>
+      <div class="drawer-meta" id="drawer-meta"></div>
+      <div class="drawer-body" id="drawer-body"></div>
+      <div class="drawer-actions"><button class="edit-btn" id="drawer-edit-btn">Edit</button></div>
+    </aside>
+  </div>
+
+  <script>
+    window.addEventListener('load', () => {
+      currentSection = 'ce';
+      renderTickets();
+    });
+  </script>
+</body>
+</html>
