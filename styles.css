@@ -608,6 +608,22 @@ body.drawer-open{overflow:hidden;}
   grid-column: 1 / -1 !important;
 }
 
+.logout-btn {
+  background: #ef4444;       /* أحمر */
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s ease;
+  margin-left: auto;         /* يخلي الزر يروح أقصى اليمين */
+}
+
+.logout-btn:hover {
+  background: #dc2626;       /* أحمر غامق عند الهوفر */
+}
+
 /* Responsive */
 @media (max-width: 720px){
   .form-grid{ grid-template-columns: 1fr; }
@@ -625,5 +641,6 @@ body.drawer-open{overflow:hidden;}
   .add-ticket-btn,.back-btn{margin-right:0;margin-bottom:10px;}
 }
 @media (max-width:820px){ .nav-center-logo{height:32px;} }
+
 
 
