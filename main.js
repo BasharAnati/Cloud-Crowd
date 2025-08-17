@@ -994,3 +994,7 @@ async function syncCCTVFromLark() {
 }
 
 
+window.syncCCTVFromLark = syncCCTVFromLark;
+
+
+
