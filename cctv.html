@@ -60,18 +60,12 @@
     </aside>
   </div>
 
- <script>
+<script>
   window.addEventListener('load', async () => {
-    // حدد القسم
-    window.currentSection = 'cctv';
-
-
-    // اعرض الموجود محليًا فورًا
-    renderTickets();
-
-    // اعمل مزامنة تلقائية من اللارك
+    window.currentSection = 'cctv';   // مهم تكون على window
+    renderTickets();                   // اعرض المحلّي أولاً
     try {
-      await syncCCTVFromLark();
+      await window.syncCCTVFromLark(); // نادِ الفنكشن المُصدّرة
     } catch (e) {
       console.error(e);
     }
@@ -80,5 +74,6 @@
 
 </body>
 </html>
+
 
 
