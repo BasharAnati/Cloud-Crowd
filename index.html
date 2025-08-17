@@ -17,11 +17,7 @@
             --bg-white: #ffffff;
         }
         
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
             font-family: 'Arial', sans-serif;
@@ -32,7 +28,7 @@
         
         /* Hero Section with Purple Background */
         .hero {
-            background: 
+            background:
                 linear-gradient(rgba(92, 71, 137, 0.7), rgba(88, 82, 101, 0.7)),
                 url('WhatsApp Image 2025-06-29 at 4.39.41 PM.jpeg') center/cover no-repeat;
             text-align: center;
@@ -41,194 +37,94 @@
             position: relative;
         }
         
-        .logo-container {
-            margin-bottom: 40px;
-        }
+        .logo-container { margin-bottom: 40px; }
         
         .main-logo {
-            height: 120px;
-            width: auto;
-            max-width: 100%;
+            height: 120px; width: auto; max-width: 100%;
             object-fit: contain;
             filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
         }
         
-        h1 {
-            font-size: 2.8rem;
-            margin-bottom: 20px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
+        h1 { font-size: 2.8rem; margin-bottom: 20px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); }
         
         .intro {
-            font-size: 1.2rem;
-            max-width: 800px;
-            margin: 0 auto 40px;
+            font-size: 1.2rem; max-width: 800px; margin: 0 auto 40px;
             text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         }
         
         /* Main Content */
-        .container {
-            width: 90%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 60px 0;
-        }
+        .container { width: 90%; max-width: 1200px; margin: 0 auto; padding: 60px 0; }
         
-        h2 {
-            color: var(--accent-purple);
-            font-size: 2rem;
-            margin: 40px 0 30px;
-            text-align: center;
-        }
+        h2 { color: var(--accent-purple); font-size: 2rem; margin: 40px 0 30px; text-align: center; }
         
         /* Services Section */
         .services {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 30px;
-            margin-bottom: 60px;
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; margin-bottom: 60px;
         }
         
         .service {
             flex: 1 1 300px;
             background: rgba(255, 255, 255, 0.95);
-            padding: 30px;
-            border-radius: 10px;
+            padding: 30px; border-radius: 10px;
             border-top: 4px solid var(--accent-blue);
-            transition: all 0.3s ease;
-            max-width: 350px;
+            transition: all 0.3s ease; max-width: 350px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
         
-        .service:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(66, 165, 245, 0.2);
-        }
+        .service:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(66, 165, 245, 0.2); }
         
-        .service h3 {
-            color: var(--accent-blue);
-            font-size: 1.5rem;
-            margin-bottom: 15px;
-        }
-        
-        .service p {
-            margin-bottom: 10px;
-            color: var(--text-dark);
-        }
+        .service h3 { color: var(--accent-blue); font-size: 1.5rem; margin-bottom: 15px; }
+        .service p { margin-bottom: 10px; color: var(--text-dark); }
         
         /* Contact Form */
         .contact-form {
             background: rgba(255, 255, 255, 0.95);
-            padding: 40px;
-            border-radius: 10px;
-            max-width: 600px;
-            margin: 0 auto;
+            padding: 40px; border-radius: 10px; max-width: 600px; margin: 0 auto;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
         
-        .form-group {
-            margin-bottom: 25px;
-        }
+        .form-group { margin-bottom: 25px; }
         
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--accent-purple);
-            font-size: 1rem;
-            font-weight: bold;
-        }
+        label { display: block; margin-bottom: 8px; color: var(--accent-purple); font-size: 1rem; font-weight: bold; }
         
         input, select, textarea {
-            width: 100%;
-            padding: 12px 15px;
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            color: var(--text-dark);
-            font-size: 1rem;
-            transition: all 0.3s;
+            width: 100%; padding: 12px 15px; background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ddd; border-radius: 5px; color: var(--text-dark);
+            font-size: 1rem; transition: all 0.3s;
         }
         
         input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: var(--accent-blue);
+            outline: none; border-color: var(--accent-blue);
             box-shadow: 0 0 0 3px rgba(66, 165, 245, 0.2);
         }
         
         button {
             background: linear-gradient(to right, var(--accent-purple), var(--accent-blue));
-            color: white;
-            border: none;
-            padding: 14px 35px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: all 0.3s;
-            display: block;
-            margin: 30px auto 0;
-            width: fit-content;
+            color: white; border: none; padding: 14px 35px; border-radius: 5px; cursor: pointer;
+            font-size: 1rem; transition: all 0.3s; display: block; margin: 30px auto 0; width: fit-content;
         }
         
-        button:hover {
-            opacity: 0.9;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(66, 165, 245, 0.3);
-        }
+        button:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(66, 165, 245, 0.3); }
         
         /* Responsive Design */
         @media (max-width: 768px) {
-            .main-logo {
-                height: 100px;
-            }
-            
-            h1 {
-                font-size: 2.2rem;
-            }
-            
-            .hero {
-                padding: 60px 20px 80px;
-            }
-            
-            .container {
-                padding: 40px 0;
-            }
-            
-            .contact-form {
-                padding: 25px;
-            }
+            .main-logo { height: 100px; }
+            h1 { font-size: 2.2rem; }
+            .hero { padding: 60px 20px 80px; }
+            .container { padding: 40px 0; }
+            .contact-form { padding: 25px; }
         }
         
         @media (max-width: 480px) {
-            .main-logo {
-                height: 80px;
-            }
-            
-            h1 {
-                font-size: 1.8rem;
-            }
-            
-            .service {
-                padding: 20px;
-            }
+            .main-logo { height: 80px; }
+            h1 { font-size: 1.8rem; }
+            .service { padding: 20px; }
         }
 
-
         .success-message {
-    display: none;
-    color: #28a745;
-    font-weight: bold;
-    margin-top: 10px;
-    font-size: 14px;
-    text-align: center;
-}
-.success-message::before {
-    content: "✔";
-    font-size: 16px;
-    margin-right: 5px;
-}
-
-
+            display: none; color: #28a745; font-weight: bold; margin-top: 10px; font-size: 14px; text-align: center;
+        }
+        .success-message::before { content: "✔"; font-size: 16px; margin-right: 5px; }
     </style>
 </head>
 <body>
@@ -271,56 +167,88 @@
         
         <section id="contact">
             <h2>Contact Us</h2>
-            <form class="contact-form" name="contact" method="POST" data-netlify="true" action="/">
-    <input type="hidden" name="form-name" value="contact" />
-    <div class="form-group">
-        <label for="phone">Phone Number</label>
-        <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" required>
-    </div>
-    
-    <div class="form-group">
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" placeholder="Enter your email" required>
-    </div>
-    
-    <div class="form-group">
-        <label for="message">Message</label>
-        <textarea id="message" name="message" rows="5" placeholder="Your message here..." required></textarea>
-    </div>
-    
-    <button type="submit">Submit</button>
-</form>
 
-<div class="success-message" id="success-message">Message sent successfully!</div>
+            <!-- Netlify form (with honeypot + proper JS-friendly structure) -->
+            <form class="contact-form"
+                  name="contact"
+                  method="POST"
+                  data-netlify="true"
+                  netlify-honeypot="bot-field"
+                  action="/">
+
+                <!-- Netlify required hidden name -->
+                <input type="hidden" name="form-name" value="contact" />
+
+                <!-- Honeypot (hidden from humans) -->
+                <p style="display:none;">
+                    <label>Don’t fill this out if you're human: <input name="bot-field"></label>
+                </p>
+
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="message">Message</label>
+                    <textarea id="message" name="message" rows="5" placeholder="Your message here..." required></textarea>
+                </div>
+                
+                <button type="submit">Submit</button>
+            </form>
+
+            <div class="success-message" id="success-message">Message sent successfully!</div>
         </section>
     </main>
 
     <script>
-document.querySelector('.contact-form').addEventListener('submit', function(event) {
-    event.preventDefault();
-    const form = this;
-    const formData = new FormData(form);
-    fetch('/', {
-method: 'POST',
-headers: { "Content-Type": "application/x-www-form-urlencoded" },
-body: new URLSearchParams(formData).toString()
-    })
-    .then(response => {
-if (response.ok) {
-        document.getElementById('success-message').style.display = 'block';
-        form.reset();
-} else {
-        alert('An error occurred while submitting the form. Please try again.');
-}
-    })
-    .catch(error => {
-alert('Error: ' + error.message);
-    });
-});
-</script>
+    // Handle Netlify form submission via fetch while treating 303 redirect as success
+    (function () {
+        const form = document.querySelector('.contact-form');
+        const successEl = document.getElementById('success-message');
+
+        if (!form) return;
+
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const formData = new FormData(form);
+            // Ensure the form-name is included (it is, but this is defensive)
+            if (!formData.has('form-name')) {
+                formData.append('form-name', form.getAttribute('name') || 'contact');
+            }
+
+            fetch(form.getAttribute('action') || '/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams(formData).toString()
+            })
+            .then(function (response) {
+                // Netlify often returns 303 See Other on success; treat 200-303 as success
+                if ((response.status >= 200 && response.status < 300) || response.status === 303) {
+                    successEl.style.display = 'block';
+                    form.reset();
+                    return;
+                }
+                // If redirected, many browsers follow and end as 200; but just in case:
+                if (response.redirected) {
+                    successEl.style.display = 'block';
+                    form.reset();
+                    return;
+                }
+                throw new Error('Submission failed with status ' + response.status);
+            })
+            .catch(function (error) {
+                alert('An error occurred while submitting the form. Please try again.');
+                // console.error(error); // (اختياري) لأغراض الديبَغ
+            });
+        });
+    })();
+    </script>
 </body>
 </html>
-
-
-
-
