@@ -8,6 +8,13 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- حماية الصفحة: رجع المستخدم لـ login إذا مش مسجل -->
+  <script>
+    if (!localStorage.getItem('cc_auth')) {
+      window.location.href = 'login.html';
+    }
+  </script>
+
   <header class="navbar" role="banner">
     <div class="brand" aria-hidden="false">
       <div class="logo" title="Cloud Crowd" onclick="window.location.href='dashboard.html'" style="cursor:pointer;">CC</div>
@@ -17,8 +24,9 @@
       </div>
     </div>
 
-      <!-- زر اللوق اوت -->
-      <button class="logout-btn" onclick="logout()">Log out</button>
+    <!-- زر اللوج آوت -->
+    <button class="logout-btn" onclick="logout()">Log out</button>
+
     <!-- centered company logo (clickable) -->
     <img src="logo.png" alt="Company Logo" class="nav-center-logo" onclick="window.location.href='dashboard.html'">
   </header>
@@ -51,10 +59,16 @@
       </div>
     </div>
   </div>
- <script src="main.js" defer></script>
+
+  <!-- سكربت اللوج آوت -->
+  <script>
+    function logout() {
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      window.location.href = 'login.html';
+    }
+  </script>
+
+  <script src="main.js" defer></script>
 </body>
 </html>
-
-
-
-
