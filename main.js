@@ -957,3 +957,40 @@ function logout() {
   }
 }
 
+// ============================
+// Sync CCTV tickets from Lark
+// ============================
+async function syncCCTVFromLark() {
+  try {
+    const res = await fetch('/.netlify/functions/lark-cctv-pull');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Failed fetching CCTV tickets');
+
+    let newTickets = data.tickets || [];
+
+    // جلب التكتات القديمة من التخزين المحلي
+    const oldTickets = tickets.cctv || [];
+
+    // عمل set بالمفاتيح القديمة عشان ما نكرر التكتات
+    const oldKeys = new Set(oldTickets.map(t => t._key));
+
+    // فلترة أي تكت جديد ما هو موجود
+    const freshOnes = newTickets.filter(t => !oldKeys.has(t._key));
+
+    // دمج الكل
+    tickets.cctv = [...oldTickets, ...freshOnes];
+
+    // حفظ بالتخزين المحلي
+    localStorage.setItem('cloudCrowdTickets', JSON.stringify(tickets));
+
+    // إعادة رسم التكتات
+    renderTickets();
+
+    console.log(`Synced ${freshOnes.length} new CCTV tickets`);
+  } catch (err) {
+    console.error('Sync failed', err);
+    alert('Sync CCTV failed: ' + err.message);
+  }
+}
+
+
