@@ -930,6 +930,7 @@ function bindFormHandler(){
 if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', bindFormHandler);
 else bindFormHandler();
 
+
 // Go back
 function goBack(){ window.location.href='dashboard.html'; }
 window.goBack = goBack;
@@ -945,4 +946,14 @@ window.addEventListener('load', ()=>{
   if (centerLogo){
     centerLogo.addEventListener('click', ()=> { window.location.href = 'dashboard.html'; });
   }
+
 });
+
+// Logout function
+function logout() {
+  const confirmLogout = confirm("Confirm logout?");
+  if (confirmLogout) {
+    window.location.href = "index.html"; // يرجع لصفحة تسجيل الدخول
+  }
+}
+
