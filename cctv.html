@@ -60,11 +60,23 @@
     </aside>
   </div>
 
-  <script>
-    window.addEventListener('load', () => {
-      currentSection = 'cctv';
-      renderTickets();
-    });
-  </script>
+ <script>
+  window.addEventListener('load', async () => {
+    // حدد القسم
+    currentSection = 'cctv';
+
+    // اعرض الموجود محليًا فورًا
+    renderTickets();
+
+    // اعمل مزامنة تلقائية من اللارك
+    try {
+      await syncCCTVFromLark();
+    } catch (e) {
+      console.error(e);
+    }
+  });
+</script>
+
 </body>
 </html>
+
