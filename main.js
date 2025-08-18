@@ -1,5 +1,5 @@
 // ============================
-// Cloud Crowd - main.js (Grid columns + Band + Inline Edit + Case rules)
+// Cloud Crowd - main.js (Local-only • cleaned)
 // ============================
 
 // Storage
@@ -23,19 +23,11 @@ const mainFields = {
 
 // Status columns (with TT renames applied)
 const STATUS_COLUMNS = {
-  cctv: [ 'Escalated', 'Under Review', 'Closed'],
-  ce: [  'Escalated',  'Under Review','Pending (Customer Call Required)', 'Closed'],
+  cctv: ['Escalated', 'Under Review', 'Closed'],
+  ce: ['Escalated', 'Under Review', 'Pending (Customer Call Required)', 'Closed'],
   'free-orders': ['Active', 'Taken', 'Not Active'],
-  complaints: [ 'Escalated', 'Under Review','Pending (Customer Call Required)', 'Closed'],
-  'time-table': [
-    'No Call Needed',
-    'Pending Call',
-    'No Answer',
-    'Scheduled',
-    'Issue',
-    'Returned',
-    
-  ]
+  complaints: ['Escalated', 'Under Review', 'Pending (Customer Call Required)', 'Closed'],
+  'time-table': ['No Call Needed', 'Pending Call', 'No Answer', 'Scheduled', 'Issue', 'Returned']
 };
 
 // ===== عرض أسماء الستاتسات (rename فقط للعرض) =====
@@ -176,19 +168,16 @@ function toLabel(field){
 }
 
 // Case numbers
-const CASE_COUNTER_KEY = 'cloudCrowdCaseCounter';          // يبقى للأنواع الأخرى (لو احتجته)
-const CCTV_COUNTER_KEY = 'cloudCrowdCCTVCaseCounter';      // عدّاد خاص بالـ CCTV
+const CASE_COUNTER_KEY = 'cloudCrowdCaseCounter';
+const CCTV_COUNTER_KEY = 'cloudCrowdCCTVCaseCounter';
 
 function nextCaseNumber(section){
   if (section === 'cctv') {
-    // ابدأ العد من 1 بدون أصفار
     let n = parseInt(localStorage.getItem(CCTV_COUNTER_KEY) || '0', 10);
     n += 1;
     localStorage.setItem(CCTV_COUNTER_KEY, String(n));
     return `CCTV-${n}`;
   }
-
-  // احتياطيًا: لو ناديتها لأقسام ثانية استخدم السلوك القديم (بأصفار)
   const prefix = section.toUpperCase().replace(/[^A-Z0-9]+/g,'-');
   let n = parseInt(localStorage.getItem(CASE_COUNTER_KEY) || '1000', 10);
   n += 1;
@@ -210,7 +199,6 @@ function ensureCaseNumbers(){
   if (updated) saveTicketsToStorage();
 }
 
-
 // Storage helper
 function saveTicketsToStorage(){
   localStorage.setItem('cloudCrowdTickets', JSON.stringify(tickets));
@@ -227,14 +215,14 @@ function getMainFieldsContent(ticket){
   return html;
 }
 
-// === Case display rules
+// Case display rules
 function getCaseDisplay(ticket){
   if (currentSection==='cctv') return ticket.caseNumber || '—';
   return ticket.orderNumber || ticket.caseNumber || '—';
 }
 function drawerCaseLabel(){ return 'Case Number'; }
 
-// === Colored band class map ===
+// Colored band class map
 function bandClassForStatus(status){
   switch(status){
     case 'Taken': return 'band-taken';
@@ -261,33 +249,45 @@ function bandClassForStatus(status){
   }
 }
 
-// لون نص الهيدر حسب الحالة (نفس روح ألوان الـband)
+// لون نص الهيدر حسب الحالة (نسخة واحدة شاملة)
 function statusColor(status){
-  switch(status){
-    case 'Closed': return '#1a9324';                 // أخضر
-    case 'Under Review': return '#f91616';           // أحمر
-    case 'Escalated': return '#1b16a3';              // أزرق غامق
+  switch (status) {
+    case 'Closed': return '#1a9324';
+    case 'Under Review': return '#f91616';
+    case 'Escalated': return '#1b16a3';
+
+    // free-orders
     case 'Active': return '#1b16a3';
     case 'Taken': return '#1a9324';
     case 'Not Active': return '#f91616';
-    case 'Open': return '#8b4513';
-    case 'Follow-Up Needed': return '#8b4513';
-    case 'No Response': return '#8b4513';
-    case 'Call Back Scheduled': return '#8b4513';
-    case 'In Progress': return '#8b4513';
-    case 'Resolved': return '#8b4513';
-    case 'Perfect Feedback': return '#8b4513';
-    case 'No Call Needed': return '#4b4b4b';
+
+    // complaints / ce
+    case 'Pending (Customer Call Required)':
+    case 'Pending (Call Back)': return '#fd7e14';
+
+    // time-table
     case 'Pending Call': return '#1b16a3';
     case 'No Answer': return '#ffd700';
     case 'Scheduled': return '#001f5b';
     case 'Issue': return '#ff8c00';
     case 'Returned': return '#1a9324';
-    default: return '#1e3a8a';                       // افتراضي
+    case 'No Call Needed': return '#4b4b4b';
+
+    // باقي الحالات المحتملة
+    case 'Open':
+    case 'Follow-Up Needed':
+    case 'No Response':
+    case 'Call Back Scheduled':
+    case 'In Progress':
+    case 'Resolved':
+    case 'Perfect Feedback':
+      return '#8b4513';
+
+    default:
+      return '#1e3a8a';
   }
 }
 
-// Drawer with inline edit (Status + Action Taken) + lastModified
 let drawerIndex = null;
 
 function ensureDrawerActionsContainer(){
@@ -309,57 +309,6 @@ function openTicketDrawerByCase(caseNumber){
   if (idx>=0) openTicketDrawer(idx);
 }
 
-// لازم تعرف هاي الفنكشن مرّة فوق:
-function statusColor(status){
-  switch(status){
-    case 'Closed': return '#1a9324';        // أخضر
-    case 'Under Review': return '#f91616';  // أحمر
-    case 'Escalated': return '#1b16a3';     // أزرق
-    default: return '#1e3a8a';              // افتراضي
-  }
-}
-
-// دالة ترجع اللون حسب الحالة
-function statusColor(status){
-  switch (status) {
-    // الحالات المشتركة
-    case 'Closed': return '#1a9324';          // أخضر
-    case 'Under Review': return '#f91616';    // أحمر
-    case 'Escalated': return '#1b16a3';       // أزرق غامق
-
-    // free-orders
-    case 'Active': return '#1b16a3';          // أزرق
-    case 'Taken': return '#1a9324';           // أخضر
-    case 'Not Active': return '#f91616';      // أحمر
-
-    // complaints / ce (الاسم المعروض يتغيّر بس نخلي اللون للحالة الأصلية)
-    case 'Pending (Customer Call Required)': 
-    case 'Pending (Call Back)': return '#fd7e14'; // برتقالي
-
-    // time-table
-    case 'Pending Call': return '#1b16a3';    // أزرق
-    case 'No Answer':    return '#ffd700';    // ذهبي
-    case 'Scheduled':    return '#001f5b';    // أزرق داكن
-    case 'Issue':        return '#ff8c00';    // برتقالي
-    case 'Returned':     return '#1a9324';    // أخضر
-    case 'No Call Needed': return '#4b4b4b';  // رمادي
-
-    // حالات أخرى مُمكنة
-    case 'Open': 
-    case 'Follow-Up Needed':
-    case 'No Response':
-    case 'Call Back Scheduled':
-    case 'In Progress':
-    case 'Resolved':
-    case 'Perfect Feedback':
-      return '#8b4513';                       // بني (نفس عائلة ألوان الـband)
-
-    default:
-      return '#1e3a8a';                       // افتراضي أزرق غامق
-  }
-}
-
-
 function openTicketDrawer(index){
   drawerIndex = index;
   const ticket = tickets[currentSection][index];
@@ -375,15 +324,9 @@ function openTicketDrawer(index){
   const bodyEl  = document.getElementById('drawer-body');
   const actions = ensureDrawerActionsContainer();
 
-  // العنوان
   titleEl.textContent = displayStatusName(ticket.status || 'Details');
-
-  titleEl.style.setProperty('color', statusColor(ticket.status), 'important');
-
-  // ✅ تلوين العنوان في كل الأقسام
   titleEl.style.color = statusColor(ticket.status);
 
-  // باقي الكود يضل زي ما هو ...
   let metaFrag = '';
   if (ticket.lastModified){
     const md = new Date(ticket.lastModified);
@@ -408,14 +351,10 @@ function openTicketDrawer(index){
   document.body.classList.add('drawer-open');
 }
 
-
-
-/* ====== طباعة الحقول + وضع الملاحظات بمربع في النهاية ====== */
+/* ====== قراءة تفاصيل التذكرة (عرض فقط) ====== */
 function buildDrawerReadonly(ticket){
-  // ✅ نفضّل note أولاً
   const NOTE_KEYS = ['note','notes','customerNotes','complaintDetails','caseDescription'];
 
-  // اجمع الملاحظات (Note / Case Details) + خزّن المفتاح المستخدم
   let notesText = '';
   let notesKeyUsed = '';
   for (const nk of NOTE_KEYS){
@@ -426,7 +365,6 @@ function buildDrawerReadonly(ticket){
     }
   }
 
-  // تاريخ/وقت (لو منفصلين أو قديم dateTime)
   let dateStr = ticket.date || '';
   let timeStr = ticket.time || '';
   if ((!dateStr || !timeStr) && ticket.dateTime){
@@ -441,14 +379,10 @@ function buildDrawerReadonly(ticket){
     }
   }
 
-  // ابدأ الشبكة
   let html = '';
-
-  // اطبع التاريخ والوقت أولاً إن وُجدا
   if (dateStr) html += rowKV('Date', dateStr);
   if (timeStr) html += rowKV('Time', timeStr);
 
-  // باقي الحقول (مع تجاهل المفاتيح التالية)
   const IGNORE = new Set(['createdAt','lastModified','date','time','dateTime','actionTaken', ...NOTE_KEYS]);
   for (const k in ticket){
     if (IGNORE.has(k)) continue;
@@ -465,7 +399,6 @@ function buildDrawerReadonly(ticket){
     }
   }
 
-  // ✅ Note / Case Details (فل وِدث) — العنوان حسب السكشن/المفتاح
   if (notesText){
     const noteTitle = (currentSection === 'time-table' || notesKeyUsed === 'note') ? 'Note' : 'Case Details';
     html += `
@@ -476,7 +409,6 @@ function buildDrawerReadonly(ticket){
     `;
   }
 
-  // Action Taken (فل وِدث وآخر شيء)
   if (ticket.actionTaken){
     const at = String(ticket.actionTaken).trim();
     if (at){
@@ -489,10 +421,8 @@ function buildDrawerReadonly(ticket){
     }
   }
 
-  // لف الشبكة داخل .drawer-body (الحاوية أصلاً عندك هي #drawer-body)
   return html || '<div class="no-tickets full-span">No details.</div>';
 
-  // نفس مساعدتك القديمة
   function rowKV(label, value){
     return `
       <div class="kv">
@@ -503,12 +433,10 @@ function buildDrawerReadonly(ticket){
   }
 }
 
-
 function renderStatus(status) {
   const cls = 'status-label status-' + status.replace(/\s+/g, '');
   return `<span class="${cls}">${displayStatusName(status)}</span>`;
 }
-
 
 function escapeHtml(s){
   return s
@@ -587,7 +515,6 @@ function renderTickets(){
 
   const sectionTickets = tickets[currentSection] || [];
 
-  // group by status (باسم العرض)
   const grouped = {};
   sectionTickets.forEach(t=>{
     const st = t.status || 'Uncategorized';
@@ -669,95 +596,12 @@ function renderTickets(){
   });
 }
 
-
-// Modal for adding new tickets (النسخة الأولى كما هي)
-function openModal(section){
-  currentSection = section;
-  const modal = document.getElementById('modal');
-  const dynamicForm = document.getElementById('dynamic-form');
-  dynamicForm.innerHTML = '';
-
-  formFields[currentSection].forEach(field=>{
-    const group = document.createElement('div');
-    group.classList.add('form-group');
-
-    const label = document.createElement('label');
-    label.textContent = field.label;
-    group.appendChild(label);
-
-    if (field.type==='select'){
-      const select = document.createElement('select');
-      select.name = field.name;
-      field.options.forEach(o=>{
-        const opt=document.createElement('option'); opt.value=o; opt.textContent=o; select.appendChild(opt);
-      });
-      group.appendChild(select);
-    } else if (field.type==='multi-select'){
-      const multi = document.createElement('div');
-      multi.classList.add('multi-select'); multi.dataset.name = field.name;
-
-      const selected = document.createElement('div');
-      selected.classList.add('selected'); selected.textContent='Select options...';
-      multi.appendChild(selected);
-
-      const dropdown=document.createElement('div');
-      dropdown.classList.add('dropdown');
-      field.options.forEach(o=>{
-        const lbl=document.createElement('label');
-        const cb=document.createElement('input'); cb.type='checkbox'; cb.value=o;
-        lbl.appendChild(cb); lbl.appendChild(document.createTextNode(o));
-        dropdown.appendChild(lbl);
-      });
-      multi.appendChild(dropdown);
-
-      selected.addEventListener('click',()=> multi.classList.toggle('open'));
-      document.addEventListener('click',(e)=>{ if (!multi.contains(e.target)) multi.classList.remove('open'); });
-      dropdown.querySelectorAll('input').forEach(cb=> cb.addEventListener('change',()=> updateSelected(multi)));
-
-      group.appendChild(multi);
-    } else if (field.type==='textarea'){
-      const ta=document.createElement('textarea'); ta.name=field.name; group.appendChild(ta);
-    } else if (field.type==='file'){
-      const input=document.createElement('input');
-      input.type='file'; input.name=field.name; input.accept=field.accept||'*/*';
-      group.appendChild(input);
-      const preview=document.createElement('img'); preview.classList.add('file-preview'); group.appendChild(preview);
-      input.addEventListener('change',()=>{
-        if (input.files && input.files[0]){
-          const reader = new FileReader();
-          reader.onload = (e)=>{ preview.src = e.target.result; preview.style.display='block'; };
-          reader.readAsDataURL(input.files[0]);
-        }else{ preview.style.display='none'; }
-      });
-      input.addEventListener('paste',(e)=>{
-        const items=(e.clipboardData||e.originalEvent?.clipboardData)?.items||[];
-        for (const it of items){
-          if (it.type.indexOf('image')!==-1){
-            const blob=it.getAsFile(); const reader=new FileReader();
-            reader.onload=(ev)=>{ preview.src=ev.target.result; preview.style.display='block'; input.dataset.pasted=ev.target.result; };
-            reader.readAsDataURL(blob);
-          }
-        }
-      });
-    } else {
-      const inp=document.createElement('input'); inp.type=field.type; inp.name=field.name; group.appendChild(inp);
-    }
-    dynamicForm.appendChild(group);
-  });
-
-  document.getElementById('ticket-form').querySelector('[name="ticketIndex"]')?.remove();
-  modal.querySelector('h2').textContent='Add New Ticket';
-  modal.style.display='flex';
-}
-window.openModal = openModal;
-
-// Modal (النسخة الثانية المنسّقة كما هي عندك)
+// -------- Modal (نسخة واحدة فقط) ----------
 function openModal(section){
   currentSection = section;
   const modal = document.getElementById('modal');
   const dynamicForm = document.getElementById('dynamic-form');
 
-  // استخدم Grid للتنسيق
   dynamicForm.innerHTML = '';
   dynamicForm.className = 'form-grid';
 
@@ -870,7 +714,7 @@ function openModal(section){
   modal.querySelector('h2').textContent='Add New Ticket';
   modal.style.display='flex';
 }
-
+window.openModal = openModal;
 
 function updateSelected(multi){
   const selected = multi.querySelector('.selected');
@@ -930,12 +774,11 @@ function bindFormHandler(){
 if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', bindFormHandler);
 else bindFormHandler();
 
-
 // Go back
 function goBack(){ window.location.href='dashboard.html'; }
 window.goBack = goBack;
 
-// Make the center nav logo clickable to home
+// Init on load
 window.addEventListener('load', ()=>{
   const saved = localStorage.getItem('cloudCrowdTickets');
   if (saved) tickets = JSON.parse(saved);
@@ -946,55 +789,13 @@ window.addEventListener('load', ()=>{
   if (centerLogo){
     centerLogo.addEventListener('click', ()=> { window.location.href = 'dashboard.html'; });
   }
-
 });
 
-// Logout function
+// Logout
 function logout() {
   const confirmLogout = confirm("Confirm logout?");
-  if (confirmLogout) {
-    window.location.href = "index.html"; // يرجع لصفحة تسجيل الدخول
-  }
+  if (confirmLogout) window.location.href = "index.html";
 }
 
-// ============================
-// Sync CCTV tickets from Lark
-// ============================
-async function syncCCTVFromLark() {
-  try {
-    const res = await fetch('/.netlify/functions/lark-cctv-pull');
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'Failed fetching CCTV tickets');
-
-    let newTickets = data.tickets || [];
-
-    // جلب التكتات القديمة من التخزين المحلي
-    const oldTickets = tickets.cctv || [];
-
-    // عمل set بالمفاتيح القديمة عشان ما نكرر التكتات
-    const oldKeys = new Set(oldTickets.map(t => t._key));
-
-    // فلترة أي تكت جديد ما هو موجود
-    const freshOnes = newTickets.filter(t => !oldKeys.has(t._key));
-
-    // دمج الكل
-    tickets.cctv = [...oldTickets, ...freshOnes];
-
-    // حفظ بالتخزين المحلي
-    localStorage.setItem('cloudCrowdTickets', JSON.stringify(tickets));
-
-    // إعادة رسم التكتات
-    renderTickets();
-
-    console.log(`Synced ${freshOnes.length} new CCTV tickets`);
-  } catch (err) {
-    console.error('Sync failed', err);
-    alert('Sync CCTV failed: ' + err.message);
-  }
-}
-
-
-window.syncCCTVFromLark = syncCCTVFromLark;
-
-
-
+// ========== Lark sync disabled ==========
+window.syncCCTVFromLark = async () => {}; // NO-OP
