@@ -60,20 +60,12 @@
     </aside>
   </div>
 
-<script>
-  window.addEventListener('load', async () => {
-    window.currentSection = 'cctv';   // مهم تكون على window
-    renderTickets();                   // اعرض المحلّي أولاً
-    try {
-      await window.syncCCTVFromLark(); // نادِ الفنكشن المُصدّرة
-    } catch (e) {
-      console.error(e);
-    }
-  });
-</script>
-
+  <script>
+    // محلي فقط: أعرض التذاكر المحفوظة محليًا بدون أي تزامن مع Lark
+    window.addEventListener('load', () => {
+      window.currentSection = 'cctv';
+      renderTickets();
+    });
+  </script>
 </body>
 </html>
-
-
-
