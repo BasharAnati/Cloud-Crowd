@@ -1,11 +1,11 @@
-[build]
-  functions = "netlify/functions"
-  publish = "."
+# netlify.toml — Multi-Page setup بدون أي ريرايت شامل
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+[build]
+  publish = "."
+  functions = "netlify/functions"  # خليها طالما عندك login.js / ping.js
+
+# لا يوجد [[redirects]] شاملة هنا.
+# كل صفحة HTML (مثل /cctv.html /ce.html /dashboard.html) ستتقدّم مباشرة.
 
 [[headers]]
   for = "/.netlify/functions/*"
