@@ -1,8 +1,10 @@
 // ============================
-// Cloud Crowd - main.js (Local-only • cleaned)
+// Cloud Crowd - main.js (Cleaned + window.currentSection binding)
 // ============================
 
-// Storage
+// ----------------------------
+// Storage (in-memory + localStorage bootstrap)
+// ----------------------------
 let tickets = JSON.parse(localStorage.getItem('cloudCrowdTickets')) || {
   cctv: [],
   ce: [],
@@ -10,9 +12,20 @@ let tickets = JSON.parse(localStorage.getItem('cloudCrowdTickets')) || {
   complaints: [],
   'time-table': []
 };
-let currentSection = '';
 
-// Compact main fields for card body
+// المتغيّر الداخلي الحقيقي
+let _currentSection = '';
+
+// اربط window.currentSection بهذا المتغيّر (حل مشكلة عدم ظهور الأعمدة بعد الريفريش)
+Object.defineProperty(window, 'currentSection', {
+  get() { return _currentSection; },
+  set(v) { _currentSection = v; },
+  configurable: true
+});
+
+// ----------------------------
+// Config: main fields on cards
+// ----------------------------
 const mainFields = {
   cctv: ['branch', 'staff', 'dateTime'],
   ce: ['customerName', 'branch', 'restaurant'],
@@ -21,16 +34,27 @@ const mainFields = {
   'time-table': ['customerName', 'orderNumber', 'phone']
 };
 
-// Status columns (with TT renames applied)
+// ----------------------------
+// Columns per section
+// ----------------------------
 const STATUS_COLUMNS = {
   cctv: ['Escalated', 'Under Review', 'Closed'],
   ce: ['Escalated', 'Under Review', 'Pending (Customer Call Required)', 'Closed'],
   'free-orders': ['Active', 'Taken', 'Not Active'],
   complaints: ['Escalated', 'Under Review', 'Pending (Customer Call Required)', 'Closed'],
-  'time-table': ['No Call Needed', 'Pending Call', 'No Answer', 'Scheduled', 'Issue', 'Returned']
+  'time-table': [
+    'No Call Needed',
+    'Pending Call',
+    'No Answer',
+    'Scheduled',
+    'Issue',
+    'Returned'
+  ]
 };
 
-// ===== عرض أسماء الستاتسات (rename فقط للعرض) =====
+// ----------------------------
+// Display name remap (view only)
+// ----------------------------
 const STATUS_DISPLAY_MAP = {
   'Pending (Customer Call Required)': 'Pending (Call Back)'
 };
@@ -38,7 +62,9 @@ function displayStatusName(name) {
   return STATUS_DISPLAY_MAP[name] || name;
 }
 
-// Form fields (as provided)
+// ----------------------------
+// Form fields per section (كما زوّدتني)
+// ----------------------------
 const formFields = {
   cctv: [
     { label: 'Case Status', type: 'select', name: 'status', options: ['Closed', 'Under Review', 'Escalated'] },
@@ -152,7 +178,9 @@ const formFields = {
   ]
 };
 
+// ----------------------------
 // Label prettifier
+// ----------------------------
 const FIELD_LABELS = {
   dateTime:'Date & Time', creationDate:'Creation Date', orderDate:'Order Date', returnDate:'Return Date',
   discountDate:'Discount Date', newOrderNumber:'New Order Number', orderNumber:'Order Number',
@@ -167,9 +195,11 @@ function toLabel(field){
               .replace(/\b\w/g,ch=>ch.toUpperCase());
 }
 
+// ----------------------------
 // Case numbers
+// ----------------------------
 const CASE_COUNTER_KEY = 'cloudCrowdCaseCounter';
-const CCTV_COUNTER_KEY = 'cloudCrowdCCTVCaseCounter';
+const CCTV_COUNTER_KEY  = 'cloudCrowdCCTVCaseCounter';
 
 function nextCaseNumber(section){
   if (section === 'cctv') {
@@ -199,30 +229,16 @@ function ensureCaseNumbers(){
   if (updated) saveTicketsToStorage();
 }
 
+// ----------------------------
 // Storage helper
+// ----------------------------
 function saveTicketsToStorage(){
   localStorage.setItem('cloudCrowdTickets', JSON.stringify(tickets));
 }
 
-// Main fields render
-function getMainFieldsContent(ticket){
-  const fields = mainFields[currentSection] || [];
-  let html='';
-  fields.forEach(f=>{
-    const v = ticket[f] ?? 'Not specified';
-    html += `<p><strong>${toLabel(f)}:</strong> ${Array.isArray(v)? v.join(', ') : v}</p>`;
-  });
-  return html;
-}
-
-// Case display rules
-function getCaseDisplay(ticket){
-  if (currentSection==='cctv') return ticket.caseNumber || '—';
-  return ticket.orderNumber || ticket.caseNumber || '—';
-}
-function drawerCaseLabel(){ return 'Case Number'; }
-
-// Colored band class map
+// ----------------------------
+// Colored band + status colors
+// ----------------------------
 function bandClassForStatus(status){
   switch(status){
     case 'Taken': return 'band-taken';
@@ -249,9 +265,9 @@ function bandClassForStatus(status){
   }
 }
 
-// لون نص الهيدر حسب الحالة (نسخة واحدة شاملة)
 function statusColor(status){
   switch (status) {
+    // common
     case 'Closed': return '#1a9324';
     case 'Under Review': return '#f91616';
     case 'Escalated': return '#1b16a3';
@@ -261,7 +277,7 @@ function statusColor(status){
     case 'Taken': return '#1a9324';
     case 'Not Active': return '#f91616';
 
-    // complaints / ce
+    // ce/complaints (alias)
     case 'Pending (Customer Call Required)':
     case 'Pending (Call Back)': return '#fd7e14';
 
@@ -273,7 +289,7 @@ function statusColor(status){
     case 'Returned': return '#1a9324';
     case 'No Call Needed': return '#4b4b4b';
 
-    // باقي الحالات المحتملة
+    // others (brown family)
     case 'Open':
     case 'Follow-Up Needed':
     case 'No Response':
@@ -288,6 +304,131 @@ function statusColor(status){
   }
 }
 
+// ----------------------------
+// Helpers
+// ----------------------------
+function escapeHtml(s=''){
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+// ----------------------------
+// Ticket list rendering
+// ----------------------------
+function getMainFieldsContent(ticket){
+  const fields = mainFields[_currentSection] || [];
+  let html='';
+  fields.forEach(f=>{
+    const v = ticket[f] ?? 'Not specified';
+    html += `<p><strong>${toLabel(f)}:</strong> ${Array.isArray(v)? v.join(', ') : escapeHtml(v)}</p>`;
+  });
+  return html;
+}
+
+function getCaseDisplay(ticket){
+  if (_currentSection==='cctv') return ticket.caseNumber || '—';
+  return ticket.orderNumber || ticket.caseNumber || '—';
+}
+function drawerCaseLabel(){ return 'Case Number'; }
+
+function renderTickets(){
+  const wrap = document.getElementById('tickets');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+
+  const sectionTickets = tickets[_currentSection] || [];
+
+  // group by status (using display name)
+  const grouped = {};
+  sectionTickets.forEach(t=>{
+    const st = t.status || 'Uncategorized';
+    const key = displayStatusName(st);
+    (grouped[key] ||= []).push(t);
+  });
+
+  const desiredRaw = STATUS_COLUMNS[_currentSection] || Object.keys(grouped);
+  const desired = desiredRaw.map(displayStatusName);
+  const known = new Set(desired);
+  const extras = Object.keys(grouped).filter(s=>!known.has(s));
+
+  const HIDDEN = new Set(['Uncategorized','',null,undefined]);
+  const columns = [...desired, ...extras].filter(s => !HIDDEN.has(s));
+
+  wrap.style.setProperty('--cols', Math.max(1, columns.length));
+
+  columns.forEach(status=>{
+    const col = document.createElement('section');
+    col.className = 'group';
+
+    const count = (grouped[status]||[]).length;
+
+    const header = document.createElement('div');
+    header.className = 'col-header';
+    header.innerHTML = `
+      <div class="col-header-inner">
+        <div class="col-title">${status}</div>
+        <span class="col-count">${count}</span>
+      </div>
+    `;
+    col.appendChild(header);
+
+    const under = document.createElement('div');
+    under.className = 'col-underbar';
+    col.appendChild(under);
+
+    (grouped[status]||[]).forEach(ticket=>{
+      const card = document.createElement('div');
+      card.className = 'ticket-card';
+
+      let timeStr = '';
+      const baseDT = ticket.dateTime || ticket.creationDate || ticket.orderDate;
+      if (baseDT){
+        const d = new Date(baseDT);
+        if (!isNaN(d)) {
+          timeStr = d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+        }
+      }
+
+      const band = `
+        <div class="card-band ${bandClassForStatus(ticket.status)}">
+          <span class="band-status">${displayStatusName(ticket.status || 'Uncategorized')}</span>
+          <span class="band-case">${escapeHtml(getCaseDisplay(ticket))}</span>
+        </div>
+      `;
+
+      const head = `
+        <div class="card-top"></div>
+        ${band}
+        <div class="card-head">
+          <span class="card-time">${timeStr}</span>
+        </div>
+      `;
+
+      const main = `
+        <div class="card-main">
+          ${getMainFieldsContent(ticket)}
+          <div class="card-foot">
+            <span class="card-case">${escapeHtml(getCaseDisplay(ticket))}</span>
+          </div>
+        </div>
+      `;
+
+      card.innerHTML = head + main;
+      card.addEventListener('click', ()=> openTicketDrawerByCase(getCaseDisplay(ticket)));
+      col.appendChild(card);
+    });
+
+    wrap.appendChild(col);
+  });
+}
+
+// ----------------------------
+// Drawer (read/edit)
+// ----------------------------
 let drawerIndex = null;
 
 function ensureDrawerActionsContainer(){
@@ -303,15 +444,116 @@ function ensureDrawerActionsContainer(){
 }
 
 function openTicketDrawerByCase(caseNumber){
-  const idx = (tickets[currentSection]||[]).findIndex(t =>
+  const idx = (tickets[_currentSection]||[]).findIndex(t =>
     getCaseDisplay(t)===caseNumber || t.caseNumber===caseNumber
   );
   if (idx>=0) openTicketDrawer(idx);
 }
 
+function buildDrawerReadonly(ticket){
+  const NOTE_KEYS = ['note','notes','customerNotes','complaintDetails','caseDescription'];
+
+  let notesText = '';
+  let notesKeyUsed = '';
+  for (const nk of NOTE_KEYS){
+    if (ticket[nk]){
+      notesText = String(ticket[nk] || '').trim();
+      notesKeyUsed = nk;
+      break;
+    }
+  }
+
+  let dateStr = ticket.date || '';
+  let timeStr = ticket.time || '';
+  if ((!dateStr || !timeStr) && ticket.dateTime){
+    const d = new Date(ticket.dateTime);
+    if (!isNaN(d)){
+      if (!dateStr) dateStr = d.toISOString().split('T')[0];
+      if (!timeStr) {
+        const hh = String(d.getHours()).padStart(2,'0');
+        const mm = String(d.getMinutes()).padStart(2,'0');
+        timeStr = `${hh}:${mm}`;
+      }
+    }
+  }
+
+  let html = '';
+  if (dateStr) html += rowKV('Date', dateStr);
+  if (timeStr) html += rowKV('Time', timeStr);
+
+  const IGNORE = new Set(['createdAt','lastModified','date','time','dateTime','actionTaken',
+    'note','notes','customerNotes','complaintDetails','caseDescription'
+  ]);
+
+  for (const k in ticket){
+    if (IGNORE.has(k)) continue;
+    const v = ticket[k];
+    if (Array.isArray(v) && v.length){
+      html += rowKV(toLabel(k), v.join(', '));
+    } else if (v && typeof v !== 'object'){
+      if (k === 'status'){
+        html += rowKV(toLabel(k), displayStatusName(String(v)));
+      } else {
+        const txt = String(v).trim();
+        if (txt) html += rowKV(toLabel(k), escapeHtml(txt));
+      }
+    }
+  }
+
+  if (notesText){
+    const noteTitle = (_currentSection === 'time-table' || notesKeyUsed === 'note') ? 'Note' : 'Case Details';
+    html += `
+      <div class="note-box full-span">
+        <div class="note-title">${noteTitle}</div>
+        <div class="note-text">${escapeHtml(notesText)}</div>
+      </div>
+    `;
+  }
+
+  if (ticket.actionTaken){
+    const at = String(ticket.actionTaken).trim();
+    if (at){
+      html += `
+        <div class="action-taken-box full-span">
+          <div class="action-taken-title">Action Taken</div>
+          <div class="action-taken-text">${escapeHtml(at)}</div>
+        </div>
+      `;
+    }
+  }
+
+  return html || '<div class="no-tickets full-span">No details.</div>';
+
+  function rowKV(label, value){
+    return `
+      <div class="kv">
+        <div class="k">${escapeHtml(label)}</div>
+        <div class="v">${value}</div>
+      </div>
+    `;
+  }
+}
+
+function buildDrawerEditForm(ticket){
+  const statusField = formFields[_currentSection].find(f=>f.name==='status');
+  const options = statusField ? statusField.options : [];
+  return `
+    <div class="form-group">
+      <label>Status</label>
+      <select name="status">
+        ${options.map(o=>`<option value="${o}" ${ticket.status===o?'selected':''}>${o}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Action Taken</label>
+      <textarea name="actionTaken" rows="4">${escapeHtml(ticket.actionTaken||'')}</textarea>
+    </div>
+  `;
+}
+
 function openTicketDrawer(index){
   drawerIndex = index;
-  const ticket = tickets[currentSection][index];
+  const ticket = tickets[_currentSection][index];
   const drawer = document.getElementById('ticket-drawer');
   if (!drawer) return;
 
@@ -351,122 +593,9 @@ function openTicketDrawer(index){
   document.body.classList.add('drawer-open');
 }
 
-/* ====== قراءة تفاصيل التذكرة (عرض فقط) ====== */
-function buildDrawerReadonly(ticket){
-  const NOTE_KEYS = ['note','notes','customerNotes','complaintDetails','caseDescription'];
-
-  let notesText = '';
-  let notesKeyUsed = '';
-  for (const nk of NOTE_KEYS){
-    if (ticket[nk]){
-      notesText = String(ticket[nk] || '').trim();
-      notesKeyUsed = nk;
-      break;
-    }
-  }
-
-  let dateStr = ticket.date || '';
-  let timeStr = ticket.time || '';
-  if ((!dateStr || !timeStr) && ticket.dateTime){
-    const d = new Date(ticket.dateTime);
-    if (!isNaN(d)){
-      if (!dateStr) dateStr = d.toISOString().split('T')[0];
-      if (!timeStr) {
-        const hh = String(d.getHours()).padStart(2,'0');
-        const mm = String(d.getMinutes()).padStart(2,'0');
-        timeStr = `${hh}:${mm}`;
-      }
-    }
-  }
-
-  let html = '';
-  if (dateStr) html += rowKV('Date', dateStr);
-  if (timeStr) html += rowKV('Time', timeStr);
-
-  const IGNORE = new Set(['createdAt','lastModified','date','time','dateTime','actionTaken', ...NOTE_KEYS]);
-  for (const k in ticket){
-    if (IGNORE.has(k)) continue;
-    const v = ticket[k];
-    if (Array.isArray(v) && v.length){
-      html += rowKV(toLabel(k), v.join(', '));
-    } else if (v && typeof v !== 'object'){
-      if (k === 'status'){
-        html += rowKV(toLabel(k), displayStatusName(String(v)));
-      } else {
-        const txt = String(v).trim();
-        if (txt) html += rowKV(toLabel(k), escapeHtml(txt));
-      }
-    }
-  }
-
-  if (notesText){
-    const noteTitle = (currentSection === 'time-table' || notesKeyUsed === 'note') ? 'Note' : 'Case Details';
-    html += `
-      <div class="note-box full-span">
-        <div class="note-title">${noteTitle}</div>
-        <div class="note-text">${escapeHtml(notesText)}</div>
-      </div>
-    `;
-  }
-
-  if (ticket.actionTaken){
-    const at = String(ticket.actionTaken).trim();
-    if (at){
-      html += `
-        <div class="action-taken-box full-span">
-          <div class="action-taken-title">Action Taken</div>
-          <div class="action-taken-text">${escapeHtml(at)}</div>
-        </div>
-      `;
-    }
-  }
-
-  return html || '<div class="no-tickets full-span">No details.</div>';
-
-  function rowKV(label, value){
-    return `
-      <div class="kv">
-        <div class="k">${escapeHtml(label)}</div>
-        <div class="v">${value}</div>
-      </div>
-    `;
-  }
-}
-
-function renderStatus(status) {
-  const cls = 'status-label status-' + status.replace(/\s+/g, '');
-  return `<span class="${cls}">${displayStatusName(status)}</span>`;
-}
-
-function escapeHtml(s){
-  return s
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&#39;');
-}
-
-function buildDrawerEditForm(ticket){
-  const statusField = formFields[currentSection].find(f=>f.name==='status');
-  const options = statusField ? statusField.options : [];
-  return `
-    <div class="form-group">
-      <label>Status</label>
-      <select name="status">
-        ${options.map(o=>`<option value="${o}" ${ticket.status===o?'selected':''}>${o}</option>`).join('')}
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Action Taken</label>
-      <textarea name="actionTaken" rows="4">${ticket.actionTaken||''}</textarea>
-    </div>
-  `;
-}
-
 function enterDrawerEditMode(){
   if (drawerIndex==null) return;
-  const ticket = tickets[currentSection][drawerIndex];
+  const ticket = tickets[_currentSection][drawerIndex];
   const bodyEl = document.getElementById('drawer-body');
   const actions = ensureDrawerActionsContainer();
   document.getElementById('drawer-title').textContent = `Edit • ${displayStatusName(ticket.status||'')}`;
@@ -487,7 +616,7 @@ function saveDrawerEdits(){
   const form = document.getElementById('drawer-edit-form');
   if (!form) return;
   const fd = new FormData(form);
-  const t = tickets[currentSection][drawerIndex];
+  const t = tickets[_currentSection][drawerIndex];
   t.status = fd.get('status');
   t.actionTaken = fd.get('actionTaken');
   t.lastModified = new Date().toISOString();
@@ -506,106 +635,21 @@ function closeTicketDrawer(){
   drawerIndex = null;
 }
 window.closeTicketDrawer = closeTicketDrawer;
+
 document.addEventListener('keydown',e=>{ if (e.key==='Escape') closeTicketDrawer(); });
 
-function renderTickets(){
-  const wrap = document.getElementById('tickets');
-  if (!wrap) return;
-  wrap.innerHTML = '';
-
-  const sectionTickets = tickets[currentSection] || [];
-
-  const grouped = {};
-  sectionTickets.forEach(t=>{
-    const st = t.status || 'Uncategorized';
-    const key = displayStatusName(st);
-    (grouped[key] ||= []).push(t);
-  });
-
-  const desiredRaw = STATUS_COLUMNS[currentSection] || Object.keys(grouped);
-  const desired = desiredRaw.map(displayStatusName);
-  const known = new Set(desired);
-  const extras = Object.keys(grouped).filter(s=>!known.has(s));
-
-  const HIDDEN = new Set(['Uncategorized','',null,undefined]);
-  const columns = [...desired, ...extras].filter(s => !HIDDEN.has(s));
-
-  wrap.style.setProperty('--cols', Math.max(1, columns.length));
-
-  columns.forEach(status=>{
-    const col = document.createElement('section');
-    col.className = 'group';
-
-    const count = (grouped[status]||[]).length;
-
-    const header = document.createElement('div');
-    header.className = 'col-header';
-    header.innerHTML = `
-      <div class="col-header-inner">
-        <div class="col-title">${status}</div>
-        <span class="col-count">${count}</span>
-      </div>
-    `;
-    col.appendChild(header);
-
-    const under = document.createElement('div');
-    under.className = 'col-underbar';
-    col.appendChild(under);
-
-    (grouped[status]||[]).forEach(ticket=>{
-      const card = document.createElement('div');
-      card.className = 'ticket-card';
-
-      let timeStr = '';
-      const baseDT = ticket.dateTime || ticket.creationDate || ticket.orderDate;
-      if (baseDT){
-        const d = new Date(baseDT);
-        timeStr = d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
-      }
-
-      const band = `
-        <div class="card-band ${bandClassForStatus(ticket.status)}">
-          <span class="band-status">${displayStatusName(ticket.status || 'Uncategorized')}</span>
-          <span class="band-case">${getCaseDisplay(ticket)}</span>
-        </div>
-      `;
-
-      const head = `
-        <div class="card-top"></div>
-        ${band}
-        <div class="card-head">
-          <span class="card-time">${timeStr}</span>
-        </div>
-      `;
-
-      const main = `
-        <div class="card-main">
-          ${getMainFieldsContent(ticket)}
-          <div class="card-foot">
-            <span class="card-case">${getCaseDisplay(ticket)}</span>
-          </div>
-        </div>
-      `;
-
-      card.innerHTML = head + main;
-      card.addEventListener('click', ()=> openTicketDrawerByCase(getCaseDisplay(ticket)));
-      col.appendChild(card);
-    });
-
-    wrap.appendChild(col);
-  });
-}
-
-// -------- Modal (نسخة واحدة فقط) ----------
+// ----------------------------
+// Modal (single tidy version)
+// ----------------------------
 function openModal(section){
-  currentSection = section;
+  window.currentSection = section; // يحدّث المتغيّر الداخلي أيضاً
   const modal = document.getElementById('modal');
   const dynamicForm = document.getElementById('dynamic-form');
 
   dynamicForm.innerHTML = '';
   dynamicForm.className = 'form-grid';
 
-  formFields[currentSection].forEach(field=>{
+  formFields[_currentSection].forEach(field=>{
     const group = document.createElement('div');
     group.classList.add('form-group');
 
@@ -614,7 +658,6 @@ function openModal(section){
     group.appendChild(label);
 
     const makeFull = ()=> group.classList.add('full');
-    const isDateLike = (t)=> t === 'datetime-local' || t === 'date' || t === 'time';
 
     if (field.type === 'select'){
       const select = document.createElement('select');
@@ -628,11 +671,11 @@ function openModal(section){
 
     } else if (field.type === 'multi-select'){
       const multi = document.createElement('div');
-      multi.classList.add('multi-select'); 
+      multi.classList.add('multi-select');
       multi.dataset.name = field.name;
 
       const selected = document.createElement('div');
-      selected.classList.add('selected'); 
+      selected.classList.add('selected');
       selected.textContent='Select options...';
       multi.appendChild(selected);
 
@@ -640,10 +683,10 @@ function openModal(section){
       dropdown.classList.add('dropdown');
       field.options.forEach(o=>{
         const lbl=document.createElement('label');
-        const cb=document.createElement('input'); 
-        cb.type='checkbox'; 
+        const cb=document.createElement('input');
+        cb.type='checkbox';
         cb.value=o;
-        lbl.appendChild(cb); 
+        lbl.appendChild(cb);
         lbl.appendChild(document.createTextNode(o));
         dropdown.appendChild(lbl);
       });
@@ -664,13 +707,13 @@ function openModal(section){
 
     } else if (field.type === 'file'){
       const input = document.createElement('input');
-      input.type = 'file'; 
-      input.name = field.name; 
+      input.type = 'file';
+      input.name = field.name;
       input.accept = field.accept || '*/*';
       group.appendChild(input);
 
-      const preview = document.createElement('img'); 
-      preview.classList.add('file-preview'); 
+      const preview = document.createElement('img');
+      preview.classList.add('file-preview');
       group.appendChild(preview);
 
       input.addEventListener('change',()=>{
@@ -678,7 +721,9 @@ function openModal(section){
           const reader = new FileReader();
           reader.onload = (e)=>{ preview.src = e.target.result; preview.style.display='block'; };
           reader.readAsDataURL(input.files[0]);
-        }else{ preview.style.display='none'; }
+        } else {
+          preview.style.display='none';
+        }
       });
       input.addEventListener('paste',(e)=>{
         const items=(e.clipboardData||e.originalEvent?.clipboardData)?.items||[];
@@ -695,12 +740,7 @@ function openModal(section){
 
     } else {
       const inp = document.createElement('input');
-      if (isDateLike(field.type)){
-        inp.type = 'text';
-        inp.placeholder = 'YYYY-MM-DD HH:MM';
-      } else {
-        inp.type = field.type;
-      }
+      inp.type = field.type; // date/time/datetime-local/text...
       inp.name = field.name;
       group.appendChild(inp);
     }
@@ -740,14 +780,16 @@ function closeModal(){
 }
 window.closeModal = closeModal;
 
-// Bind add form
+// ----------------------------
+// Add form handler
+// ----------------------------
 function bindFormHandler(){
   const formEl = document.getElementById('ticket-form');
   if (!formEl) return;
   formEl.addEventListener('submit',(e)=>{
     e.preventDefault();
     const t = {};
-    formFields[currentSection].forEach(field=>{
+    formFields[_currentSection].forEach(field=>{
       if (field.type==='multi-select'){
         const multi = document.querySelector(`.multi-select[data-name="${field.name}"]`);
         t[field.name] = Array.from(multi.querySelectorAll('input:checked')).map(cb=>cb.value);
@@ -760,12 +802,12 @@ function bindFormHandler(){
       }
     });
 
-    if (currentSection==='cctv'){
+    if (_currentSection==='cctv'){
       t.caseNumber = nextCaseNumber('cctv');
     }
     t.createdAt = new Date().toISOString();
 
-    tickets[currentSection].push(t);
+    tickets[_currentSection].push(t);
     saveTicketsToStorage();
     renderTickets();
     closeModal();
@@ -774,11 +816,12 @@ function bindFormHandler(){
 if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', bindFormHandler);
 else bindFormHandler();
 
-// Go back
+// ----------------------------
+// Navigation helpers
+// ----------------------------
 function goBack(){ window.location.href='dashboard.html'; }
 window.goBack = goBack;
 
-// Init on load
 window.addEventListener('load', ()=>{
   const saved = localStorage.getItem('cloudCrowdTickets');
   if (saved) tickets = JSON.parse(saved);
@@ -791,11 +834,36 @@ window.addEventListener('load', ()=>{
   }
 });
 
-// Logout
+// ----------------------------
+// Auth/logout (optional)
+// ----------------------------
 function logout() {
   const confirmLogout = confirm("Confirm logout?");
   if (confirmLogout) window.location.href = "index.html";
 }
+window.logout = logout;
 
-// ========== Lark sync disabled ==========
-window.syncCCTVFromLark = async () => {}; // NO-OP
+// ----------------------------
+// (Optional) Sync from Lark (safe no-op if endpoint غير موجود)
+// ----------------------------
+async function syncCCTVFromLark() {
+  try {
+    const res = await fetch('/.netlify/functions/lark-cctv-pull');
+    if (!res.ok) return; // لو محذوفة الفنكشن أو 404، تجاهل بصمت
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Failed fetching CCTV tickets');
+
+    let newTickets = data.tickets || [];
+    const oldTickets = tickets.cctv || [];
+    const oldKeys = new Set(oldTickets.map(t => t._key));
+    const freshOnes = newTickets.filter(t => !oldKeys.has(t._key));
+    tickets.cctv = [...oldTickets, ...freshOnes];
+
+    localStorage.setItem('cloudCrowdTickets', JSON.stringify(tickets));
+    renderTickets();
+    console.log(`Synced ${freshOnes.length} new CCTV tickets`);
+  } catch (err) {
+    console.warn('Sync CCTV skipped:', err.message);
+  }
+}
+window.syncCCTVFromLark = syncCCTVFromLark;
