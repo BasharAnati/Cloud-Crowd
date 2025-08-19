@@ -1,5 +1,5 @@
 // ============================
-// Cloud Crowd - main.js (Cleaned + window.currentSection binding)
+// Cloud Crowd - main.js (DB-integrated + currentSection binding)
 // ============================
 
 // ----------------------------
@@ -63,7 +63,7 @@ function displayStatusName(name) {
 }
 
 // ----------------------------
-// Form fields per section (كما زوّدتني)
+// Form fields per section
 // ----------------------------
 const formFields = {
   cctv: [
@@ -80,7 +80,7 @@ const formFields = {
       'Front Door','Back Door','Sink','Front Area','Kitchen','Prep Main Stove','Prep Back Area'
     ]},
     { label: 'Staff Involved', type: 'multi-select', name: 'staff', options: [
-      'Khaled Al-Nimri','Faisal Al-Nimri','Ahmad Al-Masri','Sarah Al-Husseini','Omar Al-Khatib','Lina Abu Zaid',
+      'Khaled Al-Nimri','Faisal Al-Nimri','Ahmad Al-Masri','Sarah Al-Husseini','Omar Al-Khatib','Lina Abu Zيد',
       'Yazan Al-Jabari','Rania Al-Tamimi','Tareq Al-Saleh','Dalia Al-Khaled','Ziad Al-Najjar','Nour Al-Faraj',
       'Hani Al-Majali','Maya Al-Qudah','Samer Al-Hassan','Leen Al-Rawashdeh','Bilal Al-Sharif','Hana Al-Atrash',
       'Majed Al-Din','Rawan Al-Bakri','Zain Al-Hayek','Sahar Al-Saleem','Fadi Al-Masoud','Yasmin Al-Khateب',
@@ -781,12 +781,12 @@ function closeModal(){
 window.closeModal = closeModal;
 
 // ----------------------------
-// Add form handler
+// Add form handler  (POST to DB + refresh from DB)
 // ----------------------------
 function bindFormHandler(){
   const formEl = document.getElementById('ticket-form');
   if (!formEl) return;
-  formEl.addEventListener('submit',(e)=>{
+  formEl.addEventListener('submit', async (e)=>{
     e.preventDefault();
     const t = {};
     formFields[_currentSection].forEach(field=>{
@@ -807,9 +807,28 @@ function bindFormHandler(){
     }
     t.createdAt = new Date().toISOString();
 
+    // خزن محليًا مباشرة لسرعة الاستجابة
     tickets[_currentSection].push(t);
     saveTicketsToStorage();
     renderTickets();
+
+    // ارفع إلى الداتابيس
+    try {
+      await fetch('/.netlify/functions/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          section: _currentSection,
+          status: t.status || 'Under Review',
+          payload: t
+        })
+      });
+      // اسحب من الداتابيس لضمان التزامن + إعطاء ID رسمي
+      await hydrateFromDB(_currentSection);
+    } catch (err) {
+      console.error('POST to DB failed:', err);
+    }
+
     closeModal();
   });
 }
@@ -822,7 +841,39 @@ else bindFormHandler();
 function goBack(){ window.location.href='dashboard.html'; }
 window.goBack = goBack;
 
-window.addEventListener('load', ()=>{
+// ----------------------------
+// DB <-> UI bridge
+// ----------------------------
+function rowToTicket(row) {
+  const p = row.payload || {};
+  return {
+    ...p,
+    status: row.status || p.status || 'Under Review',
+    caseNumber: p.caseNumber || `CCTV-${row.id}`,  // ضمان ظهور Case Number
+    createdAt: row.created_at,
+    lastModified: row.updated_at
+  };
+}
+
+async function hydrateFromDB(section = 'cctv') {
+  try {
+    const res = await fetch(`/.netlify/functions/tickets?section=${encodeURIComponent(section)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'fetch failed');
+
+    tickets[section] = (data.tickets || []).map(rowToTicket);
+    saveTicketsToStorage();
+    renderTickets();
+    console.log(`Hydrated ${section} from DB →`, tickets[section].length, 'tickets');
+  } catch (err) {
+    console.error('DB hydrate failed:', err);
+  }
+}
+
+// ----------------------------
+// Page load
+// ----------------------------
+window.addEventListener('load', async ()=>{
   const saved = localStorage.getItem('cloudCrowdTickets');
   if (saved) tickets = JSON.parse(saved);
   ensureCaseNumbers();
@@ -832,6 +883,13 @@ window.addEventListener('load', ()=>{
   if (centerLogo){
     centerLogo.addEventListener('click', ()=> { window.location.href = 'dashboard.html'; });
   }
+
+  // اجعل السكشن الافتراضي CCTV إن لم يحدد من الـHTML
+  if (!window.currentSection) window.currentSection = 'cctv';
+
+  // اعرض المحلي ثم حمّل من الداتابيس
+  renderTickets();
+  await hydrateFromDB(window.currentSection);
 });
 
 // ----------------------------
@@ -844,12 +902,12 @@ function logout() {
 window.logout = logout;
 
 // ----------------------------
-// (Optional) Sync from Lark (safe no-op if endpoint غير موجود)
+// (Optional) Sync from Lark (لا تستخدم الآن)
 // ----------------------------
 async function syncCCTVFromLark() {
   try {
     const res = await fetch('/.netlify/functions/lark-cctv-pull');
-    if (!res.ok) return; // لو محذوفة الفنكشن أو 404، تجاهل بصمت
+    if (!res.ok) return;
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'Failed fetching CCTV tickets');
 
