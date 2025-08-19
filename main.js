@@ -925,3 +925,49 @@ async function syncCCTVFromLark() {
   }
 }
 window.syncCCTVFromLark = syncCCTVFromLark;
+
+
+
+// === DB sync (Neon via Netlify Functions) ===
+async function loadFromDB(section) {
+  try {
+    const res = await fetch(`/.netlify/functions/tickets?section=${encodeURIComponent(section)}`);
+    const data = await res.json();
+    if (data.ok) {
+      tickets[section] = data.tickets || [];
+      saveTicketsToStorage();
+    } else {
+      console.warn('DB load failed:', data.error);
+    }
+  } catch (e) {
+    console.warn('DB load error:', e.message);
+  }
+}
+
+async function saveToDB(section, ticket) {
+  try {
+    await fetch('/.netlify/functions/tickets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        section,
+        status: ticket.status || 'Under Review',
+        payload: ticket
+      })
+    });
+  } catch (e) {
+    console.warn('DB save error:', e.message);
+  }
+}
+
+// استبدل مستمع التحميل الحالي بهذا (أو أضفه إن لم يكن موجود):
+window.addEventListener('load', async () => {
+  const saved = localStorage.getItem('cloudCrowdTickets');
+  if (saved) tickets = JSON.parse(saved);
+  ensureCaseNumbers();
+
+  // اسحب من قاعدة البيانات للسيكشن الحالي (cctv أو حسب ما تحط بالصفحة)
+  await loadFromDB(window.currentSection || 'cctv');
+
+  renderTickets();
+});
