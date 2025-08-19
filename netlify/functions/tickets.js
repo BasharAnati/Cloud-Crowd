@@ -1,133 +1,123 @@
 // netlify/functions/tickets.js
-const { Client } = require('pg');
+// Handles tickets CRUD via Neon Postgres (GET, POST, PUT)
 
-const connectionString = process.env.NETLIFY_DATABASE_URL;
+const { Pool } = require('pg');
 
-function json(status, body, extraHeaders = {}) {
-  return {
-    statusCode: status,
-    headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-      'Access-Control-Allow-Origin': '*',
-      ...extraHeaders,
-    },
-    body: JSON.stringify(body),
-  };
-}
+const pool = new Pool({
+  connectionString: process.env.NETLIFY_DATABASE_URL, // Neon (pooled)
+  // Neon URL already has sslmode=require; no extra ssl config needed
+});
 
-// يبني الجدول/الفهارس/التريجر لو مش موجودين
-async function ensureSchema(client) {
-  await client.query(`
-    CREATE TABLE IF NOT EXISTS tickets (
-      id BIGSERIAL PRIMARY KEY,
-      section TEXT NOT NULL,
-      status  TEXT NOT NULL,
-      payload JSONB NOT NULL DEFAULT '{}'::jsonb,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_tickets_section ON tickets(section);
-    CREATE INDEX IF NOT EXISTS idx_tickets_status  ON tickets(status);
-    CREATE INDEX IF NOT EXISTS idx_tickets_updated ON tickets(updated_at);
-
-    CREATE OR REPLACE FUNCTION set_updated_at() RETURNS TRIGGER AS $$
-    BEGIN
-      NEW.updated_at = now();
-      RETURN NEW;
-    END;
-    $$ LANGUAGE plpgsql;
-
-    DROP TRIGGER IF EXISTS trg_tickets_updated ON tickets;
-    CREATE TRIGGER trg_tickets_updated
-      BEFORE UPDATE ON tickets
-      FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-  `);
-}
+const cors = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
 
 exports.handler = async (event) => {
-  if (!connectionString) {
-    return json(500, { ok: false, error: 'NETLIFY_DATABASE_URL is missing' });
-  }
-
-  // CORS preflight
+  // Preflight
   if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 204,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-      body: '',
-    };
+    return { statusCode: 204, headers: cors, body: '' };
   }
-
-  const client = new Client({
-    connectionString,
-    ssl: { rejectUnauthorized: false },
-  });
 
   try {
-    await client.connect();
-
-    // تأكد من وجود الجدول عند أول استدعاء
-    await ensureSchema(client);
-
     if (event.httpMethod === 'GET') {
-      // GET /tickets?section=cctv
-      const params = event.queryStringParameters || {};
-      const section = params.section || null;
+      // /tickets?section=cctv
+      const url = new URL(event.rawUrl || `https://x${event.path}${event.queryStringParameters ? '?' + new URLSearchParams(event.queryStringParameters).toString() : ''}`);
+      const section = url.searchParams.get('section') || 'cctv';
 
-      const { rows } = await client.query(
-        `
-        SELECT id, section, status, payload, created_at, updated_at
-        FROM tickets
-        WHERE ($1::text IS NULL OR section = $1)
-        ORDER BY updated_at DESC
-        LIMIT 500
-        `,
+      const { rows } = await pool.query(
+        `SELECT id, section, status, payload, created_at, updated_at
+         FROM tickets
+         WHERE section = $1
+         ORDER BY id ASC`,
         [section]
       );
 
-      return json(200, { ok: true, count: rows.length, tickets: rows });
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json', ...cors },
+        body: JSON.stringify({ ok: true, count: rows.length, tickets: rows }),
+      };
     }
 
     if (event.httpMethod === 'POST') {
-      // POST /tickets { section, status, payload }
-      let body;
-      try {
-        body = JSON.parse(event.body || '{}');
-      } catch {
-        return json(400, { ok: false, error: 'Invalid JSON body' });
-      }
-
-      const section = (body.section || '').trim();
-      const status  = (body.status || '').trim();
+      // body: { section, status, payload }
+      const body = JSON.parse(event.body || '{}');
+      const section = body.section || 'cctv';
+      const status = body.status || 'Under Review';
       const payload = body.payload || {};
 
-      if (!section || !status) {
-        return json(400, { ok: false, error: 'section and status are required' });
-      }
-
-      const insert = await client.query(
-        `
-        INSERT INTO tickets (section, status, payload)
-        VALUES ($1, $2, $3)
-        RETURNING id, section, status, payload, created_at, updated_at
-        `,
-        [section, status, payload]
+      const { rows } = await pool.query(
+        `INSERT INTO tickets (section, status, payload)
+         VALUES ($1, $2, $3::jsonb)
+         RETURNING id, section, status, payload, created_at, updated_at`,
+        [section, status, JSON.stringify(payload)]
       );
 
-      return json(200, { ok: true, ticket: insert.rows[0] });
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json', ...cors },
+        body: JSON.stringify({ ok: true, ticket: rows[0] }),
+      };
     }
 
-    return json(405, { ok: false, error: 'Method Not Allowed' });
+    if (event.httpMethod === 'PUT') {
+      // body: { id, section?, status?, actionTaken? }
+      const body = JSON.parse(event.body || '{}');
+      const id = body.id;
+      const status = body.status ?? null;
+      const actionTaken = body.actionTaken ?? null;
 
+      if (!id) {
+        return {
+          statusCode: 400,
+          headers: { 'Content-Type': 'application/json', ...cors },
+          body: JSON.stringify({ ok: false, error: 'id is required' }),
+        };
+      }
+
+      // نبني UPDATE مرن: نعدّل status إذا وصل، ونغرس actionTaken داخل payload إذا وصل
+      const { rows } = await pool.query(
+        `UPDATE tickets
+           SET
+             status = COALESCE($2, status),
+             payload = CASE
+                         WHEN $3 IS NULL THEN payload
+                         ELSE jsonb_set(COALESCE(payload, '{}'::jsonb), '{actionTaken}', to_jsonb($3::text), true)
+                       END,
+             updated_at = now()
+         WHERE id = $1
+         RETURNING id, section, status, payload, created_at, updated_at`,
+        [id, status, actionTaken]
+      );
+
+      if (rows.length === 0) {
+        return {
+          statusCode: 404,
+          headers: { 'Content-Type': 'application/json', ...cors },
+          body: JSON.stringify({ ok: false, error: 'Ticket not found' }),
+        };
+      }
+
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json', ...cors },
+        body: JSON.stringify({ ok: true, ticket: rows[0] }),
+      };
+    }
+
+    return {
+      statusCode: 405,
+      headers: { 'Content-Type': 'application/json', ...cors },
+      body: JSON.stringify({ ok: false, error: 'Method Not Allowed' }),
+    };
   } catch (err) {
-    console.error(err);
-    return json(500, { ok: false, error: err.message || 'Server error' });
-  } finally {
-    try { await client.end(); } catch {}
+    console.error('tickets function error:', err);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', ...cors },
+      body: JSON.stringify({ ok: false, error: err.message }),
+    };
   }
 };
