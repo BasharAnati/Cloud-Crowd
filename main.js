@@ -611,20 +611,45 @@ function enterDrawerEditMode(){
   }
 }
 
-function saveDrawerEdits(){
-  if (drawerIndex==null) return;
+// بدّل دالة saveDrawerEdits بالكامل بهذا:
+async function saveDrawerEdits() {
+  if (drawerIndex == null) return;
   const form = document.getElementById('drawer-edit-form');
   if (!form) return;
+
   const fd = new FormData(form);
   const t = tickets[_currentSection][drawerIndex];
+
+  // عدّل محلياً أولاً لسرعة الاستجابة
   t.status = fd.get('status');
   t.actionTaken = fd.get('actionTaken');
   t.lastModified = new Date().toISOString();
-
   saveTicketsToStorage();
   renderTickets();
+
+  // ثم أرسل التعديل للداتابيس
+  try {
+    await fetch('/.netlify/functions/tickets', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: t._id,               // مهم جداً (جاي من rowToTicket)
+        section: _currentSection,
+        status: t.status,
+        actionTaken: t.actionTaken
+      })
+    });
+
+    // اسحب من الداتابيس لضمان التزامن
+    await hydrateFromDB(_currentSection);
+  } catch (err) {
+    console.warn('DB update failed:', err);
+  }
+
+  // أعِد فتح الـDrawer على البيانات المحدّثة
   openTicketDrawer(drawerIndex);
 }
+
 
 function closeTicketDrawer(){
   const drawer = document.getElementById('ticket-drawer');
@@ -847,9 +872,10 @@ window.goBack = goBack;
 function rowToTicket(row) {
   const p = row.payload || {};
   return {
+    _id: row.id, // مهم للتحديث لاحقاً
     ...p,
     status: row.status || p.status || 'Under Review',
-    caseNumber: p.caseNumber || `CCTV-${row.id}`,  // ضمان ظهور Case Number
+    caseNumber: p.caseNumber || `CCTV-${row.id}`,
     createdAt: row.created_at,
     lastModified: row.updated_at
   };
@@ -925,3 +951,4 @@ async function syncCCTVFromLark() {
   }
 }
 window.syncCCTVFromLark = syncCCTVFromLark;
+
