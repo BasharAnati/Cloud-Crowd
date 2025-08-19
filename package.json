@@ -1,0 +1,11 @@
+{
+  "name": "cloudcrowd-site",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "echo \"no build step\" && exit 0"
+  },
+  "dependencies": {
+    "pg": "^8.11.3"
+  }
+}
