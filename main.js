@@ -627,24 +627,25 @@ async function saveDrawerEdits() {
   saveTicketsToStorage();
   renderTickets();
 
-  // ثم أرسل التعديل للداتابيس
-  try {
-    await fetch('/.netlify/functions/tickets', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: t._id,               // مهم جداً (جاي من rowToTicket)
-        section: _currentSection,
-        status: t.status,
-        actionTaken: t.actionTaken
-      })
-    });
+ // ثم أرسل التعديل للداتابيس
+try {
+  await fetch('/.netlify/functions/tickets', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: Number(t._id),                      // تأكد أنه رقم
+      section: String(_currentSection),       // نص
+      status: String(t.status || ''),         // نص حتى لو فاضي
+      actionTaken: String(t.actionTaken ?? '')// نص حتى لو فاضي
+    })
+  });
 
-    // اسحب من الداتابيس لضمان التزامن
-    await hydrateFromDB(_currentSection);
-  } catch (err) {
-    console.warn('DB update failed:', err);
-  }
+  // اسحب من الداتابيس لضمان التزامن
+  await hydrateFromDB(_currentSection);
+} catch (err) {
+  console.warn('DB update failed:', err);
+}
+
 
   // أعِد فتح الـDrawer على البيانات المحدّثة
   openTicketDrawer(drawerIndex);
@@ -951,4 +952,5 @@ async function syncCCTVFromLark() {
   }
 }
 window.syncCCTVFromLark = syncCCTVFromLark;
+
 
