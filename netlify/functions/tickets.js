@@ -70,66 +70,58 @@ exports.handler = async (event) => {
     }
 
     // ===== PUT /tickets  { id, status?, actionTaken? } =====
-    if (event.httpMethod === 'PUT') {
-      const body = JSON.parse(event.body || '{}');
-      const id = Number(body.id);
-      const status = body.status ?? null;
-      const actionTaken = body.actionTaken ?? null;
+   // ===== PUT /tickets  { id, status?, actionTaken? } =====
+if (event.httpMethod === 'PUT') {
+  const body = JSON.parse(event.body || '{}');
 
-      if (!id) {
-        return {
-          statusCode: 400,
-          headers: { 'Content-Type': 'application/json', ...cors },
-          body: JSON.stringify({ ok: false, error: 'id is required' }),
-        };
-      }
+  const id = Number(body.id);                      // رقم
+  const status = body.status ?? null;              // ممكن تكون null
+  // لو فاضية أو undefined خَلّيها null، وإلا حوّلها نص صريح
+  const actionTaken =
+    body.actionTaken === undefined || body.actionTaken === null
+      ? null
+      : String(body.actionTaken);
 
-      const { rows } = await pool.query(
-        `UPDATE tickets
-           SET
-             status = COALESCE($2, status),
-             payload = CASE
-                         WHEN $3 IS NULL THEN payload
-                         ELSE jsonb_set(
-                                COALESCE(payload, '{}'::jsonb),
-                                '{actionTaken}',
-                                to_jsonb(($3)::text),  -- نجبرها نص
-                                true
-                              )
-                       END,
-             updated_at = now()
-         WHERE id = $1
-         RETURNING id, section, status, payload, created_at, updated_at`,
-        [id, status, actionTaken]
-      );
-
-      if (rows.length === 0) {
-        return {
-          statusCode: 404,
-          headers: { 'Content-Type': 'application/json', ...cors },
-          body: JSON.stringify({ ok: false, error: 'Ticket not found' }),
-        };
-      }
-
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json', ...cors },
-        body: JSON.stringify({ ok: true, ticket: rows[0] }),
-      };
-    }
-
-    // Methods أخرى
+  if (!id) {
     return {
-      statusCode: 405,
-      headers: { 'Content-Type': 'application/json', ...cors },
-      body: JSON.stringify({ ok: false, error: 'Method Not Allowed' }),
-    };
-  } catch (err) {
-    console.error('tickets function error:', err);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json', ...cors },
-      body: JSON.stringify({ ok: false, error: err.message }),
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ ok: false, error: 'id is required' }),
     };
   }
-};
+
+  const { rows } = await pool.query(
+    `
+    UPDATE tickets
+       SET
+         status = COALESCE($2::text, status),
+         payload = CASE
+                     WHEN $3 IS NULL THEN payload
+                     ELSE jsonb_set(
+                            COALESCE(payload, '{}'::jsonb),
+                            '{actionTaken}',
+                            to_jsonb(($3)::text),  -- نفرضها نص
+                            true
+                          )
+                   END,
+         updated_at = now()
+     WHERE id = $1::bigint
+     RETURNING id, section, status, payload, created_at, updated_at
+    `,
+    [id, status, actionTaken]
+  );
+
+  if (rows.length === 0) {
+    return {
+      statusCode: 404,
+      headers,
+      body: JSON.stringify({ ok: false, error: 'Ticket not found' }),
+    };
+  }
+
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({ ok: true, ticket: rows[0] }),
+  };
+}
