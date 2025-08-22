@@ -1,11 +1,11 @@
 // netlify/functions/tickets.js
-// Tickets CRUD via Neon Postgres (GET, POST, PUT)
+// Handles tickets CRUD via Neon Postgres (GET, POST, PUT)
 
 const { Pool } = require('pg');
 
 const pool = new Pool({
   connectionString: process.env.NETLIFY_DATABASE_URL, // Neon (pooled)
-  // Neon URL already has sslmode=require; no extra ssl config needed
+  // Neon URL already فيه sslmode=require، ما بدنا إعداد إضافي
 });
 
 const cors = {
@@ -27,8 +27,7 @@ exports.handler = async (event) => {
         event.rawUrl ||
           `https://x${event.path}${
             event.queryStringParameters
-              ? '?' +
-                new URLSearchParams(event.queryStringParameters).toString()
+              ? '?' + new URLSearchParams(event.queryStringParameters).toString()
               : ''
           }`
       );
@@ -49,8 +48,7 @@ exports.handler = async (event) => {
       };
     }
 
-    // ===== POST /tickets =====
-    // body: { section, status?, payload? }
+    // ===== POST /tickets  { section, status, payload } =====
     if (event.httpMethod === 'POST') {
       const body = JSON.parse(event.body || '{}');
       const section = body.section || 'cctv';
@@ -71,11 +69,10 @@ exports.handler = async (event) => {
       };
     }
 
-    // ===== PUT /tickets =====
-    // body: { id, status?, actionTaken? }
+    // ===== PUT /tickets  { id, status?, actionTaken? } =====
     if (event.httpMethod === 'PUT') {
       const body = JSON.parse(event.body || '{}');
-      const id = body.id; // لاحظ: نفس اللي كان شغال عندك
+      const id = Number(body.id);
       const status = body.status ?? null;
       const actionTaken = body.actionTaken ?? null;
 
@@ -96,7 +93,7 @@ exports.handler = async (event) => {
                          ELSE jsonb_set(
                                 COALESCE(payload, '{}'::jsonb),
                                 '{actionTaken}',
-                                to_jsonb(($3)::text),   -- هذا الثابت اللي حل مشكلة $3
+                                to_jsonb(($3)::text),  -- نجبرها نص
                                 true
                               )
                        END,
@@ -121,7 +118,7 @@ exports.handler = async (event) => {
       };
     }
 
-    // ===== أي ميثود ثاني =====
+    // Methods أخرى
     return {
       statusCode: 405,
       headers: { 'Content-Type': 'application/json', ...cors },
