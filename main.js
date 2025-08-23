@@ -1,9 +1,9 @@
 // ============================
-// Cloud Crowd - main.js (DB-integrated + History + polling)
+// Cloud Crowd - main.js (DB source of truth + polling)
 // ============================
 
 // ----------------------------
-// Storage (in-memory + localStorage bootstrap)
+// Storage (in-memory + localStorage bootstrap as cache only)
 // ----------------------------
 let tickets = JSON.parse(localStorage.getItem('cloudCrowdTickets')) || {
   cctv: [],
@@ -16,7 +16,7 @@ let tickets = JSON.parse(localStorage.getItem('cloudCrowdTickets')) || {
 // المتغيّر الداخلي الحقيقي
 let _currentSection = '';
 
-// اربط window.currentSection بهذا المتغيّر (حل مشكلة عدم ظهور الأعمدة بعد الريفريش)
+// اربط window.currentSection بهذا المتغيّر
 Object.defineProperty(window, 'currentSection', {
   get() { return _currentSection; },
   set(v) { _currentSection = v; },
@@ -83,7 +83,7 @@ const formFields = {
       'Khaled Al-Nimri','Faisal Al-Nimri','Ahmad Al-Masri','Sarah Al-Husseini','Omar Al-Khatib','Lina Abu زيد',
       'Yazan Al-Jabari','Rania Al-Tamimi','Tareq Al-Saleh','Dalia Al-Khaled','Ziad Al-Najjar','Nour Al-Faraj',
       'Hani Al-Majali','Maya Al-Qudah','Samer Al-Hassan','Leen Al-Rawashdeh','Bilal Al-Sharif','Hana Al-Atrash',
-      'Majed Al-Din','Rawan Al-Bakri','Zain Al-Hayek','Sahar Al-Saleem','Fadi Al-Masoud','Yasmin Al-Khateب',
+      'Majed Al-Din','Rawan Al-Bakري','Zain Al-Hayek','Sahar Al-Saleem','Fadi Al-Masoud','Yasmin Al-Khates',
       'Sami Al-Khalil','Nourhan Al-Salem','Kamal Al-Zu’bi','Dima Al-Hامdan','Mazen Al-Tarawneh','Huda Al-Jarrah',
       'Rami Al-Nouri','Amal Al-Sharaf','Talal Al-Masri','Lara Al-Farouq','Nader Al-Haj','Salma Al-Hussain',
       'Issa Al-Qasem','Dina Al-Majed'
@@ -149,7 +149,7 @@ const formFields = {
     { label: 'Creation Date', type: 'datetime-local', name: 'creationDate' },
     { label: 'Shift', type: 'select', name: 'shift', options: ['Shift A','Shift B'] },
     { label: 'Order Type', type: 'select', name: 'orderType', options: ['Delivery','Takeout'] },
-    { label: 'Branch Name', type: 'select', name: 'branch', options: ['Swefieh','Wadi Saqra','Swefieh Village'] },
+    { label: 'Branch Name', type: 'select', name: 'branch', options: ['Swefieh','Wادي Saqra','Swefieh Village'] },
     { label: 'Restaurant', type: 'select', name: 'restaurant', options: [
       'Very Good Burger','Sager','Happy Tummies','Crunchychkn','Bun Run','Butter Me Up','Bint Halال',
       'Colors Catering','Heat Burger','Thyme Table',"Evi's",'Chili Charms'
@@ -196,11 +196,10 @@ function toLabel(field){
 }
 
 // ----------------------------
-// Case numbers
+// Case numbers (احتفظنا فيها للتوافق، لكن لا نولّد محليًا عند الإضافة)
 // ----------------------------
 const CASE_COUNTER_KEY = 'cloudCrowdCaseCounter';
 const CCTV_COUNTER_KEY  = 'cloudCrowdCCTVCaseCounter';
-
 function nextCaseNumber(section){
   if (section === 'cctv') {
     let n = parseInt(localStorage.getItem(CCTV_COUNTER_KEY) || '0', 10);
@@ -215,19 +214,7 @@ function nextCaseNumber(section){
   const serial = n.toString().padStart(5,'0');
   return `${prefix}-${serial}`;
 }
-
-function ensureCaseNumbers(){
-  let updated = false;
-  Object.keys(tickets).forEach(sec => {
-    tickets[sec].forEach(t => {
-      if (sec === 'cctv' && !t.caseNumber){
-        t.caseNumber = nextCaseNumber(sec);
-        updated = true;
-      }
-    });
-  });
-  if (updated) saveTicketsToStorage();
-}
+function ensureCaseNumbers(){ /* لم نعد بحاجة لها فعليًا */ }
 
 // ----------------------------
 // Storage helper
@@ -264,43 +251,23 @@ function bandClassForStatus(status){
     default: return 'band-uncategorized';
   }
 }
-
 function statusColor(status){
   switch (status) {
-    // common
     case 'Closed': return '#1a9324';
     case 'Under Review': return '#f91616';
     case 'Escalated': return '#1b16a3';
-
-    // free-orders
     case 'Active': return '#1b16a3';
     case 'Taken': return '#1a9324';
     case 'Not Active': return '#f91616';
-
-    // ce/complaints (alias)
     case 'Pending (Customer Call Required)':
     case 'Pending (Call Back)': return '#fd7e14';
-
-    // time-table
     case 'Pending Call': return '#1b16a3';
     case 'No Answer': return '#ffd700';
     case 'Scheduled': return '#001f5b';
     case 'Issue': return '#ff8c00';
     case 'Returned': return '#1a9324';
     case 'No Call Needed': return '#4b4b4b';
-
-    // others (brown family)
-    case 'Open':
-    case 'Follow-Up Needed':
-    case 'No Response':
-    case 'Call Back Scheduled':
-    case 'In Progress':
-    case 'Resolved':
-    case 'Perfect Feedback':
-      return '#8b4513';
-
-    default:
-      return '#1e3a8a';
+    default: return '#1e3a8a';
   }
 }
 
@@ -328,7 +295,6 @@ function getMainFieldsContent(ticket){
   });
   return html;
 }
-
 function getCaseDisplay(ticket){
   if (_currentSection==='cctv') return ticket.caseNumber || '—';
   return ticket.orderNumber || ticket.caseNumber || '—';
@@ -342,7 +308,6 @@ function renderTickets(){
 
   const sectionTickets = tickets[_currentSection] || [];
 
-  // group by status (using display name)
   const grouped = {};
   sectionTickets.forEach(t=>{
     const st = t.status || 'Uncategorized';
@@ -427,7 +392,7 @@ function renderTickets(){
 }
 
 // ----------------------------
-// Drawer (read/edit) + HISTORY
+// Drawer (read/edit)
 // ----------------------------
 let drawerIndex = null;
 
@@ -569,13 +534,17 @@ function openTicketDrawer(index){
   titleEl.textContent = displayStatusName(ticket.status || 'Details');
   titleEl.style.color = statusColor(ticket.status);
 
-  // ✅ استبدلنا Last Edit / At بزر History
-  metaEl.innerHTML = `
-    <span class="meta-badge ${bandClassForStatus(ticket.status)}">
-      ${displayStatusName(ticket.status || 'Uncategorized')}
-    </span>
-    <button id="drawer-history-btn" class="edit-btn" style="margin-inline-start:8px;">History</button>
-  `;
+  let metaFrag = '';
+  if (ticket.lastModified){
+    const md = new Date(ticket.lastModified);
+    metaFrag = `
+      <div class="meta-item"><strong>Last Edit:</strong> ${md.toLocaleDateString('en-US')}</div>
+      <div class="meta-item"><strong>At:</strong> ${md.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true})}</div>
+    `;
+  }
+  metaEl.innerHTML = `<span class="meta-badge ${bandClassForStatus(ticket.status)}">
+    ${displayStatusName(ticket.status || 'Uncategorized')}
+  </span>${metaFrag}`;
 
   bodyEl.innerHTML = buildDrawerReadonly(ticket);
 
@@ -583,10 +552,6 @@ function openTicketDrawer(index){
     actions.innerHTML = `<button id="drawer-edit-btn" class="edit-btn">Edit</button>`;
     actions.querySelector('#drawer-edit-btn').onclick = ()=> enterDrawerEditMode();
   }
-
-  // bind history button
-  const hb = document.getElementById('drawer-history-btn');
-  if (hb) hb.onclick = ()=> openHistoryModal(ticket._id, getCaseDisplay(ticket));
 
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden','false');
@@ -611,7 +576,7 @@ function enterDrawerEditMode(){
   }
 }
 
-// ===== حفظ التعديلات (PUT) =====
+// حفظ التعديلات: تعدّل محليًا فورًا ثم تكتب للـDB وتعمل hydrate
 async function saveDrawerEdits() {
   if (drawerIndex == null) return;
   const form = document.getElementById('drawer-edit-form');
@@ -620,32 +585,30 @@ async function saveDrawerEdits() {
   const fd = new FormData(form);
   const t = tickets[_currentSection][drawerIndex];
 
-  // عدّل محلياً أولاً لسرعة الاستجابة
+  // تعديل محلي سريع
   t.status = fd.get('status');
   t.actionTaken = fd.get('actionTaken');
   t.lastModified = new Date().toISOString();
   saveTicketsToStorage();
   renderTickets();
 
-  // ثم أرسل التعديل للداتابيس
+  // اكتب إلى DB
   try {
     await fetch('/.netlify/functions/tickets', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        id: Number(t._id),                      // تأكد أنه رقم
-        status: String(t.status || ''),         // نص حتى لو فاضي
-        actionTaken: String(t.actionTaken ?? '')// نص حتى لو فاضي
+        id: Number(t._id),
+        section: String(_currentSection),
+        status: String(t.status || ''),
+        actionTaken: String(t.actionTaken ?? '')
       })
     });
-
-    // اسحب من الداتابيس لضمان التزامن
     await hydrateFromDB(_currentSection);
   } catch (err) {
     console.warn('DB update failed:', err);
   }
 
-  // أعِد فتح الـDrawer على البيانات المحدّثة
   openTicketDrawer(drawerIndex);
 }
 
@@ -662,82 +625,10 @@ window.closeTicketDrawer = closeTicketDrawer;
 document.addEventListener('keydown',e=>{ if (e.key==='Escape') closeTicketDrawer(); });
 
 // ----------------------------
-// History Modal (fetch from DB)
-// ----------------------------
-function ensureHistoryModal(){
-  let m = document.getElementById('history-modal');
-  if (m) return m;
-  m = document.createElement('div');
-  m.id = 'history-modal';
-  m.className = 'modal';
-  m.innerHTML = `
-    <div class="modal-content" style="max-width:720px">
-      <h2>History</h2>
-      <div id="history-body" class="history-body"></div>
-      <div class="form-actions">
-        <button type="button" class="cancel-btn" id="history-close">Close</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(m);
-  m.querySelector('#history-close').onclick = ()=> m.style.display='none';
-  m.addEventListener('click',(e)=>{ if (e.target===m) m.style.display='none'; });
-  return m;
-}
-
-function renderHistoryList(rows){
-  if (!rows || !rows.length) {
-    return `<div class="no-tickets">No changes yet.</div>`;
-  }
-  return `
-    <div class="history-list">
-      ${rows.map(r=>{
-        const when = new Date(r.changed_at);
-        const whenStr = isNaN(when) ? '-' :
-          `${when.toLocaleDateString()} • ${when.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true})}`;
-        const by  = r.changed_by || '—';
-        const s1  = r.prev_status || '—';
-        const s2  = r.new_status  || '—';
-        const a1  = r.prev_action || '—';
-        const a2  = r.new_action  || '—';
-        return `
-          <div class="history-row">
-            <div class="history-meta">
-              <div><strong>By:</strong> ${escapeHtml(by)}</div>
-              <div><strong>At:</strong> ${escapeHtml(whenStr)}</div>
-            </div>
-            <div class="history-diff">
-              <div><strong>Status:</strong> ${escapeHtml(s1)} → ${escapeHtml(s2)}</div>
-              <div><strong>Action Taken:</strong> ${escapeHtml(a1)} → ${escapeHtml(a2)}</div>
-            </div>
-          </div>
-        `;
-      }).join('')}
-    </div>
-  `;
-}
-
-async function openHistoryModal(ticketId, title){
-  const m = ensureHistoryModal();
-  m.style.display='flex';
-  m.querySelector('h2').textContent = `History • ${title || ''}`;
-  const body = m.querySelector('#history-body');
-  body.innerHTML = '<div class="no-tickets">Loading...</div>';
-  try{
-    const res = await fetch(`/.netlify/functions/tickets?history=1&id=${encodeURIComponent(ticketId)}`);
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'fetch failed');
-    body.innerHTML = renderHistoryList(data.history || []);
-  }catch(err){
-    body.innerHTML = `<div class="no-tickets">Failed to load history: ${escapeHtml(err.message||String(err))}</div>`;
-  }
-}
-
-// ----------------------------
-// Modal (single tidy version)
+// Modal
 // ----------------------------
 function openModal(section){
-  window.currentSection = section; // يحدّث المتغيّر الداخلي أيضاً
+  window.currentSection = section;
   const modal = document.getElementById('modal');
   const dynamicForm = document.getElementById('dynamic-form');
 
@@ -835,7 +726,7 @@ function openModal(section){
 
     } else {
       const inp = document.createElement('input');
-      inp.type = field.type; // date/time/datetime-local/text...
+      inp.type = field.type;
       inp.name = field.name;
       group.appendChild(inp);
     }
@@ -876,11 +767,12 @@ function closeModal(){
 window.closeModal = closeModal;
 
 // ----------------------------
-// Add form handler  (POST to DB + refresh from DB)
+// Add form handler  (POST => DB ثم refresh من DB)
 // ----------------------------
 function bindFormHandler(){
   const formEl = document.getElementById('ticket-form');
   if (!formEl) return;
+
   formEl.addEventListener('submit', async (e)=>{
     e.preventDefault();
     const t = {};
@@ -897,17 +789,11 @@ function bindFormHandler(){
       }
     });
 
-    if (_currentSection==='cctv'){
-      t.caseNumber = nextCaseNumber('cctv');
-    }
+    // مهم: لا تولّد caseNumber محليًا
+    // if (_currentSection==='cctv'){ t.caseNumber = nextCaseNumber('cctv'); }
+
     t.createdAt = new Date().toISOString();
 
-    // خزن محليًا مباشرة لسرعة الاستجابة
-    tickets[_currentSection].push(t);
-    saveTicketsToStorage();
-    renderTickets();
-
-    // ارفع إلى الداتابيس
     try {
       await fetch('/.netlify/functions/tickets', {
         method: 'POST',
@@ -918,13 +804,13 @@ function bindFormHandler(){
           payload: t
         })
       });
-      // اسحب من الداتابيس لضمان التزامن + إعطاء ID رسمي
+
+      // بعد الإدخال: حمّل من الـDB مباشرة
       await hydrateFromDB(_currentSection);
+      closeModal();
     } catch (err) {
       console.error('POST to DB failed:', err);
     }
-
-    closeModal();
   });
 }
 if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', bindFormHandler);
@@ -951,70 +837,39 @@ function rowToTicket(row) {
   };
 }
 
-let hydrateInFlight = false;
-
 async function hydrateFromDB(section = 'cctv') {
-  if (hydrateInFlight) return;
-  hydrateInFlight = true;
   try {
     const res = await fetch(`/.netlify/functions/tickets?section=${encodeURIComponent(section)}`);
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'fetch failed');
 
     tickets[section] = (data.tickets || []).map(rowToTicket);
-    saveTicketsToStorage();
+    saveTicketsToStorage(); // كاش فقط
     renderTickets();
     // console.log(`Hydrated ${section} from DB →`, tickets[section].length, 'tickets');
   } catch (err) {
     console.error('DB hydrate failed:', err);
-  } finally {
-    hydrateInFlight = false;
   }
 }
 
 // ----------------------------
-// Polling (shared real-time feeling)
-// ----------------------------
-const POLL_MS = 10000;
-let pollTimer = null;
-
-function startPolling(){
-  stopPolling();
-  pollTimer = setInterval(()=> hydrateFromDB(_currentSection), POLL_MS);
-  // تحديث عند الرجوع للتبويب
-  document.addEventListener('visibilitychange', ()=> {
-    if (!document.hidden) hydrateFromDB(_currentSection);
-  });
-  window.addEventListener('focus', ()=> hydrateFromDB(_currentSection));
-}
-function stopPolling(){
-  if (pollTimer) clearInterval(pollTimer);
-  pollTimer = null;
-}
-
-// ----------------------------
-// Page load (single listener)
+// Page load (DB هو المصدر + تحديث تلقائي)
 // ----------------------------
 window.addEventListener('load', async ()=>{
-  const saved = localStorage.getItem('cloudCrowdTickets');
-  if (saved) tickets = JSON.parse(saved);
-  ensureCaseNumbers();
-  saveTicketsToStorage();
+  if (!window.currentSection) window.currentSection = 'cctv';
+
+  await hydrateFromDB(window.currentSection);
+
+  // تحديث تلقائي كل 10 ثواني
+  if (window.__poller) clearInterval(window.__poller);
+  window.__poller = setInterval(()=>{
+    hydrateFromDB(window.currentSection);
+  }, 10000);
 
   const centerLogo = document.querySelector('.nav-center-logo');
   if (centerLogo){
     centerLogo.addEventListener('click', ()=> { window.location.href = 'dashboard.html'; });
   }
-
-  // اجعل السكشن الافتراضي CCTV إن لم يحدد من الـHTML
-  if (!window.currentSection) window.currentSection = 'cctv';
-
-  // اعرض المحلي ثم حمّل من الداتابيس
-  renderTickets();
-  await hydrateFromDB(window.currentSection);
-
-  // ابدأ Polling
-  startPolling();
 });
 
 // ----------------------------
@@ -1027,7 +882,7 @@ function logout() {
 window.logout = logout;
 
 // ----------------------------
-// (Optional) Sync from Lark (لا تستخدم الآن)
+// (Optional) Sync from Lark (موقوف حالياً)
 // ----------------------------
 async function syncCCTVFromLark() {
   try {
@@ -1044,7 +899,6 @@ async function syncCCTVFromLark() {
 
     localStorage.setItem('cloudCrowdTickets', JSON.stringify(tickets));
     renderTickets();
-    console.log(`Synced ${freshOnes.length} new CCTV tickets`);
   } catch (err) {
     console.warn('Sync CCTV skipped:', err.message);
   }
