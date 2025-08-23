@@ -1,9 +1,9 @@
 // ============================
-// Cloud Crowd - main.js (DB source of truth + polling)
+// Cloud Crowd - main.js (DB-integrated + currentSection binding)
 // ============================
 
 // ----------------------------
-// Storage (in-memory + localStorage bootstrap as cache only)
+// Storage (in-memory + localStorage bootstrap)
 // ----------------------------
 let tickets = JSON.parse(localStorage.getItem('cloudCrowdTickets')) || {
   cctv: [],
@@ -16,7 +16,7 @@ let tickets = JSON.parse(localStorage.getItem('cloudCrowdTickets')) || {
 // المتغيّر الداخلي الحقيقي
 let _currentSection = '';
 
-// اربط window.currentSection بهذا المتغيّر
+// اربط window.currentSection بهذا المتغيّر (حل مشكلة عدم ظهور الأعمدة بعد الريفريش)
 Object.defineProperty(window, 'currentSection', {
   get() { return _currentSection; },
   set(v) { _currentSection = v; },
@@ -83,7 +83,7 @@ const formFields = {
       'Khaled Al-Nimri','Faisal Al-Nimri','Ahmad Al-Masri','Sarah Al-Husseini','Omar Al-Khatib','Lina Abu زيد',
       'Yazan Al-Jabari','Rania Al-Tamimi','Tareq Al-Saleh','Dalia Al-Khaled','Ziad Al-Najjar','Nour Al-Faraj',
       'Hani Al-Majali','Maya Al-Qudah','Samer Al-Hassan','Leen Al-Rawashdeh','Bilal Al-Sharif','Hana Al-Atrash',
-      'Majed Al-Din','Rawan Al-Bakري','Zain Al-Hayek','Sahar Al-Saleem','Fadi Al-Masoud','Yasmin Al-Khates',
+      'Majed Al-Dين','Rawan Al-Bakري','Zain Al-Hayek','Sahar Al-Saleem','Fadi Al-Masoud','Yasmin Al-Khateب',
       'Sami Al-Khalil','Nourhan Al-Salem','Kamal Al-Zu’bi','Dima Al-Hامdan','Mazen Al-Tarawneh','Huda Al-Jarrah',
       'Rami Al-Nouri','Amal Al-Sharaf','Talal Al-Masri','Lara Al-Farouq','Nader Al-Haj','Salma Al-Hussain',
       'Issa Al-Qasem','Dina Al-Majed'
@@ -149,7 +149,7 @@ const formFields = {
     { label: 'Creation Date', type: 'datetime-local', name: 'creationDate' },
     { label: 'Shift', type: 'select', name: 'shift', options: ['Shift A','Shift B'] },
     { label: 'Order Type', type: 'select', name: 'orderType', options: ['Delivery','Takeout'] },
-    { label: 'Branch Name', type: 'select', name: 'branch', options: ['Swefieh','Wادي Saqra','Swefieh Village'] },
+    { label: 'Branch Name', type: 'select', name: 'branch', options: ['Swefieh','Wadi Saqra','Swefieh Village'] },
     { label: 'Restaurant', type: 'select', name: 'restaurant', options: [
       'Very Good Burger','Sager','Happy Tummies','Crunchychkn','Bun Run','Butter Me Up','Bint Halال',
       'Colors Catering','Heat Burger','Thyme Table',"Evi's",'Chili Charms'
@@ -196,10 +196,11 @@ function toLabel(field){
 }
 
 // ----------------------------
-// Case numbers (احتفظنا فيها للتوافق، لكن لا نولّد محليًا عند الإضافة)
+// Case numbers
 // ----------------------------
 const CASE_COUNTER_KEY = 'cloudCrowdCaseCounter';
 const CCTV_COUNTER_KEY  = 'cloudCrowdCCTVCaseCounter';
+
 function nextCaseNumber(section){
   if (section === 'cctv') {
     let n = parseInt(localStorage.getItem(CCTV_COUNTER_KEY) || '0', 10);
@@ -214,7 +215,19 @@ function nextCaseNumber(section){
   const serial = n.toString().padStart(5,'0');
   return `${prefix}-${serial}`;
 }
-function ensureCaseNumbers(){ /* لم نعد بحاجة لها فعليًا */ }
+
+function ensureCaseNumbers(){
+  let updated = false;
+  Object.keys(tickets).forEach(sec => {
+    tickets[sec].forEach(t => {
+      if (sec === 'cctv' && !t.caseNumber){
+        t.caseNumber = nextCaseNumber(sec);
+        updated = true;
+      }
+    });
+  });
+  if (updated) saveTicketsToStorage();
+}
 
 // ----------------------------
 // Storage helper
@@ -251,23 +264,43 @@ function bandClassForStatus(status){
     default: return 'band-uncategorized';
   }
 }
+
 function statusColor(status){
   switch (status) {
+    // common
     case 'Closed': return '#1a9324';
     case 'Under Review': return '#f91616';
     case 'Escalated': return '#1b16a3';
+
+    // free-orders
     case 'Active': return '#1b16a3';
     case 'Taken': return '#1a9324';
     case 'Not Active': return '#f91616';
+
+    // ce/complaints (alias)
     case 'Pending (Customer Call Required)':
     case 'Pending (Call Back)': return '#fd7e14';
+
+    // time-table
     case 'Pending Call': return '#1b16a3';
     case 'No Answer': return '#ffd700';
     case 'Scheduled': return '#001f5b';
     case 'Issue': return '#ff8c00';
     case 'Returned': return '#1a9324';
     case 'No Call Needed': return '#4b4b4b';
-    default: return '#1e3a8a';
+
+    // others (brown family)
+    case 'Open':
+    case 'Follow-Up Needed':
+    case 'No Response':
+    case 'Call Back Scheduled':
+    case 'In Progress':
+    case 'Resolved':
+    case 'Perfect Feedback':
+      return '#8b4513';
+
+    default:
+      return '#1e3a8a';
   }
 }
 
@@ -295,6 +328,7 @@ function getMainFieldsContent(ticket){
   });
   return html;
 }
+
 function getCaseDisplay(ticket){
   if (_currentSection==='cctv') return ticket.caseNumber || '—';
   return ticket.orderNumber || ticket.caseNumber || '—';
@@ -308,6 +342,7 @@ function renderTickets(){
 
   const sectionTickets = tickets[_currentSection] || [];
 
+  // group by status (using display name)
   const grouped = {};
   sectionTickets.forEach(t=>{
     const st = t.status || 'Uncategorized';
@@ -446,8 +481,11 @@ function buildDrawerReadonly(ticket){
   if (dateStr) html += rowKV('Date', dateStr);
   if (timeStr) html += rowKV('Time', timeStr);
 
-  const IGNORE = new Set(['createdAt','lastModified','date','time','dateTime','actionTaken',
-    'note','notes','customerNotes','complaintDetails','caseDescription'
+  // 👇👇 التعديل المطلوب: إخفاء مفاتيح داخلية
+  const IGNORE = new Set([
+    'createdAt','lastModified','date','time','dateTime','actionTaken',
+    'note','notes','customerNotes','complaintDetails','caseDescription',
+    '_id','id','payload','section'
   ]);
 
   for (const k in ticket){
@@ -576,7 +614,9 @@ function enterDrawerEditMode(){
   }
 }
 
-// حفظ التعديلات: تعدّل محليًا فورًا ثم تكتب للـDB وتعمل hydrate
+// ----------------------------
+// Save edits (local first, then server)  ✅ hydrate فقط عند النجاح
+// ----------------------------
 async function saveDrawerEdits() {
   if (drawerIndex == null) return;
   const form = document.getElementById('drawer-edit-form');
@@ -585,30 +625,36 @@ async function saveDrawerEdits() {
   const fd = new FormData(form);
   const t = tickets[_currentSection][drawerIndex];
 
-  // تعديل محلي سريع
+  // عدّل محلياً أولاً لسرعة الاستجابة
   t.status = fd.get('status');
   t.actionTaken = fd.get('actionTaken');
   t.lastModified = new Date().toISOString();
   saveTicketsToStorage();
   renderTickets();
 
-  // اكتب إلى DB
   try {
-    await fetch('/.netlify/functions/tickets', {
+    const res = await fetch('/.netlify/functions/tickets', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        id: Number(t._id),
+        id: Number(t._id),                      // لازم رقم
         section: String(_currentSection),
         status: String(t.status || ''),
         actionTaken: String(t.actionTaken ?? '')
       })
     });
+
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Update failed');
+
+    // فقط إذا نجح… هات من الـDB لضمان التزامن بين الجميع
     await hydrateFromDB(_currentSection);
   } catch (err) {
     console.warn('DB update failed:', err);
+    alert('ما قدرنا نحفظ التعديل على السيرفر.');
   }
 
+  // أعِد فتح الـDrawer على البيانات (رح تنعكس بعد hydrate عند النجاح)
   openTicketDrawer(drawerIndex);
 }
 
@@ -625,10 +671,10 @@ window.closeTicketDrawer = closeTicketDrawer;
 document.addEventListener('keydown',e=>{ if (e.key==='Escape') closeTicketDrawer(); });
 
 // ----------------------------
-// Modal
+// Modal (single tidy version)
 // ----------------------------
 function openModal(section){
-  window.currentSection = section;
+  window.currentSection = section; // يحدّث المتغيّر الداخلي أيضاً
   const modal = document.getElementById('modal');
   const dynamicForm = document.getElementById('dynamic-form');
 
@@ -726,7 +772,7 @@ function openModal(section){
 
     } else {
       const inp = document.createElement('input');
-      inp.type = field.type;
+      inp.type = field.type; // date/time/datetime-local/text...
       inp.name = field.name;
       group.appendChild(inp);
     }
@@ -762,17 +808,16 @@ function closeModal(){
     m.querySelectorAll('input').forEach(cb=> cb.checked=false);
     m.classList.remove('open');
   });
-  document.querySelectorAll('.file-preview').forEach(p=>{ p.src=''; p.style.display='none'; });
+  document.querySelectorAll('file-preview').forEach(p=>{ p.src=''; p.style.display='none'; });
 }
 window.closeModal = closeModal;
 
 // ----------------------------
-// Add form handler  (POST => DB ثم refresh من DB)
+// Add form handler  (POST to DB + refresh from DB)
 // ----------------------------
 function bindFormHandler(){
   const formEl = document.getElementById('ticket-form');
   if (!formEl) return;
-
   formEl.addEventListener('submit', async (e)=>{
     e.preventDefault();
     const t = {};
@@ -789,11 +834,17 @@ function bindFormHandler(){
       }
     });
 
-    // مهم: لا تولّد caseNumber محليًا
-    // if (_currentSection==='cctv'){ t.caseNumber = nextCaseNumber('cctv'); }
-
+    if (_currentSection==='cctv'){
+      t.caseNumber = nextCaseNumber('cctv');
+    }
     t.createdAt = new Date().toISOString();
 
+    // خزن محليًا مباشرة لسرعة الاستجابة
+    tickets[_currentSection].push(t);
+    saveTicketsToStorage();
+    renderTickets();
+
+    // ارفع إلى الداتابيس
     try {
       await fetch('/.netlify/functions/tickets', {
         method: 'POST',
@@ -804,13 +855,13 @@ function bindFormHandler(){
           payload: t
         })
       });
-
-      // بعد الإدخال: حمّل من الـDB مباشرة
+      // اسحب من الداتابيس لضمان التزامن + إعطاء ID رسمي
       await hydrateFromDB(_currentSection);
-      closeModal();
     } catch (err) {
       console.error('POST to DB failed:', err);
     }
+
+    closeModal();
   });
 }
 if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', bindFormHandler);
@@ -844,32 +895,34 @@ async function hydrateFromDB(section = 'cctv') {
     if (!data.ok) throw new Error(data.error || 'fetch failed');
 
     tickets[section] = (data.tickets || []).map(rowToTicket);
-    saveTicketsToStorage(); // كاش فقط
+    saveTicketsToStorage();
     renderTickets();
-    // console.log(`Hydrated ${section} from DB →`, tickets[section].length, 'tickets');
+    console.log(`Hydrated ${section} from DB →`, tickets[section].length, 'tickets');
   } catch (err) {
     console.error('DB hydrate failed:', err);
   }
 }
 
 // ----------------------------
-// Page load (DB هو المصدر + تحديث تلقائي)
+// Page load (single listener)
 // ----------------------------
 window.addEventListener('load', async ()=>{
-  if (!window.currentSection) window.currentSection = 'cctv';
-
-  await hydrateFromDB(window.currentSection);
-
-  // تحديث تلقائي كل 10 ثواني
-  if (window.__poller) clearInterval(window.__poller);
-  window.__poller = setInterval(()=>{
-    hydrateFromDB(window.currentSection);
-  }, 10000);
+  const saved = localStorage.getItem('cloudCrowdTickets');
+  if (saved) tickets = JSON.parse(saved);
+  ensureCaseNumbers();
+  saveTicketsToStorage();
 
   const centerLogo = document.querySelector('.nav-center-logo');
   if (centerLogo){
     centerLogo.addEventListener('click', ()=> { window.location.href = 'dashboard.html'; });
   }
+
+  // اجعل السكشن الافتراضي CCTV إن لم يحدد من الـHTML
+  if (!window.currentSection) window.currentSection = 'cctv';
+
+  // اعرض المحلي ثم حمّل من الداتابيس
+  renderTickets();
+  await hydrateFromDB(window.currentSection);
 });
 
 // ----------------------------
@@ -882,7 +935,7 @@ function logout() {
 window.logout = logout;
 
 // ----------------------------
-// (Optional) Sync from Lark (موقوف حالياً)
+// (Optional) Sync from Lark (لا تستخدم الآن)
 // ----------------------------
 async function syncCCTVFromLark() {
   try {
@@ -899,6 +952,7 @@ async function syncCCTVFromLark() {
 
     localStorage.setItem('cloudCrowdTickets', JSON.stringify(tickets));
     renderTickets();
+    console.log(`Synced ${freshOnes.length} new CCTV tickets`);
   } catch (err) {
     console.warn('Sync CCTV skipped:', err.message);
   }
