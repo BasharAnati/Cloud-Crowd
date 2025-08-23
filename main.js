@@ -888,20 +888,31 @@ function rowToTicket(row) {
   };
 }
 
-async function hydrateFromDB(section = 'cctv') {
+// === DB refresh (hydrate + 15s polling) ===
+async function hydrateFromDB(section) {
+  const sec = section || window.currentSection || 'cctv';
   try {
-    const res = await fetch(`/.netlify/functions/tickets?section=${encodeURIComponent(section)}`);
+    const res = await fetch(`/.netlify/functions/tickets?section=${encodeURIComponent(sec)}`);
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'fetch failed');
 
-    tickets[section] = (data.tickets || []).map(rowToTicket);
+    tickets[sec] = (data.tickets || []).map(rowToTicket);
     saveTicketsToStorage();
     renderTickets();
-    console.log(`Hydrated ${section} from DB →`, tickets[section].length, 'tickets');
+    console.log(`Hydrated ${sec} from DB →`, tickets[sec].length, 'tickets');
   } catch (err) {
     console.error('DB hydrate failed:', err);
   }
 }
+
+// فعّل الريفريش الدوري بعد تحميل الصفحة (ويمنع التكرار)
+window.addEventListener('load', () => {
+  if (window.__ticketsPoller) clearInterval(window.__ticketsPoller);
+  const poll = () => hydrateFromDB(window.currentSection || 'cctv');
+  poll(); // أول سحب مباشرة
+  window.__ticketsPoller = setInterval(poll, 15000); // كل 15 ثانية
+});
+
 
 // ----------------------------
 // Page load (single listener)
@@ -958,3 +969,4 @@ async function syncCCTVFromLark() {
   }
 }
 window.syncCCTVFromLark = syncCCTVFromLark;
+
