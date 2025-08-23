@@ -1,5 +1,5 @@
 // ============================
-// Cloud Crowd - main.js (DB-integrated + currentSection binding)
+// Cloud Crowd - main.js (DB-integrated + History + polling)
 // ============================
 
 // ----------------------------
@@ -427,7 +427,7 @@ function renderTickets(){
 }
 
 // ----------------------------
-// Drawer (read/edit)
+// Drawer (read/edit) + HISTORY
 // ----------------------------
 let drawerIndex = null;
 
@@ -569,17 +569,13 @@ function openTicketDrawer(index){
   titleEl.textContent = displayStatusName(ticket.status || 'Details');
   titleEl.style.color = statusColor(ticket.status);
 
-  let metaFrag = '';
-  if (ticket.lastModified){
-    const md = new Date(ticket.lastModified);
-    metaFrag = `
-      <div class="meta-item"><strong>Last Edit:</strong> ${md.toLocaleDateString('en-US')}</div>
-      <div class="meta-item"><strong>At:</strong> ${md.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true})}</div>
-    `;
-  }
-  metaEl.innerHTML = `<span class="meta-badge ${bandClassForStatus(ticket.status)}">
-    ${displayStatusName(ticket.status || 'Uncategorized')}
-  </span>${metaFrag}`;
+  // ✅ استبدلنا Last Edit / At بزر History
+  metaEl.innerHTML = `
+    <span class="meta-badge ${bandClassForStatus(ticket.status)}">
+      ${displayStatusName(ticket.status || 'Uncategorized')}
+    </span>
+    <button id="drawer-history-btn" class="edit-btn" style="margin-inline-start:8px;">History</button>
+  `;
 
   bodyEl.innerHTML = buildDrawerReadonly(ticket);
 
@@ -587,6 +583,10 @@ function openTicketDrawer(index){
     actions.innerHTML = `<button id="drawer-edit-btn" class="edit-btn">Edit</button>`;
     actions.querySelector('#drawer-edit-btn').onclick = ()=> enterDrawerEditMode();
   }
+
+  // bind history button
+  const hb = document.getElementById('drawer-history-btn');
+  if (hb) hb.onclick = ()=> openHistoryModal(ticket._id, getCaseDisplay(ticket));
 
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden','false');
@@ -611,7 +611,7 @@ function enterDrawerEditMode(){
   }
 }
 
-// بدّل دالة saveDrawerEdits بالكامل بهذا:
+// ===== حفظ التعديلات (PUT) =====
 async function saveDrawerEdits() {
   if (drawerIndex == null) return;
   const form = document.getElementById('drawer-edit-form');
@@ -627,30 +627,27 @@ async function saveDrawerEdits() {
   saveTicketsToStorage();
   renderTickets();
 
- // ثم أرسل التعديل للداتابيس
-try {
-  await fetch('/.netlify/functions/tickets', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      id: Number(t._id),                      // تأكد أنه رقم
-      section: String(_currentSection),       // نص
-      status: String(t.status || ''),         // نص حتى لو فاضي
-      actionTaken: String(t.actionTaken ?? '')// نص حتى لو فاضي
-    })
-  });
+  // ثم أرسل التعديل للداتابيس
+  try {
+    await fetch('/.netlify/functions/tickets', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: Number(t._id),                      // تأكد أنه رقم
+        status: String(t.status || ''),         // نص حتى لو فاضي
+        actionTaken: String(t.actionTaken ?? '')// نص حتى لو فاضي
+      })
+    });
 
-  // اسحب من الداتابيس لضمان التزامن
-  await hydrateFromDB(_currentSection);
-} catch (err) {
-  console.warn('DB update failed:', err);
-}
-
+    // اسحب من الداتابيس لضمان التزامن
+    await hydrateFromDB(_currentSection);
+  } catch (err) {
+    console.warn('DB update failed:', err);
+  }
 
   // أعِد فتح الـDrawer على البيانات المحدّثة
   openTicketDrawer(drawerIndex);
 }
-
 
 function closeTicketDrawer(){
   const drawer = document.getElementById('ticket-drawer');
@@ -663,6 +660,78 @@ function closeTicketDrawer(){
 window.closeTicketDrawer = closeTicketDrawer;
 
 document.addEventListener('keydown',e=>{ if (e.key==='Escape') closeTicketDrawer(); });
+
+// ----------------------------
+// History Modal (fetch from DB)
+// ----------------------------
+function ensureHistoryModal(){
+  let m = document.getElementById('history-modal');
+  if (m) return m;
+  m = document.createElement('div');
+  m.id = 'history-modal';
+  m.className = 'modal';
+  m.innerHTML = `
+    <div class="modal-content" style="max-width:720px">
+      <h2>History</h2>
+      <div id="history-body" class="history-body"></div>
+      <div class="form-actions">
+        <button type="button" class="cancel-btn" id="history-close">Close</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(m);
+  m.querySelector('#history-close').onclick = ()=> m.style.display='none';
+  m.addEventListener('click',(e)=>{ if (e.target===m) m.style.display='none'; });
+  return m;
+}
+
+function renderHistoryList(rows){
+  if (!rows || !rows.length) {
+    return `<div class="no-tickets">No changes yet.</div>`;
+  }
+  return `
+    <div class="history-list">
+      ${rows.map(r=>{
+        const when = new Date(r.changed_at);
+        const whenStr = isNaN(when) ? '-' :
+          `${when.toLocaleDateString()} • ${when.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true})}`;
+        const by  = r.changed_by || '—';
+        const s1  = r.prev_status || '—';
+        const s2  = r.new_status  || '—';
+        const a1  = r.prev_action || '—';
+        const a2  = r.new_action  || '—';
+        return `
+          <div class="history-row">
+            <div class="history-meta">
+              <div><strong>By:</strong> ${escapeHtml(by)}</div>
+              <div><strong>At:</strong> ${escapeHtml(whenStr)}</div>
+            </div>
+            <div class="history-diff">
+              <div><strong>Status:</strong> ${escapeHtml(s1)} → ${escapeHtml(s2)}</div>
+              <div><strong>Action Taken:</strong> ${escapeHtml(a1)} → ${escapeHtml(a2)}</div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+async function openHistoryModal(ticketId, title){
+  const m = ensureHistoryModal();
+  m.style.display='flex';
+  m.querySelector('h2').textContent = `History • ${title || ''}`;
+  const body = m.querySelector('#history-body');
+  body.innerHTML = '<div class="no-tickets">Loading...</div>';
+  try{
+    const res = await fetch(`/.netlify/functions/tickets?history=1&id=${encodeURIComponent(ticketId)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'fetch failed');
+    body.innerHTML = renderHistoryList(data.history || []);
+  }catch(err){
+    body.innerHTML = `<div class="no-tickets">Failed to load history: ${escapeHtml(err.message||String(err))}</div>`;
+  }
+}
 
 // ----------------------------
 // Modal (single tidy version)
@@ -882,7 +951,11 @@ function rowToTicket(row) {
   };
 }
 
+let hydrateInFlight = false;
+
 async function hydrateFromDB(section = 'cctv') {
+  if (hydrateInFlight) return;
+  hydrateInFlight = true;
   try {
     const res = await fetch(`/.netlify/functions/tickets?section=${encodeURIComponent(section)}`);
     const data = await res.json();
@@ -891,10 +964,32 @@ async function hydrateFromDB(section = 'cctv') {
     tickets[section] = (data.tickets || []).map(rowToTicket);
     saveTicketsToStorage();
     renderTickets();
-    console.log(`Hydrated ${section} from DB →`, tickets[section].length, 'tickets');
+    // console.log(`Hydrated ${section} from DB →`, tickets[section].length, 'tickets');
   } catch (err) {
     console.error('DB hydrate failed:', err);
+  } finally {
+    hydrateInFlight = false;
   }
+}
+
+// ----------------------------
+// Polling (shared real-time feeling)
+// ----------------------------
+const POLL_MS = 10000;
+let pollTimer = null;
+
+function startPolling(){
+  stopPolling();
+  pollTimer = setInterval(()=> hydrateFromDB(_currentSection), POLL_MS);
+  // تحديث عند الرجوع للتبويب
+  document.addEventListener('visibilitychange', ()=> {
+    if (!document.hidden) hydrateFromDB(_currentSection);
+  });
+  window.addEventListener('focus', ()=> hydrateFromDB(_currentSection));
+}
+function stopPolling(){
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = null;
 }
 
 // ----------------------------
@@ -917,6 +1012,9 @@ window.addEventListener('load', async ()=>{
   // اعرض المحلي ثم حمّل من الداتابيس
   renderTickets();
   await hydrateFromDB(window.currentSection);
+
+  // ابدأ Polling
+  startPolling();
 });
 
 // ----------------------------
@@ -952,5 +1050,3 @@ async function syncCCTVFromLark() {
   }
 }
 window.syncCCTVFromLark = syncCCTVFromLark;
-
-
