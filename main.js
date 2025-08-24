@@ -80,13 +80,14 @@ const formFields = {
       'Front Door','Back Door','Sink','Front Area','Kitchen','Prep Main Stove','Prep Back Area'
     ]},
     { label: 'Staff Involved', type: 'multi-select', name: 'staff', options: [
-      'Khaled Al-Nimri','Faisal Al-Nimri','Ahmad Al-Masri','Sarah Al-Husseini','Omar Al-Khatib','Lina Abu زيد',
-      'Yazan Al-Jabari','Rania Al-Tamimi','Tareq Al-Saleh','Dalia Al-Khaled','Ziad Al-Najjar','Nour Al-Faraj',
-      'Hani Al-Majali','Maya Al-Qudah','Samer Al-Hassan','Leen Al-Rawashdeh','Bilal Al-Sharif','Hana Al-Atrash',
-      'Majed Al-Dين','Rawan Al-Bakري','Zain Al-Hayek','Sahar Al-Saleem','Fadi Al-Masoud','Yasmin Al-Khateب',
-      'Sami Al-Khalil','Nourhan Al-Salem','Kamal Al-Zu’bi','Dima Al-Hامdan','Mazen Al-Tarawneh','Huda Al-Jarrah',
-      'Rami Al-Nouri','Amal Al-Sharaf','Talal Al-Masri','Lara Al-Farouq','Nader Al-Haj','Salma Al-Hussain',
-      'Issa Al-Qasem','Dina Al-Majed'
+      'Unknown','Khaled Al-Nimri','Faisal Al-Nimri','Tiffany Ghawi','Alia Al-Fares','Tamer Al-Sayegh',
+      'Ibrahim Tamlih','Ahmed Athamneh','Tamer Tamlih','Osama','Mais Taha','Farid Al-Nabulsi',
+      'Ahmed Dawood','Mohammed Abu Fadda','Mohammed Marafi','Mohammed Abu Abdullah','Reda Wagih',
+      'Farid Al-Nabulsi','Marwa Mahmoud','Shahed Hadib','Amr Diab','Abdul Karim Noufal','Zaid Sawahy',
+      'Abdul Rahman Sawalhi','Mohammed Al-Kurdi','Sabih Rani','Duaa Suleiman','Olorunsola oluwafemi bk',
+      'Ahmed Al-Nabulsi','Jaber Sakr','Mohammed Awamleh','Zaid Waliili','Ihab Abu Zaid','Ahmed Naamneh',
+      'Amer Al-Rantisi','Asid Ayad','Amer Abu Laila','Rand Asfour','Yaqoub Karadsheh','Diaa Al-Muzain',
+      'Musab','Layla Qronfleh'
     ]},
     { label: 'Review Type', type: 'select', name: 'reviewType', options: ['Recorded', 'Live'] },
     { label: 'Violated Policy', type: 'multi-select', name: 'violations', options: [
@@ -969,4 +970,5 @@ async function syncCCTVFromLark() {
   }
 }
 window.syncCCTVFromLark = syncCCTVFromLark;
+
 
