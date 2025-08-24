@@ -24,7 +24,9 @@ Object.defineProperty(window, 'currentSection', {
 });
 
 // اسم المستخدم الحالي (من صفحة اللوجين)
-const CURRENT_USER = localStorage.getItem('ccUser') || 'operator';
+const CURRENT_USER = localStorage.getItem('cc_user') || 'operator';
+
+
 
 // ----------------------------
 // Config: main fields on cards
@@ -1116,5 +1118,6 @@ async function syncCCTVFromLark() {
   }
 }
 window.syncCCTVFromLark = syncCCTVFromLark;
+
 
 
