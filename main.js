@@ -584,9 +584,28 @@ function openTicketDrawer(index){
       <div class="meta-item"><strong>At:</strong> ${md.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true})}</div>
     `;
   }
-  metaEl.innerHTML = `<span class="meta-badge ${bandClassForStatus(ticket.status)}">
-    ${displayStatusName(ticket.status || 'Uncategorized')}
-  </span>${metaFrag}`;
+
+  // ✅ أضفنا رابط السجل هنا
+  metaEl.innerHTML = `
+    <span class="meta-badge ${bandClassForStatus(ticket.status)}">
+      ${displayStatusName(ticket.status || 'Uncategorized')}
+    </span>
+    ${metaFrag}
+    <a class="history-link" id="drawer-history-link" title="View change history">History</a>
+  `;
+
+  // ربط زر السجل بالـhandler
+  const histLink = document.getElementById('drawer-history-link');
+  if (histLink) {
+    histLink.onclick = (e) => {
+      e.preventDefault();
+      if (!ticket._id) {
+        alert('No ticket id found.');
+        return;
+      }
+      viewTicketHistory(ticket._id);
+    };
+  }
 
   bodyEl.innerHTML = buildDrawerReadonly(ticket);
 
@@ -599,6 +618,7 @@ function openTicketDrawer(index){
   drawer.setAttribute('aria-hidden','false');
   document.body.classList.add('drawer-open');
 }
+
 
 function enterDrawerEditMode(){
   if (drawerIndex==null) return;
@@ -615,6 +635,122 @@ function enterDrawerEditMode(){
     `;
     actions.querySelector('#drawer-save-btn').onclick = (e)=>{ e.preventDefault(); saveDrawerEdits(); };
     actions.querySelector('#drawer-cancel-btn').onclick = (e)=>{ e.preventDefault(); openTicketDrawer(drawerIndex); };
+  }
+}
+
+
+// ============================
+// History modal (fetch + render)
+// ============================
+
+function ensureHistoryModal() {
+  // يبحث عن مودال جاهز، إذا مش موجود بننشئه
+  let modal = document.getElementById('history-modal');
+  if (modal) return modal;
+
+  modal = document.createElement('div');
+  modal.id = 'history-modal';
+  modal.style.cssText = `
+    position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.35); z-index: 9999;
+  `;
+  modal.innerHTML = `
+    <div id="history-panel" style="
+      width: min(680px, 92vw); max-height: 80vh; overflow:auto;
+      background: #fff; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      padding: 16px 18px;
+    ">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <h3 style="margin:0; font-size:18px;">Change History</h3>
+        <button id="history-close" style="
+          border:0; background:#eee; padding:6px 10px; border-radius:8px; cursor:pointer;
+        ">Close</button>
+      </div>
+      <div id="history-body" style="margin-top:10px; font-size:14px;"></div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  modal.querySelector('#history-close').onclick = () => { modal.style.display = 'none'; };
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.style.display = 'none';
+  });
+
+  return modal;
+}
+
+function formatDT(dtStr) {
+  try {
+    const d = new Date(dtStr);
+    if (isNaN(d)) return dtStr || '';
+    const dPart = d.toLocaleDateString('en-US');
+    const tPart = d.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12:true});
+    return `${dPart} ${tPart}`;
+  } catch {
+    return dtStr || '';
+  }
+}
+
+function buildHistoryHTML(rows) {
+  if (!rows || rows.length === 0) {
+    return `<div style="padding:8px 4px; color:#666;">No changes logged yet.</div>`;
+  }
+
+  // نبني جدول بسيط
+  const header = `
+    <div style="
+      display:grid; grid-template-columns: 150px 140px 1fr 1fr; gap:8px;
+      font-weight:600; border-bottom:1px solid #eee; padding:6px 0;
+    ">
+      <div>When</div>
+      <div>By</div>
+      <div>Status</div>
+      <div>Action Taken</div>
+    </div>
+  `;
+
+  const rowsHtml = rows.map(r => {
+    const statusPart = `
+      <div>
+        ${escapeHtml(r.prev_status || '—')} &nbsp;→&nbsp; <strong>${escapeHtml(r.new_status || '—')}</strong>
+      </div>
+    `;
+    const actionPart = `
+      <div>
+        ${escapeHtml(r.prev_action || '—')} &nbsp;→&nbsp; <strong>${escapeHtml(r.new_action || '—')}</strong>
+      </div>
+    `;
+    return `
+      <div style="
+        display:grid; grid-template-columns: 150px 140px 1fr 1fr; gap:8px;
+        border-bottom:1px dashed #eee; padding:8px 0;
+      ">
+        <div>${formatDT(r.changed_at)}</div>
+        <div>${escapeHtml(r.changed_by || '—')}</div>
+        ${statusPart}
+        ${actionPart}
+      </div>
+    `;
+  }).join('');
+
+  return header + rowsHtml;
+}
+
+async function viewTicketHistory(ticketId){
+  const modal = ensureHistoryModal();
+  const body  = modal.querySelector('#history-body');
+
+  // loading
+  body.innerHTML = `<div style="padding:8px 4px; color:#666;">Loading…</div>`;
+  modal.style.display = 'flex';
+
+  try {
+    const res = await fetch(`/.netlify/functions/tickets?history=1&id=${encodeURIComponent(ticketId)}`);
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Failed loading history');
+    body.innerHTML = buildHistoryHTML(data.history || []);
+  } catch (err) {
+    body.innerHTML = `<div style="padding:8px 4px; color:#c00;">${escapeHtml(err.message || 'Error')}</div>`;
   }
 }
 
@@ -980,4 +1116,5 @@ async function syncCCTVFromLark() {
   }
 }
 window.syncCCTVFromLark = syncCCTVFromLark;
+
 
