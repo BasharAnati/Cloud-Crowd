@@ -1,5 +1,5 @@
 // netlify/functions/tickets.js
-// Tickets CRUD via Neon Postgres (GET, POST, PUT + history + changedBy)
+// Tickets CRUD via Neon Postgres (GET, POST, PUT + history + changed_by)
 
 const { Pool } = require('pg');
 
@@ -8,7 +8,6 @@ const CONNECTION_STRING =
 
 const pool = new Pool({
   connectionString: CONNECTION_STRING,
-  // Neon URLs usually have sslmode=require already
 });
 
 const CORS = {
@@ -18,7 +17,7 @@ const CORS = {
 };
 const JSON_HEADERS = { 'Content-Type': 'application/json', ...CORS };
 
-// (اختياري) ضمان وجود جدول tickets
+// تأكد فقط من وجود جدول tickets (لو مش منشأ من قبل)
 async function ensureTicketsTable() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS tickets (
@@ -33,6 +32,7 @@ async function ensureTicketsTable() {
 }
 
 exports.handler = async (event) => {
+  // CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: CORS, body: '' };
   }
@@ -46,14 +46,15 @@ exports.handler = async (event) => {
         event.rawUrl ||
           `https://x${event.path}${
             event.queryStringParameters
-              ? '?' + new URLSearchParams(event.queryStringParameters).toString()
+              ? '?' +
+                new URLSearchParams(event.queryStringParameters).toString()
               : ''
           }`
       );
 
-      // ?history=1&id=123 → get ticket history
+      // /tickets?history=1&id=123
       const historyFlag = url.searchParams.get('history');
-      const idParam     = url.searchParams.get('id');
+      const idParam = url.searchParams.get('id');
 
       if (historyFlag === '1' && idParam) {
         const { rows } = await pool.query(
@@ -71,7 +72,6 @@ exports.handler = async (event) => {
         };
       }
 
-      // normal mode: fetch by section
       const section = url.searchParams.get('section') || 'cctv';
       const { rows } = await pool.query(
         `SELECT id, section, status, payload, created_at, updated_at
@@ -88,41 +88,32 @@ exports.handler = async (event) => {
       };
     }
 
-    // ===== POST =====
+    // ===== POST  { section, status, payload, changedBy? } =====
     if (event.httpMethod === 'POST') {
-      const body    = JSON.parse(event.body || '{}');
+      const body = JSON.parse(event.body || '{}');
       const section = String(body.section || 'cctv');
-      const status  = String(body.status  || 'Under Review');
+      const status = String(body.status || 'Under Review');
       const payload = body.payload || {};
-      const changedBy = body.changedBy ? String(body.changedBy) : 'Unknown';
+      const changedBy = body.changedBy ? String(body.changedBy) : null;
 
-      const client = await pool.connect();
-      try {
-        await client.query('BEGIN');
-        await client.query(`SELECT set_config('cc.user', $1, true)`, [changedBy]);
+      // نخزّن createdBy داخل الـpayload زي ما بيجي من الواجهة
+      if (changedBy && !payload.createdBy) payload.createdBy = changedBy;
 
-        const { rows } = await client.query(
-          `INSERT INTO tickets (section, status, payload)
-           VALUES ($1::text, $2::text, $3::jsonb)
-           RETURNING id, section, status, payload, created_at, updated_at`,
-          [section, status, JSON.stringify(payload)]
-        );
+      const { rows } = await pool.query(
+        `INSERT INTO tickets (section, status, payload)
+         VALUES ($1::text, $2::text, $3::jsonb)
+         RETURNING id, section, status, payload, created_at, updated_at`,
+        [section, status, JSON.stringify(payload)]
+      );
 
-        await client.query('COMMIT');
-        return {
-          statusCode: 200,
-          headers: JSON_HEADERS,
-          body: JSON.stringify({ ok: true, ticket: rows[0] }),
-        };
-      } catch (err) {
-        await client.query('ROLLBACK');
-        throw err;
-      } finally {
-        client.release();
-      }
+      return {
+        statusCode: 200,
+        headers: JSON_HEADERS,
+        body: JSON.stringify({ ok: true, ticket: rows[0] }),
+      };
     }
 
-    // ===== PUT =====
+    // ===== PUT  { id, status?, actionTaken?, changedBy? } =====
     if (event.httpMethod === 'PUT') {
       const body = JSON.parse(event.body || '{}');
 
@@ -132,7 +123,7 @@ exports.handler = async (event) => {
         body.actionTaken === undefined || body.actionTaken === null
           ? null
           : String(body.actionTaken);
-      const changedBy = body.changedBy ? String(body.changedBy) : 'Unknown';
+      const changedBy = body.changedBy ? String(body.changedBy) : null;
 
       if (!id) {
         return {
@@ -145,10 +136,18 @@ exports.handler = async (event) => {
       const client = await pool.connect();
       try {
         await client.query('BEGIN');
-        await client.query(`SELECT set_config('cc.user', $1, true)`, [changedBy]);
+
+        // نمرر اسم المستخدم للتريغر عبر session setting
+        if (changedBy) {
+          await client.query('SELECT set_config($1, $2, true)', [
+            'cc.user',
+            changedBy,
+          ]);
+        }
 
         const { rows } = await client.query(
-          `UPDATE tickets
+          `
+          UPDATE tickets
              SET
                status = COALESCE($2::text, status),
                payload = CASE
@@ -162,7 +161,8 @@ exports.handler = async (event) => {
                          END,
                updated_at = now()
            WHERE id = $1::bigint
-           RETURNING id, section, status, payload, created_at, updated_at`,
+           RETURNING id, section, status, payload, created_at, updated_at
+          `,
           [id, status, actionTaken]
         );
 
@@ -194,14 +194,14 @@ exports.handler = async (event) => {
       }
     }
 
-    // ===== DEFAULT =====
+    // Method not allowed
     return {
       statusCode: 405,
       headers: JSON_HEADERS,
-      body: JSON.stringify({ ok: false, error: 'Method Not Allowed' }),
+      body: JSON.stringify({ ok: false, error: 'Method not allowed' }),
     };
   } catch (err) {
-    console.error('tickets function error:', err);
+    console.error('Handler error:', err);
     return {
       statusCode: 500,
       headers: JSON_HEADERS,
