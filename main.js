@@ -864,7 +864,8 @@ function bindFormHandler(){
         body: JSON.stringify({
           section: _currentSection,
           status: t.status || 'Under Review',
-          payload: t
+          payload: t ,
+          changedBy: CURRENT_USER   // ✅ إضافة اسم المستخدم
         })
       });
       // اسحب من الداتابيس لضمان التزامن + إعطاء ID رسمي
@@ -979,3 +980,4 @@ async function syncCCTVFromLark() {
   }
 }
 window.syncCCTVFromLark = syncCCTVFromLark;
+
