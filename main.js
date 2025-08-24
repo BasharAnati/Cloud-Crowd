@@ -23,6 +23,9 @@ Object.defineProperty(window, 'currentSection', {
   configurable: true
 });
 
+// اسم المستخدم الحالي (من صفحة اللوجين)
+const CURRENT_USER = localStorage.getItem('ccUser') || 'operator';
+
 // ----------------------------
 // Config: main fields on cards
 // ----------------------------
@@ -482,7 +485,7 @@ function buildDrawerReadonly(ticket){
   if (dateStr) html += rowKV('Date', dateStr);
   if (timeStr) html += rowKV('Time', timeStr);
 
-  // 👇👇 التعديل المطلوب: إخفاء مفاتيح داخلية
+  // إخفاء مفاتيح داخلية
   const IGNORE = new Set([
     'createdAt','lastModified','date','time','dateTime','actionTaken',
     'note','notes','customerNotes','complaintDetails','caseDescription',
@@ -638,10 +641,11 @@ async function saveDrawerEdits() {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        id: Number(t._id),                      // لازم رقم
+        id: Number(t._id),                 // لازم رقم
         section: String(_currentSection),
         status: String(t.status || ''),
-        actionTaken: String(t.actionTaken ?? '')
+        actionTaken: String(t.actionTaken ?? ''),
+        changedBy: CURRENT_USER            // لإسناد التعديل (جاهز للبك-إند لو استخدمته)
       })
     });
 
@@ -784,6 +788,11 @@ function openModal(section){
   document.getElementById('ticket-form')
     .querySelector('[name="ticketIndex"]')?.remove();
 
+  // أضف من أنشأ التذكرة
+  // (سيُخزن داخل payload ويروح للـ DB)
+  // بنضيفه عند الإرسال أيضاً
+  document.getElementById('ticket-form').dataset.createdBy = CURRENT_USER;
+
   modal.querySelector('h2').textContent='Add New Ticket';
   modal.style.display='flex';
 }
@@ -809,7 +818,8 @@ function closeModal(){
     m.querySelectorAll('input').forEach(cb=> cb.checked=false);
     m.classList.remove('open');
   });
-  document.querySelectorAll('file-preview').forEach(p=>{ p.src=''; p.style.display='none'; });
+  // إصلاح النقطة: لازم نقطة قبل class
+  document.querySelectorAll('.file-preview').forEach(p=>{ p.src=''; p.style.display='none'; });
 }
 window.closeModal = closeModal;
 
@@ -839,6 +849,7 @@ function bindFormHandler(){
       t.caseNumber = nextCaseNumber('cctv');
     }
     t.createdAt = new Date().toISOString();
+    t.createdBy = CURRENT_USER; // مهم
 
     // خزن محليًا مباشرة لسرعة الاستجابة
     tickets[_currentSection].push(t);
@@ -906,35 +917,33 @@ async function hydrateFromDB(section) {
   }
 }
 
-// فعّل الريفريش الدوري بعد تحميل الصفحة (ويمنع التكرار)
-window.addEventListener('load', () => {
-  if (window.__ticketsPoller) clearInterval(window.__ticketsPoller);
-  const poll = () => hydrateFromDB(window.currentSection || 'cctv');
-  poll(); // أول سحب مباشرة
-  window.__ticketsPoller = setInterval(poll, 15000); // كل 15 ثانية
-});
-
-
 // ----------------------------
-// Page load (single listener)
+// Page load + polling (موحد)
 // ----------------------------
 window.addEventListener('load', async ()=>{
+  // تحميل محلي مبدئي
   const saved = localStorage.getItem('cloudCrowdTickets');
   if (saved) tickets = JSON.parse(saved);
   ensureCaseNumbers();
   saveTicketsToStorage();
 
+  // سكشن افتراضي
+  if (!window.currentSection) window.currentSection = 'cctv';
+
+  // لوجو السنتر
   const centerLogo = document.querySelector('.nav-center-logo');
   if (centerLogo){
     centerLogo.addEventListener('click', ()=> { window.location.href = 'dashboard.html'; });
   }
 
-  // اجعل السكشن الافتراضي CCTV إن لم يحدد من الـHTML
-  if (!window.currentSection) window.currentSection = 'cctv';
-
   // اعرض المحلي ثم حمّل من الداتابيس
   renderTickets();
   await hydrateFromDB(window.currentSection);
+
+  // فعّل الريفريش الدوري (ويمنع التكرار)
+  if (window.__ticketsPoller) clearInterval(window.__ticketsPoller);
+  const poll = () => hydrateFromDB(window.currentSection || 'cctv');
+  window.__ticketsPoller = setInterval(poll, 15000); // كل 15 ثانية
 });
 
 // ----------------------------
@@ -970,5 +979,3 @@ async function syncCCTVFromLark() {
   }
 }
 window.syncCCTVFromLark = syncCCTVFromLark;
-
-
