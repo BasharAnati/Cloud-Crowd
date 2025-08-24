@@ -111,71 +111,81 @@ exports.handler = async (event) => {
     }
 
     // ===== PUT  { id, status?, actionTaken? } =====
-    if (event.httpMethod === 'PUT') {
-      const body   = JSON.parse(event.body || '{}');
-      const id     = Number(body.id);
-      const status = body.status === undefined || body.status === null
-        ? null
-        : String(body.status);
-      const actionTaken = body.actionTaken === undefined || body.actionTaken === null
-        ? null
-        : String(body.actionTaken);
+    // ===== PUT /tickets  { id, status?, actionTaken?, changedBy? } =====
+if (event.httpMethod === 'PUT') {
+  const body = JSON.parse(event.body || '{}');
 
-      if (!id) {
-        return {
-          statusCode: 400,
-          headers: JSON_HEADERS,
-          body: JSON.stringify({ ok: false, error: 'id is required' }),
-        };
-      }
+  const id = Number(body.id);
+  const status = body.status ?? null;
+  const actionTaken =
+    body.actionTaken === undefined || body.actionTaken === null
+      ? null
+      : String(body.actionTaken);
+  const changedBy = body.changedBy ? String(body.changedBy) : null;
 
-      const { rows } = await pool.query(
-        `
-        UPDATE tickets
-           SET status = COALESCE($2::text, status),
-               payload = CASE
-                 WHEN $3 IS NULL THEN payload
-                 ELSE jsonb_set(
-                        COALESCE(payload, '{}'::jsonb),
-                        '{actionTaken}',
-                        to_jsonb(($3)::text),  -- نفرضها نص دائمًا
-                        true
-                      )
-               END,
-               updated_at = now()
-         WHERE id = $1::bigint
-         RETURNING id, section, status, payload, created_at, updated_at
-        `,
-        [id, status, actionTaken]
-      );
+  if (!id) {
+    return {
+      statusCode: 400,
+      headers: baseHeaders,
+      body: JSON.stringify({ ok: false, error: 'id is required' }),
+    };
+  }
 
-      if (rows.length === 0) {
-        return {
-          statusCode: 404,
-          headers: JSON_HEADERS,
-          body: JSON.stringify({ ok: false, error: 'Ticket not found' }),
-        };
-      }
+  // نحتاج client لنضبط اسم المستخدم في session قبل التحديث
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
 
+    if (changedBy) {
+      // نرسل اسم المستخدم للتريغر عبر session setting
+      await client.query('SELECT set_config($1, $2, true)', ['cc.user', changedBy]);
+    }
+
+    const { rows } = await client.query(
+      `
+      UPDATE tickets
+         SET
+           status = COALESCE($2::text, status),
+           payload = CASE
+                       WHEN $3 IS NULL THEN payload
+                       ELSE jsonb_set(
+                              COALESCE(payload, '{}'::jsonb),
+                              '{actionTaken}',
+                              to_jsonb(($3)::text),
+                              true
+                            )
+                     END,
+           updated_at = now()
+       WHERE id = $1::bigint
+       RETURNING id, section, status, payload, created_at, updated_at
+      `,
+      [id, status, actionTaken]
+    );
+
+    await client.query('COMMIT');
+
+    if (rows.length === 0) {
       return {
-        statusCode: 200,
-        headers: JSON_HEADERS,
-        body: JSON.stringify({ ok: true, ticket: rows[0] }),
+        statusCode: 404,
+        headers: baseHeaders,
+        body: JSON.stringify({ ok: false, error: 'Ticket not found' }),
       };
     }
 
-    // Methods أخرى
     return {
-      statusCode: 405,
-      headers: JSON_HEADERS,
-      body: JSON.stringify({ ok: false, error: 'Method Not Allowed' }),
+      statusCode: 200,
+      headers: baseHeaders,
+      body: JSON.stringify({ ok: true, ticket: rows[0] }),
     };
   } catch (err) {
-    console.error('tickets function error:', err);
+    await client.query('ROLLBACK');
+    console.error('PUT tickets error:', err);
     return {
       statusCode: 500,
-      headers: JSON_HEADERS,
+      headers: baseHeaders,
       body: JSON.stringify({ ok: false, error: err.message }),
     };
+  } finally {
+    client.release();
   }
-};
+}
