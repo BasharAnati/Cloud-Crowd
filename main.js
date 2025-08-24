@@ -23,9 +23,19 @@ Object.defineProperty(window, 'currentSection', {
   configurable: true
 });
 
+
 // اسم المستخدم الحالي (من صفحة اللوجين)
 const CURRENT_USER = localStorage.getItem('cc_user') || 'operator';
 
+// يحوّل الملف لصيغة Data URL (Base64)
+function fileToDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);  // data:<mime>;base64,....
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
 
 
 // ----------------------------
@@ -1118,6 +1128,7 @@ async function syncCCTVFromLark() {
   }
 }
 window.syncCCTVFromLark = syncCCTVFromLark;
+
 
 
 
