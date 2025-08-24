@@ -1,5 +1,5 @@
 // netlify/functions/tickets.js
-// Tickets CRUD via Neon Postgres (GET, POST, PUT + history)
+// Tickets CRUD via Neon Postgres (GET, POST, PUT + history + changedBy)
 
 const { Pool } = require('pg');
 
@@ -8,7 +8,7 @@ const CONNECTION_STRING =
 
 const pool = new Pool({
   connectionString: CONNECTION_STRING,
-  // أغلب روابط Neon فيها sslmode=require تلقائيًا
+  // Neon URLs usually have sslmode=require already
 });
 
 const CORS = {
@@ -18,7 +18,7 @@ const CORS = {
 };
 const JSON_HEADERS = { 'Content-Type': 'application/json', ...CORS };
 
-// (اختياري) ضمان وجود جدول tickets فقط
+// (اختياري) ضمان وجود جدول tickets
 async function ensureTicketsTable() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS tickets (
@@ -33,7 +33,6 @@ async function ensureTicketsTable() {
 }
 
 exports.handler = async (event) => {
-  // CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: CORS, body: '' };
   }
@@ -52,7 +51,7 @@ exports.handler = async (event) => {
           }`
       );
 
-      // /tickets?history=1&id=123  → سجل التعديلات
+      // ?history=1&id=123 → get ticket history
       const historyFlag = url.searchParams.get('history');
       const idParam     = url.searchParams.get('id');
 
@@ -72,7 +71,7 @@ exports.handler = async (event) => {
         };
       }
 
-      // الوضع الطبيعي: حسب السكشن
+      // normal mode: fetch by section
       const section = url.searchParams.get('section') || 'cctv';
       const { rows } = await pool.query(
         `SELECT id, section, status, payload, created_at, updated_at
@@ -89,103 +88,124 @@ exports.handler = async (event) => {
       };
     }
 
-    // ===== POST  { section, status, payload } =====
+    // ===== POST =====
     if (event.httpMethod === 'POST') {
       const body    = JSON.parse(event.body || '{}');
       const section = String(body.section || 'cctv');
       const status  = String(body.status  || 'Under Review');
       const payload = body.payload || {};
+      const changedBy = body.changedBy ? String(body.changedBy) : 'Unknown';
 
-      const { rows } = await pool.query(
-        `INSERT INTO tickets (section, status, payload)
-         VALUES ($1::text, $2::text, $3::jsonb)
-         RETURNING id, section, status, payload, created_at, updated_at`,
-        [section, status, JSON.stringify(payload)]
-      );
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query(`SELECT set_config('cc.user', $1, true)`, [changedBy]);
 
-      return {
-        statusCode: 200,
-        headers: JSON_HEADERS,
-        body: JSON.stringify({ ok: true, ticket: rows[0] }),
-      };
+        const { rows } = await client.query(
+          `INSERT INTO tickets (section, status, payload)
+           VALUES ($1::text, $2::text, $3::jsonb)
+           RETURNING id, section, status, payload, created_at, updated_at`,
+          [section, status, JSON.stringify(payload)]
+        );
+
+        await client.query('COMMIT');
+        return {
+          statusCode: 200,
+          headers: JSON_HEADERS,
+          body: JSON.stringify({ ok: true, ticket: rows[0] }),
+        };
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
     }
 
-    // ===== PUT  { id, status?, actionTaken? } =====
-    // ===== PUT /tickets  { id, status?, actionTaken?, changedBy? } =====
-if (event.httpMethod === 'PUT') {
-  const body = JSON.parse(event.body || '{}');
+    // ===== PUT =====
+    if (event.httpMethod === 'PUT') {
+      const body = JSON.parse(event.body || '{}');
 
-  const id = Number(body.id);
-  const status = body.status ?? null;
-  const actionTaken =
-    body.actionTaken === undefined || body.actionTaken === null
-      ? null
-      : String(body.actionTaken);
-  const changedBy = body.changedBy ? String(body.changedBy) : null;
+      const id = Number(body.id);
+      const status = body.status ?? null;
+      const actionTaken =
+        body.actionTaken === undefined || body.actionTaken === null
+          ? null
+          : String(body.actionTaken);
+      const changedBy = body.changedBy ? String(body.changedBy) : 'Unknown';
 
-  if (!id) {
+      if (!id) {
+        return {
+          statusCode: 400,
+          headers: JSON_HEADERS,
+          body: JSON.stringify({ ok: false, error: 'id is required' }),
+        };
+      }
+
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query(`SELECT set_config('cc.user', $1, true)`, [changedBy]);
+
+        const { rows } = await client.query(
+          `UPDATE tickets
+             SET
+               status = COALESCE($2::text, status),
+               payload = CASE
+                           WHEN $3 IS NULL THEN payload
+                           ELSE jsonb_set(
+                                  COALESCE(payload, '{}'::jsonb),
+                                  '{actionTaken}',
+                                  to_jsonb(($3)::text),
+                                  true
+                                )
+                         END,
+               updated_at = now()
+           WHERE id = $1::bigint
+           RETURNING id, section, status, payload, created_at, updated_at`,
+          [id, status, actionTaken]
+        );
+
+        await client.query('COMMIT');
+
+        if (rows.length === 0) {
+          return {
+            statusCode: 404,
+            headers: JSON_HEADERS,
+            body: JSON.stringify({ ok: false, error: 'Ticket not found' }),
+          };
+        }
+
+        return {
+          statusCode: 200,
+          headers: JSON_HEADERS,
+          body: JSON.stringify({ ok: true, ticket: rows[0] }),
+        };
+      } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('PUT tickets error:', err);
+        return {
+          statusCode: 500,
+          headers: JSON_HEADERS,
+          body: JSON.stringify({ ok: false, error: err.message }),
+        };
+      } finally {
+        client.release();
+      }
+    }
+
+    // ===== DEFAULT =====
     return {
-      statusCode: 400,
-      headers: baseHeaders,
-      body: JSON.stringify({ ok: false, error: 'id is required' }),
-    };
-  }
-
-  // نحتاج client لنضبط اسم المستخدم في session قبل التحديث
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-
-    if (changedBy) {
-      // نرسل اسم المستخدم للتريغر عبر session setting
-      await client.query('SELECT set_config($1, $2, true)', ['cc.user', changedBy]);
-    }
-
-    const { rows } = await client.query(
-      `
-      UPDATE tickets
-         SET
-           status = COALESCE($2::text, status),
-           payload = CASE
-                       WHEN $3 IS NULL THEN payload
-                       ELSE jsonb_set(
-                              COALESCE(payload, '{}'::jsonb),
-                              '{actionTaken}',
-                              to_jsonb(($3)::text),
-                              true
-                            )
-                     END,
-           updated_at = now()
-       WHERE id = $1::bigint
-       RETURNING id, section, status, payload, created_at, updated_at
-      `,
-      [id, status, actionTaken]
-    );
-
-    await client.query('COMMIT');
-
-    if (rows.length === 0) {
-      return {
-        statusCode: 404,
-        headers: baseHeaders,
-        body: JSON.stringify({ ok: false, error: 'Ticket not found' }),
-      };
-    }
-
-    return {
-      statusCode: 200,
-      headers: baseHeaders,
-      body: JSON.stringify({ ok: true, ticket: rows[0] }),
+      statusCode: 405,
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ ok: false, error: 'Method Not Allowed' }),
     };
   } catch (err) {
-    await client.query('ROLLBACK');
-    console.error('PUT tickets error:', err);
+    console.error('tickets function error:', err);
     return {
       statusCode: 500,
-      headers: baseHeaders,
+      headers: JSON_HEADERS,
       body: JSON.stringify({ ok: false, error: err.message }),
     };
-  } finally {
-    client.release();
   }
-}
+};
