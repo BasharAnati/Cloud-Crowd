@@ -6,7 +6,54 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <title>Cloud Crowd - CCTV Operator Observations</title>
   <link rel="stylesheet" href="styles.css">
- <script>window.currentSection = 'cctv';</script>
+
+  <!-- سكشن هذه الصفحة -->
+  <script>window.currentSection = 'cctv';</script>
+
+  <!-- حماية الصفحة -->
+  <script>
+    if (!localStorage.getItem('cc_auth')) {
+      window.location.href = 'login.html';
+    }
+  </script>
+
+  <!-- ستايل بسيط لبوبوفر التاريخ (بدون تعديل styles.css) -->
+  <style>
+    .history-popover {
+      position: absolute;
+      top: 64px;
+      right: 16px;
+      max-width: 380px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+      padding: 8px 0;
+      display: none;
+      z-index: 1002;
+    }
+    .history-popover.open { display: block; }
+    .hist-item {
+      padding: 8px 12px;
+      border-bottom: 1px solid #f1f1f1;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .hist-item:last-child { border-bottom: 0; }
+    .hist-meta { color:#666; font-size:12px; margin-top:2px; }
+    .hist-diff { margin-top:4px; }
+    .hist-k { color:#555; font-weight:600; }
+    /* الزر الصغير (لو ما أضفته في styles.css) */
+    .history-link {
+      font-size: 12px;
+      color: #007bff;
+      cursor: pointer;
+      text-decoration: underline;
+      margin-left: 8px;
+    }
+    .history-link:hover { color: #0056b3; }
+  </style>
+
   <script src="main.js" defer></script>
 </head>
 <body>
@@ -31,6 +78,7 @@
     </div>
   </div>
 
+  <!-- Modal: add new -->
   <div class="modal" id="modal">
     <div class="modal-content">
       <h2>Add New Ticket</h2>
@@ -51,21 +99,93 @@
       <div class="drawer-header">
         <div>
           <div class="drawer-case">Case: <span id="drawer-caseNumber"></span></div>
-          <h2 id="drawer-title">Details</h2>
+          <h2 id="drawer-title">
+            Details
+            <!-- زر التاريخ الصغير -->
+            <span class="history-link" id="drawer-history-link" title="View ticket history">History</span>
+          </h2>
         </div>
         <button class="drawer-close" onclick="closeTicketDrawer()" aria-label="Close">×</button>
       </div>
+
       <div class="drawer-meta" id="drawer-meta"></div>
+
+      <!-- بوبوفر التاريخ -->
+      <div class="history-popover" id="history-popover" role="dialog" aria-label="Ticket change history"></div>
+
       <div class="drawer-body" id="drawer-body"></div>
       <div class="drawer-actions"><button class="edit-btn" id="drawer-edit-btn">Edit</button></div>
     </aside>
   </div>
 
- <script>
-  window.addEventListener('load', () => {
-    renderTickets();
-  });
-</script>
+  <!-- سكربت صغير لزر History (بدون تعديل main.js) -->
+  <script>
+    // يبني عنصر HTML لكل حدث تاريخ
+    function renderHistoryItem(h) {
+      const when = new Date(h.changed_at).toLocaleString();
+      const who  = h.changed_by || '—';
+      const prevS = h.prev_status || '—';
+      const newS  = h.new_status  || '—';
+      const prevA = (h.prev_action || '').trim();
+      const newA  = (h.new_action  || '').trim();
+
+      return `
+        <div class="hist-item">
+          <div class="hist-meta">${when} &middot; by <strong>${who}</strong></div>
+          <div class="hist-diff"><span class="hist-k">Status:</span> ${prevS} → <strong>${newS}</strong></div>
+          ${ (prevA || newA) ? `<div class="hist-diff"><span class="hist-k">Action:</span> ${prevA || '—'} → <strong>${newA || '—'}</strong></div>` : '' }
+        </div>
+      `;
+    }
+
+    async function openHistoryPopover() {
+      try {
+        // نجيب التكت الحالي من الذاكرة (tickets + currentSection)
+        const caseNo = document.getElementById('drawer-caseNumber')?.textContent || '';
+        const sec = window.currentSection || 'cctv';
+        const list = (window.tickets?.[sec] || []);
+        const t = list.find(x => (x.caseNumber === caseNo) || (x.orderNumber === caseNo));
+        const id = t && t._id ? Number(t._id) : null;
+        if (!id) {
+          alert('History not available for this ticket.');
+          return;
+        }
+
+        // استدعاء الواجهة الجاهزة
+        const res = await fetch(`/.netlify/functions/tickets?history=1&id=${id}`);
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load history');
+
+        const pop = document.getElementById('history-popover');
+        if (!data.history || data.history.length === 0) {
+          pop.innerHTML = `<div class="hist-item">No changes recorded yet.</div>`;
+        } else {
+          pop.innerHTML = data.history.map(renderHistoryItem).join('');
+        }
+
+        // توغل فتح/إغلاق
+        pop.classList.toggle('open');
+        // إغلاق عند الضغط خارج البوبوفر
+        document.addEventListener('click', function once(e){
+          const header = document.getElementById('drawer-title');
+          if (!pop.contains(e.target) && e.target !== header && e.target.id !== 'drawer-history-link') {
+            pop.classList.remove('open');
+            document.removeEventListener('click', once);
+          }
+        });
+      } catch (err) {
+        console.error('history error:', err);
+        alert('Could not load history.');
+      }
+    }
+
+    // اربط الزر بعد تحميل الصفحة (main.js محمّل بـ defer)
+    window.addEventListener('load', () => {
+      const btn = document.getElementById('drawer-history-link');
+      if (btn) btn.addEventListener('click', openHistoryPopover);
+      // عرض أولي للكروت
+      if (typeof renderTickets === 'function') renderTickets();
+    });
+  </script>
 </body>
 </html>
-
