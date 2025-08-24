@@ -1,5 +1,5 @@
 // ============================
-// Cloud Crowd - main.js (DB-integrated + currentSection binding)
+// Cloud Crowd - main.js (DB-integrated + currentSection binding + image thumbs)
 // ============================
 
 // ----------------------------
@@ -35,6 +35,18 @@ function fileToDataURL(file) {
     r.onerror = reject;
     r.readAsDataURL(file);
   });
+}
+
+// يساعدنا نعرف إذا القيمة صورة (string data:, blob:, http) أو object {dataUrl}
+function extractImageSrc(val) {
+  if (!val) return null;
+  if (typeof val === 'object' && val.dataUrl) return val.dataUrl;
+  if (typeof val === 'string') {
+    const s = val.trim();
+    if (/^data:image\//i.test(s)) return s;
+    if (/^blob:|^https?:\/\//i.test(s)) return s;
+  }
+  return null;
 }
 
 
@@ -519,6 +531,7 @@ function buildDrawerReadonly(ticket){
     }
   }
 
+  // الملاحظات
   if (notesText){
     const noteTitle = (_currentSection === 'time-table' || notesKeyUsed === 'note') ? 'Note' : 'Case Details';
     html += `
@@ -529,6 +542,7 @@ function buildDrawerReadonly(ticket){
     `;
   }
 
+  // Action Taken
   if (ticket.actionTaken){
     const at = String(ticket.actionTaken).trim();
     if (at){
@@ -539,6 +553,25 @@ function buildDrawerReadonly(ticket){
         </div>
       `;
     }
+  }
+
+  // ✅ عرض المرفقات (thumbnail + تكبير)
+  const attachmentKeys = ['orderOnCirca', 'attached']; // المفاتيح التي نعرضها كمرفقات
+  const thumbs = [];
+  for (const key of attachmentKeys) {
+    const src = extractImageSrc(ticket[key]);
+    if (src) {
+      thumbs.push(`
+        <div style="display:flex; flex-direction:column; align-items:flex-start; gap:6px;">
+          <div style="font-weight:600">${toLabel(key)}</div>
+          <img src="${src}" alt="${toLabel(key)}" class="ticket-thumb">
+          <div class="muted" style="font-size:12px">انقر لتكبير الصورة</div>
+        </div>
+      `);
+    }
+  }
+  if (thumbs.length) {
+    html += `<div class="full-span" style="margin-top:12px; display:grid; gap:12px;">${thumbs.join('')}</div>`;
   }
 
   return html || '<div class="no-tickets full-span">No details.</div>';
@@ -597,7 +630,7 @@ function openTicketDrawer(index){
     `;
   }
 
-  // ✅ أضفنا رابط السجل هنا
+  // ✅ رابط السجل
   metaEl.innerHTML = `
     <span class="meta-badge ${bandClassForStatus(ticket.status)}">
       ${displayStatusName(ticket.status || 'Uncategorized')}
@@ -606,7 +639,6 @@ function openTicketDrawer(index){
     <a class="history-link" id="drawer-history-link" title="View change history">History</a>
   `;
 
-  // ربط زر السجل بالـhandler
   const histLink = document.getElementById('drawer-history-link');
   if (histLink) {
     histLink.onclick = (e) => {
@@ -708,7 +740,6 @@ function buildHistoryHTML(rows) {
     return `<div style="padding:8px 4px; color:#666;">No changes logged yet.</div>`;
   }
 
-  // نبني جدول بسيط
   const header = `
     <div style="
       display:grid; grid-template-columns: 150px 140px 1fr 1fr; gap:8px;
@@ -752,7 +783,6 @@ async function viewTicketHistory(ticketId){
   const modal = ensureHistoryModal();
   const body  = modal.querySelector('#history-body');
 
-  // loading
   body.innerHTML = `<div style="padding:8px 4px; color:#666;">Loading…</div>`;
   modal.style.display = 'flex';
 
@@ -793,7 +823,7 @@ async function saveDrawerEdits() {
         section: String(_currentSection),
         status: String(t.status || ''),
         actionTaken: String(t.actionTaken ?? ''),
-        changedBy: CURRENT_USER            // لإسناد التعديل (جاهز للبك-إند لو استخدمته)
+        changedBy: CURRENT_USER            // لإسناد التعديل
       })
     });
 
@@ -807,7 +837,7 @@ async function saveDrawerEdits() {
     alert('ما قدرنا نحفظ التعديل على السيرفر.');
   }
 
-  // أعِد فتح الـDrawer على البيانات (رح تنعكس بعد hydrate عند النجاح)
+  // أعِد فتح الـDrawer على البيانات
   openTicketDrawer(drawerIndex);
 }
 
@@ -937,8 +967,6 @@ function openModal(section){
     .querySelector('[name="ticketIndex"]')?.remove();
 
   // أضف من أنشأ التذكرة
-  // (سيُخزن داخل payload ويروح للـ DB)
-  // بنضيفه عند الإرسال أيضاً
   document.getElementById('ticket-form').dataset.createdBy = CURRENT_USER;
 
   modal.querySelector('h2').textContent='Add New Ticket';
@@ -966,7 +994,6 @@ function closeModal(){
     m.querySelectorAll('input').forEach(cb=> cb.checked=false);
     m.classList.remove('open');
   });
-  // إصلاح النقطة: لازم نقطة قبل class
   document.querySelectorAll('.file-preview').forEach(p=>{ p.src=''; p.style.display='none'; });
 }
 window.closeModal = closeModal;
@@ -980,18 +1007,32 @@ function bindFormHandler(){
   formEl.addEventListener('submit', async (e)=>{
     e.preventDefault();
     const t = {};
-    formFields[_currentSection].forEach(field=>{
-      if (field.type==='multi-select'){
+
+    // نبني التذكرة مع دعم await للملفات
+    for (const field of formFields[_currentSection]) {
+      if (field.type === 'multi-select') {
         const multi = document.querySelector(`.multi-select[data-name="${field.name}"]`);
         t[field.name] = Array.from(multi.querySelectorAll('input:checked')).map(cb=>cb.value);
-      } else if (field.type==='file'){
+      } else if (field.type === 'file') {
+        // نحفظ كـ DataURL داخل object
         const input = e.target.elements[field.name];
-        t[field.name] = input.dataset.pasted || (input.files && input.files[0]? URL.createObjectURL(input.files[0]) : '');
+        if (input?.dataset?.pasted) {
+          t[field.name] = { name: 'pasted', type: 'image/*', dataUrl: input.dataset.pasted };
+        } else if (input?.files && input.files[0]) {
+          try {
+            const dataUrl = await fileToDataURL(input.files[0]);
+            t[field.name] = { name: input.files[0].name, type: input.files[0].type, dataUrl };
+          } catch {
+            t[field.name] = null;
+          }
+        } else {
+          t[field.name] = null;
+        }
       } else {
         const input = e.target.elements[field.name];
         if (input) t[field.name] = input.value;
       }
-    });
+    }
 
     if (_currentSection==='cctv'){
       t.caseNumber = nextCaseNumber('cctv');
@@ -1129,6 +1170,55 @@ async function syncCCTVFromLark() {
 }
 window.syncCCTVFromLark = syncCCTVFromLark;
 
+/* ---------------------------------
+   Image overlay + CSS (thumb/overlay)
+-----------------------------------*/
 
+// Overlay لعرض الصورة كبيرة
+function showImageOverlay(src) {
+  const ov = document.createElement('div');
+  ov.className = 'img-ov';
+  ov.innerHTML = `<img src="${src}" alt="Attachment">`;
+  ov.addEventListener('click', () => ov.remove());
+  document.body.appendChild(ov);
+}
+// نربط الحدث عالميًا لأي thumbnail
+document.addEventListener('click', (e) => {
+  if (e.target && e.target.classList && e.target.classList.contains('ticket-thumb')) {
+    showImageOverlay(e.target.src);
+  }
+});
 
-
+// CSS خفيف للثَمبنيل والـOverlay (يُحقن لو مش موجود)
+(function ensureImageCSS(){
+  if (document.getElementById('cc-img-css')) return;
+  const style = document.createElement('style');
+  style.id = 'cc-img-css';
+  style.textContent = `
+.ticket-thumb{
+  max-width: 140px;
+  max-height: 140px;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0,0,0,.15);
+  transition: transform .08s ease;
+}
+.ticket-thumb:active { transform: scale(0.98); }
+.img-ov{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1003;
+}
+.img-ov img{
+  max-width: 92vw;
+  max-height: 92vh;
+  border-radius: 12px;
+  box-shadow: 0 15px 40px rgba(0,0,0,.4);
+}
+  `;
+  document.head.appendChild(style);
+})();
