@@ -48,8 +48,6 @@ function verifySignature(headers, rawBody) {
 }
 
 // فكّ التشفير إذا الرسالة كانت بشكل { encrypt: "..." }
-// هذه طريقة عامة لـ AES-256-CBC بمفتاح مشتق من الـ ENCRYPT_KEY.
-// (لو ما فعّلت Encryption Strategy، ببساطة لن يكون هناك "encrypt")
 function tryDecryptIfNeeded(jsonMaybe) {
   if (!jsonMaybe || typeof jsonMaybe !== "object" || !jsonMaybe.encrypt) {
     return { decrypted: jsonMaybe, used: false, reason: "no encrypt field" };
@@ -58,7 +56,6 @@ function tryDecryptIfNeeded(jsonMaybe) {
     return { decrypted: null, used: false, reason: "no LARK_ENCRYPT_KEY set" };
   }
   try {
-    // مفتاح/IV شائع الاستخدام مع Lark (AES-256-CBC):
     const aesKey = crypto.createHash("sha256").update(LARK_ENCRYPT_KEY, "utf8").digest();
     const iv = aesKey.subarray(0, 16); // أول 16 بايت IV
 
@@ -127,20 +124,16 @@ exports.handler = async (event) => {
   // 3) لوج شامل للحدث
   console.log("📩 Lark Webhook Event:", JSON.stringify(payload, null, 2));
 
-  // تنسيقات شائعة من Lark:
-  // - payload.header?.event_type
-  // - payload.event?.<data>
-  // استخدمها حسب حاجتك لبناء منطقك لاحقًا:
+  // استخراج نوع الحدث (اختياري)
   const eventType =
     payload?.header?.event_type ||
-    payload?.schema?.eventType || // بعض الإصدارات
+    payload?.schema?.eventType ||
     payload?.type ||
     "unknown";
 
   console.log("ℹ️ Event type:", eventType);
 
-  // TODO: هنا ممكن تضيف منطقك (حفظ/تحديث تكتس، إلخ)
-
+  // رد قياسي
   return {
     statusCode: 200,
     headers: { "Content-Type": "application/json" },
