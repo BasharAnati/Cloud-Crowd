@@ -1,15 +1,20 @@
 // netlify/functions/get-events.js
-exports.handler = async () => {
-  const { getStore } = await import("@netlify/blobs");
-  const store = getStore({ name: "lark-events" });
+export async function handler() {
+  try {
+    // مؤقت: بدنا نرجع بيانات test بدل ما ندخل على Netlify Blobs
+    const events = [
+      { id: 1, message: "Test event from Netlify function" },
+      { id: 2, message: "Integration working fine" }
+    ];
 
-  const data = (await store.getJSON("events.json")) || [];
-  return {
-    statusCode: 200,
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "no-store"
-    },
-    body: JSON.stringify({ count: data.length, events: data })
-  };
-};
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ success: true, events })
+    };
+  } catch (error) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ success: false, error: error.message })
+    };
+  }
+}
