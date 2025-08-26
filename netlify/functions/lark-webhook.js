@@ -1,16 +1,22 @@
 // netlify/functions/lark-webhook.js
 const crypto = require("crypto");
 
-// بيئات
-const { LARK_VERIFICATION_TOKEN, LARK_ENCRYPT_KEY, LARK_SIGNING_SECRET } = process.env;
+const {
+  LARK_VERIFICATION_TOKEN,
+  LARK_ENCRYPT_KEY,
+  LARK_SIGNING_SECRET,
+} = process.env;
 
-// تحقّق توقيع (اختياري)
+// اختياري: تحقّق توقيع (لو فعلت Encryption/Signature في Lark)
 function verifySignature(headers, rawBody) {
   const ts = headers["x-lark-request-timestamp"] || headers["X-Lark-Request-Timestamp"];
   const nonce = headers["x-lark-request-nonce"] || headers["X-Lark-Request-Nonce"];
   const signature = headers["x-lark-signature"] || headers["X-Lark-Signature"];
   const secret = LARK_SIGNING_SECRET || LARK_ENCRYPT_KEY;
-  if (!secret || !ts || !nonce || !signature) return { ok: true, reason: "skipped" };
+
+  if (!secret || !ts || !nonce || !signature) {
+    return { ok: true, reason: "signature skipped" };
+  }
   try {
     const h = crypto.createHmac("sha256", secret).update(`${ts}${nonce}${rawBody}`).digest("base64");
     return { ok: h === signature, reason: h === signature ? "ok" : "mismatch" };
@@ -19,7 +25,7 @@ function verifySignature(headers, rawBody) {
   }
 }
 
-// decrypt لو فعّلت Encryption Strategy (اختياري)
+// اختياري: فك تشفير لو كنت مفعّل Encryption Strategy
 function tryDecryptIfNeeded(obj) {
   if (!obj || !obj.encrypt) return { used: false, decrypted: obj };
   if (!LARK_ENCRYPT_KEY) return { used: true, decrypted: null, reason: "no key" };
@@ -44,41 +50,32 @@ exports.handler = async (event) => {
   const sig = verifySignature(event.headers || {}, raw);
   if (!sig.ok) return { statusCode: 403, body: "Invalid signature" };
 
-  let body;
+  let body = {};
   try {
     body = JSON.parse(raw || "{}");
   } catch {
     return { statusCode: 400, body: "invalid json" };
   }
 
-  // URL verification
-  if (body.type === "url_verification" && body.challenge) {
-    return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ challenge: body.challenge }) };
+  // دعم كلا شكلي التحقق
+  if ((body && body.type === "url_verification" && body.challenge) || (body && body.challenge)) {
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ challenge: body.challenge }),
+    };
   }
 
-  // decrypt إن لزم
+  // فك تشفير إن لزم
   const dec = tryDecryptIfNeeded(body);
   if (dec.used && !dec.decrypted) return { statusCode: 400, body: "decrypt error" };
   if (dec.used) body = dec.decrypted;
 
-  // نحاول استخراج نوع الحدث وبياناته
+  // اطبع نوع الحدث للمتابعة بالـ Logs (للمراقبة فقط)
   const eventType = body?.header?.event_type || body?.type || "unknown";
   const eventPayload = body?.event ?? body;
+  console.log("📩 Lark Event:", eventType, JSON.stringify(eventPayload).slice(0, 2000));
 
-  // خزّن الحدث في Netlify Blobs
-  const { getStore } = await import("@netlify/blobs");
-  const store = getStore({ name: "lark-events", expiration: "30d" }); // 30 يوم احتفاظ
-  const key = "events.json";
-
-  const current = (await store.getJSON(key)) || [];
-  const entry = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    receivedAt: new Date().toISOString(),
-    eventType,
-    payload: eventPayload,
-  };
-  current.push(entry);
-  await store.setJSON(key, current);
-
+  // ردّ بسيط وسريع
   return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ok: true }) };
 };
