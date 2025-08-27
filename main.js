@@ -27,6 +27,15 @@ Object.defineProperty(window, 'currentSection', {
 // اسم المستخدم الحالي (من صفحة اللوجين)
 const CURRENT_USER = localStorage.getItem('cc_user') || 'operator';
 
+// ==== Google Sheets Bridge ====
+// تقدر تخليها نسبية كمان: "/.netlify/functions/sheets"
+const SHEETS_ENDPOINT = "https://cloudcrowd.site/.netlify/functions/sheets";
+const SHEET_RANGES = {
+  cctv: "CCTV_July2025" // غيّر الاسم إذا ورقتك مختلفة
+};
+// لو فعّلت APP_SECRET في Netlify، حط قيمته هون، وإلا اتركه فاضي:
+const SHEETS_APP_SECRET = "";
+
 // يحوّل الملف لصيغة Data URL (Base64)
 function fileToDataURL(file) {
   return new Promise((resolve, reject) => {
@@ -36,6 +45,7 @@ function fileToDataURL(file) {
     r.readAsDataURL(file);
   });
 }
+
 
 // يساعدنا نعرف إذا القيمة صورة (string data:, blob:, http) أو object {dataUrl}
 function extractImageSrc(val) {
@@ -49,6 +59,56 @@ function extractImageSrc(val) {
   return null;
 }
 
+/* ==== Sheets row builders & sender ==== */
+function rowFromTicketCCTV(t) {
+  const dateTime =
+    (t.date && t.time) ? `${t.date} ${t.time}` :
+    (t.dateTime ? t.dateTime : "");
+
+  const cameras  = Array.isArray(t.cameras)  ? t.cameras.join(', ')  : (t.cameras  || '');
+  const sections = Array.isArray(t.sections) ? t.sections.join(', ') : (t.sections || '');
+  const staff    = Array.isArray(t.staff)    ? t.staff.join(', ')    : (t.staff    || '');
+  const viols    = Array.isArray(t.violations)? t.violations.join(', '):(t.violations||'');
+
+  // رتّبها حسب أعمدة ورقتك
+  return [
+    t.status || 'Under Review',
+    t.branch || '',
+    dateTime || '',
+    cameras,
+    sections,
+    staff,
+    t.reviewType || '',
+    viols,
+    t.notes || t.caseDescription || t.customerNotes || '',
+    t.actionTaken || '',
+    t.caseNumber || '',
+    t.createdBy || '',
+    t.createdAt || ''
+  ];
+}
+
+async function pushToSheets(section, ticket) {
+  const range = SHEET_RANGES[section];
+  if (!range) return;
+
+  const headers = { "Content-Type": "application/json" };
+  if (SHEETS_APP_SECRET) headers["X-App-Secret"] = SHEETS_APP_SECRET;
+
+  let row;
+  if (section === 'cctv') row = rowFromTicketCCTV(ticket);
+  else return;
+
+  const res = await fetch(SHEETS_ENDPOINT, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ range, values: [row] })
+  });
+  const data = await res.json().catch(()=> ({}));
+  if (!res.ok) throw new Error(data.error || `Sheets error ${res.status}`);
+  return data;
+}
+/* ==== end Sheets helpers ==== */
 
 // ----------------------------
 // Config: main fields on cards
@@ -60,6 +120,7 @@ const mainFields = {
   complaints: ['customerName', 'branch', 'issueCategory'],
   'time-table': ['customerName', 'orderNumber', 'phone']
 };
+
 
 // ----------------------------
 // Columns per section
@@ -999,11 +1060,12 @@ function closeModal(){
 window.closeModal = closeModal;
 
 // ----------------------------
-// Add form handler  (POST to DB + refresh from DB)
+// Add form handler  (POST to DB + refresh from DB + push to Sheets)
 // ----------------------------
 function bindFormHandler(){
   const formEl = document.getElementById('ticket-form');
   if (!formEl) return;
+
   formEl.addEventListener('submit', async (e)=>{
     e.preventDefault();
     const t = {};
@@ -1063,9 +1125,18 @@ function bindFormHandler(){
       console.error('POST to DB failed:', err);
     }
 
+    // ✅ NEW: ادفع نفس التذكرة إلى Google Sheets
+    try {
+      await pushToSheets(_currentSection, t);
+      console.log('Sheets append OK');
+    } catch (err) {
+      console.warn('Sheets push failed:', err.message);
+    }
+
     closeModal();
   });
 }
+
 if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', bindFormHandler);
 else bindFormHandler();
 
@@ -1222,3 +1293,4 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
