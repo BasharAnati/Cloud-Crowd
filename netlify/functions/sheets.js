@@ -1,12 +1,13 @@
 // netlify/functions/sheets.js  (CommonJS)
 const { google } = require('googleapis');
 
+/* ------------------------- Helpers ------------------------- */
 function ok(data, extraHeaders = {}) {
   return {
     statusCode: 200,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*', // بالإنتاج: استبدل * بدومينك
+      'Access-Control-Allow-Origin': '*', // بالإنتاج بدّل * بدومينك
       'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-App-Secret',
       'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
       ...extraHeaders,
@@ -47,9 +48,10 @@ async function getSheetsClient() {
   return google.sheets({ version: 'v4', auth });
 }
 
+/* ------------------------- Handler ------------------------- */
 exports.handler = async (event) => {
   try {
-    // حماية بسيطة اختيارية
+    // حماية اختيارية برمز بسيط
     const appSecret = process.env.APP_SECRET;
     if (appSecret) {
       const clientSecret =
@@ -66,17 +68,20 @@ exports.handler = async (event) => {
 
     const sheets = await getSheetsClient();
 
+    /* ------------------------- GET (read) ------------------------- */
     if (event.httpMethod === 'GET') {
-      // مثال: ?range=Sheet1!A1:D20
+      // مثال: ?range=CCTV_July2025!A1:D20
       const range = (event.queryStringParameters || {}).range || 'Sheet1!A1:D20';
       const res = await sheets.spreadsheets.values.get({ spreadsheetId, range });
       return ok(res.data);
     }
 
+    /* ------------------------- POST (append) ------------------------- */
     if (event.httpMethod === 'POST') {
-      // سجّل البودي الخام لتشخيص أي مشكلة في الإرسال
+      // لتشخيص أي مشكلة في البودي
       console.log('RAW_BODY:', event.body);
 
+      // نفكّ JSON بأمان
       let body = {};
       try {
         body = JSON.parse(event.body || '{}');
@@ -84,16 +89,19 @@ exports.handler = async (event) => {
         return err(400, 'Invalid JSON body');
       }
 
-      // نسمح بأكثر من اسم / صيغة
+      // النطاق الافتراضي إذا ما انرسل
       const range = body.range || 'CCTV_July2025';
+
+      // نقبل صيغ متعددة للقيم
       let values = body.values ?? body.value ?? body.row ?? null;
 
       // لو البودي نفسه Array (مثل [["a","b"]]) اعتبره values
       if (!values && Array.isArray(body) && body.length) values = body;
 
-      // لو أرسل صف واحد فقط ["a","b"] نحوله [["a","b"]]
+      // لو انرسل صف واحد ["a","b"] نحوله [["a","b"]]
       if (values && !Array.isArray(values[0])) values = [values];
 
+      // تحقق نهائي
       if (!Array.isArray(values) || values.length === 0) {
         return err(400, 'Body must include non-empty "values" array');
       }
@@ -108,7 +116,7 @@ exports.handler = async (event) => {
       return ok(appendRes.data);
     }
 
-    // لو الميثود غير GET/POST
+    /* ------------------------- Method not allowed ------------------------- */
     return err(405, 'Method Not Allowed');
   } catch (e) {
     console.error(e);
