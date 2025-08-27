@@ -74,17 +74,29 @@ exports.handler = async (event) => {
     }
 
     if (event.httpMethod === 'POST') {
-      // body: { range: "Sheet1!A:D", values: [["a","b","c","d"]] }
+      // سجّل البودي الخام لتشخيص أي مشكلة في الإرسال
+      console.log('RAW_BODY:', event.body);
+
       let body = {};
       try {
         body = JSON.parse(event.body || '{}');
       } catch {
         return err(400, 'Invalid JSON body');
       }
-      const range = body.range || 'Sheet1!A:D';
-      const values = body.values;
-      if (!Array.isArray(values) || values.length === 0)
+
+      // نسمح بأكثر من اسم / صيغة
+      const range = body.range || 'CCTV_July2025';
+      let values = body.values ?? body.value ?? body.row ?? null;
+
+      // لو البودي نفسه Array (مثل [["a","b"]]) اعتبره values
+      if (!values && Array.isArray(body) && body.length) values = body;
+
+      // لو أرسل صف واحد فقط ["a","b"] نحوله [["a","b"]]
+      if (values && !Array.isArray(values[0])) values = [values];
+
+      if (!Array.isArray(values) || values.length === 0) {
         return err(400, 'Body must include non-empty "values" array');
+      }
 
       const appendRes = await sheets.spreadsheets.values.append({
         spreadsheetId,
@@ -92,9 +104,11 @@ exports.handler = async (event) => {
         valueInputOption: 'USER_ENTERED',
         requestBody: { values },
       });
+
       return ok(appendRes.data);
     }
 
+    // لو الميثود غير GET/POST
     return err(405, 'Method Not Allowed');
   } catch (e) {
     console.error(e);
