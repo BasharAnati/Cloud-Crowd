@@ -33,6 +33,12 @@ const SHEETS_ENDPOINT = "https://cloudcrowd.site/.netlify/functions/sheets";
 const SHEET_RANGES = {
   cctv: "CCTV_July2025" // غيّر الاسم إذا ورقتك مختلفة
 };
+
+// ⬅️ أضِف هذا السطر هنا (تحت SHEET_RANGES)
+const SHEET_PULL = {
+  cctv: "CCTV_July2025!A2:M" // عدّل النطاق إذا أعمدتك أكثر/أقل
+};
+
 // لو فعّلت APP_SECRET في Netlify، حط قيمته هون، وإلا اتركه فاضي:
 const SHEETS_APP_SECRET = "";
 
@@ -107,6 +113,87 @@ async function pushToSheets(section, ticket) {
   const data = await res.json().catch(()=> ({}));
   if (!res.ok) throw new Error(data.error || `Sheets error ${res.status}`);
   return data;
+}
+/* ==== end Sheets helpers ==== */
+
+
+/* ==== Sheets → App (pull) ==== */
+function ticketFromSheetRowCCTV(r = []) {
+  const [
+    status,      // A
+    branch,      // B
+    dateTime,    // C
+    cameras,     // D
+    sections,    // E
+    staff,       // F
+    reviewType,  // G
+    violations,  // H
+    notes,       // I
+    actionTaken, // J
+    caseNumber,  // K
+    createdBy,   // L
+    createdAt    // M
+  ] = r;
+
+  return {
+    status: status || 'Under Review',
+    branch: branch || '',
+    dateTime: dateTime || '',
+    cameras: cameras ? String(cameras).split(/\s*,\s*/) : [],
+    sections: sections ? String(sections).split(/\s*,\s*/) : [],
+    staff: staff ? String(staff).split(/\s*,\s*/) : [],
+    reviewType: reviewType || '',
+    violations: violations ? String(violations).split(/\s*,\s*/) : [],
+    notes: notes || '',
+    actionTaken: actionTaken || '',
+    caseNumber: caseNumber || '',
+    createdBy: createdBy || '',
+    createdAt: createdAt || '',
+  };
+}
+
+function mergeTicketsByCase(localArr, fromSheetArr) {
+  const byCase = new Map();
+  for (const t of localArr) {
+    const key = t.caseNumber || t.orderNumber || '';
+    if (!key) continue;
+    byCase.set(key, t);
+  }
+  for (const s of fromSheetArr) {
+    const key = s.caseNumber || s.orderNumber || '';
+    if (!key) continue;
+    if (!byCase.has(key)) {
+      byCase.set(key, { ...s });
+    } else {
+      const cur = byCase.get(key);
+      byCase.set(key, { ...cur, ...s, _fromSheet: true });
+    }
+  }
+  return Array.from(byCase.values());
+}
+
+async function hydrateFromSheets(section) {
+  const range = SHEET_PULL[section];
+  if (!range) return;
+  try {
+    const headers = {};
+    if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
+
+    const url = `${SHEETS_ENDPOINT}?range=${encodeURIComponent(range)}`;
+    const res = await fetch(url, { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Sheets GET failed');
+
+    const rows = (data.values || []).filter(row => row && row.length);
+    const pulled = rows.map(ticketFromSheetRowCCTV);
+
+    tickets[section] = mergeTicketsByCase(tickets[section] || [], pulled);
+    saveTicketsToStorage();
+    renderTickets();
+    console.log(`Hydrated from Sheets (${section}) →`, pulled.length, 'rows');
+  } catch (e) {
+    console.warn('hydrateFromSheets error:', e.message);
+  }
 }
 /* ==== end Sheets helpers ==== */
 
@@ -1197,13 +1284,17 @@ window.addEventListener('load', async ()=>{
     centerLogo.addEventListener('click', ()=> { window.location.href = 'dashboard.html'; });
   }
 
-  // اعرض المحلي ثم حمّل من الداتابيس
+  // اعرض المحلي ثم حمّل من الداتابيس + الشيت
   renderTickets();
   await hydrateFromDB(window.currentSection);
+  await hydrateFromSheets(window.currentSection);   // ← أضِف هذا السطر
 
   // فعّل الريفريش الدوري (ويمنع التكرار)
   if (window.__ticketsPoller) clearInterval(window.__ticketsPoller);
-  const poll = () => hydrateFromDB(window.currentSection || 'cctv');
+  const poll = async () => {
+    await hydrateFromDB(window.currentSection || 'cctv');
+    await hydrateFromSheets(window.currentSection || 'cctv');  // ← واستدعِ الشيت هنا كمان
+  };
   window.__ticketsPoller = setInterval(poll, 15000); // كل 15 ثانية
 });
 
@@ -1293,4 +1384,5 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
