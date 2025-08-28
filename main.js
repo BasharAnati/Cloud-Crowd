@@ -1020,7 +1020,7 @@ async function saveDrawerEdits() {
     await hydrateFromSheets(_currentSection);
   } catch (err) {
     console.warn('Update failed:', err);
-    alert('ما قدرنا نحفظ التعديل على السيرفر.');
+    alert('Failed to save changes to the server.');
   }
 
   // أعد فتح الـDrawer محدث
@@ -1033,12 +1033,12 @@ async function deleteTicket(idx){
 
   // حماية واجهة: الحذف لأناتي فقط
   if (CURRENT_USER !== DELETER_USERNAME) {
-    alert('ليس لديك صلاحية الحذف.');
+    alert('You do not have permission to delete.');
     return;
   }
 
   const ref = t.caseNumber || t.orderNumber || '';
-  const ok = confirm(`تأكيد حذف التكت ${ref} ؟`);
+  const ok = confirm(`Delete ticket ${ref}?`);
   if (!ok) return;
 
   try {
@@ -1079,11 +1079,10 @@ async function deleteTicket(idx){
       hydrateFromSheets(_currentSection)
     ]);
 
-    alert('تم حذف التكت.');
+    alert('Ticket deleted.');
   } catch (e) {
     console.error('Delete error:', e);
-    alert('تعذّر حذف التكت: ' + (e.message || ''));
-  }
+alert('Failed to delete ticket: ' + (e.message || ''));  }
 }
 
 
@@ -1497,6 +1496,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
