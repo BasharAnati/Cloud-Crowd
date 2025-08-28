@@ -948,7 +948,7 @@ async function viewTicketHistory(ticketId){
 // Save edits (local first, then server)  ✅ hydrate فقط عند النجاح
 // ----------------------------
 // ----------------------------
-// Save edits (local first, then server)
+// Save edits (local first, then server + update Sheets)
 // ----------------------------
 async function saveDrawerEdits() {
   if (drawerIndex == null) return;
@@ -956,17 +956,17 @@ async function saveDrawerEdits() {
   if (!form) return;
 
   const fd = new FormData(form);
-  const t = tickets[_currentSection][drawerIndex];
+  const t  = tickets[_currentSection][drawerIndex];
 
-  // تعديل محلي سريع
-  t.status = fd.get('status');
-  t.actionTaken = fd.get('actionTaken');
+  // تعديل محلي سريع ليوضح للمستخدم أن التعديل تم
+  t.status       = fd.get('status');
+  t.actionTaken  = fd.get('actionTaken');
   t.lastModified = new Date().toISOString();
   saveTicketsToStorage();
   renderTickets();
 
   try {
-    // حدّث الداتابيس فقط إذا عنده id (يعني التكت أصله من الـDB مش من الشيت)
+    // 1) لو التكت له id من الـ DB: حدّث الداتابيس
     if (Number.isFinite(Number(t._id))) {
       const res = await fetch('/.netlify/functions/tickets', {
         method: 'PUT',
@@ -983,10 +983,28 @@ async function saveDrawerEdits() {
       if (!res.ok || !data.ok) throw new Error(data.error || 'Update failed');
     } else {
       console.warn('No DB id → ticket came from Google Sheets, DB PUT skipped.');
-      // لاحقًا لما نفعّل PUT في sheets.js: نضيف هنا استدعاء تحديث الشيت.
     }
 
-    // حدّث العرض من المصدرين
+    // 2) حدّث Google Sheets دائمًا (حسب caseNumber في العمود K)
+    if (!t.caseNumber) {
+      console.warn('No caseNumber on ticket → Sheets PUT skipped.');
+    } else {
+      const headers = { 'Content-Type': 'application/json' };
+      if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
+
+      await fetch(SHEETS_ENDPOINT, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({
+          tab: SHEET_RANGES[_currentSection] || 'CCTV_July2025', // اسم الورقة
+          caseNumber: t.caseNumber,     // لازم يطابق عمود K
+          status: t.status,
+          actionTaken: t.actionTaken
+        })
+      });
+    }
+
+    // 3) اعمل ريفرش من المصدرين
     await hydrateFromDB(_currentSection);
     await hydrateFromSheets(_currentSection);
   } catch (err) {
@@ -994,6 +1012,7 @@ async function saveDrawerEdits() {
     alert('ما قدرنا نحفظ التعديل على السيرفر.');
   }
 
+  // أعد فتح الـDrawer محدث
   openTicketDrawer(drawerIndex);
 }
 
@@ -1393,6 +1412,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
