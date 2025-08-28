@@ -16,7 +16,7 @@ const pool = new Pool({ connectionString: CONNECTION_STRING });
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS", // ← أضف DELETE
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, X-Admin-Secret", 
 };
 const JSON_HEADERS = { "Content-Type": "application/json", ...CORS };
 
@@ -286,12 +286,24 @@ exports.handler = async (event) => {
       }
     }
 
+
 // ===== DELETE  { id, by? } =====
 if (event.httpMethod === "DELETE") {
+  // (اختياري) تحصين بمفتاح سري من السيرفر فقط:
+  const ADMIN_SECRET = process.env.ADMIN_SECRET; // اتركه فارغًا إذا لا تريد استخدامه
+  const hdr = event.headers || {};
+  const reqSecret = hdr["x-admin-secret"] || hdr["X-Admin-Secret"];
+  if (ADMIN_SECRET && reqSecret !== ADMIN_SECRET) {
+    return {
+      statusCode: 401,
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ ok: false, error: "Bad admin secret" }),
+    };
+  }
+
   const body = JSON.parse(event.body || "{}");
   const id = Number(body.id);
-  const by = body.by ? String(body.by) : null;
-
+  const byRaw = body.by ? String(body.by) : "";
   if (!id) {
     return {
       statusCode: 400,
@@ -300,14 +312,23 @@ if (event.httpMethod === "DELETE") {
     };
   }
 
+  // اسم المصرّح بالحذف فقط (غير حساس لحالة الأحرف)
+  const ALLOWED_DELETER = (process.env.ADMIN_DELETER || "Anati").toLowerCase();
+  if (byRaw.toLowerCase() !== ALLOWED_DELETER) {
+    return {
+      statusCode: 403,
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ ok: false, error: "Not authorized to delete" }),
+    };
+  }
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    if (by) {
-      await client.query("SELECT set_config($1,$2,true)", ["cc.user", by]);
-    }
+    // سجل اسم المنفّذ في جلسة الـDB (يظهر في ticket_history)
+    await client.query("SELECT set_config($1,$2,true)", ["cc.user", byRaw]);
 
-    // جبنا السجل قبل الحذف عشان نحفظ section في التاريخ
+    // احضر السجل قبل الحذف (لأرشفة حدث الحذف)
     const { rows: curRows } = await client.query(
       `SELECT id, section, status, payload FROM tickets WHERE id=$1::bigint`,
       [id]
@@ -323,35 +344,28 @@ if (event.httpMethod === "DELETE") {
     const cur = curRows[0];
     const prevAction = (cur.payload && cur.payload.actionTaken) || null;
 
-    // سجل حدث الحذف في ticket_history (اختياري بس مفيد)
+    // سجّل عملية الحذف في التاريخ
     await client.query(
       `INSERT INTO ticket_history
          (ticket_id, section, changed_by, prev_status, new_status, prev_action, new_action, changed_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7, now())`,
-      [id, cur.section, by, cur.status, 'DELETED', prevAction, null]
+      [id, cur.section, byRaw, cur.status, "DELETED", prevAction, null]
     );
 
-    // احذف
+    // احذف السجل
     await client.query(`DELETE FROM tickets WHERE id=$1::bigint`, [id]);
 
     await client.query("COMMIT");
-    return {
-      statusCode: 200,
-      headers: JSON_HEADERS,
-      body: JSON.stringify({ ok: true }),
-    };
+    return { statusCode: 200, headers: JSON_HEADERS, body: JSON.stringify({ ok: true }) };
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("DELETE error:", err);
-    return {
-      statusCode: 500,
-      headers: JSON_HEADERS,
-      body: JSON.stringify({ ok: false, error: err.message }),
-    };
+    return { statusCode: 500, headers: JSON_HEADERS, body: JSON.stringify({ ok: false, error: err.message }) };
   } finally {
     client.release();
   }
 }
+
 
     // method not allowed
     return {
