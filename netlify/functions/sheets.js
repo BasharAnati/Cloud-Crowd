@@ -8,7 +8,7 @@ function ok(data, extraHeaders = {}) {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-App-Secret',
-      'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS',
+      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
       ...extraHeaders,
     },
     body: JSON.stringify(data),
@@ -153,6 +153,51 @@ exports.handler = async (event) => {
 
       return ok({ ok: true, row: rowIndex, totalUpdatedCells: upd.data.totalUpdatedCells || 0 });
     }
+// ---------- DELETE: delete row by caseNumber ----------
+if (event.httpMethod === 'DELETE') {
+  // (اختياري) نفس التحقق من APP_SECRET الموجود عندك فوق سيعمل تلقائياً
+  let body = {};
+  try { body = JSON.parse(event.body || '{}'); }
+  catch { return err(400, 'Invalid JSON body'); }
+
+  const tab        = String(body.tab || 'CCTV_July2025');
+  const caseNumber = String(body.caseNumber || '').trim();
+  if (!caseNumber) return err(400, 'caseNumber is required');
+
+  // نقرأ عمود K كامل للعثور على رقم الصف (1-based)
+  const COL_CASE = 'K';
+  const colRange = `${tab}!${COL_CASE}:${COL_CASE}`;
+  const read = await sheets.spreadsheets.values.get({ spreadsheetId, range: colRange });
+  const rows = read.data.values || [];
+  let rowIndex = -1; // 1-based row index
+  for (let i = 0; i < rows.length; i++) {
+    if ((rows[i][0] || '').toString().trim() === caseNumber) { rowIndex = i + 1; break; }
+  }
+  if (rowIndex < 1) return ok({ ok: true, note: 'not found' }); // مش موجود أصلاً
+
+  // نجيب sheetId للتاب
+  const meta = await sheets.spreadsheets.get({ spreadsheetId });
+  const sheet = (meta.data.sheets || []).find(s => s.properties.title === tab);
+  if (!sheet) return err(404, 'Sheet not found');
+  const sheetId = sheet.properties.sheetId;
+
+  // deleteDimension يستخدم صفر-مفهرس: الصف 1 => index 0
+  const startIndex = rowIndex - 1;   // احذر: هذا سيحذف الهيدر لو rowIndex==1
+  const endIndex   = startIndex + 1;
+
+  await sheets.spreadsheets.batchUpdate({
+   spreadsheetId,
+   requestBody: {
+     requests: [{
+       deleteDimension: {
+         range: { sheetId, dimension: 'ROWS', startIndex, endIndex }
+      }
+    }]
+  }
+});
+
+  return ok({ ok: true, deletedRow: rowIndex });
+}
 
     return err(405, 'Method not allowed');
   } catch (e) {
