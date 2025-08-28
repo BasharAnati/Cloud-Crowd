@@ -1,21 +1,20 @@
 // netlify/functions/sheets.js  (CommonJS)
 const { google } = require('googleapis');
 
-/* ------------------------- Helpers ------------------------- */
+/* -------------------- Helpers -------------------- */
 function ok(data, extraHeaders = {}) {
   return {
     statusCode: 200,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*', // بالإنتاج بدّل * بدومينك
+      'Access-Control-Allow-Origin': '*', // بالإنتاج: استبدل * بدومينك
       'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-App-Secret',
-      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+      'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS',
       ...extraHeaders,
     },
     body: JSON.stringify(data),
   };
 }
-
 function err(statusCode, message) {
   return {
     statusCode,
@@ -48,10 +47,17 @@ async function getSheetsClient() {
   return google.sheets({ version: 'v4', auth });
 }
 
-/* ------------------------- Handler ------------------------- */
+/* -------------------- Constants -------------------- */
+// اسم التاب الافتراضي داخل الشيت (يمكن تغييره من ENV أو تمريره من الفرونت)
+const DEFAULT_TAB = process.env.SHEET_TAB || 'CCTV_July2025';
+// خرائط الأعمدة حسب تصميمنا:
+// A:status, J:actionTaken, K:caseNumber
+const COL = { STATUS: 'A', ACTION: 'J', CASE: 'K' };
+
+/* -------------------- Handler -------------------- */
 exports.handler = async (event) => {
   try {
-    // حماية اختيارية برمز بسيط
+    // حماية اختيارية
     const appSecret = process.env.APP_SECRET;
     if (appSecret) {
       const clientSecret =
@@ -68,20 +74,17 @@ exports.handler = async (event) => {
 
     const sheets = await getSheetsClient();
 
-    /* ------------------------- GET (read) ------------------------- */
+    /* ---------- GET: read range ---------- */
     if (event.httpMethod === 'GET') {
-      // مثال: ?range=CCTV_July2025!A1:D20
-      const range = (event.queryStringParameters || {}).range || 'Sheet1!A1:D20';
+      // مثال: ?range=CCTV_July2025!A1:M
+      const qs = event.queryStringParameters || {};
+      const range = qs.range || `${DEFAULT_TAB}!A1:M`;
       const res = await sheets.spreadsheets.values.get({ spreadsheetId, range });
       return ok(res.data);
     }
 
-    /* ------------------------- POST (append) ------------------------- */
+    /* ---------- POST: append rows ---------- */
     if (event.httpMethod === 'POST') {
-      // لتشخيص أي مشكلة في البودي
-      console.log('RAW_BODY:', event.body);
-
-      // نفكّ JSON بأمان
       let body = {};
       try {
         body = JSON.parse(event.body || '{}');
@@ -89,37 +92,89 @@ exports.handler = async (event) => {
         return err(400, 'Invalid JSON body');
       }
 
-      // النطاق الافتراضي إذا ما انرسل
-      const range = body.range || 'CCTV_July2025';
+      // body: { range: 'CCTV_July2025', values: [[...], ...] }
+      const tabOrRange = body.range || DEFAULT_TAB;
+      let values = body.values ?? null;
 
-      // نقبل صيغ متعددة للقيم
-      let values = body.values ?? body.value ?? body.row ?? null;
-
-      // لو البودي نفسه Array (مثل [["a","b"]]) اعتبره values
       if (!values && Array.isArray(body) && body.length) values = body;
-
-      // لو انرسل صف واحد ["a","b"] نحوله [["a","b"]]
       if (values && !Array.isArray(values[0])) values = [values];
-
-      // تحقق نهائي
       if (!Array.isArray(values) || values.length === 0) {
         return err(400, 'Body must include non-empty "values" array');
       }
 
       const appendRes = await sheets.spreadsheets.values.append({
         spreadsheetId,
-        range,
+        range: tabOrRange,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values },
       });
-
       return ok(appendRes.data);
     }
 
-    /* ------------------------- Method not allowed ------------------------- */
+    /* ---------- PUT: update one row (by Case Number in column K) ---------- */
+    if (event.httpMethod === 'PUT') {
+      let body = {};
+      try {
+        body = JSON.parse(event.body || '{}');
+      } catch {
+        return err(400, 'Invalid JSON body');
+      }
+
+      const tab = body.tab || DEFAULT_TAB;
+      const caseNumber = String(body.caseNumber || '').trim();
+      const newStatus = body.status;          // optional
+      const newAction = body.actionTaken;     // optional
+
+      if (!caseNumber) return err(400, 'Missing "caseNumber"');
+
+      // 1) اقرأ عمود K بالكامل لايجاد رقم الصف
+      const colRange = `${tab}!${COL.CASE}:${COL.CASE}`;
+      const colRes = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: colRange,
+      });
+      const rows = (colRes.data.values || []).map(r => r[0]);
+      // أول صف (index 0) هو الهيدر عادةً، لذلك نبحث بدءًا من 1
+      let foundRow = -1;
+      for (let i = 1; i < rows.length; i++) {
+        if (String(rows[i]).trim() === caseNumber) {
+          foundRow = i + 1; // +1 لأن صفوف الشيت 1-based
+          break;
+        }
+      }
+      if (foundRow < 0) return err(404, `Case not found: ${caseNumber}`);
+
+      // 2) جهّز التحديثات المطلوبة
+      const data = [];
+      if (typeof newStatus !== 'undefined') {
+        data.push({
+          range: `${tab}!${COL.STATUS}${foundRow}:${COL.STATUS}${foundRow}`,
+          values: [[newStatus]],
+        });
+      }
+      if (typeof newAction !== 'undefined') {
+        data.push({
+          range: `${tab}!${COL.ACTION}${foundRow}:${COL.ACTION}${foundRow}`,
+          values: [[newAction]],
+        });
+      }
+      if (data.length === 0) return err(400, 'Nothing to update');
+
+      // 3) نفّذ batchUpdate
+      const upd = await sheets.spreadsheets.values.batchUpdate({
+        spreadsheetId,
+        requestBody: {
+          valueInputOption: 'USER_ENTERED',
+          data,
+        },
+      });
+
+      return ok({ ok: true, updated: upd.data.totalUpdatedCells || 0, row: foundRow });
+    }
+
     return err(405, 'Method Not Allowed');
   } catch (e) {
-    console.error(e);
-    return err(500, e.message || 'Internal Error');
+    console.error('sheets function error:', e);
+    return err(500, e.message || 'Server error');
   }
 };
