@@ -947,6 +947,9 @@ async function viewTicketHistory(ticketId){
 // ----------------------------
 // Save edits (local first, then server)  ✅ hydrate فقط عند النجاح
 // ----------------------------
+// ----------------------------
+// Save edits (local first, then server)
+// ----------------------------
 async function saveDrawerEdits() {
   if (drawerIndex == null) return;
   const form = document.getElementById('drawer-edit-form');
@@ -955,7 +958,7 @@ async function saveDrawerEdits() {
   const fd = new FormData(form);
   const t = tickets[_currentSection][drawerIndex];
 
-  // عدّل محلياً أولاً لسرعة الاستجابة
+  // تعديل محلي سريع
   t.status = fd.get('status');
   t.actionTaken = fd.get('actionTaken');
   t.lastModified = new Date().toISOString();
@@ -963,48 +966,37 @@ async function saveDrawerEdits() {
   renderTickets();
 
   try {
-    const res = await fetch('/.netlify/functions/tickets', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: Number(t._id),                 // لازم رقم
-        section: String(_currentSection),
-        status: String(t.status || ''),
-        actionTaken: String(t.actionTaken ?? ''),
-        changedBy: CURRENT_USER            // لإسناد التعديل
-      })
-    });
+    // حدّث الداتابيس فقط إذا عنده id (يعني التكت أصله من الـDB مش من الشيت)
+    if (Number.isFinite(Number(t._id))) {
+      const res = await fetch('/.netlify/functions/tickets', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: Number(t._id),
+          section: String(_currentSection),
+          status: String(t.status || ''),
+          actionTaken: String(t.actionTaken ?? ''),
+          changedBy: CURRENT_USER
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Update failed');
+    } else {
+      console.warn('No DB id → ticket came from Google Sheets, DB PUT skipped.');
+      // لاحقًا لما نفعّل PUT في sheets.js: نضيف هنا استدعاء تحديث الشيت.
+    }
 
-    const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.error || 'Update failed');
-
-// --- NEW: حدّث Google Sheets بنفس التعديل ---
-await fetch('/.netlify/functions/sheets', {
-  method: 'PUT',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    tab: 'CCTV_July2025',        // غيّر الاسم إذا التاب مختلف
-    caseNumber: t.caseNumber,    // لازم يطابق العمود K في الشيت
-    status: t.status,
-    actionTaken: t.actionTaken
-  })
-});
-
-// (اختياري) اسحب من الشيت لتشوف التعديل فورًا
-await hydrateFromSheets(_currentSection);
-// --- END NEW ---
-
-
-    // فقط إذا نجح… هات من الـDB لضمان التزامن بين الجميع
+    // حدّث العرض من المصدرين
     await hydrateFromDB(_currentSection);
+    await hydrateFromSheets(_currentSection);
   } catch (err) {
-    console.warn('DB update failed:', err);
+    console.warn('Update failed:', err);
     alert('ما قدرنا نحفظ التعديل على السيرفر.');
   }
 
-  // أعِد فتح الـDrawer على البيانات
   openTicketDrawer(drawerIndex);
 }
+
 
 function closeTicketDrawer(){
   const drawer = document.getElementById('ticket-drawer');
@@ -1401,6 +1393,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
