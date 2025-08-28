@@ -27,6 +27,9 @@ Object.defineProperty(window, 'currentSection', {
 // اسم المستخدم الحالي (من صفحة اللوجين)
 const CURRENT_USER = localStorage.getItem('cc_user') || 'operator';
 
+// ⬅️ أضِف هذا السطر
+const DELETER_USERNAME = 'Anati';
+
 // ==== Google Sheets Bridge ====
 // تقدر تخليها نسبية كمان: "/.netlify/functions/sheets"
 const SHEETS_ENDPOINT = "https://cloudcrowd.site/.netlify/functions/sheets";
@@ -778,7 +781,7 @@ function openTicketDrawer(index){
     `;
   }
 
-  // ✅ رابط السجل
+  // شارة الحالة + رابط السجل
   metaEl.innerHTML = `
     <span class="meta-badge ${bandClassForStatus(ticket.status)}">
       ${displayStatusName(ticket.status || 'Uncategorized')}
@@ -791,19 +794,27 @@ function openTicketDrawer(index){
   if (histLink) {
     histLink.onclick = (e) => {
       e.preventDefault();
-      if (!ticket._id) {
-        alert('No ticket id found.');
-        return;
-      }
+      if (!ticket._id) { alert('No ticket id found.'); return; }
       viewTicketHistory(ticket._id);
     };
   }
 
+  // محتوى القراءة
   bodyEl.innerHTML = buildDrawerReadonly(ticket);
 
+  // أزرار الأكشن: Edit دائمًا + Delete لأناتي فقط
   if (actions){
     actions.innerHTML = `<button id="drawer-edit-btn" class="edit-btn">Edit</button>`;
     actions.querySelector('#drawer-edit-btn').onclick = ()=> enterDrawerEditMode();
+
+    if (CURRENT_USER === DELETER_USERNAME) {
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'danger-btn';
+      delBtn.textContent = 'Delete';
+      delBtn.addEventListener('click', ()=> deleteTicket(drawerIndex));
+      actions.appendChild(delBtn);
+    }
   }
 
   drawer.classList.add('open');
@@ -1014,6 +1025,65 @@ async function saveDrawerEdits() {
 
   // أعد فتح الـDrawer محدث
   openTicketDrawer(drawerIndex);
+}
+
+async function deleteTicket(idx){
+  const t = tickets[_currentSection][idx];
+  if (!t) return;
+
+  // حماية واجهة: الحذف لأناتي فقط
+  if (CURRENT_USER !== DELETER_USERNAME) {
+    alert('ليس لديك صلاحية الحذف.');
+    return;
+  }
+
+  const ref = t.caseNumber || t.orderNumber || '';
+  const ok = confirm(`تأكيد حذف التكت ${ref} ؟`);
+  if (!ok) return;
+
+  try {
+    // 1) حذف من الـDB إذا له id
+    if (Number.isFinite(Number(t._id))) {
+      const res = await fetch('/.netlify/functions/tickets', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: Number(t._id), section: String(_currentSection), by: CURRENT_USER })
+      });
+      const data = await res.json();
+      if (!res.ok || data?.ok === false) throw new Error(data?.error || 'DB delete failed');
+    }
+
+    // 2) حذف من Google Sheets حسب caseNumber (عمود K)
+    if (t.caseNumber) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
+
+      const tabName = SHEET_RANGES[_currentSection] || 'CCTV_July2025';
+      const resS = await fetch(SHEETS_ENDPOINT, {
+        method: 'DELETE',
+        headers,
+        body: JSON.stringify({ tab: tabName, caseNumber: t.caseNumber, by: CURRENT_USER })
+      });
+      const dataS = await resS.json();
+      if (!resS.ok || dataS?.ok === false) throw new Error(dataS?.error || 'Sheets delete failed');
+    }
+
+    // 3) حدّث الواجهة محلياً ثم انعش من المصدرين
+    tickets[_currentSection].splice(idx, 1);
+    saveTicketsToStorage();
+    renderTickets();
+    closeTicketDrawer();
+
+    await Promise.all([
+      hydrateFromDB(_currentSection),
+      hydrateFromSheets(_currentSection)
+    ]);
+
+    alert('تم حذف التكت.');
+  } catch (e) {
+    console.error('Delete error:', e);
+    alert('تعذّر حذف التكت: ' + (e.message || ''));
+  }
 }
 
 
@@ -1364,6 +1434,21 @@ window.syncCCTVFromLark = syncCCTVFromLark;
    Image overlay + CSS (thumb/overlay)
 -----------------------------------*/
 
+
+(function ensureDangerBtnCSS(){
+  if (document.getElementById('cc-danger-css')) return;
+  const style = document.createElement('style');
+  style.id = 'cc-danger-css';
+  style.textContent = `
+    .danger-btn{
+      background:#d11; color:#fff; border:0;
+      padding:10px 14px; border-radius:8px; cursor:pointer; margin-left:8px;
+    }
+    .danger-btn:hover{ filter:brightness(.95); }
+  `;
+  document.head.appendChild(style);
+})();
+
 // Overlay لعرض الصورة كبيرة
 function showImageOverlay(src) {
   const ov = document.createElement('div');
@@ -1412,6 +1497,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
