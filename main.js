@@ -978,6 +978,23 @@ async function saveDrawerEdits() {
     const data = await res.json();
     if (!res.ok || !data.ok) throw new Error(data.error || 'Update failed');
 
+// --- NEW: حدّث Google Sheets بنفس التعديل ---
+await fetch('/.netlify/functions/sheets', {
+  method: 'PUT',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    tab: 'CCTV_July2025',        // غيّر الاسم إذا التاب مختلف
+    caseNumber: t.caseNumber,    // لازم يطابق العمود K في الشيت
+    status: t.status,
+    actionTaken: t.actionTaken
+  })
+});
+
+// (اختياري) اسحب من الشيت لتشوف التعديل فورًا
+await hydrateFromSheets(_currentSection);
+// --- END NEW ---
+
+
     // فقط إذا نجح… هات من الـDB لضمان التزامن بين الجميع
     await hydrateFromDB(_currentSection);
   } catch (err) {
@@ -1384,5 +1401,6 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
