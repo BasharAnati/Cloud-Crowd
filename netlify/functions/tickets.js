@@ -15,7 +15,7 @@ const pool = new Pool({ connectionString: CONNECTION_STRING });
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET,POST,PUT,OPTIONS",
+  "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS", // ← أضف DELETE
   "Access-Control-Allow-Headers": "Content-Type",
 };
 const JSON_HEADERS = { "Content-Type": "application/json", ...CORS };
@@ -285,6 +285,73 @@ exports.handler = async (event) => {
         client.release();
       }
     }
+
+// ===== DELETE  { id, by? } =====
+if (event.httpMethod === "DELETE") {
+  const body = JSON.parse(event.body || "{}");
+  const id = Number(body.id);
+  const by = body.by ? String(body.by) : null;
+
+  if (!id) {
+    return {
+      statusCode: 400,
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ ok: false, error: "id is required" }),
+    };
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    if (by) {
+      await client.query("SELECT set_config($1,$2,true)", ["cc.user", by]);
+    }
+
+    // جبنا السجل قبل الحذف عشان نحفظ section في التاريخ
+    const { rows: curRows } = await client.query(
+      `SELECT id, section, status, payload FROM tickets WHERE id=$1::bigint`,
+      [id]
+    );
+    if (curRows.length === 0) {
+      await client.query("ROLLBACK");
+      return {
+        statusCode: 404,
+        headers: JSON_HEADERS,
+        body: JSON.stringify({ ok: false, error: "Ticket not found" }),
+      };
+    }
+    const cur = curRows[0];
+    const prevAction = (cur.payload && cur.payload.actionTaken) || null;
+
+    // سجل حدث الحذف في ticket_history (اختياري بس مفيد)
+    await client.query(
+      `INSERT INTO ticket_history
+         (ticket_id, section, changed_by, prev_status, new_status, prev_action, new_action, changed_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7, now())`,
+      [id, cur.section, by, cur.status, 'DELETED', prevAction, null]
+    );
+
+    // احذف
+    await client.query(`DELETE FROM tickets WHERE id=$1::bigint`, [id]);
+
+    await client.query("COMMIT");
+    return {
+      statusCode: 200,
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ ok: true }),
+    };
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("DELETE error:", err);
+    return {
+      statusCode: 500,
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ ok: false, error: err.message }),
+    };
+  } finally {
+    client.release();
+  }
+}
 
     // method not allowed
     return {
