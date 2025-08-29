@@ -1075,23 +1075,14 @@ function openTicketDrawer(index){
   titleEl.textContent = displayStatusName(ticket.status || 'Details');
   titleEl.style.color = statusColor(ticket.status);
 
-  let metaFrag = '';
-  if (ticket.lastModified){
-    const md = new Date(ticket.lastModified);
-    metaFrag = `
-      <div class="meta-item"><strong>Last Edit:</strong> ${md.toLocaleDateString('en-US')}</div>
-      <div class="meta-item"><strong>At:</strong> ${md.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true})}</div>
-    `;
-  }
-
   // شارة الحالة + رابط السجل
-  metaEl.innerHTML = `
+   metaEl.innerHTML = `
     <span class="meta-badge ${bandClassForStatus(ticket.status)}">
       ${displayStatusName(ticket.status || 'Uncategorized')}
     </span>
-    ${metaFrag}
     <a class="history-link" id="drawer-history-link" title="View change history">History</a>
   `;
+
 
   const histLink = document.getElementById('drawer-history-link');
   if (histLink) {
@@ -1830,6 +1821,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
