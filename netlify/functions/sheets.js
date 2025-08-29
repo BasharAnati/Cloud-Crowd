@@ -1,6 +1,7 @@
 // netlify/functions/sheets.js  (CommonJS)
 const { google } = require('googleapis');
 
+/* ------------------------ helpers: http ------------------------ */
 function ok(data, extraHeaders = {}) {
   return {
     statusCode: 200,
@@ -21,11 +22,14 @@ function err(statusCode, message) {
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-App-Secret',
+      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
     },
     body: JSON.stringify({ error: message }),
   };
 }
 
+/* ------------------ auth: service account to Sheets ------------------ */
 async function getSheetsClient() {
   const credsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
   if (!credsJson) throw new Error('Missing GOOGLE_APPLICATION_CREDENTIALS_JSON');
@@ -44,9 +48,55 @@ async function getSheetsClient() {
   return google.sheets({ version: 'v4', auth });
 }
 
+/* ----------------- multi-sheet mapping (by section/tab) ---------------- */
+const SHEET_IDS = {
+  cctv:          process.env.GOOGLE_SHEET_ID_CCTV,
+  ce:            process.env.GOOGLE_SHEET_ID_CUSTOMER_EXPERIENCE,
+  complaints:    process.env.GOOGLE_SHEET_ID_DAILY_COMPLAINTS,
+  'free-orders': process.env.GOOGLE_SHEET_ID_COMPLIMENTARY,
+  'time-table':  process.env.GOOGLE_SHEET_ID_THYME_TABLE_PLATES,
+};
+
+// fallback لو لسه عندك GOOGLE_SHEET_ID قديم
+const DEFAULT_SHEET_ID =
+  SHEET_IDS.cctv ||
+  process.env.GOOGLE_SHEET_ID ||
+  SHEET_IDS['free-orders'] ||
+  SHEET_IDS.ce ||
+  SHEET_IDS.complaints ||
+  SHEET_IDS['time-table'];
+
+// اختَر Spreadsheet ID حسب السكشن أو اسم التاب/الرينج
+function pickSpreadsheetId({ section, tab, range } = {}) {
+  if (section && SHEET_IDS[section]) return SHEET_IDS[section];
+
+  const name = (tab || (range ? String(range).split('!')[0] : '') || '').trim();
+  if (/^CCTV/i.test(name)) return SHEET_IDS.cctv || DEFAULT_SHEET_ID;
+  if (/^CircaCustomerExperience/i.test(name)) return SHEET_IDS.ce || DEFAULT_SHEET_ID;
+  if (/^DailyComplaints/i.test(name)) return SHEET_IDS.complaints || DEFAULT_SHEET_ID;
+  if (/^Complimentary/i.test(name)) return SHEET_IDS['free-orders'] || DEFAULT_SHEET_ID;
+  if (/^ThymeTablePlates/i.test(name)) return SHEET_IDS['time-table'] || DEFAULT_SHEET_ID;
+
+  return DEFAULT_SHEET_ID;
+}
+
+// أعمدة كل سكشن (مفتاح/حالة/أكشن) — لازم تطابق تصميم شيتاتك
+const SECTION_COLS = {
+  cctv:          { key: 'K', status: 'A', action: 'J' }, // caseNumber K, status A, actionTaken J
+  ce:            { key: 'P', status: 'A', action: 'N' },
+  complaints:    { key: 'N', status: 'A', action: 'M' },
+  'free-orders': { key: 'M', status: 'A', action: 'L' },
+  'time-table':  { key: 'K', status: 'A', action: 'B' }, // ملاحظة: B = note بدال action
+};
+function getCols(section = 'cctv') { return SECTION_COLS[section] || SECTION_COLS.cctv; }
+
+/* ------------------------------ handler ------------------------------ */
 exports.handler = async (event) => {
   try {
-    // optional app secret
+    // CORS preflight
+    if (event.httpMethod === 'OPTIONS') return ok({ ok: true });
+
+    // (اختياري) حماية برأس سري
     const appSecret = process.env.APP_SECRET;
     if (appSecret) {
       const clientSecret =
@@ -56,74 +106,71 @@ exports.handler = async (event) => {
       if (clientSecret !== appSecret) return err(401, 'Unauthorized');
     }
 
-    if (event.httpMethod === 'OPTIONS') return ok({ ok: true });
-
-    const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-    if (!spreadsheetId) return err(500, 'Missing GOOGLE_SHEET_ID');
-
     const sheets = await getSheetsClient();
 
-    // ---------- GET: read range ----------
+    /* ------------------------------- GET ------------------------------- */
     if (event.httpMethod === 'GET') {
-      const range = (event.queryStringParameters || {}).range || 'Sheet1!A1:D20';
+      const qs = event.queryStringParameters || {};
+      const range = qs.range || 'Sheet1!A1:D20';
+      const spreadsheetId = pickSpreadsheetId({ section: qs.section, range });
+      if (!spreadsheetId) return err(500, 'No Spreadsheet ID configured');
       const res = await sheets.spreadsheets.values.get({ spreadsheetId, range });
       return ok(res.data);
     }
 
-    // ---------- POST: append rows ----------
+    /* ------------------------------ POST (append) ------------------------------ */
     if (event.httpMethod === 'POST') {
       let body = {};
       try { body = JSON.parse(event.body || '{}'); }
       catch { return err(400, 'Invalid JSON body'); }
 
-      const range = body.range || 'CCTV_July2025';
-      let values = body.values ?? body.value ?? body.row ?? null;
+      const section = body.section || undefined;
+      const range   = body.range || body.tab || 'CCTV_Sep2025'; // append يفهم اسم التاب
+      const spreadsheetId = pickSpreadsheetId({ section, tab: range });
+      if (!spreadsheetId) return err(500, 'No Spreadsheet ID configured');
 
+      let values = body.values ?? body.value ?? body.row ?? null;
       if (!values && Array.isArray(body) && body.length) values = body;
       if (values && !Array.isArray(values[0])) values = [values];
-
       if (!Array.isArray(values) || values.length === 0) {
         return err(400, 'Body must include non-empty "values" array');
       }
 
       const appendRes = await sheets.spreadsheets.values.append({
         spreadsheetId,
-        range,
+        range, // اسم التاب
         valueInputOption: 'USER_ENTERED',
         requestBody: { values },
       });
       return ok(appendRes.data);
     }
 
-    // ---------- PUT: update by caseNumber ----------
+    /* ------------------------------ PUT (update by key) ------------------------------ */
     if (event.httpMethod === 'PUT') {
       let body = {};
       try { body = JSON.parse(event.body || '{}'); }
       catch { return err(400, 'Invalid JSON body'); }
 
-      const tab         = body.tab || 'CCTV_July2025';
-      const caseNumber  = (body.caseNumber || '').toString().trim();
-      const newStatus   = (body.status ?? '').toString();
-      const newAction   = (body.actionTaken ?? '').toString();
+      const section = String(body.section || 'cctv');
+      const tab     = String(body.tab || 'CCTV_Sep2025');
+      const spreadsheetId = pickSpreadsheetId({ section, tab });
+      if (!spreadsheetId) return err(500, 'No Spreadsheet ID configured');
 
+      const caseNumber = (body.caseNumber || '').toString().trim();
+      const newStatus  = (body.status ?? '').toString();
+      const newAction  = (body.actionTaken ?? '').toString();
       if (!caseNumber) return err(400, 'caseNumber is required');
       if (!newStatus && !newAction) return err(400, 'Nothing to update');
 
-      // الأعمدة: K = caseNumber, A = status, J = actionTaken
-      const COL_CASE   = 'K';
-      const COL_STATUS = 'A';
-      const COL_ACTION = 'J';
+      const { key: COL_CASE, status: COL_STATUS, action: COL_ACTION } = getCols(section);
 
-      // اقرأ عمود K كامل للعثور على الصف
+      // اقرأ عمود المفتاح لتحديد الصف
       const colRange = `${tab}!${COL_CASE}:${COL_CASE}`;
       const read = await sheets.spreadsheets.values.get({ spreadsheetId, range: colRange });
       const rows = (read.data.values || []);
       let rowIndex = -1; // 1-based
       for (let i = 0; i < rows.length; i++) {
-        if ((rows[i][0] || '').toString().trim() === caseNumber) {
-          rowIndex = i + 1;
-          break;
-        }
+        if ((rows[i][0] || '').toString().trim() === caseNumber) { rowIndex = i + 1; break; }
       }
       if (rowIndex < 1) return err(404, 'caseNumber not found');
 
@@ -145,59 +192,61 @@ exports.handler = async (event) => {
 
       const upd = await sheets.spreadsheets.values.batchUpdate({
         spreadsheetId,
-        requestBody: {
-          valueInputOption: 'USER_ENTERED',
-          data: dataUpdates,
-        },
+        requestBody: { valueInputOption: 'USER_ENTERED', data: dataUpdates },
       });
 
       return ok({ ok: true, row: rowIndex, totalUpdatedCells: upd.data.totalUpdatedCells || 0 });
     }
-// ---------- DELETE: delete row by caseNumber ----------
-if (event.httpMethod === 'DELETE') {
-  // (اختياري) نفس التحقق من APP_SECRET الموجود عندك فوق سيعمل تلقائياً
-  let body = {};
-  try { body = JSON.parse(event.body || '{}'); }
-  catch { return err(400, 'Invalid JSON body'); }
 
-  const tab        = String(body.tab || 'CCTV_July2025');
-  const caseNumber = String(body.caseNumber || '').trim();
-  if (!caseNumber) return err(400, 'caseNumber is required');
+    /* ------------------------------ DELETE (delete by key) ------------------------------ */
+    if (event.httpMethod === 'DELETE') {
+      let body = {};
+      try { body = JSON.parse(event.body || '{}'); }
+      catch { return err(400, 'Invalid JSON body'); }
 
-  // نقرأ عمود K كامل للعثور على رقم الصف (1-based)
-  const COL_CASE = 'K';
-  const colRange = `${tab}!${COL_CASE}:${COL_CASE}`;
-  const read = await sheets.spreadsheets.values.get({ spreadsheetId, range: colRange });
-  const rows = read.data.values || [];
-  let rowIndex = -1; // 1-based row index
-  for (let i = 0; i < rows.length; i++) {
-    if ((rows[i][0] || '').toString().trim() === caseNumber) { rowIndex = i + 1; break; }
-  }
-  if (rowIndex < 1) return ok({ ok: true, note: 'not found' }); // مش موجود أصلاً
+      const section = String(body.section || 'cctv');
+      const tab     = String(body.tab || 'CCTV_Sep2025');
+      const spreadsheetId = pickSpreadsheetId({ section, tab });
+      if (!spreadsheetId) return err(500, 'No Spreadsheet ID configured');
 
-  // نجيب sheetId للتاب
-  const meta = await sheets.spreadsheets.get({ spreadsheetId });
-  const sheet = (meta.data.sheets || []).find(s => s.properties.title === tab);
-  if (!sheet) return err(404, 'Sheet not found');
-  const sheetId = sheet.properties.sheetId;
+      const caseNumber = String(body.caseNumber || '').trim();
+      if (!caseNumber) return err(400, 'caseNumber is required');
 
-  // deleteDimension يستخدم صفر-مفهرس: الصف 1 => index 0
-  const startIndex = rowIndex - 1;   // احذر: هذا سيحذف الهيدر لو rowIndex==1
-  const endIndex   = startIndex + 1;
+      const { key: COL_CASE } = getCols(section);
 
-  await sheets.spreadsheets.batchUpdate({
-   spreadsheetId,
-   requestBody: {
-     requests: [{
-       deleteDimension: {
-         range: { sheetId, dimension: 'ROWS', startIndex, endIndex }
+      // ابحث عن الصف عبر عمود المفتاح
+      const colRange = `${tab}!${COL_CASE}:${COL_CASE}`;
+      const read = await sheets.spreadsheets.values.get({ spreadsheetId, range: colRange });
+      const rows = read.data.values || [];
+      let rowIndex = -1; // 1-based
+      for (let i = 0; i < rows.length; i++) {
+        if ((rows[i][0] || '').toString().trim() === caseNumber) { rowIndex = i + 1; break; }
       }
-    }]
-  }
-});
+      if (rowIndex < 1) return ok({ ok: true, note: 'not found' });
 
-  return ok({ ok: true, deletedRow: rowIndex });
-}
+      // جيب sheetId الخاص بالتاب
+      const meta = await sheets.spreadsheets.get({ spreadsheetId });
+      const sheet = (meta.data.sheets || []).find(s => s.properties.title === tab);
+      if (!sheet) return err(404, 'Sheet not found');
+      const sheetId = sheet.properties.sheetId;
+
+      // احذف الصف (تأكد ما تحذف الهيدر)
+      const startIndex = Math.max(1, rowIndex - 1); // 0-based; صف 0 هو الهيدر الافتراضي عند كثيرين
+      const endIndex   = startIndex + 1;
+
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: {
+          requests: [{
+            deleteDimension: {
+              range: { sheetId, dimension: 'ROWS', startIndex, endIndex }
+            }
+          }]
+        }
+      });
+
+      return ok({ ok: true, deletedRow: rowIndex });
+    }
 
     return err(405, 'Method not allowed');
   } catch (e) {
