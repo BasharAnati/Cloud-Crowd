@@ -190,23 +190,26 @@ function rowFromTicketComplaints(t) {
   ].slice(0, 14); // يضمن A..N فقط؛ نكتفي حتى N حسب pull
 }
 
-// === Free Orders ===
-// (مراعاة خريطة السيرفر: action = L، key = M، وحقول إضافية للـPUT: H=discountDate, I=newOrderNumber)
+// === Free Orders (Complimentary) ===
+// الشيت: A Status, B Customer Name, C Phone, D Order Date,
+// E Discount Amount, F Reason for Discount, G Decision Maker,
+// H Discount Date, I New Order Number, J Deduction From,
+// K Case Description, L Action Taken, M Order Number (key)
 function rowFromTicketFreeOrders(t) {
   return [
-    t.status || 'Active',                 // A (status)
-    t.customerName || '',                 // B
-    t.phone || '',                        // C
-    t.orderDate || '',                    // D
-    t.orderNumber || '',                  // E
-    '',                                   // F (مكان لصورة/لن نستخدمه في الشيت)
-    t.discountAmount || '',               // G
-    t.discountDate || '',                 // H  ⇦ مهم
-    t.newOrderNumber || '',               // I  ⇦ مهم
-    t.channel || '',                      // J
-    t.decisionMaker || '',                // K
-    t.actionTaken || '',                  // L (action)
-    t.caseNumber || t.orderNumber || ''   // M (key)
+    t.status || 'Active',            // A
+    t.customerName || '',            // B
+    t.phone || '',                   // C
+    t.orderDate || '',               // D
+    t.discountAmount || '',          // E
+    t.reasonForDiscount || '',       // F
+    t.decisionMaker || '',           // G
+    t.discountDate || '',            // H
+    t.newOrderNumber || '',          // I
+    t.deductionFrom || '',           // J
+    t.caseDescription || '',         // K
+    t.actionTaken || '',             // L
+    t.orderNumber || t.caseNumber || '' // M (key)
   ];
 }
 
@@ -357,9 +360,10 @@ function ticketFromSheetRowComplaints(r = []) {
 // Free Orders
 function ticketFromSheetRowFreeOrders(r = []) {
   const [
-    status, customerName, phone, orderDate, orderNumber,
-    _img, discountAmount, discountDate, newOrderNumber,
-    channel, decisionMaker, actionTaken, key
+    status, customerName, phone, orderDate,
+    discountAmount, reasonForDiscount, decisionMaker,
+    discountDate, newOrderNumber, deductionFrom,
+    caseDescription, actionTaken, orderNumber // ← عمود M
   ] = r; // A..M
 
   return {
@@ -367,16 +371,19 @@ function ticketFromSheetRowFreeOrders(r = []) {
     customerName: customerName || '',
     phone: phone || '',
     orderDate: orderDate || '',
-    orderNumber: orderNumber || '',
     discountAmount: discountAmount || '',
+    reasonForDiscount: reasonForDiscount || '',
+    decisionMaker: decisionMaker || '',
     discountDate: discountDate || '',
     newOrderNumber: newOrderNumber || '',
-    channel: channel || '',
-    decisionMaker: decisionMaker || '',
+    deductionFrom: deductionFrom || '',
+    caseDescription: caseDescription || '',
     actionTaken: actionTaken || '',
-    caseNumber: key || orderNumber || ''
+    orderNumber: orderNumber || '',
+    caseNumber: orderNumber || '' // المفتاح
   };
 }
+
 
 // Time Table
 function ticketFromSheetRowTimeTable(r = []) {
@@ -1823,6 +1830,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
