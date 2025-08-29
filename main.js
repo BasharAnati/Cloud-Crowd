@@ -59,9 +59,10 @@ const SECTION_SHEETS = {
     pull: "CircaCustomerExperience_Sep2025!A2:P"
   },
   complaints: {
-    tab: "DailyComplaints_Sep2025",
-    pull: "DailyComplaints_Sep2025!A2:N"
-  },
+  tab: "DailyComplaints_Sep2025",
+  pull: "'DailyComplaints_Sep2025'!A2:N" // ملاحظ: اسم التاب بين ''
+},
+
   "free-orders": {
     tab: "Complimentary",
     pull: "Complimentary!A2:M"
@@ -1830,6 +1831,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
