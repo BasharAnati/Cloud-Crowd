@@ -48,6 +48,17 @@ async function getSheetsClient() {
   return google.sheets({ version: 'v4', auth });
 }
 
+// ---- helpers to normalize sheet tab and range ----
+function stripQuotes(name = "") {
+  // يشيل أي ' من بداية/نهاية اسم التاب
+  return String(name).trim().replace(/^'+|'+$/g, "");
+}
+
+function normalizeRange(r = "") {
+  // يحوّل "'Tab'!A2:N" إلى "Tab!A2:N"
+  return String(r).replace(/^'([^']+)'(!)/, (_, tab, bang) => `${tab}${bang}`);
+}
+
 /* ----------------- multi-sheet mapping (by section/tab) ---------------- */
 const SHEET_IDS = {
   cctv:          process.env.GOOGLE_SHEET_ID_CCTV,
@@ -70,7 +81,10 @@ const DEFAULT_SHEET_ID =
 function pickSpreadsheetId({ section, tab, range } = {}) {
   if (section && SHEET_IDS[section]) return SHEET_IDS[section];
 
-  const name = (tab || (range ? String(range).split('!')[0] : '') || '').trim();
+  // استخرج اسم التاب من tab أو من بداية الـ range، ونظّفه من الاقتباسات
+  const firstPart = tab || (range ? String(range).split('!')[0] : '') || '';
+  const name = stripQuotes(firstPart);
+
   if (/^CCTV/i.test(name)) return SHEET_IDS.cctv || DEFAULT_SHEET_ID;
   if (/^CircaCustomerExperience/i.test(name)) return SHEET_IDS.ce || DEFAULT_SHEET_ID;
   if (/^DailyComplaints/i.test(name)) return SHEET_IDS.complaints || DEFAULT_SHEET_ID;
@@ -111,9 +125,11 @@ exports.handler = async (event) => {
     /* ------------------------------- GET ------------------------------- */
     if (event.httpMethod === 'GET') {
       const qs = event.queryStringParameters || {};
-      const range = qs.range || 'Sheet1!A1:D20';
+      let range = qs.range || 'Sheet1!A1:D20';
+      range = normalizeRange(range); // <-- مهم
       const spreadsheetId = pickSpreadsheetId({ section: qs.section, range });
       if (!spreadsheetId) return err(500, 'No Spreadsheet ID configured');
+
       const res = await sheets.spreadsheets.values.get({ spreadsheetId, range });
       return ok(res.data);
     }
@@ -125,7 +141,9 @@ exports.handler = async (event) => {
       catch { return err(400, 'Invalid JSON body'); }
 
       const section = body.section || undefined;
-      const range   = body.range || body.tab || 'CCTV_Sep2025'; // append يفهم اسم التاب
+      let range = body.range || body.tab || 'CCTV_Sep2025';
+      range = stripQuotes(range);
+      range = normalizeRange(range);
       const spreadsheetId = pickSpreadsheetId({ section, tab: range });
       if (!spreadsheetId) return err(500, 'No Spreadsheet ID configured');
 
@@ -145,96 +163,85 @@ exports.handler = async (event) => {
       return ok(appendRes.data);
     }
 
- /* ------------------------------ PUT (update by key) ------------------------------ */
-if (event.httpMethod === 'PUT') {
-  let body = {};
-  try { body = JSON.parse(event.body || '{}'); }
-  catch { return err(400, 'Invalid JSON body'); }
+    /* ------------------------------ PUT (update by key) ------------------------------ */
+    if (event.httpMethod === 'PUT') {
+      let body = {};
+      try { body = JSON.parse(event.body || '{}'); }
+      catch { return err(400, 'Invalid JSON body'); }
 
-  const section = String(body.section || 'cctv');
-  const tab     = String(body.tab || 'CCTV_Sep2025');
-  const spreadsheetId = pickSpreadsheetId({ section, tab });
-  if (!spreadsheetId) return err(500, 'No Spreadsheet ID configured');
+      const section = String(body.section || 'cctv');
+      let tab = String(body.tab || 'CCTV_Sep2025');
+      tab = stripQuotes(tab); // <-- مهم
+      const spreadsheetId = pickSpreadsheetId({ section, tab });
+      if (!spreadsheetId) return err(500, 'No Spreadsheet ID configured');
 
-  const caseNumber = (body.caseNumber || '').toString().trim();
-  const newStatus  = (body.status ?? '').toString();
-  const newAction  = (body.actionTaken ?? '').toString();
+      const caseNumber = (body.caseNumber || '').toString().trim();
+      const newStatus  = (body.status ?? '').toString();
+      const newAction  = (body.actionTaken ?? '').toString();
 
-  if (!caseNumber) return err(400, 'caseNumber is required');
+      if (!caseNumber) return err(400, 'caseNumber is required');
 
-  const { key: COL_CASE, status: COL_STATUS, action: COL_ACTION } = getCols(section);
+      const { key: COL_CASE, status: COL_STATUS, action: COL_ACTION } = getCols(section);
 
-  // ابحث عن الصف عبر عمود المفتاح
-  const colRange = `${tab}!${COL_CASE}:${COL_CASE}`;
-  const read = await sheets.spreadsheets.values.get({ spreadsheetId, range: colRange });
-  const rows = (read.data.values || []);
-  let rowIndex = -1; // 1-based
-  for (let i = 0; i < rows.length; i++) {
-    if ((rows[i][0] || '').toString().trim() === caseNumber) { rowIndex = i + 1; break; }
-  }
-  if (rowIndex < 1) return err(404, 'caseNumber not found');
+      // ابحث عن الصف عبر عمود المفتاح
+      const colRange = `${tab}!${COL_CASE}:${COL_CASE}`;
+      const read = await sheets.spreadsheets.values.get({ spreadsheetId, range: colRange });
+      const rows = (read.data.values || []);
+      let rowIndex = -1; // 1-based
+      for (let i = 0; i < rows.length; i++) {
+        if ((rows[i][0] || '').toString().trim() === caseNumber) { rowIndex = i + 1; break; }
+      }
+      if (rowIndex < 1) return err(404, 'caseNumber not found');
 
-  // جهّز التحديثات: نجمع كل شي قبل ما نعمل batchUpdate
-  const dataUpdates = [];
+      // جهّز التحديثات
+      const dataUpdates = [];
+      if (newStatus) {
+        dataUpdates.push({ range: `${tab}!${COL_STATUS}${rowIndex}:${COL_STATUS}${rowIndex}`, values: [[newStatus]] });
+      }
+      if (newAction || newAction === '') {
+        dataUpdates.push({ range: `${tab}!${COL_ACTION}${rowIndex}:${COL_ACTION}${rowIndex}`, values: [[newAction]] });
+      }
 
-  // Status & ActionTaken (لجميع الأقسام)
-  if (newStatus) {
-    dataUpdates.push({
-      range: `${tab}!${COL_STATUS}${rowIndex}:${COL_STATUS}${rowIndex}`,
-      values: [[newStatus]],
-    });
-  }
-  if (newAction || newAction === '') {
-    dataUpdates.push({
-      range: `${tab}!${COL_ACTION}${rowIndex}:${COL_ACTION}${rowIndex}`,
-      values: [[newAction]],
-    });
-  }
+      // حقول إضافية لكل قسم
+      if (section === 'free-orders') {
+        const discountDate = body.discountDate ?? null; // H
+        const newOrderNumber = body.newOrderNumber ?? null; // I
+        if (discountDate !== null) {
+          dataUpdates.push({ range: `${tab}!H${rowIndex}:H${rowIndex}`, values: [[String(discountDate)]] });
+        }
+        if (newOrderNumber !== null) {
+          dataUpdates.push({ range: `${tab}!I${rowIndex}:I${rowIndex}`, values: [[String(newOrderNumber)]] });
+        }
+      }
 
-  // حقول إضافية لكل قسم
-  if (section === 'free-orders') {
-    const discountDate    = body.discountDate ?? null;     // H
-    const newOrderNumber  = body.newOrderNumber ?? null;   // I
-    if (discountDate !== null) {
-      dataUpdates.push({ range: `${tab}!H${rowIndex}:H${rowIndex}`, values: [[String(discountDate)]] });
+      if (section === 'time-table') {
+        const note = body.note ?? null; // B
+        const returnDate = body.returnDate ?? null; // F
+        const amountToBeRefunded = body.amountToBeRefunded ?? null; // G
+        const deliveryFees = body.deliveryFees ?? null; // H
+        if (note !== null) {
+          dataUpdates.push({ range: `${tab}!B${rowIndex}:B${rowIndex}`, values: [[String(note)]] });
+        }
+        if (returnDate !== null) {
+          dataUpdates.push({ range: `${tab}!F${rowIndex}:F${rowIndex}`, values: [[String(returnDate)]] });
+        }
+        if (amountToBeRefunded !== null) {
+          dataUpdates.push({ range: `${tab}!G${rowIndex}:G${rowIndex}`, values: [[String(amountToBeRefunded)]] });
+        }
+        if (deliveryFees !== null) {
+          dataUpdates.push({ range: `${tab}!H${rowIndex}:H${rowIndex}`, values: [[String(deliveryFees)]] });
+        }
+      }
+
+      if (dataUpdates.length === 0) return err(400, 'Nothing to update');
+
+      const upd = await sheets.spreadsheets.values.batchUpdate({
+        spreadsheetId,
+        requestBody: { valueInputOption: 'USER_ENTERED', data: dataUpdates },
+      });
+
+      return ok({ ok: true, row: rowIndex, totalUpdatedCells: upd.data.totalUpdatedCells || 0 });
     }
-    if (newOrderNumber !== null) {
-      dataUpdates.push({ range: `${tab}!I${rowIndex}:I${rowIndex}`, values: [[String(newOrderNumber)]] });
-    }
-  }
-
-  if (section === 'time-table') {
-    const note               = body.note ?? null;               // B
-    const returnDate         = body.returnDate ?? null;         // F
-    const amountToBeRefunded = body.amountToBeRefunded ?? null; // G
-    const deliveryFees       = body.deliveryFees ?? null;       // H
-    if (note !== null) {
-      dataUpdates.push({ range: `${tab}!B${rowIndex}:B${rowIndex}`, values: [[String(note)]] });
-    }
-    if (returnDate !== null) {
-      dataUpdates.push({ range: `${tab}!F${rowIndex}:F${rowIndex}`, values: [[String(returnDate)]] });
-    }
-    if (amountToBeRefunded !== null) {
-      dataUpdates.push({ range: `${tab}!G${rowIndex}:G${rowIndex}`, values: [[String(amountToBeRefunded)]] });
-    }
-    if (deliveryFees !== null) {
-      dataUpdates.push({ range: `${tab}!H${rowIndex}:H${rowIndex}`, values: [[String(deliveryFees)]] });
-    }
-  }
-
-  // لو ما في اشي ينحدث، ارجع خطأ واضح
-  if (dataUpdates.length === 0) {
-    return err(400, 'Nothing to update');
-  }
-
-  // نفّذ كل التحديثات دفعة واحدة
-  const upd = await sheets.spreadsheets.values.batchUpdate({
-    spreadsheetId,
-    requestBody: { valueInputOption: 'USER_ENTERED', data: dataUpdates },
-  });
-
-  return ok({ ok: true, row: rowIndex, totalUpdatedCells: upd.data.totalUpdatedCells || 0 });
-}
 
     /* ------------------------------ DELETE (delete by key) ------------------------------ */
     if (event.httpMethod === 'DELETE') {
@@ -243,7 +250,8 @@ if (event.httpMethod === 'PUT') {
       catch { return err(400, 'Invalid JSON body'); }
 
       const section = String(body.section || 'cctv');
-      const tab     = String(body.tab || 'CCTV_Sep2025');
+      let tab = String(body.tab || 'CCTV_Sep2025');
+      tab = stripQuotes(tab); // <-- مهم
       const spreadsheetId = pickSpreadsheetId({ section, tab });
       if (!spreadsheetId) return err(500, 'No Spreadsheet ID configured');
 
@@ -252,7 +260,6 @@ if (event.httpMethod === 'PUT') {
 
       const { key: COL_CASE } = getCols(section);
 
-      // ابحث عن الصف عبر عمود المفتاح
       const colRange = `${tab}!${COL_CASE}:${COL_CASE}`;
       const read = await sheets.spreadsheets.values.get({ spreadsheetId, range: colRange });
       const rows = read.data.values || [];
@@ -262,24 +269,19 @@ if (event.httpMethod === 'PUT') {
       }
       if (rowIndex < 1) return ok({ ok: true, note: 'not found' });
 
-      // جيب sheetId الخاص بالتاب
       const meta = await sheets.spreadsheets.get({ spreadsheetId });
-      const sheet = (meta.data.sheets || []).find(s => s.properties.title === tab);
+      const cleanTitle = stripQuotes(tab);
+      const sheet = (meta.data.sheets || []).find(s => s.properties.title === cleanTitle);
       if (!sheet) return err(404, 'Sheet not found');
       const sheetId = sheet.properties.sheetId;
 
-      // احذف الصف (تأكد ما تحذف الهيدر)
-      const startIndex = Math.max(1, rowIndex - 1); // 0-based; صف 0 هو الهيدر الافتراضي عند كثيرين
-      const endIndex   = startIndex + 1;
+      const startIndex = Math.max(1, rowIndex - 1); // 0-based
+      const endIndex = startIndex + 1;
 
       await sheets.spreadsheets.batchUpdate({
         spreadsheetId,
         requestBody: {
-          requests: [{
-            deleteDimension: {
-              range: { sheetId, dimension: 'ROWS', startIndex, endIndex }
-            }
-          }]
+          requests: [{ deleteDimension: { range: { sheetId, dimension: 'ROWS', startIndex, endIndex } } }]
         }
       });
 
