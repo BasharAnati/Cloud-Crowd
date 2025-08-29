@@ -145,58 +145,96 @@ exports.handler = async (event) => {
       return ok(appendRes.data);
     }
 
-    /* ------------------------------ PUT (update by key) ------------------------------ */
-    if (event.httpMethod === 'PUT') {
-      let body = {};
-      try { body = JSON.parse(event.body || '{}'); }
-      catch { return err(400, 'Invalid JSON body'); }
+ /* ------------------------------ PUT (update by key) ------------------------------ */
+if (event.httpMethod === 'PUT') {
+  let body = {};
+  try { body = JSON.parse(event.body || '{}'); }
+  catch { return err(400, 'Invalid JSON body'); }
 
-      const section = String(body.section || 'cctv');
-      const tab     = String(body.tab || 'CCTV_Sep2025');
-      const spreadsheetId = pickSpreadsheetId({ section, tab });
-      if (!spreadsheetId) return err(500, 'No Spreadsheet ID configured');
+  const section = String(body.section || 'cctv');
+  const tab     = String(body.tab || 'CCTV_Sep2025');
+  const spreadsheetId = pickSpreadsheetId({ section, tab });
+  if (!spreadsheetId) return err(500, 'No Spreadsheet ID configured');
 
-      const caseNumber = (body.caseNumber || '').toString().trim();
-      const newStatus  = (body.status ?? '').toString();
-      const newAction  = (body.actionTaken ?? '').toString();
-      if (!caseNumber) return err(400, 'caseNumber is required');
-      if (!newStatus && !newAction) return err(400, 'Nothing to update');
+  const caseNumber = (body.caseNumber || '').toString().trim();
+  const newStatus  = (body.status ?? '').toString();
+  const newAction  = (body.actionTaken ?? '').toString();
 
-      const { key: COL_CASE, status: COL_STATUS, action: COL_ACTION } = getCols(section);
+  if (!caseNumber) return err(400, 'caseNumber is required');
 
-      // اقرأ عمود المفتاح لتحديد الصف
-      const colRange = `${tab}!${COL_CASE}:${COL_CASE}`;
-      const read = await sheets.spreadsheets.values.get({ spreadsheetId, range: colRange });
-      const rows = (read.data.values || []);
-      let rowIndex = -1; // 1-based
-      for (let i = 0; i < rows.length; i++) {
-        if ((rows[i][0] || '').toString().trim() === caseNumber) { rowIndex = i + 1; break; }
-      }
-      if (rowIndex < 1) return err(404, 'caseNumber not found');
+  const { key: COL_CASE, status: COL_STATUS, action: COL_ACTION } = getCols(section);
 
-      // جهّز التحديثات
-      const dataUpdates = [];
-      if (newStatus) {
-        dataUpdates.push({
-          range: `${tab}!${COL_STATUS}${rowIndex}:${COL_STATUS}${rowIndex}`,
-          values: [[newStatus]],
-        });
-      }
-      if (newAction || newAction === '') {
-        dataUpdates.push({
-          range: `${tab}!${COL_ACTION}${rowIndex}:${COL_ACTION}${rowIndex}`,
-          values: [[newAction]],
-        });
-      }
-      if (!dataUpdates.length) return err(400, 'Nothing to update');
+  // ابحث عن الصف عبر عمود المفتاح
+  const colRange = `${tab}!${COL_CASE}:${COL_CASE}`;
+  const read = await sheets.spreadsheets.values.get({ spreadsheetId, range: colRange });
+  const rows = (read.data.values || []);
+  let rowIndex = -1; // 1-based
+  for (let i = 0; i < rows.length; i++) {
+    if ((rows[i][0] || '').toString().trim() === caseNumber) { rowIndex = i + 1; break; }
+  }
+  if (rowIndex < 1) return err(404, 'caseNumber not found');
 
-      const upd = await sheets.spreadsheets.values.batchUpdate({
-        spreadsheetId,
-        requestBody: { valueInputOption: 'USER_ENTERED', data: dataUpdates },
-      });
+  // جهّز التحديثات: نجمع كل شي قبل ما نعمل batchUpdate
+  const dataUpdates = [];
 
-      return ok({ ok: true, row: rowIndex, totalUpdatedCells: upd.data.totalUpdatedCells || 0 });
+  // Status & ActionTaken (لجميع الأقسام)
+  if (newStatus) {
+    dataUpdates.push({
+      range: `${tab}!${COL_STATUS}${rowIndex}:${COL_STATUS}${rowIndex}`,
+      values: [[newStatus]],
+    });
+  }
+  if (newAction || newAction === '') {
+    dataUpdates.push({
+      range: `${tab}!${COL_ACTION}${rowIndex}:${COL_ACTION}${rowIndex}`,
+      values: [[newAction]],
+    });
+  }
+
+  // حقول إضافية لكل قسم
+  if (section === 'free-orders') {
+    const discountDate    = body.discountDate ?? null;     // H
+    const newOrderNumber  = body.newOrderNumber ?? null;   // I
+    if (discountDate !== null) {
+      dataUpdates.push({ range: `${tab}!H${rowIndex}:H${rowIndex}`, values: [[String(discountDate)]] });
     }
+    if (newOrderNumber !== null) {
+      dataUpdates.push({ range: `${tab}!I${rowIndex}:I${rowIndex}`, values: [[String(newOrderNumber)]] });
+    }
+  }
+
+  if (section === 'time-table') {
+    const note               = body.note ?? null;               // B
+    const returnDate         = body.returnDate ?? null;         // F
+    const amountToBeRefunded = body.amountToBeRefunded ?? null; // G
+    const deliveryFees       = body.deliveryFees ?? null;       // H
+    if (note !== null) {
+      dataUpdates.push({ range: `${tab}!B${rowIndex}:B${rowIndex}`, values: [[String(note)]] });
+    }
+    if (returnDate !== null) {
+      dataUpdates.push({ range: `${tab}!F${rowIndex}:F${rowIndex}`, values: [[String(returnDate)]] });
+    }
+    if (amountToBeRefunded !== null) {
+      dataUpdates.push({ range: `${tab}!G${rowIndex}:G${rowIndex}`, values: [[String(amountToBeRefunded)]] });
+    }
+    if (deliveryFees !== null) {
+      dataUpdates.push({ range: `${tab}!H${rowIndex}:H${rowIndex}`, values: [[String(deliveryFees)]] });
+    }
+  }
+
+  // لو ما في اشي ينحدث، ارجع خطأ واضح
+  if (dataUpdates.length === 0) {
+    return err(400, 'Nothing to update');
+  }
+
+  // نفّذ كل التحديثات دفعة واحدة
+  const upd = await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId,
+    requestBody: { valueInputOption: 'USER_ENTERED', data: dataUpdates },
+  });
+
+  return ok({ ok: true, row: rowIndex, totalUpdatedCells: upd.data.totalUpdatedCells || 0 });
+}
 
     /* ------------------------------ DELETE (delete by key) ------------------------------ */
     if (event.httpMethod === 'DELETE') {
