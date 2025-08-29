@@ -30,20 +30,37 @@ const CURRENT_USER = localStorage.getItem('cc_user') || 'operator';
 // ⬅️ أضِف هذا السطر
 const DELETER_USERNAME = 'Anati';
 
-// ==== Google Sheets Bridge ====
-// تقدر تخليها نسبية كمان: "/.netlify/functions/sheets"
+// ==== Google Sheets Bridge (موحّد لكل الأقسام) ====
 const SHEETS_ENDPOINT = "https://cloudcrowd.site/.netlify/functions/sheets";
-const SHEET_RANGES = {
-  cctv: "CCTV_July2025" // غيّر الاسم إذا ورقتك مختلفة
-};
-
-// ⬅️ أضِف هذا السطر هنا (تحت SHEET_RANGES)
-const SHEET_PULL = {
-  cctv: "CCTV_July2025!A2:M" // عدّل النطاق إذا أعمدتك أكثر/أقل
-};
-
-// لو فعّلت APP_SECRET في Netlify، حط قيمته هون، وإلا اتركه فاضي:
 const SHEETS_APP_SECRET = "";
+
+// أسماء التابات ونطاق القراءة لكل قسم
+const SECTION_SHEETS = {
+  cctv: {
+    tab: "CCTV_Sep2025",
+    pull: "CCTV_Sep2025!A2:M"
+  },
+  ce: {
+    tab: "CircaCustomerExperience_Sep2025",
+    pull: "CircaCustomerExperience_Sep2025!A2:P"
+  },
+  complaints: {
+    tab: "DailyComplaints_Sep2025",
+    pull: "DailyComplaints_Sep2025!A2:N"
+  },
+  "free-orders": {
+    tab: "Complimentary",
+    pull: "Complimentary!A2:M"
+  },
+  "time-table": {
+    tab: "ThymeTablePlates_Sep2025",
+    pull: "ThymeTablePlates_Sep2025!A2:K"
+  }
+};
+
+function sheetTab(section){ return SECTION_SHEETS[section]?.tab || null; }
+function sheetPull(section){ return SECTION_SHEETS[section]?.pull || null; }
+
 
 // يحوّل الملف لصيغة Data URL (Base64)
 function fileToDataURL(file) {
@@ -97,29 +114,122 @@ function rowFromTicketCCTV(t) {
   ];
 }
 
+// === CE ===
+function rowFromTicketCE(t) {
+  return [
+    t.status || 'Under Review',           // A
+    t.orderNumber || '',                  // B
+    t.department || '',                   // C
+    t.customerName || '',                 // D
+    t.phone || '',                        // E
+    t.creationDate || '',                 // F
+    t.shift || '',                        // G
+    t.orderType || '',                    // H
+    t.branch || '',                       // I
+    t.restaurant || '',                   // J
+    t.channel || '',                      // K
+    t.feedbackDate || '',                 // L
+    t.issueCategory || '',                // M
+    t.actionTaken || '',                  // N (action)
+    t.customerNotes || '',                // O
+    t.caseNumber || t.orderNumber || ''   // P (key)
+  ];
+}
+
+// === Complaints ===
+function rowFromTicketComplaints(t) {
+  return [
+    t.status || 'Under Review',           // A
+    t.orderNumber || '',                  // B
+    t.department || '',                   // C
+    t.customerName || '',                 // D
+    t.phone || '',                        // E
+    t.creationDate || '',                 // F
+    t.shift || '',                        // G
+    t.orderType || '',                    // H
+    t.branch || '',                       // I
+    t.restaurant || '',                   // J
+    t.channel || '',                      // K
+    t.issueCategory || '',                // L
+    t.complaintDetails || '',             // M
+    t.actionTaken || '',                  // N (action)
+    t.caseNumber || t.orderNumber || ''   // *** ملاحظة: شيتك حالياً A..N، والـkey عندك بالباك إند = N.
+                                          // إذا بدك تحتفظ بـkey في عمود N: خلّي caseNumber آخر عنصر هنا "بدل N".
+  ].slice(0, 14); // يضمن A..N فقط؛ نكتفي حتى N حسب pull
+}
+
+// === Free Orders ===
+// (مراعاة خريطة السيرفر: action = L، key = M، وحقول إضافية للـPUT: H=discountDate, I=newOrderNumber)
+function rowFromTicketFreeOrders(t) {
+  return [
+    t.status || 'Active',                 // A (status)
+    t.customerName || '',                 // B
+    t.phone || '',                        // C
+    t.orderDate || '',                    // D
+    t.orderNumber || '',                  // E
+    '',                                   // F (مكان لصورة/لن نستخدمه في الشيت)
+    t.discountAmount || '',               // G
+    t.discountDate || '',                 // H  ⇦ مهم
+    t.newOrderNumber || '',               // I  ⇦ مهم
+    t.channel || '',                      // J
+    t.decisionMaker || '',                // K
+    t.actionTaken || '',                  // L (action)
+    t.caseNumber || t.orderNumber || ''   // M (key)
+  ];
+}
+
+// === Time Table ===
+// (مراعاة خريطة السيرفر: status=A, note=B (هي الـaction بالسيرفر), F=returnDate, G=amountToBeRefunded, H=deliveryFees, K=key)
+function rowFromTicketTimeTable(t) {
+  return [
+    t.status || 'Pending Call',           // A (status)
+    t.note || '',                         // B (note = action بالسيرفر)
+    t.customerName || '',                 // C
+    t.phone || '',                        // D
+    t.orderNumber || '',                  // E
+    t.returnDate || '',                   // F
+    t.amountToBeRefunded || '',           // G
+    t.deliveryFees || '',                 // H
+    t.platesQuantity || '',               // I
+    t.platesNumbers || '',                // J
+    t.caseNumber || t.orderNumber || ''   // K (key)
+  ];
+}
+
 async function pushToSheets(section, ticket) {
-  const range = SHEET_RANGES[section];
-  if (!range) return;
+  const tab = sheetTab(section);
+  if (!tab) return;
 
   const headers = { "Content-Type": "application/json" };
   if (SHEETS_APP_SECRET) headers["X-App-Secret"] = SHEETS_APP_SECRET;
 
   let row;
   if (section === 'cctv') row = rowFromTicketCCTV(ticket);
-  else return;
+  else if (section === 'ce') row = rowFromTicketCE(ticket);
+  else if (section === 'complaints') row = rowFromTicketComplaints(ticket);
+  else if (section === 'free-orders') row = rowFromTicketFreeOrders(ticket);
+  else if (section === 'time-table') row = rowFromTicketTimeTable(ticket);
+  else return; // قسم غير معروف
 
   const res = await fetch(SHEETS_ENDPOINT, {
     method: "POST",
     headers,
-    body: JSON.stringify({ range, values: [row] })
+    body: JSON.stringify({
+      section,     // للسيرفر عشان يختار الـ Spreadsheet
+      range: tab,  // اسم التاب
+      values: [row]
+    })
   });
-  const data = await res.json().catch(()=> ({}));
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Sheets error ${res.status}`);
   return data;
 }
+
+
 /* ==== end Sheets helpers ==== */
 
 
+/* ==== Sheets → App (pull) ==== */
 /* ==== Sheets → App (pull) ==== */
 function ticketFromSheetRowCCTV(r = []) {
   const [
@@ -153,6 +263,109 @@ function ticketFromSheetRowCCTV(r = []) {
     createdBy: createdBy || '',
     createdAt: createdAt || '',
   };
+} // ⬅️ سكّرنا دالة CCTV هنا
+
+// CE
+function ticketFromSheetRowCE(r = []) {
+  const [
+    status, orderNumber, department, customerName, phone,
+    creationDate, shift, orderType, branch, restaurant,
+    channel, feedbackDate, issueCategory, actionTaken,
+    customerNotes, key
+  ] = r; // A..P
+
+  return {
+    status: status || 'Under Review',
+    orderNumber: orderNumber || '',
+    department: department || '',
+    customerName: customerName || '',
+    phone: phone || '',
+    creationDate: creationDate || '',
+    shift: shift || '',
+    orderType: orderType || '',
+    branch: branch || '',
+    restaurant: restaurant || '',
+    channel: channel || '',
+    feedbackDate: feedbackDate || '',
+    issueCategory: issueCategory || '',
+    actionTaken: actionTaken || '',
+    customerNotes: customerNotes || '',
+    caseNumber: key || orderNumber || ''
+  };
+}
+
+// Complaints
+function ticketFromSheetRowComplaints(r = []) {
+  const [
+    status, orderNumber, department, customerName, phone,
+    creationDate, shift, orderType, branch, restaurant,
+    channel, issueCategory, complaintDetails, actionTaken
+  ] = r; // A..N
+
+  return {
+    status: status || 'Under Review',
+    orderNumber: orderNumber || '',
+    department: department || '',
+    customerName: customerName || '',
+    phone: phone || '',
+    creationDate: creationDate || '',
+    shift: shift || '',
+    orderType: orderType || '',
+    branch: branch || '',
+    restaurant: restaurant || '',
+    channel: channel || '',
+    issueCategory: issueCategory || '',
+    complaintDetails: complaintDetails || '',
+    actionTaken: actionTaken || '',
+    caseNumber: orderNumber || ''
+  };
+}
+
+// Free Orders
+function ticketFromSheetRowFreeOrders(r = []) {
+  const [
+    status, customerName, phone, orderDate, orderNumber,
+    _img, discountAmount, discountDate, newOrderNumber,
+    channel, decisionMaker, actionTaken, key
+  ] = r; // A..M
+
+  return {
+    status: status || 'Active',
+    customerName: customerName || '',
+    phone: phone || '',
+    orderDate: orderDate || '',
+    orderNumber: orderNumber || '',
+    discountAmount: discountAmount || '',
+    discountDate: discountDate || '',
+    newOrderNumber: newOrderNumber || '',
+    channel: channel || '',
+    decisionMaker: decisionMaker || '',
+    actionTaken: actionTaken || '',
+    caseNumber: key || orderNumber || ''
+  };
+}
+
+// Time Table
+function ticketFromSheetRowTimeTable(r = []) {
+  const [
+    status, note, customerName, phone, orderNumber,
+    returnDate, amountToBeRefunded, deliveryFees,
+    platesQuantity, platesNumbers, key
+  ] = r; // A..K
+
+  return {
+    status: status || 'Pending Call',
+    note: note || '',
+    customerName: customerName || '',
+    phone: phone || '',
+    orderNumber: orderNumber || '',
+    returnDate: returnDate || '',
+    amountToBeRefunded: amountToBeRefunded || '',
+    deliveryFees: deliveryFees || '',
+    platesQuantity: platesQuantity || '',
+    platesNumbers: platesNumbers || '',
+    caseNumber: key || orderNumber || ''
+  };
 }
 
 function mergeTicketsByCase(localArr, fromSheetArr) {
@@ -176,19 +389,31 @@ function mergeTicketsByCase(localArr, fromSheetArr) {
 }
 
 async function hydrateFromSheets(section) {
-  const range = SHEET_PULL[section];
+  const range = sheetPull(section);
   if (!range) return;
   try {
     const headers = {};
     if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
 
-    const url = `${SHEETS_ENDPOINT}?range=${encodeURIComponent(range)}`;
+    const url = `${SHEETS_ENDPOINT}?range=${encodeURIComponent(range)}&section=${encodeURIComponent(section)}`;
     const res = await fetch(url, { headers });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Sheets GET failed');
 
     const rows = (data.values || []).filter(row => row && row.length);
-    const pulled = rows.map(ticketFromSheetRowCCTV);
+    let pulled = [];
+if (section === 'cctv') {
+  pulled = rows.map(ticketFromSheetRowCCTV);
+} else if (section === 'ce') {
+  pulled = rows.map(ticketFromSheetRowCE);
+} else if (section === 'complaints') {
+  pulled = rows.map(ticketFromSheetRowComplaints);
+} else if (section === 'free-orders') {
+  pulled = rows.map(ticketFromSheetRowFreeOrders);
+} else if (section === 'time-table') {
+  pulled = rows.map(ticketFromSheetRowTimeTable);
+}
+
 
     tickets[section] = mergeTicketsByCase(tickets[section] || [], pulled);
     saveTicketsToStorage();
@@ -198,6 +423,7 @@ async function hydrateFromSheets(section) {
     console.warn('hydrateFromSheets error:', e.message);
   }
 }
+
 /* ==== end Sheets helpers ==== */
 
 // ----------------------------
@@ -330,7 +556,7 @@ const formFields = {
     { label: 'Order Type', type: 'select', name: 'orderType', options: ['Delivery','Takeout'] },
     { label: 'Branch Name', type: 'select', name: 'branch', options: ['Swefieh','Wadi Saqra','Swefieh Village'] },
     { label: 'Restaurant', type: 'select', name: 'restaurant', options: [
-      'Very Good Burger','Sager','Happy Tummies','Crunchychkn','Bun Run','Butter Me Up','Bint Halال',
+      'Very Good Burger','Sager','Happy Tummies','Crunchychkn','Bun Run','Butter Me Up','Bint Halal',
       'Colors Catering','Heat Burger','Thyme Table',"Evi's",'Chili Charms'
     ] },
     { label: 'Order Channel', type: 'select', name: 'channel', options: ['Circa','Talabat','Careem','Direct Order (From Store)'] },
@@ -969,7 +1195,7 @@ async function saveDrawerEdits() {
   const fd = new FormData(form);
   const t  = tickets[_currentSection][drawerIndex];
 
-  // تعديل محلي سريع ليوضح للمستخدم أن التعديل تم
+  // تعديل محلي سريع
   t.status       = fd.get('status');
   t.actionTaken  = fd.get('actionTaken');
   t.lastModified = new Date().toISOString();
@@ -977,7 +1203,7 @@ async function saveDrawerEdits() {
   renderTickets();
 
   try {
-    // 1) لو التكت له id من الـ DB: حدّث الداتابيس
+    // 1) تحديث الـ DB لو له id
     if (Number.isFinite(Number(t._id))) {
       const res = await fetch('/.netlify/functions/tickets', {
         method: 'PUT',
@@ -996,28 +1222,32 @@ async function saveDrawerEdits() {
       console.warn('No DB id → ticket came from Google Sheets, DB PUT skipped.');
     }
 
-    // 2) حدّث Google Sheets دائمًا (حسب caseNumber في العمود K)
+    // 2) حدّث Google Sheets دائمًا (حسب caseNumber)
     if (!t.caseNumber) {
       console.warn('No caseNumber on ticket → Sheets PUT skipped.');
     } else {
       const headers = { 'Content-Type': 'application/json' };
       if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
 
-      await fetch(SHEETS_ENDPOINT, {
+      const resS = await fetch(SHEETS_ENDPOINT, {
         method: 'PUT',
         headers,
         body: JSON.stringify({
-          tab: SHEET_RANGES[_currentSection] || 'CCTV_July2025', // اسم الورقة
-          caseNumber: t.caseNumber,     // لازم يطابق عمود K
+          section: _currentSection,           // مهم
+          tab: sheetTab(_currentSection),     // اسم الورقة
+          caseNumber: t.caseNumber,
           status: t.status,
           actionTaken: t.actionTaken
         })
       });
+      const dataS = await resS.json().catch(() => ({}));
+      if (!resS.ok || dataS?.ok === false) throw new Error(dataS?.error || 'Sheets update failed');
     }
 
     // 3) اعمل ريفرش من المصدرين
     await hydrateFromDB(_currentSection);
     await hydrateFromSheets(_currentSection);
+
   } catch (err) {
     console.warn('Update failed:', err);
     alert('Failed to save changes to the server.');
@@ -1027,11 +1257,11 @@ async function saveDrawerEdits() {
   openTicketDrawer(drawerIndex);
 }
 
+
 async function deleteTicket(idx){
   const t = tickets[_currentSection][idx];
   if (!t) return;
 
-  // حماية واجهة: الحذف لأناتي فقط
   if (CURRENT_USER !== DELETER_USERNAME) {
     alert('You do not have permission to delete.');
     return;
@@ -1053,18 +1283,22 @@ async function deleteTicket(idx){
       if (!res.ok || data?.ok === false) throw new Error(data?.error || 'DB delete failed');
     }
 
-    // 2) حذف من Google Sheets حسب caseNumber (عمود K)
+    // 2) حذف من Google Sheets حسب caseNumber
     if (t.caseNumber) {
       const headers = { 'Content-Type': 'application/json' };
       if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
 
-      const tabName = SHEET_RANGES[_currentSection] || 'CCTV_July2025';
       const resS = await fetch(SHEETS_ENDPOINT, {
         method: 'DELETE',
         headers,
-        body: JSON.stringify({ tab: tabName, caseNumber: t.caseNumber, by: CURRENT_USER })
+        body: JSON.stringify({
+          section: _currentSection,
+          tab: sheetTab(_currentSection),
+          caseNumber: t.caseNumber,
+          by: CURRENT_USER
+        })
       });
-      const dataS = await resS.json();
+      const dataS = await resS.json().catch(() => ({}));
       if (!resS.ok || dataS?.ok === false) throw new Error(dataS?.error || 'Sheets delete failed');
     }
 
@@ -1082,7 +1316,8 @@ async function deleteTicket(idx){
     alert('Ticket deleted.');
   } catch (e) {
     console.error('Delete error:', e);
-alert('Failed to delete ticket: ' + (e.message || ''));  }
+    alert('Failed to delete ticket: ' + (e.message || ''));
+  }
 }
 
 
@@ -1283,6 +1518,10 @@ function bindFormHandler(){
     if (_currentSection==='cctv'){
       t.caseNumber = nextCaseNumber('cctv');
     }
+else {
+  if (!t.caseNumber) t.caseNumber = t.orderNumber || '';
+}
+
     t.createdAt = new Date().toISOString();
     t.createdBy = CURRENT_USER; // مهم
 
@@ -1336,14 +1575,17 @@ window.goBack = goBack;
 function rowToTicket(row) {
   const p = row.payload || {};
   return {
-    _id: row.id, // مهم للتحديث لاحقاً
+    _id: row.id,
     ...p,
     status: row.status || p.status || 'Under Review',
-    caseNumber: p.caseNumber || `CCTV-${row.id}`,
+    caseNumber: p.caseNumber 
+                || p.orderNumber 
+                || (row.section === 'cctv' ? `CCTV-${row.id}` : ''), // ← هيك أدق
     createdAt: row.created_at,
     lastModified: row.updated_at
   };
 }
+
 
 // === DB refresh (hydrate + 15s polling) ===
 async function hydrateFromDB(section) {
@@ -1496,6 +1738,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
