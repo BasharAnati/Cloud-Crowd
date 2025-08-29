@@ -148,24 +148,25 @@ function rowFromTicketCCTV(t) {
 // === CE ===
 function rowFromTicketCE(t) {
   return [
-    t.status || 'Under Review',           // A
-    t.orderNumber || '',                  // B
-    t.department || '',                   // C
-    t.customerName || '',                 // D
-    t.phone || '',                        // E
-    t.creationDate || '',                 // F
-    t.shift || '',                        // G
-    t.orderType || '',                    // H
-    t.branch || '',                       // I
-    t.restaurant || '',                   // J
-    t.channel || '',                      // K
-    t.feedbackDate || '',                 // L
-    t.issueCategory || '',                // M
-    t.actionTaken || '',                  // N (action)
-    t.customerNotes || '',                // O
-    t.caseNumber || t.orderNumber || ''   // P (key)
+    t.status || 'Under Review',           // A: Status
+    t.department || '',                   // B: Department Responsible
+    t.customerName || '',                 // C: Customer Name
+    t.phone || '',                        // D: Phone Number
+    t.creationDate || '',                 // E: Creation Date
+    t.shift || '',                        // F: Shift
+    t.orderType || '',                    // G: Order Type
+    t.branch || '',                       // H: Branch Name
+    t.restaurant || '',                   // I: Restaurant
+    t.channel || '',                      // J: Order Channel
+    t.feedbackDate || '',                 // K: Feedback Date
+    t.issueCategory || '',                // L: Issue Category
+    t.customerNotes || '',                // M: Customer Experience Notes
+    t.actionTaken || '',                  // N: Action Taken
+    t.satisfaction || '',                 // O: Customer Satisfaction Level
+    t.caseNumber || t.orderNumber || ''   // P: Order Number (Key)
   ];
 }
+
 
 // === Complaints ===
 function rowFromTicketComplaints(t) {
@@ -299,15 +300,14 @@ function ticketFromSheetRowCCTV(r = []) {
 // CE
 function ticketFromSheetRowCE(r = []) {
   const [
-    status, orderNumber, department, customerName, phone,
-    creationDate, shift, orderType, branch, restaurant,
-    channel, feedbackDate, issueCategory, actionTaken,
-    customerNotes, key
+    status, department, customerName, phone,
+    creationDate, shift, orderType, branch,
+    restaurant, channel, feedbackDate, issueCategory,
+    customerNotes, actionTaken, satisfaction, orderNumber
   ] = r; // A..P
 
   return {
     status: status || 'Under Review',
-    orderNumber: orderNumber || '',
     department: department || '',
     customerName: customerName || '',
     phone: phone || '',
@@ -319,11 +319,13 @@ function ticketFromSheetRowCE(r = []) {
     channel: channel || '',
     feedbackDate: feedbackDate || '',
     issueCategory: issueCategory || '',
-    actionTaken: actionTaken || '',
     customerNotes: customerNotes || '',
-    caseNumber: key || orderNumber || ''
+    actionTaken: actionTaken || '',
+    satisfaction: satisfaction || '',
+    caseNumber: orderNumber || ''
   };
 }
+
 
 // Complaints
 function ticketFromSheetRowComplaints(r = []) {
@@ -1821,6 +1823,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
