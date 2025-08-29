@@ -27,6 +27,22 @@ Object.defineProperty(window, 'currentSection', {
 // اسم المستخدم الحالي (من صفحة اللوجين)
 const CURRENT_USER = localStorage.getItem('cc_user') || 'operator';
 
+// اسم المستخدم الحالي (من صفحة اللوجين)
+const CURRENT_USER = localStorage.getItem('cc_user') || 'operator';
+
+// من له صلاحية الإضافة
+const CREATOR_ALLOW = {
+  all: ['Anati'],              // مسموح بكل الأقسام
+  'time-table': ['Anati','Mai'] // مسموح بالـ Thyme Table Plates فقط
+};
+
+function canUserCreate(section) {
+  if (CREATOR_ALLOW.all.includes(CURRENT_USER)) return true;
+  if (section === 'time-table' && CREATOR_ALLOW['time-table'].includes(CURRENT_USER)) return true;
+  return false;
+}
+
+
 // ⬅️ أضِف هذا السطر
 const DELETER_USERNAME = 'Anati';
 
@@ -1337,7 +1353,13 @@ document.addEventListener('keydown',e=>{ if (e.key==='Escape') closeTicketDrawer
 // Modal (single tidy version)
 // ----------------------------
 function openModal(section){
-  window.currentSection = section; // يحدّث المتغيّر الداخلي أيضاً
+  if (!canUserCreate(section)) {
+    alert('You are not allowed to add tickets in this section.');
+    return;
+  }
+  window.currentSection = section;
+  // ... تكملة الدالة كما هي
+
   const modal = document.getElementById('modal');
   const dynamicForm = document.getElementById('dynamic-form');
 
@@ -1487,6 +1509,12 @@ function bindFormHandler(){
 
   formEl.addEventListener('submit', async (e)=>{
     e.preventDefault();
+
+        // ⬅️ أضف الشرط هون مباشرة
+  if (!canUserCreate(_currentSection)) {
+    alert('You are not allowed to add tickets in this section.');
+    return;
+  }
     const t = {};
 
     // نبني التذكرة مع دعم await للملفات
@@ -1738,6 +1766,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
