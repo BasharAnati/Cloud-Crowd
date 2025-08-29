@@ -27,8 +27,6 @@ Object.defineProperty(window, 'currentSection', {
 // اسم المستخدم الحالي (من صفحة اللوجين)
 const CURRENT_USER = localStorage.getItem('cc_user') || 'operator';
 
-// اسم المستخدم الحالي (من صفحة اللوجين)
-const CURRENT_USER = localStorage.getItem('cc_user') || 'operator';
 
 // من له صلاحية الإضافة
 const CREATOR_ALLOW = {
@@ -1766,6 +1764,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
