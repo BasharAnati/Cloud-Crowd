@@ -75,6 +75,23 @@ const SECTION_SHEETS = {
 function sheetTab(section){ return SECTION_SHEETS[section]?.tab || null; }
 function sheetPull(section){ return SECTION_SHEETS[section]?.pull || null; }
 
+// أعلى الملف مع باقي الثوابت
+const SEEDED_CASES_KEY = 'cloudCrowdSeededCases';
+
+function getSeededMap(){
+  try { return JSON.parse(localStorage.getItem(SEEDED_CASES_KEY)) || {}; }
+  catch { return {}; }
+}
+function markSeeded(section, key){
+  const map = getSeededMap();
+  (map[section] ||= {})[key] = true;
+  localStorage.setItem(SEEDED_CASES_KEY, JSON.stringify(map));
+}
+function wasSeeded(section, key){
+  const map = getSeededMap();
+  return !!(map[section] && map[section][key]);
+}
+
 
 // يحوّل الملف لصيغة Data URL (Base64)
 function fileToDataURL(file) {
@@ -402,6 +419,50 @@ function mergeTicketsByCase(localArr, fromSheetArr) {
   return Array.from(byCase.values());
 }
 
+async function autoSeedSheetTickets(section){
+  const arr = tickets[section] || [];
+  const toSeed = [];
+
+  for (const t of arr){
+    const key = t.caseNumber || t.orderNumber;
+    if (!key) continue;
+
+    // بدنا نسيّد فقط اللي جايات من Sheets (ما عندهن _id) ولسا ما سيّدناهن قبل
+    if (!t._id && !wasSeeded(section, key)){
+      toSeed.push({ key, ticket: t });
+    }
+  }
+
+  if (!toSeed.length) return;
+
+  for (const {key, ticket} of toSeed){
+    try {
+      const res = await fetch('/.netlify/functions/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({
+          section,
+          status: ticket.status || 'Under Review',
+          payload: ticket,
+          changedBy: CURRENT_USER || 'system-seed'
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'seed failed');
+
+      markSeeded(section, key); // علّمنا إنو اتسيّد
+    } catch(e){
+      console.warn('Auto-seed failed for', section, key, e.message);
+    }
+  }
+
+  // بعد ما نخلص، اسحب من الـDB عشان التكت تاخذ _id
+  try {
+    await hydrateFromDB(section);
+    renderTickets();
+  } catch {}
+}
+
 async function hydrateFromSheets(section) {
   const range = sheetPull(section);
   if (!range) return;
@@ -433,6 +494,8 @@ if (section === 'cctv') {
     saveTicketsToStorage();
     renderTickets();
     console.log(`Hydrated from Sheets (${section}) →`, pulled.length, 'rows');
+    // ⬅️ نادِي الـ seeding هون
+    await autoSeedSheetTickets(section);
   } catch (e) {
     console.warn('hydrateFromSheets error:', e.message);
   }
@@ -1653,12 +1716,15 @@ window.addEventListener('load', async ()=>{
   renderTickets();
   await hydrateFromDB(window.currentSection);
   await hydrateFromSheets(window.currentSection);   // ← أضِف هذا السطر
+  await autoSeedSheetTickets(window.currentSection);
+
 
   // فعّل الريفريش الدوري (ويمنع التكرار)
   if (window.__ticketsPoller) clearInterval(window.__ticketsPoller);
   const poll = async () => {
     await hydrateFromDB(window.currentSection || 'cctv');
     await hydrateFromSheets(window.currentSection || 'cctv');  // ← واستدعِ الشيت هنا كمان
+    await autoSeedSheetTickets(window.currentSection || 'cctv'); // أضفها هون
   };
   window.__ticketsPoller = setInterval(poll, 15000); // كل 15 ثانية
 });
@@ -1764,6 +1830,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
