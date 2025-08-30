@@ -1422,12 +1422,9 @@ async function deleteTicket(idx) {
 
     // 5) إعادة عرض التذاكر
     renderTickets();
-    closeTicketDrawer();
 
-    await Promise.all([ // إعادة تحميل التذاكر من الـ DB و Sheets
-      hydrateFromDB(_currentSection),
-      hydrateFromSheets(_currentSection)
-    ]);
+    // 6) تحديث البيانات من الشيت مرة أخرى
+    await hydrateFromSheets(_currentSection);  // سحب البيانات مجددًا من الشيت
 
     alert('Ticket deleted.');
   } catch (e) {
@@ -1873,6 +1870,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
