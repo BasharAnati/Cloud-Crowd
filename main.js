@@ -506,36 +506,36 @@ async function hydrateFromSheets(section) {
 
     const rows = (data.values || []).filter(row => row && row.length);
     let pulled = [];
-if (section === 'cctv') {
-  pulled = rows.map(ticketFromSheetRowCCTV);
-} else if (section === 'ce') {
-  pulled = rows.map(ticketFromSheetRowCE);
-} else if (section === 'complaints') {
-  pulled = rows.map(ticketFromSheetRowComplaints);
-} else if (section === 'free-orders') {
-  pulled = rows.map(ticketFromSheetRowFreeOrders);
-} else if (section === 'time-table') {
-  pulled = rows.map(ticketFromSheetRowTimeTable);
-}
+    if (section === 'cctv') {
+      pulled = rows.map(ticketFromSheetRowCCTV);
+    } else if (section === 'ce') {
+      pulled = rows.map(ticketFromSheetRowCE);
+    } else if (section === 'complaints') {
+      pulled = rows.map(ticketFromSheetRowComplaints);
+    } else if (section === 'free-orders') {
+      pulled = rows.map(ticketFromSheetRowFreeOrders);
+    } else if (section === 'time-table') {
+      pulled = rows.map(ticketFromSheetRowTimeTable);
+    }
 
+    // هنا نضيف فحص إذا كانت البيانات موجودة
+    if (Array.isArray(pulled) && pulled.length > 0) {
+      console.log(`Hydrated from Sheets (${section}) →`, pulled.length, 'rows');
+    } else {
+      console.log(`No data found for section ${section} from Sheets.`);
+    }
 
     tickets[section] = mergeTicketsByCase(tickets[section] || [], pulled);
     saveTicketsToStorage();
     renderTickets();
-   if (Array.isArray(pulled) && pulled.length > 0) {
-  console.log(`Hydrated from Sheets (${section}) →`, pulled.length, 'rows');
-} else {
-  console.warn(`No data pulled for ${section}.`);
-}
 
-}
-
-    // ⬅️ نادِي الـ seeding هون
+    // نادِي الـ seeding هنا
     await autoSeedSheetTickets(section);
   } catch (e) {
     console.warn('hydrateFromSheets error:', e.message);
   }
 }
+
 
 /* ==== end Sheets helpers ==== */
 
@@ -1865,6 +1865,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
