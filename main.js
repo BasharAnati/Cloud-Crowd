@@ -392,24 +392,26 @@ function ticketFromSheetRowFreeOrders(r = []) {
 // Time Table
 function ticketFromSheetRowTimeTable(r = []) {
   const [
-    status, note, customerName, phone, returnDate,
-    amountToBeRefunded, deliveryFees,
-    platesQuantity, platesNumbers, orderNumber
+    status, note, customerName, phone, orderDate,
+    returnDate, amountToBeRefunded, deliveryFees,
+    platesQuantity, platesNumbers, caseNumber
   ] = r; // A..K
 
   return {
-    status: status || 'Pending Call',
-    note: note || '',
-    customerName: customerName || '',
-    phone: phone || '',
-    returnDate: returnDate || '',
-    amountToBeRefunded: amountToBeRefunded || '',
-    deliveryFees: deliveryFees || '',
-    platesQuantity: platesQuantity || '',
-    platesNumbers: platesNumbers || '',
-    caseNumber: orderNumber || '' // تأكد من أن هذا هو الـ "Order Number" فقط
+    status: status || 'Pending Call',   // A
+    note: note || '',                   // B
+    customerName: customerName || '',   // C
+    phone: phone || '',                 // D
+    orderDate: orderDate || '',         // E
+    returnDate: returnDate || '',       // F
+    amountToBeRefunded: amountToBeRefunded || '', // G
+    deliveryFees: deliveryFees || '',   // H
+    platesQuantity: platesQuantity || '', // I
+    platesNumbers: platesNumbers || '', // J
+    caseNumber: caseNumber || ''        // K
   };
 }
+
 
 
 
@@ -729,19 +731,23 @@ const formFields = {
     { label: 'Action Taken', type: 'textarea', name: 'actionTaken' },
   ],
   'time-table': [
-    { label: 'Status', type: 'select', name: 'status', options: [
-      'No Call Needed', 'Pending Call', 'No Answer', 'Scheduled', 'Issue', 'Returned'
-    ] },
-    { label: 'Customer Name', type: 'text', name: 'customerName' },
-    { label: 'Phone Number', type: 'text', name: 'phone' },
-    { label: 'Order Number', type: 'text', name: 'orderNumber' },
-    { label: 'Order Date', type: 'datetime-local', name: 'orderDate' },
-    { label: 'Return Date', type: 'datetime-local', name: 'returnDate' },
-    { label: 'Amount to Be Refunded', type: 'text', name: 'amountToBeRefunded' },
-    { label: 'Plates Quantity', type: 'text', name: 'platesQuantity' },
-    { label: 'Plates Numbers', type: 'text', name: 'platesNumbers' },
-    { label: 'Note', type: 'textarea', name: 'note' }
-  ]
+  { label: 'Status', type: 'select', name: 'status', options: [
+    'No Call Needed', 'Pending Call', 'No Answer', 'Scheduled', 'Issue', 'Returned'
+  ] },
+  { label: 'Customer Name', type: 'text', name: 'customerName' },
+  { label: 'Phone Number', type: 'text', name: 'phone' },
+  { label: 'Order Number', type: 'text', name: 'orderNumber' },
+  { label: 'Order Date', type: 'datetime-local', name: 'orderDate' },
+  { label: 'Return Date', type: 'datetime-local', name: 'returnDate' },
+  { label: 'Amount to Be Refunded', type: 'text', name: 'amountToBeRefunded' },
+
+  { label: 'Delivery Fees', type: 'text', name: 'deliveryFees' }, // ⬅️ جديد
+
+  { label: 'Plates Quantity', type: 'text', name: 'platesQuantity' },
+  { label: 'Plates Numbers', type: 'text', name: 'platesNumbers' },
+  { label: 'Note', type: 'textarea', name: 'note' }
+]
+
 };
 
 // ----------------------------
@@ -1911,6 +1917,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
