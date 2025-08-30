@@ -392,8 +392,8 @@ function ticketFromSheetRowFreeOrders(r = []) {
 // Time Table
 function ticketFromSheetRowTimeTable(r = []) {
   const [
-    status, note, customerName, phone, orderNumber,
-    returnDate, amountToBeRefunded, deliveryFees,
+    status, note, customerName, phone, returnDate,
+    amountToBeRefunded, deliveryFees,
     platesQuantity, platesNumbers, Key
   ] = r; // A..K
 
@@ -402,7 +402,6 @@ function ticketFromSheetRowTimeTable(r = []) {
     note: note || '',
     customerName: customerName || '',
     phone: phone || '',
-    orderNumber: orderNumber || '', // هذا هو رقم الطلب في الشيت
     returnDate: returnDate || '',
     amountToBeRefunded: amountToBeRefunded || '',
     deliveryFees: deliveryFees || '',
@@ -1871,6 +1870,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
