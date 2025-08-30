@@ -594,8 +594,8 @@ const formFields = {
   cctv: [
     { label: 'Case Status', type: 'select', name: 'status', options: ['Closed', 'Under Review', 'Escalated'] },
     { label: 'Branch', type: 'select', name: 'branch', options: ['Wadi Saqra', 'Swefieh', 'Swefieh Village', 'Manara'] },
-    { label: 'Date', type: 'date', name: 'date' },
-    { label: 'Time', type: 'time', name: 'time' },
+    { label: 'Date', type: 'text', name: 'date' },
+    { label: 'Time', type: 'text', name: 'time' },
     { label: 'Camera(s)', type: 'multi-select', name: 'cameras', options: [
       'Back of Kitchen','Kitchen','Pepsi Kitchen','Storehouse','Cashier','Main Stove','Prep Back Area','Prep Room',
       'Back Corridor','Fingerprint','Posterior View','Refrigerators','2 Pepsi Kitchen','Main Kitchen'
@@ -1873,6 +1873,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
