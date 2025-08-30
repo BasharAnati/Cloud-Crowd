@@ -219,17 +219,17 @@ function rowFromTicketFreeOrders(t) {
 // (مراعاة خريطة السيرفر: status=A, note=B (هي الـaction بالسيرفر), F=returnDate, G=amountToBeRefunded, H=deliveryFees, K=key)
 function rowFromTicketTimeTable(t) {
   return [
-    t.status || 'Pending Call',           // A (status)
-    t.note || '',                         // B (note = action بالسيرفر)
-    t.customerName || '',                 // C
-    t.phone || '',                        // D
-    t.orderNumber || '',                  // E
-    t.returnDate || '',                   // F
-    t.amountToBeRefunded || '',           // G
-    t.deliveryFees || '',                 // H
-    t.platesQuantity || '',               // I
-    t.platesNumbers || '',                // J
-    t.caseNumber || t.orderNumber || ''   // K (key)
+    t.status || 'Pending Call',           // A: status
+    t.note || '',                         // B: note
+    t.customerName || '',                 // C: customerName
+    t.phone || '',                        // D: phone
+    t.orderNumber || '',                  // E: orderNumber
+    t.returnDate || '',                   // F: returnDate
+    t.amountToBeRefunded || '',           // G: amountToBeRefunded
+    t.deliveryFees || '',                 // H: deliveryFees
+    t.platesQuantity || '',               // I: platesQuantity
+    t.platesNumbers || '',                // J: platesNumbers
+    t.caseNumber || t.orderNumber || ''   // K: caseNumber
   ];
 }
 
@@ -394,8 +394,8 @@ function ticketFromSheetRowTimeTable(r = []) {
   const [
     status, note, customerName, phone, orderNumber,
     returnDate, amountToBeRefunded, deliveryFees,
-    platesQuantity, platesNumbers, key
-  ] = r; // A..K
+    platesQuantity, platesNumbers, caseNumber
+  ] = r; // A..K (ترتيب الأعمدة في الشيت)
 
   return {
     status: status || 'Pending Call',
@@ -408,7 +408,7 @@ function ticketFromSheetRowTimeTable(r = []) {
     deliveryFees: deliveryFees || '',
     platesQuantity: platesQuantity || '',
     platesNumbers: platesNumbers || '',
-    caseNumber: key || orderNumber || ''
+    caseNumber: caseNumber || orderNumber || ''
   };
 }
 
@@ -1865,6 +1865,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
