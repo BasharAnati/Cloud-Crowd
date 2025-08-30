@@ -522,7 +522,10 @@ if (section === 'cctv') {
     tickets[section] = mergeTicketsByCase(tickets[section] || [], pulled);
     saveTicketsToStorage();
     renderTickets();
-    console.log(`Hydrated from Sheets (${section}) →`, pulled.length, 'rows');
+   if (Array.isArray(pulled) && pulled.length > 0) {
+  console.log(`Hydrated from Sheets (${section}) →`, pulled.length, 'rows');
+}
+
     // ⬅️ نادِي الـ seeding هون
     await autoSeedSheetTickets(section);
   } catch (e) {
@@ -1712,7 +1715,10 @@ async function hydrateFromDB(section) {
     tickets[sec] = (data.tickets || []).map(rowToTicket);
     saveTicketsToStorage();
     renderTickets();
-    console.log(`Hydrated ${sec} from DB →`, tickets[sec].length, 'tickets');
+   if (Array.isArray(tickets[sec]) && tickets[sec].length > 0) {
+  console.log(`Hydrated ${sec} from DB →`, tickets[sec].length, 'tickets');
+}
+
   } catch (err) {
     console.error('DB hydrate failed:', err);
   }
@@ -1855,6 +1861,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
