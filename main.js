@@ -1137,6 +1137,15 @@ function buildDrawerReadonly(ticket){
 function buildDrawerEditForm(ticket){
   const statusField = formFields[_currentSection].find(f=>f.name==='status');
   const options = statusField ? statusField.options : [];
+
+  // حقل Return Date لقسم Thyme Table Plates فقط
+  const returnDateField = (_currentSection === 'time-table') ? `
+    <div class="form-group">
+      <label>Return Date</label>
+      <input type="date" name="returnDate" value="${escapeHtml((ticket.returnDate||'').split('T')[0])}">
+    </div>
+  ` : '';
+
   return `
     <div class="form-group">
       <label>Status</label>
@@ -1144,12 +1153,16 @@ function buildDrawerEditForm(ticket){
         ${options.map(o=>`<option value="${o}" ${ticket.status===o?'selected':''}>${o}</option>`).join('')}
       </select>
     </div>
+
+    ${returnDateField}
+
     <div class="form-group">
       <label>Action Taken</label>
       <textarea name="actionTaken" rows="4">${escapeHtml(ticket.actionTaken||'')}</textarea>
     </div>
   `;
 }
+
 
 function openTicketDrawer(index){
   drawerIndex = index;
@@ -1357,15 +1370,22 @@ async function saveDrawerEdits() {
   const fd = new FormData(form);
   const t  = tickets[_currentSection][drawerIndex];
 
-  // تعديل محلي سريع
+  // تعديل محلي
   t.status       = fd.get('status');
   t.actionTaken  = fd.get('actionTaken');
+
+  // 👈 جديد: خزن Return Date محليًا فقط لقسم time-table
+  if (_currentSection === 'time-table') {
+    const rd = fd.get('returnDate') || '';
+    t.returnDate = rd;  // خليه بصيغة YYYY-MM-DD (كافية للشيت)
+  }
+
   t.lastModified = new Date().toISOString();
   saveTicketsToStorage();
   renderTickets();
 
   try {
-    // 1) تحديث الـ DB لو له id
+    // 1) تحديث الـ DB (لو له id)
     if (Number.isFinite(Number(t._id))) {
       const res = await fetch('/.netlify/functions/tickets', {
         method: 'PUT',
@@ -1384,29 +1404,37 @@ async function saveDrawerEdits() {
       console.warn('No DB id → ticket came from Google Sheets, DB PUT skipped.');
     }
 
-    // 2) حدّث Google Sheets دائمًا (حسب caseNumber)
+    // 2) تحديث Google Sheets دائمًا
     if (!t.caseNumber) {
       console.warn('No caseNumber on ticket → Sheets PUT skipped.');
     } else {
       const headers = { 'Content-Type': 'application/json' };
       if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
 
+      // 👈 جهّز جسم الطلب للشيت
+      const sheetBody = {
+        section: _currentSection,
+        tab: sheetTab(_currentSection),
+        caseNumber: t.caseNumber,
+        status: t.status,
+        actionTaken: t.actionTaken,
+      };
+
+      // 👈 جديد: أرسل returnDate لما يكون السكشن time-table
+      if (_currentSection === 'time-table') {
+        sheetBody.returnDate = t.returnDate ?? null;
+      }
+
       const resS = await fetch(SHEETS_ENDPOINT, {
         method: 'PUT',
         headers,
-        body: JSON.stringify({
-          section: _currentSection,           // مهم
-          tab: sheetTab(_currentSection),     // اسم الورقة
-          caseNumber: t.caseNumber,
-          status: t.status,
-          actionTaken: t.actionTaken
-        })
+        body: JSON.stringify(sheetBody)
       });
       const dataS = await resS.json().catch(() => ({}));
       if (!resS.ok || dataS?.ok === false) throw new Error(dataS?.error || 'Sheets update failed');
     }
 
-    // 3) اعمل ريفرش من المصدرين
+    // 3) ريفرش
     await hydrateFromDB(_currentSection);
     await hydrateFromSheets(_currentSection);
 
@@ -1415,9 +1443,9 @@ async function saveDrawerEdits() {
     alert('Failed to save changes to the server.');
   }
 
-  // أعد فتح الـDrawer محدث
   openTicketDrawer(drawerIndex);
 }
+
 
 
 async function deleteTicket(idx) {
@@ -1920,6 +1948,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
