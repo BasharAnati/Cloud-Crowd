@@ -394,7 +394,7 @@ function ticketFromSheetRowTimeTable(r = []) {
   const [
     status, note, customerName, phone, orderNumber,
     returnDate, amountToBeRefunded, deliveryFees,
-    platesQuantity, platesNumbers, orderNumber
+    platesQuantity, platesNumbers, Key
   ] = r; // A..K
 
   return {
@@ -408,7 +408,7 @@ function ticketFromSheetRowTimeTable(r = []) {
     deliveryFees: deliveryFees || '',
     platesQuantity: platesQuantity || '',
     platesNumbers: platesNumbers || '',
-    caseNumber: orderNumber || '' // المفتاح
+    caseNumber: key || orderNumber || '' // المفتاح
   };
 }
 
@@ -1867,6 +1867,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
