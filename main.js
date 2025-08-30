@@ -524,6 +524,10 @@ if (section === 'cctv') {
     renderTickets();
    if (Array.isArray(pulled) && pulled.length > 0) {
   console.log(`Hydrated from Sheets (${section}) →`, pulled.length, 'rows');
+} else {
+  console.warn(`No data pulled for ${section}.`);
+}
+
 }
 
     // ⬅️ نادِي الـ seeding هون
@@ -1861,6 +1865,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
