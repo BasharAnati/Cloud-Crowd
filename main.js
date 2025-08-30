@@ -655,7 +655,6 @@ const formFields = {
     ] },
     { label: 'Case Details', type: 'textarea', name: 'complaintDetails' },
     { label: 'Action Taken', type: 'textarea', name: 'actionTaken' },
-    { label: 'Attached', type: 'file', name: 'attached', accept: 'image/*' }
   ],
   'time-table': [
     { label: 'Status', type: 'select', name: 'status', options: [
@@ -1834,6 +1833,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
