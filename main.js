@@ -551,7 +551,7 @@ async function hydrateFromSheets(section) {
 // Config: main fields on cards
 // ----------------------------
 const mainFields = {
-  cctv: ['branch', 'staff', 'dateTime'],
+  cctv: ['branch', 'staff', 'sections'],
   ce: ['customerName', 'branch', 'restaurant'],
   'free-orders': ['customerName', 'orderNumber', 'discountAmount'],
   complaints: ['customerName', 'branch', 'issueCategory'],
@@ -1873,6 +1873,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
