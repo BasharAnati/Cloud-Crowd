@@ -217,21 +217,24 @@ function rowFromTicketFreeOrders(t) {
 
 // === Time Table ===
 // (مراعاة خريطة السيرفر: status=A, note=B (هي الـaction بالسيرفر), F=returnDate, G=amountToBeRefunded, H=deliveryFees, K=key)
+// A..K = Status, Note, Customer Name, Phone, Order Date, Return Date,
+//        Amount to Be Refunded, Delivery Fees, Plates Quantity, Plates Numbers, Case Number
 function rowFromTicketTimeTable(t) {
   return [
-    t.status || 'Pending Call',           // A: status
-    t.note || '',                         // B: note
-    t.customerName || '',                 // C: customerName
-    t.phone || '',                        // D: phone
-    t.orderNumber || '',                  // E: orderNumber
-    t.returnDate || '',                   // F: returnDate
-    t.amountToBeRefunded || '',           // G: amountToBeRefunded
-    t.deliveryFees || '',                 // H: deliveryFees
-    t.platesQuantity || '',               // I: platesQuantity
-    t.platesNumbers || '',                // J: platesNumbers
-    t.caseNumber || t.orderNumber || ''   // K: caseNumber
+    t.status || 'Pending Call',        // A
+    t.note || '',                      // B
+    t.customerName || '',              // C
+    t.phone || '',                     // D
+    t.orderDate || '',                 // E
+    t.returnDate || '',                // F
+    t.amountToBeRefunded || '',        // G
+    t.deliveryFees || '',              // H
+    t.platesQuantity || '',            // I
+    t.platesNumbers || '',             // J
+    (t.caseNumber || t.orderNumber || '') // K  ← المفتاح الظاهر في الموقع كـ Case Number
   ];
 }
+
 
 async function pushToSheets(section, ticket) {
   const tab = sheetTab(section);
@@ -398,17 +401,17 @@ function ticketFromSheetRowTimeTable(r = []) {
   ] = r; // A..K
 
   return {
-    status: status || 'Pending Call',   // A
-    note: note || '',                   // B
-    customerName: customerName || '',   // C
-    phone: phone || '',                 // D
-    orderDate: orderDate || '',         // E
-    returnDate: returnDate || '',       // F
+    status: status || 'Pending Call',       // A
+    note: note || '',                       // B
+    customerName: customerName || '',       // C
+    phone: phone || '',                     // D
+    orderDate: orderDate || '',             // E
+    returnDate: returnDate || '',           // F
     amountToBeRefunded: amountToBeRefunded || '', // G
-    deliveryFees: deliveryFees || '',   // H
-    platesQuantity: platesQuantity || '', // I
-    platesNumbers: platesNumbers || '', // J
-    caseNumber: caseNumber || ''        // K
+    deliveryFees: deliveryFees || '',       // H
+    platesQuantity: platesQuantity || '',   // I
+    platesNumbers: platesNumbers || '',     // J
+    caseNumber: caseNumber || ''            // K (يُعرض في الدروَّر كـ Case Number)
   };
 }
 
@@ -1917,6 +1920,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
