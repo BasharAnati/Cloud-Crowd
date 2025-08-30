@@ -394,7 +394,7 @@ function ticketFromSheetRowTimeTable(r = []) {
   const [
     status, note, customerName, phone, returnDate,
     amountToBeRefunded, deliveryFees,
-    platesQuantity, platesNumbers, Key
+    platesQuantity, platesNumbers, orderNumber
   ] = r; // A..K
 
   return {
@@ -407,7 +407,7 @@ function ticketFromSheetRowTimeTable(r = []) {
     deliveryFees: deliveryFees || '',
     platesQuantity: platesQuantity || '',
     platesNumbers: platesNumbers || '',
-    caseNumber: Key || orderNumber || '' // هذا هو "Case Number" في الموقع
+    caseNumber: orderNumber || '' // هذا هو "Case Number" في الموقع
   };
 }
 
@@ -1870,6 +1870,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
