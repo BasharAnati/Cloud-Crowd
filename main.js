@@ -406,10 +406,11 @@ function ticketFromSheetRowTimeTable(r = []) {
     amountToBeRefunded: amountToBeRefunded || '',
     deliveryFees: deliveryFees || '',
     platesQuantity: platesQuantity || '',
-    platesNumbers: platesNumbers || '', // تأكد من هنا
-    caseNumber: orderNumber || ''  // تأكد من أن هذا الحقل لا يتم الخلط فيه مع قيمة أخرى
+    platesNumbers: platesNumbers || '',
+    caseNumber: orderNumber || '' // تأكد من أن هذا هو الـ "Order Number" فقط
   };
 }
+
 
 
 
@@ -1872,6 +1873,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
