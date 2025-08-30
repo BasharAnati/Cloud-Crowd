@@ -641,7 +641,7 @@ const formFields = {
     ] },
     { label: 'Customer Name', type: 'text', name: 'customerName' },
     { label: 'Phone Number', type: 'text', name: 'phone' },
-    { label: 'Creation Date', type: 'datetime-local', name: 'creationDate' },
+    { label: 'Creation Date', type: 'text', name: 'creationDate' },
     { label: 'Shift', type: 'select', name: 'shift', options: ['Shift A','Shift B'] },
     { label: 'Order Type', type: 'select', name: 'orderType', options: ['Delivery','Takeout'] },
     { label: 'Branch Name', type: 'select', name: 'branch', options: ['Swefieh','Wadi Saqra','Swefieh Village'] },
@@ -1834,6 +1834,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
