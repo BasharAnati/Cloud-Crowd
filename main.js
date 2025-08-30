@@ -408,9 +408,10 @@ function ticketFromSheetRowTimeTable(r = []) {
     deliveryFees: deliveryFees || '',
     platesQuantity: platesQuantity || '',
     platesNumbers: platesNumbers || '',
-    caseNumber: key || orderNumber || '' // المفتاح
+    caseNumber: Key || orderNumber || '' // المفتاح
   };
 }
+
 
 
 
@@ -419,15 +420,15 @@ function mergeTicketsByCase(localArr, fromSheetArr) {
 
   // إضافة التذاكر من localStorage إلى Map
   for (const t of localArr) {
-    const key = t.caseNumber || t.orderNumber || '';
-    if (!key) continue;
-    byCase.set(key, t);
+    const key = t.caseNumber || t.orderNumber || ''; // تأكد من أن caseNumber أو orderNumber موجود
+    if (!key) continue; // إذا لم يوجد key لا تضيف التذكرة
+    byCase.set(key, t);  // حفظ التذكرة باستخدام المفتاح
   }
 
   // إضافة التذاكر من الشيت إلى Map
   for (const s of fromSheetArr) {
-    const key = s.caseNumber || s.orderNumber || '';
-    if (!key) continue;
+    const key = s.caseNumber || s.orderNumber || ''; // تأكد من أن caseNumber أو orderNumber موجود
+    if (!key) continue; // إذا لم يوجد key لا تضيف التذكرة
 
     // إذا كانت التذكرة مفقودة من Map، أضفها مباشرة
     if (!byCase.has(key)) {
@@ -435,6 +436,7 @@ function mergeTicketsByCase(localArr, fromSheetArr) {
     } else {
       const cur = byCase.get(key);
       // دمج التذاكر القديمة والجديدة
+      // يمكن إضافة شرط للتأكد من توافق الحقول
       byCase.set(key, { ...cur, ...s, _fromSheet: true });
     }
   }
@@ -448,6 +450,7 @@ function mergeTicketsByCase(localArr, fromSheetArr) {
 
   return finalTickets;
 }
+
 
 
 async function autoSeedSheetTickets(section){
@@ -1867,6 +1870,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
