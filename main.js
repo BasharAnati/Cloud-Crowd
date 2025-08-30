@@ -402,15 +402,16 @@ function ticketFromSheetRowTimeTable(r = []) {
     note: note || '',
     customerName: customerName || '',
     phone: phone || '',
-    orderNumber: orderNumber || '',
+    orderNumber: orderNumber || '', // هذا هو رقم الطلب في الشيت
     returnDate: returnDate || '',
     amountToBeRefunded: amountToBeRefunded || '',
     deliveryFees: deliveryFees || '',
     platesQuantity: platesQuantity || '',
     platesNumbers: platesNumbers || '',
-    caseNumber: Key || orderNumber || '' // المفتاح
+    caseNumber: Key || orderNumber || '' // هذا هو "Case Number" في الموقع
   };
 }
+
 
 
 
