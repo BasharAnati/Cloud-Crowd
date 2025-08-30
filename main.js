@@ -500,9 +500,44 @@ async function autoSeedSheetTickets(section){
   } catch {}
 }
 
+
+// مفتاح موحّد للتذكرة بأي قسم
+function caseKey(t) {
+  return (t?.caseNumber || t?.orderNumber || '').toString().trim();
+}
+
+// التذكرة من الشيت إذا ما إلها _id (ID الداتابيس)
+function isFromSheet(t) {
+  return !Number.isFinite(Number(t?._id));
+}
+
+/**
+ * مصالحة بعد سَحبة الشيت:
+ * بنمسح محليًا أي تذكرة أصلها من الشيت ومش موجود مفتاحها بالسحبة الحالية.
+ * (تذاكر الداتابيس بنتركها بحالها)
+ */
+function reconcileAfterSheetsPull(section, pulled) {
+  const sheetKeys = new Set(pulled.map(caseKey).filter(Boolean));
+
+  const before = tickets[section] || [];
+  const after = before.filter(t => {
+    const key = caseKey(t);
+    if (!key) return false;            // سطر تالف بدون مفتاح
+    if (!isFromSheet(t)) return true;  // من الـDB → نخليها
+    return sheetKeys.has(key);         // من الشيت → نخليها فقط لو لسه موجودة بالشيت
+  });
+
+  if (after.length !== before.length) {
+    tickets[section] = after;
+    saveTicketsToStorage();
+    renderTickets();
+  }
+}
+
 async function hydrateFromSheets(section) {
   const range = sheetPull(section);
   if (!range) return;
+
   try {
     const headers = {};
     if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
@@ -513,6 +548,7 @@ async function hydrateFromSheets(section) {
     if (!res.ok) throw new Error(data.error || 'Sheets GET failed');
 
     const rows = (data.values || []).filter(row => row && row.length);
+
     let pulled = [];
     if (section === 'cctv') {
       pulled = rows.map(ticketFromSheetRowCCTV);
@@ -526,23 +562,28 @@ async function hydrateFromSheets(section) {
       pulled = rows.map(ticketFromSheetRowTimeTable);
     }
 
-    // هنا نضيف فحص إذا كانت البيانات موجودة
     if (Array.isArray(pulled) && pulled.length > 0) {
       console.log(`Hydrated from Sheets (${section}) →`, pulled.length, 'rows');
     } else {
       console.log(`No data found for section ${section} from Sheets.`);
     }
 
+    // 1) دمج (يحدّث/يضيف)
     tickets[section] = mergeTicketsByCase(tickets[section] || [], pulled);
     saveTicketsToStorage();
     renderTickets();
 
-    // نادِي الـ seeding هنا
+    // 2) مصالحة (يمسح محليًا أي تذكرة من الشيت انحذفت من الشيت)
+    reconcileAfterSheetsPull(section, pulled);
+
+    // 3) سيّدنغ لأي تذكرة شيت لسه ما إلها _id
     await autoSeedSheetTickets(section);
+
   } catch (e) {
     console.warn('hydrateFromSheets error:', e.message);
   }
 }
+
 
 
 /* ==== end Sheets helpers ==== */
@@ -1870,6 +1911,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
