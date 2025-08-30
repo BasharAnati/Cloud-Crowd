@@ -883,7 +883,8 @@ function renderTickets(){
       if (baseDT){
         const d = new Date(baseDT);
         if (!isNaN(d)) {
-          timeStr = d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+         timeStr = d.toLocaleDateString('en-US');
+
         }
       }
 
@@ -1833,6 +1834,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
