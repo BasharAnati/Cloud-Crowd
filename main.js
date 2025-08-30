@@ -414,23 +414,39 @@ function ticketFromSheetRowTimeTable(r = []) {
 
 function mergeTicketsByCase(localArr, fromSheetArr) {
   const byCase = new Map();
+
+  // إضافة التذاكر من localStorage إلى Map
   for (const t of localArr) {
     const key = t.caseNumber || t.orderNumber || '';
     if (!key) continue;
     byCase.set(key, t);
   }
+
+  // إضافة التذاكر من الشيت إلى Map
   for (const s of fromSheetArr) {
     const key = s.caseNumber || s.orderNumber || '';
     if (!key) continue;
+
+    // إذا كانت التذكرة مفقودة من Map، أضفها مباشرة
     if (!byCase.has(key)) {
       byCase.set(key, { ...s });
     } else {
       const cur = byCase.get(key);
+      // دمج التذاكر القديمة والجديدة
       byCase.set(key, { ...cur, ...s, _fromSheet: true });
     }
   }
-  return Array.from(byCase.values());
+
+  // تحقق من حذف التذاكر التي كانت موجودة في localStorage ولكن تم حذفها من الشيت
+  const finalTickets = Array.from(byCase.values());
+
+  // تحديث localStorage
+  tickets[_currentSection] = finalTickets;
+  saveTicketsToStorage();
+
+  return finalTickets;
 }
+
 
 async function autoSeedSheetTickets(section){
   const arr = tickets[section] || [];
@@ -1339,7 +1355,7 @@ async function saveDrawerEdits() {
 }
 
 
-async function deleteTicket(idx){
+async function deleteTicket(idx) {
   const t = tickets[_currentSection][idx];
   if (!t) return;
 
@@ -1383,13 +1399,17 @@ async function deleteTicket(idx){
       if (!resS.ok || dataS?.ok === false) throw new Error(dataS?.error || 'Sheets delete failed');
     }
 
-    // 3) حدّث الواجهة محلياً ثم انعش من المصدرين
+    // 3) حذف التذكرة محليًا (من المصفوفة)
     tickets[_currentSection].splice(idx, 1);
-    saveTicketsToStorage();
+
+    // 4) حفظ التغييرات في localStorage بعد الحذف
+    saveTicketsToStorage();  // تأكد من أن التذاكر يتم تخزينها مرة أخرى في localStorage
+
+    // 5) إعادة عرض التذاكر
     renderTickets();
     closeTicketDrawer();
 
-    await Promise.all([
+    await Promise.all([ // إعادة تحميل التذاكر من الـ DB و Sheets
       hydrateFromDB(_currentSection),
       hydrateFromSheets(_currentSection)
     ]);
@@ -1400,6 +1420,7 @@ async function deleteTicket(idx){
     alert('Failed to delete ticket: ' + (e.message || ''));
   }
 }
+
 
 
 function closeTicketDrawer(){
@@ -1834,6 +1855,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
