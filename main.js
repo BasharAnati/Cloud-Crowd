@@ -354,9 +354,10 @@ function ticketFromSheetRowComplaints(r = []) {
     issueCategory: issueCategory || '',
     complaintDetails: complaintDetails || '',
     actionTaken: actionTaken || '',
-    caseNumber: orderNumber || ''
+    caseNumber: orderNumber || ''  // هذا سيتطابق مع الحقل "Order Number"
   };
 }
+
 
 // Free Orders
 function ticketFromSheetRowFreeOrders(r = []) {
@@ -1831,6 +1832,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
