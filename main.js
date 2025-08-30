@@ -170,26 +170,27 @@ function rowFromTicketCE(t) {
 
 
 // === Complaints ===
+// === Complaints ===
 function rowFromTicketComplaints(t) {
   return [
-    t.status || 'Under Review',           // A
-    t.orderNumber || '',                  // B
-    t.department || '',                   // C
-    t.customerName || '',                 // D
-    t.phone || '',                        // E
-    t.creationDate || '',                 // F
-    t.shift || '',                        // G
-    t.orderType || '',                    // H
-    t.branch || '',                       // I
-    t.restaurant || '',                   // J
-    t.channel || '',                      // K
-    t.issueCategory || '',                // L
-    t.complaintDetails || '',             // M
-    t.actionTaken || '',                  // N (action)
-    t.caseNumber || t.orderNumber || ''   // *** ملاحظة: شيتك حالياً A..N، والـkey عندك بالباك إند = N.
-                                          // إذا بدك تحتفظ بـkey في عمود N: خلّي caseNumber آخر عنصر هنا "بدل N".
-  ].slice(0, 14); // يضمن A..N فقط؛ نكتفي حتى N حسب pull
+    t.status || 'Under Review',           // A: Status
+    t.department || '',                   // B: Department Responsible
+    t.customerName || '',                 // C: Customer Name
+    t.phone || '',                        // D: Phone Number
+    t.creationDate || '',                 // E: Creation Date
+    t.shift || '',                        // F: Shift
+    t.orderType || '',                    // G: Order Type
+    t.branch || '',                       // H: Branch Name
+    t.restaurant || '',                   // I: Restaurant
+    t.channel || '',                      // J: Order Channel
+    t.issueCategory || '',                // K: Issue Category
+    t.complaintDetails || '',             // L: Complaint Details
+    t.actionTaken || '',                  // M: Action Taken
+    t.caseNumber || t.orderNumber || ''   // N: Order Number
+  ].slice(0, 14); // Ensure we have only columns A to N
 }
+
+
 
 // === Free Orders (Complimentary) ===
 // الشيت: A Status, B Customer Name, C Phone, D Order Date,
@@ -334,14 +335,14 @@ function ticketFromSheetRowCE(r = []) {
 // Complaints
 function ticketFromSheetRowComplaints(r = []) {
   const [
-    status, orderNumber, department, customerName, phone,
-    creationDate, shift, orderType, branch, restaurant,
-    channel, issueCategory, complaintDetails, actionTaken
+    status, department, customerName, phone,
+    creationDate, shift, orderType, branch,
+    restaurant, channel, issueCategory,
+    complaintDetails, actionTaken, caseNumber
   ] = r; // A..N
 
   return {
     status: status || 'Under Review',
-    orderNumber: orderNumber || '',
     department: department || '',
     customerName: customerName || '',
     phone: phone || '',
@@ -354,9 +355,10 @@ function ticketFromSheetRowComplaints(r = []) {
     issueCategory: issueCategory || '',
     complaintDetails: complaintDetails || '',
     actionTaken: actionTaken || '',
-    caseNumber: orderNumber || ''  // هذا سيتطابق مع الحقل "Order Number"
+    caseNumber: caseNumber || ''
   };
 }
+
 
 
 // Free Orders
@@ -1832,6 +1834,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
