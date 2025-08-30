@@ -390,15 +390,15 @@ function ticketFromSheetRowFreeOrders(r = []) {
 
 
 // Time Table
-function ticketFromSheetRowTimeTable(r = []) {
+function ticketFromSheetRowFreeOrders(r = []) {
   const [
     status, note, customerName, phone, orderNumber,
     returnDate, amountToBeRefunded, deliveryFees,
-    platesQuantity, platesNumbers, caseNumber
-  ] = r; // A..K (ترتيب الأعمدة في الشيت)
+    platesQuantity, platesNumbers, key
+  ] = r; // A..K
 
   return {
-    status: status || 'Pending Call',
+    status: status || 'Active',
     note: note || '',
     customerName: customerName || '',
     phone: phone || '',
@@ -408,9 +408,10 @@ function ticketFromSheetRowTimeTable(r = []) {
     deliveryFees: deliveryFees || '',
     platesQuantity: platesQuantity || '',
     platesNumbers: platesNumbers || '',
-    caseNumber: caseNumber || orderNumber || ''
+    caseNumber: key || orderNumber || '' // المفتاح
   };
 }
+
 
 function mergeTicketsByCase(localArr, fromSheetArr) {
   const byCase = new Map();
@@ -1865,6 +1866,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
