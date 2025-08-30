@@ -397,6 +397,7 @@ function ticketFromSheetRowTimeTable(r = []) {
     platesQuantity, platesNumbers, orderNumber
   ] = r; // A..K
 
+  // تأكد من أن `orderNumber` يكون هو الـ `Case Number` بدلاً من `Order Date`
   return {
     status: status || 'Pending Call',
     note: note || '',
@@ -407,9 +408,10 @@ function ticketFromSheetRowTimeTable(r = []) {
     deliveryFees: deliveryFees || '',
     platesQuantity: platesQuantity || '',
     platesNumbers: platesNumbers || '',
-    caseNumber: orderNumber || '' // هذا هو "Case Number" في الموقع
+    caseNumber: orderNumber || '' // هنا نستخدم الـ `orderNumber` كـ `Case Number`
   };
 }
+
 
 
 
@@ -1870,6 +1872,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
