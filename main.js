@@ -397,7 +397,6 @@ function ticketFromSheetRowTimeTable(r = []) {
     platesQuantity, platesNumbers, orderNumber
   ] = r; // A..K
 
-  // تأكد من أن `orderNumber` يكون هو الـ `Case Number` بدلاً من `Order Date`
   return {
     status: status || 'Pending Call',
     note: note || '',
@@ -407,10 +406,11 @@ function ticketFromSheetRowTimeTable(r = []) {
     amountToBeRefunded: amountToBeRefunded || '',
     deliveryFees: deliveryFees || '',
     platesQuantity: platesQuantity || '',
-    platesNumbers: platesNumbers || '',
-    caseNumber: orderNumber || '' // هنا نستخدم الـ `orderNumber` كـ `Case Number`
+    platesNumbers: platesNumbers || '', // تأكد من هنا
+    caseNumber: orderNumber || ''  // تأكد من أن هذا الحقل لا يتم الخلط فيه مع قيمة أخرى
   };
 }
+
 
 
 
@@ -1872,6 +1872,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
