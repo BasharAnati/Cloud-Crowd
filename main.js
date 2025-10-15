@@ -568,18 +568,21 @@ async function hydrateFromSheets(section) {
     }
 
     // 1) دمج (يحدّث/يضيف)
-tickets[section] = mergeTicketsByCase(tickets[section] || [], pulled);
+    tickets[section] = mergeTicketsByCase(tickets[section] || [], pulled);
+    
+    // 2) مصالحة (يمسح محليًا أي تذكرة من الشيت انحذفت من الشيت)
+    reconcileAfterSheetsPull(section, pulled);
+    
+    // 3) سيّدنغ لأي تذكرة شيت لسه ما إلها _id
+    await autoSeedSheetTickets(section);
+    
+    // ✅ بعد ما يخلص الكل نحفظ ونرسم مرة واحدة فقط
+    saveTicketsToStorage();
+    renderTickets();
 
-// 2) مصالحة (يمسح محليًا أي تذكرة من الشيت انحذفت من الشيت)
-reconcileAfterSheetsPull(section, pulled);
-
-// 3) سيّدنغ لأي تذكرة شيت لسه ما إلها _id
-await autoSeedSheetTickets(section);
-
-// ✅ بعد ما يخلص الكل نحفظ ونرسم مرة واحدة فقط
-saveTicketsToStorage();
-renderTickets();
-
+  } catch (e) {  // ← هاد اللي كان ناقص!
+    console.warn('hydrateFromSheets error:', e.message);
+  }
 }
 
 
@@ -1941,6 +1944,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
