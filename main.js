@@ -428,26 +428,27 @@ function mergeTicketsByCase(localArr, fromSheetArr) {
 
   // إضافة التذاكر من localStorage إلى Map
   for (const t of localArr) {
-    const key = t.caseNumber || t.orderNumber || ''; // تأكد من أن caseNumber أو orderNumber موجود
-    if (!key) continue; // إذا لم يوجد key لا تضيف التذكرة
-    byCase.set(key, t);  // حفظ التذكرة باستخدام المفتاح
+    const key = t.caseNumber || t.orderNumber || '';
+    if (!key) continue;
+    byCase.set(key, t);
   }
 
   // إضافة التذاكر من الشيت إلى Map
   for (const s of fromSheetArr) {
-    const key = s.caseNumber || s.orderNumber || ''; // تأكد من أن caseNumber أو orderNumber موجود
-    if (!key) continue; // إذا لم يوجد key لا تضيف التذكرة
+    const key = s.caseNumber || s.orderNumber || '';
+    if (!key) continue;
 
-    // إذا كانت التذكرة مفقودة من Map، أضفها مباشرة
     if (!byCase.has(key)) {
       byCase.set(key, { ...s });
     } else {
       const cur = byCase.get(key);
-      // دمج التذاكر القديمة والجديدة
-      // يمكن إضافة شرط للتأكد من توافق الحقول
       byCase.set(key, { ...cur, ...s, _fromSheet: true });
     }
   }
+
+  return Array.from(byCase.values());
+}
+
 
   // تحقق من حذف التذاكر التي كانت موجودة في localStorage ولكن تم حذفها من الشيت
   const finalTickets = Array.from(byCase.values());
@@ -535,7 +536,7 @@ function reconcileAfterSheetsPull(section, pulled) {
   if (after.length !== before.length) {
     tickets[section] = after;
     saveTicketsToStorage();
-    renderTickets();
+    // ❌ احذف renderTickets() من هون
   }
 }
 
@@ -574,19 +575,18 @@ async function hydrateFromSheets(section) {
     }
 
     // 1) دمج (يحدّث/يضيف)
-    tickets[section] = mergeTicketsByCase(tickets[section] || [], pulled);
-    saveTicketsToStorage();
-    renderTickets();
+tickets[section] = mergeTicketsByCase(tickets[section] || [], pulled);
 
-    // 2) مصالحة (يمسح محليًا أي تذكرة من الشيت انحذفت من الشيت)
-    reconcileAfterSheetsPull(section, pulled);
+// 2) مصالحة (يمسح محليًا أي تذكرة من الشيت انحذفت من الشيت)
+reconcileAfterSheetsPull(section, pulled);
 
-    // 3) سيّدنغ لأي تذكرة شيت لسه ما إلها _id
-    await autoSeedSheetTickets(section);
+// 3) سيّدنغ لأي تذكرة شيت لسه ما إلها _id
+await autoSeedSheetTickets(section);
 
-  } catch (e) {
-    console.warn('hydrateFromSheets error:', e.message);
-  }
+// ✅ بعد ما يخلص الكل نحفظ ونرسم مرة واحدة فقط
+saveTicketsToStorage();
+renderTickets();
+
 }
 
 
@@ -1948,6 +1948,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
