@@ -426,24 +426,24 @@ function ticketFromSheetRowTimeTable(r = []) {
 function mergeTicketsByCase(localArr, fromSheetArr) {
   const byCase = new Map();
 
-  // إضافة التذاكر من localStorage إلى Map
   for (const t of localArr) {
     const key = t.caseNumber || t.orderNumber || '';
     if (!key) continue;
-    byCase.set(key, t);
+    byCase.set(key, { ...t });
   }
 
-  // إضافة التذاكر من الشيت إلى Map
   for (const s of fromSheetArr) {
     const key = s.caseNumber || s.orderNumber || '';
     if (!key) continue;
+    
+    // ✅ فقط إذا مش موجودة
     if (!byCase.has(key)) {
-      byCase.set(key, { ...s });
-    } else {
-      const cur = byCase.get(key);
-      byCase.set(key, { ...cur, ...s, _fromSheet: true });
+      byCase.set(key, { ...s, _fromSheet: true });
     }
   }
+
+  return Array.from(byCase.values());
+}
 
   // تحديث localStorage
   const finalTickets = Array.from(byCase.values());
@@ -569,9 +569,6 @@ async function hydrateFromSheets(section) {
 
     // 1) دمج (يحدّث/يضيف)
     tickets[section] = mergeTicketsByCase(tickets[section] || [], pulled);
-    
-    // 2) مصالحة (يمسح محليًا أي تذكرة من الشيت انحذفت من الشيت)
-    reconcileAfterSheetsPull(section, pulled);
     
     // 3) سيّدنغ لأي تذكرة شيت لسه ما إلها _id
     await autoSeedSheetTickets(section);
@@ -1944,6 +1941,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
