@@ -437,7 +437,6 @@ function mergeTicketsByCase(localArr, fromSheetArr) {
   for (const s of fromSheetArr) {
     const key = s.caseNumber || s.orderNumber || '';
     if (!key) continue;
-
     if (!byCase.has(key)) {
       byCase.set(key, { ...s });
     } else {
@@ -446,17 +445,11 @@ function mergeTicketsByCase(localArr, fromSheetArr) {
     }
   }
 
-  return Array.from(byCase.values());
-}
-
-
-  // تحقق من حذف التذاكر التي كانت موجودة في localStorage ولكن تم حذفها من الشيت
-  const finalTickets = Array.from(byCase.values());
-
   // تحديث localStorage
+  const finalTickets = Array.from(byCase.values());
   tickets[_currentSection] = finalTickets;
   saveTicketsToStorage();
-
+  
   return finalTickets;
 }
 
@@ -1948,6 +1941,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
