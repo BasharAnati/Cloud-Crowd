@@ -1807,9 +1807,18 @@ async function hydrateFromDB(section) {
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'fetch failed');
 
-    tickets[sec] = (data.tickets || []).map(rowToTicket);
-    saveTicketsToStorage();
-    renderTickets();
+    const newTickets = (data.tickets || []).map(rowToTicket);
+
+// تحقق إذا فعلاً صار في فرق بين القديم والجديد
+const oldTickets = tickets[sec] || [];
+const isSame = JSON.stringify(newTickets) === JSON.stringify(oldTickets);
+
+if (!isSame) {
+  tickets[sec] = newTickets;
+  saveTicketsToStorage();
+  renderTickets();
+}
+
    if (Array.isArray(tickets[sec]) && tickets[sec].length > 0) {
   console.log(`Hydrated ${sec} from DB →`, tickets[sec].length, 'tickets');
 }
@@ -1956,6 +1965,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
