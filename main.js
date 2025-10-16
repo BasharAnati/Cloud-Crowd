@@ -422,60 +422,65 @@ function ticketFromSheetRowTimeTable(r = []) {
 
 
 
-
 function mergeTicketsByCase(localArr, fromSheetArr) {
   const byCase = new Map();
 
+  // إضافة التذاكر من localStorage إلى Map
   for (const t of localArr) {
-    const key = t.caseNumber || t.orderNumber || '';
-    if (!key) continue;
-    byCase.set(key, { ...t });
+    const key = t.caseNumber || t.orderNumber || ''; // تأكد من أن caseNumber أو orderNumber موجود
+    if (!key) continue; // إذا لم يوجد key لا تضيف التذكرة
+    byCase.set(key, t); // حفظ التذكرة باستخدام المفتاح
   }
 
+  // إضافة التذاكر من الشيت إلى Map
   for (const s of fromSheetArr) {
-    const key = s.caseNumber || s.orderNumber || '';
-    if (!key) continue;
-    
-    // ✅ فقط إذا مش موجودة
+    const key = s.caseNumber || s.orderNumber || ''; // تأكد من أن caseNumber أو orderNumber موجود
+    if (!key) continue; // إذا لم يوجد key لا تضيف التذكرة
+
+    // إذا كانت التذكرة مفقودة من Map، أضفها مباشرة
     if (!byCase.has(key)) {
-      byCase.set(key, { ...s, _fromSheet: true });
+      byCase.set(key, { ...s });
+    } else {
+      const cur = byCase.get(key);
+      // دمج التذاكر القديمة والجديدة
+      // يمكن إضافة شرط للتأكد من توافق الحقول
+      byCase.set(key, { ...cur, ...s, _fromSheet: true });
     }
   }
 
-  return Array.from(byCase.values());
-}
+  // تحقق من حذف التذاكر التي كانت موجودة في localStorage ولكن تم حذفها من الشيت
+  const finalTickets = Array.from(byCase.values());
 
   // تحديث localStorage
-  const finalTickets = Array.from(byCase.values());
   tickets[_currentSection] = finalTickets;
   saveTicketsToStorage();
-  
+
   return finalTickets;
 }
 
+// ============================================================================
 
-
-async function autoSeedSheetTickets(section){
+async function autoSeedSheetTickets(section) {
   const arr = tickets[section] || [];
   const toSeed = [];
 
-  for (const t of arr){
+  for (const t of arr) {
     const key = t.caseNumber || t.orderNumber;
     if (!key) continue;
 
     // بدنا نسيّد فقط اللي جايات من Sheets (ما عندهن _id) ولسا ما سيّدناهن قبل
-    if (!t._id && !wasSeeded(section, key)){
+    if (!t._id && !wasSeeded(section, key)) {
       toSeed.push({ key, ticket: t });
     }
   }
 
   if (!toSeed.length) return;
 
-  for (const {key, ticket} of toSeed){
+  for (const { key, ticket } of toSeed) {
     try {
       const res = await fetch('/.netlify/functions/tickets', {
         method: 'POST',
-        headers: { 'Content-Type':'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           section,
           status: ticket.status || 'Under Review',
@@ -483,11 +488,12 @@ async function autoSeedSheetTickets(section){
           changedBy: CURRENT_USER || 'system-seed'
         })
       });
+
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'seed failed');
 
       markSeeded(section, key); // علّمنا إنو اتسيّد
-    } catch(e){
+    } catch (e) {
       console.warn('Auto-seed failed for', section, key, e.message);
     }
   }
@@ -499,16 +505,19 @@ async function autoSeedSheetTickets(section){
   } catch {}
 }
 
+// ============================================================================
 
-// مفتاح موحّد للتذكرة بأي قسم
 function caseKey(t) {
+  // مفتاح موحّد للتذكرة بأي قسم
   return (t?.caseNumber || t?.orderNumber || '').toString().trim();
 }
 
-// التذكرة من الشيت إذا ما إلها _id (ID الداتابيس)
 function isFromSheet(t) {
+  // التذكرة من الشيت إذا ما إلها _id (ID الداتابيس)
   return !Number.isFinite(Number(t?._id));
 }
+
+// ============================================================================
 
 /**
  * مصالحة بعد سَحبة الشيت:
@@ -521,9 +530,9 @@ function reconcileAfterSheetsPull(section, pulled) {
   const before = tickets[section] || [];
   const after = before.filter(t => {
     const key = caseKey(t);
-    if (!key) return false;            // سطر تالف بدون مفتاح
-    if (!isFromSheet(t)) return true;  // من الـDB → نخليها
-    return sheetKeys.has(key);         // من الشيت → نخليها فقط لو لسه موجودة بالشيت
+    if (!key) return false;           // سطر تالف بدون مفتاح
+    if (!isFromSheet(t)) return true; // من الـDB → نخليها
+    return sheetKeys.has(key);        // من الشيت → نخليها فقط لو لسه موجودة بالشيت
   });
 
   if (after.length !== before.length) {
@@ -532,6 +541,8 @@ function reconcileAfterSheetsPull(section, pulled) {
     // ❌ احذف renderTickets() من هون
   }
 }
+
+// ============================================================================
 
 async function hydrateFromSheets(section) {
   const range = sheetPull(section);
@@ -569,18 +580,22 @@ async function hydrateFromSheets(section) {
 
     // 1) دمج (يحدّث/يضيف)
     tickets[section] = mergeTicketsByCase(tickets[section] || [], pulled);
-    
+
+    // 2) مصالحة (يمسح محليًا أي تذكرة من الشيت انحذفت من الشيت)
+    reconcileAfterSheetsPull(section, pulled);
+
     // 3) سيّدنغ لأي تذكرة شيت لسه ما إلها _id
     await autoSeedSheetTickets(section);
-    
+
     // ✅ بعد ما يخلص الكل نحفظ ونرسم مرة واحدة فقط
     saveTicketsToStorage();
     renderTickets();
 
-  } catch (e) {  // ← هاد اللي كان ناقص!
+  } catch (e) {
     console.warn('hydrateFromSheets error:', e.message);
   }
 }
+
 
 
 
@@ -1941,6 +1956,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
