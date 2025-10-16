@@ -1800,53 +1800,10 @@ function rowToTicket(row) {
 
 
 // === DB refresh (hydrate + 15s polling) ===
-async function hydrateFromDB(section) {
-  const sec = section || window.currentSection || 'cctv';
-  try {
-    const res = await fetch(`/.netlify/functions/tickets?section=${encodeURIComponent(sec)}`);
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'fetch failed');
-
-    const newTickets = (data.tickets || []).map(rowToTicket);
-    const oldTickets = tickets[sec] || [];
-
-    // نحولهم لخريطة للمقارنة حسب رقم الحالة
-    const mapOld = new Map(oldTickets.map(t => [t.caseNumber || t.orderNumber, t.status]));
-    const mapNew = new Map(newTickets.map(t => [t.caseNumber || t.orderNumber, t.status]));
-
-    // نتحقق إذا في اختلاف فعلي بالستاتس أو التكتات المضافة/المحذوفة
-    let changed = false;
-
-    if (mapOld.size !== mapNew.size) {
-      changed = true;
-    } else {
-      for (const [key, status] of mapNew.entries()) {
-        if (mapOld.get(key) !== status) {
-          changed = true;
-          break;
-        }
-      }
-    }
-
-    if (changed) {
-      tickets[sec] = newTickets;
-      saveTicketsToStorage();
-      renderTickets();
-      console.log(`✅ Updated ${sec} from DB →`, newTickets.length, 'tickets');
-    } else {
-      console.log(`ℹ️ No actual changes for ${sec}`);
-    }
-
-  } catch (err) {
-    console.error('DB hydrate failed:', err);
-  }
-}
-
-
 // ----------------------------
 // Page load + polling (موحد)
 // ----------------------------
-window.addEventListener('load', async ()=>{
+window.addEventListener('load', async () => {
   // تحميل محلي مبدئي
   const saved = localStorage.getItem('cloudCrowdTickets');
   if (saved) tickets = JSON.parse(saved);
@@ -1859,25 +1816,110 @@ window.addEventListener('load', async ()=>{
   // لوجو السنتر
   const centerLogo = document.querySelector('.nav-center-logo');
   if (centerLogo){
-    centerLogo.addEventListener('click', ()=> { window.location.href = 'dashboard.html'; });
+    centerLogo.addEventListener('click', () => { window.location.href = 'dashboard.html'; });
   }
 
-  // اعرض المحلي ثم حمّل من الداتابيس + الشيت
+  // اعرض المحلي أولاً
   renderTickets();
-  await hydrateFromDB(window.currentSection);
-  await hydrateFromSheets(window.currentSection);   // ← أضِف هذا السطر
-  await autoSeedSheetTickets(window.currentSection);
 
+  // حمل من DB وSheets
+  await hydrateFromDB(window.currentSection);
+  await hydrateFromSheets(window.currentSection);
+  await autoSeedSheetTickets(window.currentSection);
 
   // فعّل الريفريش الدوري (ويمنع التكرار)
   if (window.__ticketsPoller) clearInterval(window.__ticketsPoller);
   const poll = async () => {
     await hydrateFromDB(window.currentSection || 'cctv');
-    await hydrateFromSheets(window.currentSection || 'cctv');  // ← واستدعِ الشيت هنا كمان
-    await autoSeedSheetTickets(window.currentSection || 'cctv'); // أضفها هون
+    await hydrateFromSheets(window.currentSection || 'cctv');
+    await autoSeedSheetTickets(window.currentSection || 'cctv');
   };
   window.__ticketsPoller = setInterval(poll, 15000); // كل 15 ثانية
 });
+
+// === DB refresh (hydrate + تحديث جزئي للـDOM) ===
+async function hydrateFromDB(section) {
+  const sec = section || window.currentSection || 'cctv';
+  try {
+    const res = await fetch(`/.netlify/functions/tickets?section=${encodeURIComponent(sec)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'fetch failed');
+
+    const newTickets = (data.tickets || []).map(rowToTicket);
+    const oldTickets = tickets[sec] || [];
+
+    const mapOld = new Map(oldTickets.map(t => [t.caseNumber || t.orderNumber, t]));
+    const mapNew = new Map(newTickets.map(t => [t.caseNumber || t.orderNumber, t]));
+
+    // مقارنة التكتات وحدة بوحدة
+    for (const [key, newT] of mapNew.entries()) {
+      const oldT = mapOld.get(key);
+      if (!oldT) {
+        // 🟢 تكتة جديدة
+        addTicketToDOM(newT);
+      } else if (JSON.stringify(oldT) !== JSON.stringify(newT)) {
+        // 🟡 تكتة محدثة
+        updateTicketInDOM(newT);
+      }
+    }
+
+    // 🔴 احذف التكتات اللي انحذفت من DB
+    for (const [key] of mapOld.entries()) {
+      if (!mapNew.has(key)) {
+        removeTicketFromDOM(key);
+      }
+    }
+
+    // حدّث الكاش المحلي فقط
+    tickets[sec] = newTickets;
+    saveTicketsToStorage();
+
+    console.log(`✅ Synced ${sec} with DB (${newTickets.length} tickets)`);
+
+  } catch (err) {
+    console.error('DB hydrate failed:', err);
+  }
+}
+
+// -----------------------------
+// دوال تحديث الـDOM
+// -----------------------------
+function addTicketToDOM(ticket) {
+  const container = document.querySelector('.tickets-container');
+  if (!container) return;
+  const el = createTicketElement(ticket);
+  container.appendChild(el);
+}
+
+function updateTicketInDOM(ticket) {
+  const el = document.querySelector(`[data-case="${ticket.caseNumber}"]`);
+  if (!el) return addTicketToDOM(ticket); // لو مش موجود، أضفه
+  const newEl = createTicketElement(ticket);
+  el.replaceWith(newEl);
+}
+
+function removeTicketFromDOM(key) {
+  const el = document.querySelector(`[data-case="${key}"]`);
+  if (el) el.remove();
+}
+
+// -----------------------------
+// دالة إنشاء عنصر التكت
+// -----------------------------
+function createTicketElement(ticket) {
+  const div = document.createElement('div');
+  div.className = 'ticket';
+  div.setAttribute('data-case', ticket.caseNumber || ticket.orderNumber);
+
+  // محتوى التكت (تقدر تعدل حسب التصميم)
+  div.innerHTML = `
+    <h4>${ticket.title || 'Untitled'}</h4>
+    <p>Status: ${ticket.status || 'Unknown'}</p>
+    <p>Assigned to: ${ticket.assigned || 'Unassigned'}</p>
+  `;
+  return div;
+}
+
 
 // ----------------------------
 // Auth/logout (optional)
@@ -1980,6 +2022,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
