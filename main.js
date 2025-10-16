@@ -1808,25 +1808,40 @@ async function hydrateFromDB(section) {
     if (!data.ok) throw new Error(data.error || 'fetch failed');
 
     const newTickets = (data.tickets || []).map(rowToTicket);
+    const oldTickets = tickets[sec] || [];
 
-// تحقق إذا فعلاً صار في فرق بين القديم والجديد
-const oldTickets = tickets[sec] || [];
-const isSame = JSON.stringify(newTickets) === JSON.stringify(oldTickets);
+    // نحولهم لخريطة للمقارنة حسب رقم الحالة
+    const mapOld = new Map(oldTickets.map(t => [t.caseNumber || t.orderNumber, t.status]));
+    const mapNew = new Map(newTickets.map(t => [t.caseNumber || t.orderNumber, t.status]));
 
-if (!isSame) {
-  tickets[sec] = newTickets;
-  saveTicketsToStorage();
-  renderTickets();
-}
+    // نتحقق إذا في اختلاف فعلي بالستاتس أو التكتات المضافة/المحذوفة
+    let changed = false;
 
-   if (Array.isArray(tickets[sec]) && tickets[sec].length > 0) {
-  console.log(`Hydrated ${sec} from DB →`, tickets[sec].length, 'tickets');
-}
+    if (mapOld.size !== mapNew.size) {
+      changed = true;
+    } else {
+      for (const [key, status] of mapNew.entries()) {
+        if (mapOld.get(key) !== status) {
+          changed = true;
+          break;
+        }
+      }
+    }
+
+    if (changed) {
+      tickets[sec] = newTickets;
+      saveTicketsToStorage();
+      renderTickets();
+      console.log(`✅ Updated ${sec} from DB →`, newTickets.length, 'tickets');
+    } else {
+      console.log(`ℹ️ No actual changes for ${sec}`);
+    }
 
   } catch (err) {
     console.error('DB hydrate failed:', err);
   }
 }
+
 
 // ----------------------------
 // Page load + polling (موحد)
@@ -1965,6 +1980,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
