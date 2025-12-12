@@ -619,7 +619,7 @@ const mainFields = {
 const STATUS_COLUMNS = {
   cctv: ['Escalated', 'Under Review', 'Closed'],
   ce: ['Escalated', 'Under Review', 'Pending (Customer Call Required)', 'Closed'],
-  'free-orders': ['Active', 'Taken', 'Not Active'],
+  'free-orders': ['New', 'Active', 'Taken'],
   complaints: ['Escalated', 'Under Review', 'Pending (Customer Call Required)', 'Closed'],
   'time-table': [
     'No Call Needed',
@@ -702,7 +702,7 @@ const formFields = {
     { label: 'Customer Satisfaction Level', type: 'select', name: 'satisfaction', options: ['Satisfied','Not Satisfied'] }
   ],
   'free-orders': [
-    { label: 'Status', type: 'select', name: 'status', options: ['Active','Not Active','Taken'] },
+    { label: 'Status', type: 'select', name: 'status', options: ['New','Active','Taken'] },
     { label: 'Customer Name', type: 'text', name: 'customerName' },
     { label: 'Phone Number', type: 'text', name: 'phone' },
     { label: 'Order Date', type: 'datetime-local', name: 'orderDate' },
@@ -826,7 +826,7 @@ function bandClassForStatus(status){
   switch(status){
     case 'Taken': return 'band-taken';
     case 'Active': return 'band-active';
-    case 'Not Active': return 'band-not-active';
+    case 'New': return 'band-not-active';
     case 'Open': return 'band-open';
     case 'Follow-Up Needed': return 'band-follow-up-needed';
     case 'No Response': return 'band-no-response';
@@ -858,7 +858,7 @@ function statusColor(status){
     // free-orders
     case 'Active': return '#1b16a3';
     case 'Taken': return '#1a9324';
-    case 'Not Active': return '#f91616';
+    case 'New': return '#f91616';
 
     // ce/complaints (alias)
     case 'Pending (Customer Call Required)':
@@ -2022,6 +2022,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
