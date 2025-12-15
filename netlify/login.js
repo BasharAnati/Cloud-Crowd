@@ -6,7 +6,7 @@ exports.handler = async (event) => {
     { username: "Mai", password: "M@123456" },
     { username: "Tuleen", password: "T123" },
     { username: "Anati", password: "A@1995" },
-    { username: "Tala", password: "A123" },
+    { username: "Aser", password: "X9@Qm!7L#2Zp$A8m" },
     { username: "Nariman", password: "N123" }
   ];
 
