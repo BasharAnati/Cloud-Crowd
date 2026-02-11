@@ -915,9 +915,11 @@ function getMainFieldsContent(ticket){
 }
 
 function getCaseDisplay(ticket){
+  if (!ticket) return '—';
   if (_currentSection==='cctv') return ticket.caseNumber || '—';
   return ticket.orderNumber || ticket.caseNumber || '—';
 }
+
 function drawerCaseLabel(){ return 'Case Number'; }
 
 function renderTickets(){
@@ -1521,7 +1523,9 @@ async function saveDrawerEdits() {
     alert('Failed to save changes to the server.');
   }
 
-  openTicketDrawer(drawerIndex);
+// حاول افتح نفس التكت بعد الريفريش بطريقة آمنة
+const key = t._id ? { id: Number(t._id) } : { caseNumber: String(t.caseNumber || '') };
+reopenTicketDrawerSafe(key);
 }
 
 
@@ -2093,6 +2097,31 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
+function reopenTicketDrawerSafe(key){
+  try {
+    const list = tickets[_currentSection] || [];
+    let idx = -1;
+
+    if (key?.id && Number.isFinite(Number(key.id))) {
+      idx = list.findIndex(x => Number(x?._id) === Number(key.id));
+    }
+
+    if (idx === -1 && key?.caseNumber) {
+      idx = list.findIndex(x => String(x?.caseNumber || x?.orderNumber || '') === String(key.caseNumber));
+    }
+
+    if (idx === -1) {
+      // ما لقيناه: سكّر الدراور/افتح أول واحد أو لا تعمل شي
+      console.warn('Ticket not found after refresh. Drawer not reopened.');
+      return;
+    }
+
+    openTicketDrawer(idx);
+  } catch (e) {
+    console.warn('reopenTicketDrawerSafe failed:', e);
+  }
+}
 
 
 
