@@ -1,5 +1,4 @@
 const { google } = require("googleapis");
-const { Readable } = require("stream");
 
 const TAB_NAME = "July 2025"; // غيّره إذا اسم التاب مختلف
 const RANGE_READ = `${TAB_NAME}!A2:M`;
@@ -30,11 +29,13 @@ exports.handler = async (event) => {
       return json(400, { ok: false, error: "Invalid PDF dataUrl" });
     }
 
-    const folderId = String(process.env.GOOGLE_DRIVE_FOLDER_ID || "").trim();
-    if (!folderId) {
-      return json(500, { ok: false, error: "Missing GOOGLE_DRIVE_FOLDER_ID env var" });
+    // ✅ رابط Apps Script Web App
+    const webAppUrl = String(process.env.APPS_SCRIPT_UPLOAD_URL || "").trim();
+    if (!webAppUrl) {
+      return json(500, { ok: false, error: "Missing APPS_SCRIPT_UPLOAD_URL env var" });
     }
 
+    // ✅ Sheet config (لسه بنكتب بالشيت من Netlify عبر Service Account)
     const spreadsheetId = String(process.env.GOOGLE_SHEET_ID_CCTV || "").trim();
     if (!spreadsheetId) {
       return json(500, { ok: false, error: "Missing GOOGLE_SHEET_ID_CCTV env var" });
@@ -45,57 +46,37 @@ exports.handler = async (event) => {
       return json(500, { ok: false, error: "Missing GOOGLE_APPLICATION_CREDENTIALS_JSON env var" });
     }
 
+    // =========================
+    // 1) Upload PDF via Apps Script (runs as YOU → no quota issue)
+    // =========================
+    const upRes = await fetch(webAppUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ caseNumber, pdfName, pdfBase64 })
+    });
+
+    const upData = await upRes.json().catch(() => ({}));
+    if (!upRes.ok || !upData.ok) {
+      const msg = upData?.error || `Apps Script upload failed (HTTP ${upRes.status})`;
+      return json(500, { ok: false, error: msg });
+    }
+
+    const pdfUrl = String(upData.pdfUrl || "").trim();
+    if (!pdfUrl) {
+      return json(500, { ok: false, error: "Apps Script did not return pdfUrl" });
+    }
+
+    // =========================
+    // 2) Update Google Sheet (L,M) via Service Account
+    // =========================
     const auth = new google.auth.GoogleAuth({
       credentials: JSON.parse(credsRaw),
-      scopes: [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive",
-      ],
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     });
 
     const sheets = google.sheets({ version: "v4", auth });
-    const drive  = google.drive({ version: "v3", auth });
 
-    // ==== Upload to Drive (to folder) ====
-    const base64 = pdfBase64.split(",")[1];
-    const buffer = Buffer.from(base64, "base64");
-    const stream = Readable.from(buffer);
-
-    const created = await drive.files.create({
-      supportsAllDrives: true,
-      requestBody: {
-        name: `${caseNumber} - ${pdfName}`,
-        mimeType: "application/pdf",
-        parents: [folderId],
-      },
-      media: { mimeType: "application/pdf", body: stream },
-      fields: "id",
-    });
-
-    const fileId = created?.data?.id;
-    if (!fileId) {
-      return json(500, { ok: false, error: "Drive upload failed: no fileId returned" });
-    }
-
-    // Make it publicly viewable
-    await drive.permissions.create({
-      supportsAllDrives: true,
-      fileId,
-      requestBody: { role: "reader", type: "anyone" },
-    });
-
-    const fileInfo = await drive.files.get({
-      supportsAllDrives: true,
-      fileId,
-      fields: "webViewLink",
-    });
-
-    const pdfUrl = fileInfo?.data?.webViewLink || "";
-    if (!pdfUrl) {
-      return json(500, { ok: false, error: "Drive get link failed: no webViewLink returned" });
-    }
-
-    // ==== Find row by Ticket ID (K) ====
+    // Find row by Ticket ID (K)
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId,
       range: RANGE_READ,
@@ -117,10 +98,8 @@ exports.handler = async (event) => {
       return json(404, { ok: false, error: "Ticket ID not found" });
     }
 
-    // +2 because we read from A2 (index 0 => row 2)
-    const sheetRowNumber = foundRowIndex + 2;
+    const sheetRowNumber = foundRowIndex + 2; // because A2 is index 0
 
-    // ==== Update L & M ====
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: `${TAB_NAME}!${PDF_NAME_COL}${sheetRowNumber}:${PDF_URL_COL}${sheetRowNumber}`,
