@@ -1,8 +1,8 @@
 const { google } = require("googleapis");
 
-const TAB_NAME = "July 2025"; // ← غيره إذا اسم التاب مختلف
+const TAB_NAME = "July 2025";
 const RANGE_READ = `${TAB_NAME}!A2:M`;
-const CASE_COL_INDEX_1BASED = 11; // K column
+const CASE_COL_INDEX_1BASED = 11; // K
 const PDF_NAME_COL = "L";
 const PDF_URL_COL  = "M";
 
@@ -35,9 +35,11 @@ exports.handler = async (event) => {
 
     const sheets = google.sheets({ version: "v4", auth });
     const drive  = google.drive({ version: "v3", auth });
-    const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
-    // ==== Upload to Drive ====
+    // ✅ هذا التعديل الأهم
+    const spreadsheetId = process.env.GOOGLE_SHEET_ID_CCTV;
+
+    // Upload to Drive
     const base64 = pdfBase64.split(",")[1];
     const buffer = Buffer.from(base64, "base64");
 
@@ -64,7 +66,7 @@ exports.handler = async (event) => {
 
     const pdfUrl = fileInfo.data.webViewLink;
 
-    // ==== Find row by Ticket ID ====
+    // Find row by Ticket ID (K)
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId,
       range: RANGE_READ,
@@ -88,21 +90,17 @@ exports.handler = async (event) => {
 
     const sheetRowNumber = foundRowIndex + 2;
 
-    // ==== Update L & M ====
+    // Update L & M
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: `${TAB_NAME}!${PDF_NAME_COL}${sheetRowNumber}:${PDF_URL_COL}${sheetRowNumber}`,
       valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [[pdfName, pdfUrl]],
-      },
+      requestBody: { values: [[pdfName, pdfUrl]] },
     });
 
     return json(200, { ok: true, pdfName, pdfUrl });
-
   } catch (err) {
     console.error("upload-cctv-pdf error:", err);
     return json(500, { ok: false, error: err.message });
   }
 };
-
