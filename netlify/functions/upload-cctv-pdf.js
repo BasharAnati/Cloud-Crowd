@@ -45,18 +45,21 @@ exports.handler = async (event) => {
     const spreadsheetId = process.env.GOOGLE_SHEET_ID_CCTV;
 
     // ==== Upload to Drive ====
-    const base64 = pdfBase64.split(",")[1];
-    const buffer = Buffer.from(base64, "base64");
-    const stream = Readable.from(buffer);
+const base64 = pdfBase64.split(",")[1];
+const buffer = Buffer.from(base64, "base64");
+const stream = Readable.from(buffer);
 
-    const created = await drive.files.create({
-      requestBody: {
-        name: `${caseNumber} - ${pdfName}`,
-        mimeType: "application/pdf"
-      },
-      media: { mimeType: "application/pdf", body: stream },
-      fields: "id",
-    });
+const created = await drive.files.create({
+  requestBody: {
+    name: `${caseNumber} - ${pdfName}`,
+    mimeType: "application/pdf",
+    parents: ["116opVQL3SSza7BCjMt-VNmDfEQnARqDx"] // ✅ لازم String
+  },
+  media: { mimeType: "application/pdf", body: stream },
+  fields: "id",
+});
+
+
 
     const fileId = created.data.id;
 
