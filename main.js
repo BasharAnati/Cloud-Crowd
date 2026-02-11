@@ -674,6 +674,8 @@ const formFields = {
       'Stock Management','Order Accuracy','Staff Behavior','Eating','Kitchen Tools Compliance','Other'
     ] },
     { label: 'Case Details', type: 'textarea', name: 'notes' },
+    { label: 'Upload PDF (optional)', type: 'file', name: 'cctvPdf', accept: 'application/pdf' },
+
     { label: 'Action Taken', type: 'textarea', name: 'actionTaken' }
   ],
   ce: [
@@ -2022,6 +2024,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
