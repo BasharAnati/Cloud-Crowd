@@ -1410,57 +1410,136 @@ async function saveDrawerEdits() {
 
   // ✅ CCTV PDF upload (Edit only) + only for Escalated / Under Review
     // ✅ CCTV PDF upload (Edit only) + only for Escalated / Under Review
-  if (_currentSection === 'cctv') {
-    const newStatus = String(t.status || '');
-    const allowPdfNow = (newStatus === 'Escalated' || newStatus === 'Under Review');
+if (_currentSection === 'cctv') {
+  const newStatus = String(t.status || '');
+  const allowPdfNow = (newStatus === 'Escalated' || newStatus === 'Under Review');
 
-    if (allowPdfNow && t.caseNumber) {
-      const file = fd.get('cctvPdf'); // name من buildDrawerEditForm
+  if (allowPdfNow && t.caseNumber) {
+    const file = fd.get('cctvPdf'); // name من buildDrawerEditForm
 
-      if (file && file.size) {
-        if (file.type !== 'application/pdf') {
-          alert('PDF only.');
-          return;
+    // إذا المستخدم اختار ملف
+    if (file && file.size) {
+
+      // تحقق بسيط
+      if (file.type !== 'application/pdf') {
+        alert('PDF only.');
+        return;
+      }
+
+      const MAX = 8 * 1024 * 1024; // 8MB
+      if (file.size > MAX) {
+        alert('PDF too large. Please upload under 8MB.');
+        return;
+      }
+
+      try {
+        const dataUrl = await fileToDataURL(file);
+
+        const up = await fetch('/.netlify/functions/upload-cctv-pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            caseNumber: t.caseNumber,
+            pdfName: file.name,
+            pdfBase64: dataUrl
+          })
+        });
+
+        const upData = await up.json().catch(() => ({}));
+
+        if (!up.ok || !upData.ok) {
+          const msg = upData?.error || `Upload failed (HTTP ${up.status})`;
+          throw new Error(msg);
         }
 
-        const MAX = 8 * 1024 * 1024; // 8MB
-        if (file.size > MAX) {
-          alert('PDF too large. Please upload under 8MB.');
-          return;
-        }
+        // خزّن محليًا عشان يظهر فورًا لو بدك
+        t.pdfName = upData.pdfName;
+        t.pdfUrl  = upData.pdfUrl;
 
-        try {
-          const dataUrl = await fileToDataURL(file);
-
-          const up = await fetch('/.netlify/functions/upload-cctv-pdf', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              caseNumber: t.caseNumber,
-              pdfName: file.name,
-              pdfBase64: dataUrl
-            })
-          });
-
-          const upData = await up.json().catch(() => ({}));
-
-          if (!up.ok || !upData.ok) {
-            const msg = upData?.error || `Upload failed (HTTP ${up.status})`;
-            throw new Error(msg);
-          }
-
-          // خزّن محليًا عشان يظهر فورًا لو بدك
-          t.pdfName = upData.pdfName;
-          t.pdfUrl  = upData.pdfUrl;
-
-        } catch (e) {
-          console.warn('PDF upload error:', e);
-          alert(`PDF upload failed: ${e.message}`);
-          return;
-        }
+      } catch (e) {
+        console.warn('PDF upload error:', e);
+        alert(`PDF upload failed: ${e.message}`);
+        return;
       }
     }
   }
+}
+
+t.lastModified = new Date().toISOString();
+saveTicketsToStorage();
+renderTickets();
+
+try {
+
+  // 1) تحديث الـ DB (لو له id)
+  if (Number.isFinite(Number(t._id))) {
+    const res = await fetch('/.netlify/functions/tickets', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: Number(t._id),
+        section: String(_currentSection),
+        status: String(t.status || ''),
+        actionTaken: String(t.actionTaken ?? ''),
+        changedBy: CURRENT_USER
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Update failed');
+
+  } else {
+    console.warn('No DB id → ticket came from Google Sheets, DB PUT skipped.');
+  }
+
+  // 2) تحديث Google Sheets دائمًا
+  if (!t.caseNumber) {
+    console.warn('No caseNumber on ticket → Sheets PUT skipped.');
+  } else {
+
+    const headers = { 'Content-Type': 'application/json' };
+    if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
+
+    const sheetBody = {
+      section: _currentSection,
+      tab: sheetTab(_currentSection),
+      caseNumber: t.caseNumber,
+      status: t.status,
+      actionTaken: t.actionTaken,
+    };
+
+    // 👈 time-table returnDate
+    if (_currentSection === 'time-table') {
+      sheetBody.returnDate = t.returnDate ?? null;
+    }
+
+    const resS = await fetch(SHEETS_ENDPOINT, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(sheetBody)
+    });
+
+    const dataS = await resS.json().catch(() => ({}));
+    if (!resS.ok || dataS?.ok === false)
+      throw new Error(dataS?.error || 'Sheets update failed');
+  }
+
+  // 3) ريفرش
+  await hydrateFromDB(_currentSection);
+  await hydrateFromSheets(_currentSection);
+
+} catch (err) {
+  console.warn('Update failed:', err);
+  alert('Failed to save changes to the server.');
+}
+
+// حاول افتح نفس التكت بعد الريفريش بطريقة آمنة
+const key = t._id
+  ? { id: Number(t._id) }
+  : { caseNumber: String(t.caseNumber || '') };
+
+reopenTicketDrawerSafe(key);
+
 
 
 
@@ -2057,6 +2136,7 @@ function reopenTicketDrawerSafe(key){
     console.warn('reopenTicketDrawerSafe failed:', e);
   }
 }
+
 
 
 
