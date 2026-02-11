@@ -1156,6 +1156,19 @@ function buildDrawerEditForm(ticket){
     </div>
   ` : '';
 
+  // ✅ PDF يظهر فقط في CCTV + فقط للتكتات Escalated / Under Review
+  const allowPdf = (_currentSection === 'cctv') && (ticket.status === 'Escalated' || ticket.status === 'Under Review');
+
+  const pdfField = allowPdf ? `
+    <div class="form-group" id="cctv-pdf-group">
+      <label>Upload PDF (optional)</label>
+      <input type="file" name="cctvPdf" accept="application/pdf">
+      <div class="muted" style="font-size:12px;margin-top:6px;">
+        PDF will be uploaded and saved to the sheet.
+      </div>
+    </div>
+  ` : '';
+
   return `
     <div class="form-group">
       <label>Status</label>
@@ -1166,12 +1179,15 @@ function buildDrawerEditForm(ticket){
 
     ${returnDateField}
 
+    ${pdfField}
+
     <div class="form-group">
       <label>Action Taken</label>
       <textarea name="actionTaken" rows="4">${escapeHtml(ticket.actionTaken||'')}</textarea>
     </div>
   `;
 }
+
 
 
 function openTicketDrawer(index){
@@ -2024,6 +2040,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
