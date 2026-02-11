@@ -1403,7 +1403,60 @@ async function saveDrawerEdits() {
   // 👈 جديد: خزن Return Date محليًا فقط لقسم time-table
   if (_currentSection === 'time-table') {
     const rd = fd.get('returnDate') || '';
-    t.returnDate = rd;  // خليه بصيغة YYYY-MM-DD (كافية للشيت)
+    t.returnDate = rd;  // YYYY-MM-DD
+  }
+
+  // ✅ CCTV PDF upload (Edit only) + only for Escalated / Under Review
+  if (_currentSection === 'cctv') {
+    const newStatus = String(t.status || '');
+    const allowPdfNow = (newStatus === 'Escalated' || newStatus === 'Under Review');
+
+    if (allowPdfNow && t.caseNumber) {
+      const file = fd.get('cctvPdf'); // name من buildDrawerEditForm
+
+      // إذا المستخدم اختار ملف
+      if (file && file.size) {
+        // تحقق بسيط
+        if (file.type !== 'application/pdf') {
+          alert('PDF only.');
+          return;
+        }
+
+        const MAX = 8 * 1024 * 1024; // 8MB
+        if (file.size > MAX) {
+          alert('PDF too large. Please upload under 8MB.');
+          return;
+        }
+
+        try {
+          const dataUrl = await fileToDataURL(file);
+
+          const up = await fetch('/.netlify/functions/upload-cctv-pdf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              caseNumber: t.caseNumber,
+              pdfName: file.name,
+              pdfBase64: dataUrl
+            })
+          });
+
+          const upData = await up.json().catch(() => ({}));
+          if (!up.ok || !upData.ok) {
+            throw new Error(upData.error || 'PDF upload failed');
+          }
+
+          // خزن محلياً للعرض + ريفرش الشيت رح يثبتها
+          t.pdfName = upData.pdfName;
+          t.pdfUrl  = upData.pdfUrl;
+
+        } catch (e) {
+          console.warn('PDF upload error:', e);
+          alert('PDF upload failed.');
+          return;
+        }
+      }
+    }
   }
 
   t.lastModified = new Date().toISOString();
@@ -1437,7 +1490,6 @@ async function saveDrawerEdits() {
       const headers = { 'Content-Type': 'application/json' };
       if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
 
-      // 👈 جهّز جسم الطلب للشيت
       const sheetBody = {
         section: _currentSection,
         tab: sheetTab(_currentSection),
@@ -1446,7 +1498,7 @@ async function saveDrawerEdits() {
         actionTaken: t.actionTaken,
       };
 
-      // 👈 جديد: أرسل returnDate لما يكون السكشن time-table
+      // 👈 time-table returnDate
       if (_currentSection === 'time-table') {
         sheetBody.returnDate = t.returnDate ?? null;
       }
@@ -1471,6 +1523,7 @@ async function saveDrawerEdits() {
 
   openTicketDrawer(drawerIndex);
 }
+
 
 
 
@@ -2040,6 +2093,7 @@ document.addEventListener('click', (e) => {
   `;
   document.head.appendChild(style);
 })();
+
 
 
 
