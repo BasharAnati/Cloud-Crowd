@@ -1,9 +1,9 @@
 const { google } = require("googleapis");
 const { Readable } = require("stream");
 
-const TAB_NAME = "July 2025"; // غيره إذا اسم التاب مختلف
+const TAB_NAME = "July 2025"; // غيّره إذا اسم التاب مختلف
 const RANGE_READ = `${TAB_NAME}!A2:M`;
-const CASE_COL_INDEX_1BASED = 11; // K
+const CASE_COL_INDEX_1BASED = 11; // K column
 const PDF_NAME_COL = "L";
 const PDF_URL_COL  = "M";
 
@@ -30,50 +30,70 @@ exports.handler = async (event) => {
       return json(400, { ok: false, error: "Invalid PDF dataUrl" });
     }
 
+    const folderId = String(process.env.GOOGLE_DRIVE_FOLDER_ID || "").trim();
+    if (!folderId) {
+      return json(500, { ok: false, error: "Missing GOOGLE_DRIVE_FOLDER_ID env var" });
+    }
+
+    const spreadsheetId = String(process.env.GOOGLE_SHEET_ID_CCTV || "").trim();
+    if (!spreadsheetId) {
+      return json(500, { ok: false, error: "Missing GOOGLE_SHEET_ID_CCTV env var" });
+    }
+
+    const credsRaw = String(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON || "").trim();
+    if (!credsRaw) {
+      return json(500, { ok: false, error: "Missing GOOGLE_APPLICATION_CREDENTIALS_JSON env var" });
+    }
+
     const auth = new google.auth.GoogleAuth({
-      credentials: JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON),
+      credentials: JSON.parse(credsRaw),
       scopes: [
         "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
+        "https://www.googleapis.com/auth/drive",
       ],
     });
 
     const sheets = google.sheets({ version: "v4", auth });
     const drive  = google.drive({ version: "v3", auth });
 
-    // ✅ استخدم متغيرك الصحيح
-    const spreadsheetId = process.env.GOOGLE_SHEET_ID_CCTV;
+    // ==== Upload to Drive (to folder) ====
+    const base64 = pdfBase64.split(",")[1];
+    const buffer = Buffer.from(base64, "base64");
+    const stream = Readable.from(buffer);
 
-    // ==== Upload to Drive ====
-const base64 = pdfBase64.split(",")[1];
-const buffer = Buffer.from(base64, "base64");
-const stream = Readable.from(buffer);
+    const created = await drive.files.create({
+      supportsAllDrives: true,
+      requestBody: {
+        name: `${caseNumber} - ${pdfName}`,
+        mimeType: "application/pdf",
+        parents: [folderId],
+      },
+      media: { mimeType: "application/pdf", body: stream },
+      fields: "id",
+    });
 
-const created = await drive.files.create({
-  requestBody: {
-    name: `${caseNumber} - ${pdfName}`,
-    mimeType: "application/pdf",
-    parents: ["116opVQL3SSza7BCjMt-VNmDfEQnARqDx"] // ✅ لازم String
-  },
-  media: { mimeType: "application/pdf", body: stream },
-  fields: "id",
-});
+    const fileId = created?.data?.id;
+    if (!fileId) {
+      return json(500, { ok: false, error: "Drive upload failed: no fileId returned" });
+    }
 
-
-
-    const fileId = created.data.id;
-
+    // Make it publicly viewable
     await drive.permissions.create({
+      supportsAllDrives: true,
       fileId,
       requestBody: { role: "reader", type: "anyone" },
     });
 
     const fileInfo = await drive.files.get({
+      supportsAllDrives: true,
       fileId,
       fields: "webViewLink",
     });
 
-    const pdfUrl = fileInfo.data.webViewLink;
+    const pdfUrl = fileInfo?.data?.webViewLink || "";
+    if (!pdfUrl) {
+      return json(500, { ok: false, error: "Drive get link failed: no webViewLink returned" });
+    }
 
     // ==== Find row by Ticket ID (K) ====
     const res = await sheets.spreadsheets.values.get({
@@ -97,6 +117,7 @@ const created = await drive.files.create({
       return json(404, { ok: false, error: "Ticket ID not found" });
     }
 
+    // +2 because we read from A2 (index 0 => row 2)
     const sheetRowNumber = foundRowIndex + 2;
 
     // ==== Update L & M ====
@@ -104,15 +125,13 @@ const created = await drive.files.create({
       spreadsheetId,
       range: `${TAB_NAME}!${PDF_NAME_COL}${sheetRowNumber}:${PDF_URL_COL}${sheetRowNumber}`,
       valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [[pdfName, pdfUrl]],
-      },
+      requestBody: { values: [[pdfName, pdfUrl]] },
     });
 
     return json(200, { ok: true, pdfName, pdfUrl });
 
   } catch (err) {
     console.error("upload-cctv-pdf error:", err);
-    return json(500, { ok: false, error: err.message });
+    return json(500, { ok: false, error: err?.message || String(err) });
   }
 };
