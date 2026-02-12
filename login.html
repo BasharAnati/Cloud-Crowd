@@ -105,14 +105,16 @@
       </form>
     </section>
   </div>
-
-  <script>
-  // Show / hide password
-  document.getElementById('togglePwd').addEventListener('click', ()=>{
+<script>
+  // Show / hide password (خليه شغال عادي)
+  document.getElementById('togglePwd').addEventListener('click', () => {
     const i = document.getElementById('password');
     i.type = i.type === 'password' ? 'text' : 'password';
   });
 
+  /* ===========================
+     ✅ OLD LOGIN FLOW (commented)
+     ===========================
   const form = document.getElementById('form');
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -135,7 +137,6 @@
       const data = await res.json().catch(()=>({}));
 
       if (res.ok && data?.success) {
-        // خزّن جلسة بسيطة
         localStorage.setItem('cc_auth', '1');
         localStorage.setItem('cc_user', username);
 
@@ -152,7 +153,18 @@
       err.style.display = 'block';
     }
   });
+  */
+
+  /* ===========================
+     🛠 Maintenance Mode (temporary)
+     =========================== */
+  const form = document.getElementById('form');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    window.location.href = "system-update.html";
+  });
 </script>
+
 
 </body>
 </html>
