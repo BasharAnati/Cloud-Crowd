@@ -106,15 +106,15 @@
     </section>
   </div>
 <script>
-  // Show / hide password (خليه شغال عادي)
+  // Show / hide password
   document.getElementById('togglePwd').addEventListener('click', () => {
     const i = document.getElementById('password');
     i.type = i.type === 'password' ? 'text' : 'password';
   });
 
   /* ===========================
-     ✅ OLD LOGIN FLOW (commented)
-     ===========================
+     ✅ OLD LOGIN FLOW (ENABLED)
+     =========================== */
   const form = document.getElementById('form');
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -134,7 +134,7 @@
         body: JSON.stringify({ username, password })
       });
 
-      const data = await res.json().catch(()=>({}));
+      const data = await res.json().catch(() => ({}));
 
       if (res.ok && data?.success) {
         localStorage.setItem('cc_auth', '1');
@@ -143,7 +143,7 @@
         ok.textContent = 'Success! Redirecting…';
         ok.style.display = 'block';
 
-        setTimeout(()=>{ window.location.href = "dashboard.html"; }, 700);
+        setTimeout(() => { window.location.href = "dashboard.html"; }, 700);
       } else {
         err.textContent = data?.message || 'Invalid credentials';
         err.style.display = 'block';
@@ -153,17 +153,17 @@
       err.style.display = 'block';
     }
   });
-  */
 
   /* ===========================
-     🛠 Maintenance Mode (temporary)
-     =========================== */
-  const form = document.getElementById('form');
+     🛠 Maintenance Mode (DISABLED)
+     ===========================
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     window.location.href = "system-update.html";
   });
+  */
 </script>
+
 
 
 </body>
