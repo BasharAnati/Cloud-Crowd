@@ -12,7 +12,7 @@
 
   <!-- حماية الصفحة -->
   <script>
-    if (!localStorage.getItem('cc_auth')) {
+    if (localStorage.getItem('cc_auth') !== '1') {
       window.location.href = 'login.html';
     }
   </script>

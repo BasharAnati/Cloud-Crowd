@@ -6,6 +6,11 @@ function resetIdle() {
   idleTime = 0;
 }
 
+function clearAuthSession() {
+  localStorage.removeItem('cc_auth');
+  localStorage.removeItem('cc_user');
+}
+
 // Reset timer on any user activity
 ["mousemove", "keydown", "click", "scroll", "touchstart"].forEach(evt => {
   window.addEventListener(evt, resetIdle);
@@ -16,7 +21,7 @@ setInterval(() => {
   idleTime += 1000;
   if (idleTime >= MAX_IDLE) {
     // Clear login from localStorage
-    localStorage.removeItem('cc_user');
+    clearAuthSession();
 
     // Redirect to login page
     window.location.href = "login.html";

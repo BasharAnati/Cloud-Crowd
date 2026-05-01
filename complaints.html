@@ -6,6 +6,11 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <title>Cloud Crowd - Daily Complaints</title>
   <link rel="stylesheet" href="styles.css">
+  <script>
+    if (localStorage.getItem('cc_auth') !== '1') {
+      window.location.href = 'login.html';
+    }
+  </script>
   <script src="main.js" defer></script>
 </head>
 <body>

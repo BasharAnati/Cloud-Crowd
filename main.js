@@ -2008,7 +2008,11 @@ function createTicketElement(ticket) {
 // ----------------------------
 function logout() {
   const confirmLogout = confirm("Confirm logout?");
-  if (confirmLogout) window.location.href = "index.html";
+  if (confirmLogout) {
+    localStorage.removeItem('cc_auth');
+    localStorage.removeItem('cc_user');
+    window.location.href = "login.html";
+  }
 }
 window.logout = logout;
 
