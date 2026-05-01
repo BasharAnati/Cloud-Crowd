@@ -957,8 +957,7 @@ function renderTickets(){
     header.className = 'col-header';
     header.innerHTML = `
       <div class="col-header-inner">
-        <div class="col-title">${status}</div>
-        <span class="col-count">${count}</span>
+        <div class="col-title">${escapeHtml(status)} (${count})</div>
       </div>
     `;
     col.appendChild(header);
@@ -967,7 +966,16 @@ function renderTickets(){
     under.className = 'col-underbar';
     col.appendChild(under);
 
-    (grouped[status]||[]).forEach(ticket=>{
+    const statusTickets = grouped[status] || [];
+
+    if (!statusTickets.length) {
+      const empty = document.createElement('div');
+      empty.className = 'kanban-empty-state';
+      empty.textContent = 'No tickets in this status';
+      col.appendChild(empty);
+    }
+
+    statusTickets.forEach(ticket=>{
       const card = document.createElement('div');
       card.className = 'ticket-card';
 
