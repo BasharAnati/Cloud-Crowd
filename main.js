@@ -2016,31 +2016,6 @@ function logout() {
 }
 window.logout = logout;
 
-// ----------------------------
-// (Optional) Sync from Lark (لا تستخدم الآن)
-// ----------------------------
-async function syncCCTVFromLark() {
-  try {
-    const res = await fetch('/.netlify/functions/lark-cctv-pull');
-    if (!res.ok) return;
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'Failed fetching CCTV tickets');
-
-    let newTickets = data.tickets || [];
-    const oldTickets = tickets.cctv || [];
-    const oldKeys = new Set(oldTickets.map(t => t._key));
-    const freshOnes = newTickets.filter(t => !oldKeys.has(t._key));
-    tickets.cctv = [...oldTickets, ...freshOnes];
-
-    localStorage.setItem('cloudCrowdTickets', JSON.stringify(tickets));
-    renderTickets();
-    console.log(`Synced ${freshOnes.length} new CCTV tickets`);
-  } catch (err) {
-    console.warn('Sync CCTV skipped:', err.message);
-  }
-}
-window.syncCCTVFromLark = syncCCTVFromLark;
-
 /* ---------------------------------
    Image overlay + CSS (thumb/overlay)
 -----------------------------------*/
