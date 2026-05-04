@@ -69,8 +69,10 @@
     </div>
 
     <!-- زر اللوج آوت -->
-    <button id="maintenance-toggle-btn" class="logout-btn" style="display:none;background:#f59e0b;" onclick="toggleMaintenanceMode()">Turn Maintenance ON</button>
-    <button class="logout-btn" onclick="logout()">Log out</button>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+      <button id="maintenance-toggle-btn" class="logout-btn" style="display:none;margin-left:0;min-width:44px;padding:6px 12px;border-radius:999px;background:#e5e7eb;color:#111827;font-size:12px;line-height:1;" onclick="toggleMaintenanceMode()">OFF</button>
+      <button class="logout-btn" style="margin-left:0;" onclick="logout()">Log out</button>
+    </div>
 
     <!-- centered company logo (clickable) -->
     <img src="logo.png" alt="Company Logo" class="nav-center-logo" onclick="window.location.href='dashboard.html'">
@@ -125,11 +127,20 @@
       }
 
       button.style.display = 'inline-block';
-      button.textContent = latestMaintenanceState ? 'Turn Maintenance OFF' : 'Turn Maintenance ON';
+      button.textContent = latestMaintenanceState ? 'ON' : 'OFF';
+      button.style.background = latestMaintenanceState ? '#f59e0b' : '#e5e7eb';
+      button.style.color = '#111827';
+      button.title = latestMaintenanceState ? 'Maintenance mode is ON' : 'Maintenance mode is OFF';
     }
 
     async function toggleMaintenanceMode() {
       if (!isMaintenanceAdmin()) return;
+
+      const message = latestMaintenanceState
+        ? 'Maintenance mode is currently ON.\nEmployees currently cannot access the internal system.\nIf you turn it OFF, employees will be able to access the system normally again.\nDo you want to continue?'
+        : 'Maintenance mode is currently OFF.\nIf you turn it ON, all employee accounts will be redirected to the system update page and will not be able to access the internal system.\nDo you want to continue?';
+
+      if (!confirm(message)) return;
 
       const button = document.getElementById('maintenance-toggle-btn');
       if (button) button.disabled = true;
