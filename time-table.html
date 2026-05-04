@@ -7,13 +7,20 @@
   <title>Cloud Crowd - Thyme Table Plates</title>
   <link rel="stylesheet" href="styles.css">
   <script>
+    const MAINTENANCE_MODE = true;
+
+    if (MAINTENANCE_MODE) {
+      window.location.href = "system-update.html";
+    }
+  </script>
+  <script>
     // TEMPORARILY DISABLED - Thyme Table Plates
-    if (true) {
+    if (!MAINTENANCE_MODE && true) {
       window.location.href = "dashboard.html";
     }
   </script>
   <script>
-    if (localStorage.getItem('cc_auth') !== '1') {
+    if (!MAINTENANCE_MODE && localStorage.getItem('cc_auth') !== '1') {
       window.location.href = 'login.html';
     }
   </script>

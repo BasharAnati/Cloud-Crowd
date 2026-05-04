@@ -7,7 +7,14 @@
   <title>Cloud Crowd - Complimentary</title>
   <link rel="stylesheet" href="styles.css">
   <script>
-    if (localStorage.getItem('cc_auth') !== '1') {
+    const MAINTENANCE_MODE = true;
+
+    if (MAINTENANCE_MODE) {
+      window.location.href = "system-update.html";
+    }
+  </script>
+  <script>
+    if (!MAINTENANCE_MODE && localStorage.getItem('cc_auth') !== '1') {
       window.location.href = 'login.html';
     }
   </script>

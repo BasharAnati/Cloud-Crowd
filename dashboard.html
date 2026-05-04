@@ -6,11 +6,18 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <title>Cloud Crowd - Service Management Platform</title>
   <link rel="stylesheet" href="styles.css">
+  <script>
+    const MAINTENANCE_MODE = true;
+
+    if (MAINTENANCE_MODE) {
+      window.location.href = "system-update.html";
+    }
+  </script>
 </head>
 <body>
   <!-- حماية الصفحة: رجع المستخدم لـ login إذا مش مسجل -->
   <script>
-    if (localStorage.getItem('cc_auth') !== '1') {
+    if (!MAINTENANCE_MODE && localStorage.getItem('cc_auth') !== '1') {
       window.location.href = 'login.html';
     }
   </script>
