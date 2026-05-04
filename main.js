@@ -2019,6 +2019,8 @@ function logout() {
   if (confirmLogout) {
     localStorage.removeItem('cc_auth');
     localStorage.removeItem('cc_user');
+    localStorage.removeItem('cc_role');
+    localStorage.removeItem('cc_token');
     window.location.href = "login.html";
   }
 }

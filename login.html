@@ -136,9 +136,11 @@
 
       const data = await res.json().catch(() => ({}));
 
-      if (res.ok && data?.success) {
+      if (res.ok && data?.success && data?.sessionToken) {
         localStorage.setItem('cc_auth', '1');
-        localStorage.setItem('cc_user', username);
+        localStorage.setItem('cc_user', data.username || username);
+        localStorage.setItem('cc_role', data.role || 'agent');
+        localStorage.setItem('cc_token', data.sessionToken);
 
         ok.textContent = 'Success! Redirecting…';
         ok.style.display = 'block';

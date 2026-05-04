@@ -11,15 +11,25 @@
     const MAINTENANCE_ENDPOINT = "/.netlify/functions/maintenance";
 
     function isMaintenanceAdmin() {
-      return localStorage.getItem("cc_auth") === "1" && localStorage.getItem("cc_user") === MAINTENANCE_ADMIN;
+      return localStorage.getItem("cc_auth") === "1" &&
+        localStorage.getItem("cc_role") === "admin" &&
+        localStorage.getItem("cc_user") === MAINTENANCE_ADMIN;
     }
 
-    async function fetchMaintenanceState() {
+    async function fetchMaintenanceStatus() {
       try {
-        const response = await fetch(MAINTENANCE_ENDPOINT, { cache: "no-store" });
+        const response = await fetch(MAINTENANCE_ENDPOINT, {
+          cache: "no-store",
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+          }
+        });
         if (!response.ok) throw new Error(`Maintenance check failed: ${response.status}`);
         const data = await response.json();
-        return data.maintenance === true;
+        return {
+          maintenance: data.maintenance === true,
+          admin: data.admin === true
+        };
       } catch (err) {
         console.warn("Maintenance check failed.", err);
         return null;
@@ -27,8 +37,8 @@
     }
 
     async function enforceMaintenanceMode() {
-      const maintenance = await fetchMaintenanceState();
-      if (maintenance === true && !isMaintenanceAdmin()) {
+      const status = await fetchMaintenanceStatus();
+      if (status?.maintenance === true && status.admin !== true) {
         window.location.href = "system-update.html";
       }
     }
@@ -40,7 +50,11 @@
 <body>
   <!-- حماية الصفحة: رجع المستخدم لـ login إذا مش مسجل -->
   <script>
-    if (localStorage.getItem('cc_auth') !== '1') {
+    if (localStorage.getItem('cc_auth') !== '1' || !localStorage.getItem('cc_token') || !localStorage.getItem('cc_role')) {
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
       window.location.href = 'login.html';
     }
   </script>
@@ -105,9 +119,9 @@
         return;
       }
 
-      const maintenance = await fetchMaintenanceState();
-      if (maintenance !== null) {
-        latestMaintenanceState = maintenance;
+      const status = await fetchMaintenanceStatus();
+      if (status !== null) {
+        latestMaintenanceState = status.maintenance;
       }
 
       button.style.display = 'inline-block';
@@ -125,7 +139,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-CC-User': localStorage.getItem('cc_user') || ''
+            'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
           },
           body: JSON.stringify({ maintenance: !latestMaintenanceState })
         });
@@ -145,6 +159,8 @@
     function logout() {
       localStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
       window.location.href = 'login.html';
     }
 
