@@ -7,17 +7,40 @@
   <title>Cloud Crowd - Service Management Platform</title>
   <link rel="stylesheet" href="styles.css">
   <script>
-    const MAINTENANCE_MODE = true;
+    const MAINTENANCE_ADMIN = "Anati";
+    const MAINTENANCE_ENDPOINT = "/.netlify/functions/maintenance";
 
-    if (MAINTENANCE_MODE) {
-      window.location.href = "system-update.html";
+    function isMaintenanceAdmin() {
+      return localStorage.getItem("cc_auth") === "1" && localStorage.getItem("cc_user") === MAINTENANCE_ADMIN;
     }
+
+    async function fetchMaintenanceState() {
+      try {
+        const response = await fetch(MAINTENANCE_ENDPOINT, { cache: "no-store" });
+        if (!response.ok) throw new Error(`Maintenance check failed: ${response.status}`);
+        const data = await response.json();
+        return data.maintenance === true;
+      } catch (err) {
+        console.warn("Maintenance check failed.", err);
+        return null;
+      }
+    }
+
+    async function enforceMaintenanceMode() {
+      const maintenance = await fetchMaintenanceState();
+      if (maintenance === true && !isMaintenanceAdmin()) {
+        window.location.href = "system-update.html";
+      }
+    }
+
+    enforceMaintenanceMode();
+    setInterval(enforceMaintenanceMode, 3000);
   </script>
 </head>
 <body>
   <!-- حماية الصفحة: رجع المستخدم لـ login إذا مش مسجل -->
   <script>
-    if (!MAINTENANCE_MODE && localStorage.getItem('cc_auth') !== '1') {
+    if (localStorage.getItem('cc_auth') !== '1') {
       window.location.href = 'login.html';
     }
   </script>
@@ -32,6 +55,7 @@
     </div>
 
     <!-- زر اللوج آوت -->
+    <button id="maintenance-toggle-btn" class="logout-btn" style="display:none;background:#f59e0b;" onclick="toggleMaintenanceMode()">Turn Maintenance ON</button>
     <button class="logout-btn" onclick="logout()">Log out</button>
 
     <!-- centered company logo (clickable) -->
@@ -70,11 +94,62 @@
 
   <!-- سكربت اللوج آوت -->
   <script>
+    let latestMaintenanceState = false;
+
+    async function updateMaintenanceToggleButton() {
+      const button = document.getElementById('maintenance-toggle-btn');
+      if (!button) return;
+
+      if (!isMaintenanceAdmin()) {
+        button.style.display = 'none';
+        return;
+      }
+
+      const maintenance = await fetchMaintenanceState();
+      if (maintenance !== null) {
+        latestMaintenanceState = maintenance;
+      }
+
+      button.style.display = 'inline-block';
+      button.textContent = latestMaintenanceState ? 'Turn Maintenance OFF' : 'Turn Maintenance ON';
+    }
+
+    async function toggleMaintenanceMode() {
+      if (!isMaintenanceAdmin()) return;
+
+      const button = document.getElementById('maintenance-toggle-btn');
+      if (button) button.disabled = true;
+
+      try {
+        const response = await fetch(MAINTENANCE_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CC-User': localStorage.getItem('cc_user') || ''
+          },
+          body: JSON.stringify({ maintenance: !latestMaintenanceState })
+        });
+
+        if (!response.ok) throw new Error(`Maintenance update failed: ${response.status}`);
+        const data = await response.json();
+        latestMaintenanceState = data.maintenance === true;
+      } catch (err) {
+        console.warn('Maintenance update failed.', err);
+      } finally {
+        if (button) button.disabled = false;
+      }
+
+      updateMaintenanceToggleButton();
+    }
+
     function logout() {
       localStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
       window.location.href = 'login.html';
     }
+
+    updateMaintenanceToggleButton();
+    setInterval(updateMaintenanceToggleButton, 3000);
   </script>
 
   <script src="main.js" defer></script>
