@@ -1,10 +1,13 @@
 const { google } = require("googleapis");
 
-const TAB_NAME = "July 2025"; // غيّره إذا اسم التاب مختلف
-const RANGE_READ = `${TAB_NAME}!A2:M`;
+const RANGE_READ = process.env.GOOGLE_SHEET_RANGE_CCTV || process.env.GOOGLE_SHEET_RANGE || "";
 const CASE_COL_INDEX_1BASED = 11; // K column
 const PDF_NAME_COL = "L";
 const PDF_URL_COL  = "M";
+
+function tabFromRange(range = "") {
+  return String(range).split("!")[0].replace(/^'+|'+$/g, "");
+}
 
 function json(statusCode, obj) {
   return { statusCode, body: JSON.stringify(obj) };
@@ -39,6 +42,11 @@ exports.handler = async (event) => {
     const spreadsheetId = String(process.env.GOOGLE_SHEET_ID_CCTV || "").trim();
     if (!spreadsheetId) {
       return json(500, { ok: false, error: "Missing GOOGLE_SHEET_ID_CCTV env var" });
+    }
+
+    const tabName = tabFromRange(RANGE_READ);
+    if (!RANGE_READ || !tabName) {
+      return json(500, { ok: false, error: "Missing GOOGLE_SHEET_RANGE_CCTV or GOOGLE_SHEET_RANGE env var" });
     }
 
     const credsRaw = String(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON || "").trim();
@@ -102,7 +110,7 @@ exports.handler = async (event) => {
 
     await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: `${TAB_NAME}!${PDF_NAME_COL}${sheetRowNumber}:${PDF_URL_COL}${sheetRowNumber}`,
+      range: `${tabName}!${PDF_NAME_COL}${sheetRowNumber}:${PDF_URL_COL}${sheetRowNumber}`,
       valueInputOption: "USER_ENTERED",
       requestBody: { values: [[pdfName, pdfUrl]] },
     });

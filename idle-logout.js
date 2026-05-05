@@ -9,6 +9,8 @@ function resetIdle() {
 function clearAuthSession() {
   localStorage.removeItem('cc_auth');
   localStorage.removeItem('cc_user');
+  localStorage.removeItem('cc_role');
+  localStorage.removeItem('cc_token');
 }
 
 // Reset timer on any user activity

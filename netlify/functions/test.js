@@ -5,12 +5,12 @@ exports.handler = async () => {
   try {
     const keyJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
     const sheetId = process.env.GOOGLE_SHEET_ID;
-    const range = process.env.GOOGLE_SHEET_RANGE || "July 2025!A1:K20";
+    const range = process.env.GOOGLE_SHEET_RANGE;
 
-    if (!keyJson || !sheetId) {
+    if (!keyJson || !sheetId || !range) {
       return {
         statusCode: 500,
-        body: JSON.stringify({ ok: false, error: "Missing env vars (GOOGLE_APPLICATION_CREDENTIALS_JSON / GOOGLE_SHEET_ID)" }),
+        body: JSON.stringify({ ok: false, error: "Missing env vars (GOOGLE_APPLICATION_CREDENTIALS_JSON / GOOGLE_SHEET_ID / GOOGLE_SHEET_RANGE)" }),
       };
     }
 

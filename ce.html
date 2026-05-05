@@ -7,14 +7,51 @@
   <title>Cloud Crowd - Customer Experience</title>
   <link rel="stylesheet" href="styles.css">
   <script>
-    const MAINTENANCE_MODE = false;
+    const MAINTENANCE_ADMIN = "Anati";
+    const MAINTENANCE_ENDPOINT = "/.netlify/functions/maintenance";
 
-    if (MAINTENANCE_MODE) {
-      window.location.href = "system-update.html";
+    function isMaintenanceAdmin() {
+      return localStorage.getItem("cc_auth") === "1" &&
+        localStorage.getItem("cc_role") === "admin" &&
+        localStorage.getItem("cc_user") === MAINTENANCE_ADMIN;
     }
+
+    async function fetchMaintenanceStatus() {
+      try {
+        const response = await fetch(MAINTENANCE_ENDPOINT, {
+          cache: "no-store",
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+          }
+        });
+        if (!response.ok) throw new Error(`Maintenance check failed: ${response.status}`);
+        const data = await response.json();
+        return {
+          maintenance: data.maintenance === true,
+          admin: data.admin === true
+        };
+      } catch (err) {
+        console.warn("Maintenance check failed.", err);
+        return null;
+      }
+    }
+
+    async function enforceMaintenanceMode() {
+      const status = await fetchMaintenanceStatus();
+      if (status?.maintenance === true && status.admin !== true) {
+        window.location.href = "system-update.html";
+      }
+    }
+
+    enforceMaintenanceMode();
+    setInterval(enforceMaintenanceMode, 3000);
   </script>
   <script>
-    if (!MAINTENANCE_MODE && localStorage.getItem('cc_auth') !== '1') {
+    if (localStorage.getItem('cc_auth') !== '1' || !localStorage.getItem('cc_token') || !localStorage.getItem('cc_role')) {
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
       window.location.href = 'login.html';
     }
   </script>

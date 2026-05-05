@@ -15,23 +15,18 @@ exports.handler = async (event) => {
 
     // 1) المتغيّرات من Netlify
     const sheetId = process.env.GOOGLE_SHEET_ID; // ID تبع الشيت
-    const defaultRange =
-      process.env.GOOGLE_SHEET_RANGE || "July 2025!A1:K2000"; // رينج افتراضي
-    if (!sheetId) {
+    const range = process.env.GOOGLE_SHEET_RANGE;
+    if (!sheetId || !range) {
       return {
         statusCode: 500,
         headers: { ...CORS, "Content-Type": "application/json" },
         body: JSON.stringify({
           ok: false,
           error:
-            "Missing GOOGLE_SHEET_ID env var. ضع Google Sheet ID بمتغيرات نتلايفي.",
+            "Missing GOOGLE_SHEET_ID or GOOGLE_SHEET_RANGE env var.",
         }),
       };
     }
-
-    // 2) نسمح بتمرير range كـ query ?range=Sheet!A1:K30
-    const url = new URL(event.rawUrl || "https://x/");
-    const range = url.searchParams.get("range") || defaultRange;
 
     // 3) مصادقة Google من الـ JSON الموجود في env
     const rawCreds = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;

@@ -45,36 +45,8 @@ function canUserCreate(section) {
 const DELETER_USERNAME = 'Anati';
 
 // ==== Google Sheets Bridge (موحّد لكل الأقسام) ====
-const SHEETS_ENDPOINT = "https://cloudcrowd.site/.netlify/functions/sheets";
+const SHEETS_ENDPOINT = "/.netlify/functions/sheets";
 const SHEETS_APP_SECRET = "";
-
-// أسماء التابات ونطاق القراءة لكل قسم
-const SECTION_SHEETS = {
-  cctv: {
-    tab: "CCTV_Sep2025",
-    pull: "CCTV_Sep2025!A2:M"
-  },
-  ce: {
-    tab: "CircaCustomerExperience_Sep2025",
-    pull: "CircaCustomerExperience_Sep2025!A2:P"
-  },
-  complaints: {
-  tab: "DailyComplaints_Sep2025",
-  pull: "'DailyComplaints_Sep2025'!A2:N" // ملاحظ: اسم التاب بين ''
-},
-
-  "free-orders": {
-    tab: "Complimentary",
-    pull: "Complimentary!A2:M"
-  },
-  "time-table": {
-    tab: "ThymeTablePlates_Sep2025",
-    pull: "ThymeTablePlates_Sep2025!A2:K"
-  }
-};
-
-function sheetTab(section){ return SECTION_SHEETS[section]?.tab || null; }
-function sheetPull(section){ return SECTION_SHEETS[section]?.pull || null; }
 
 // أعلى الملف مع باقي الثوابت
 const SEEDED_CASES_KEY = 'cloudCrowdSeededCases';
@@ -237,8 +209,7 @@ function rowFromTicketTimeTable(t) {
 
 
 async function pushToSheets(section, ticket) {
-  const tab = sheetTab(section);
-  if (!tab) return;
+  if (!section) return;
 
   const headers = { "Content-Type": "application/json" };
   if (SHEETS_APP_SECRET) headers["X-App-Secret"] = SHEETS_APP_SECRET;
@@ -256,7 +227,6 @@ async function pushToSheets(section, ticket) {
     headers,
     body: JSON.stringify({
       section,     // للسيرفر عشان يختار الـ Spreadsheet
-      range: tab,  // اسم التاب
       values: [row]
     })
   });
@@ -545,14 +515,13 @@ function reconcileAfterSheetsPull(section, pulled) {
 // ============================================================================
 
 async function hydrateFromSheets(section) {
-  const range = sheetPull(section);
-  if (!range) return;
+  if (!section) return;
 
   try {
     const headers = {};
     if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
 
-    const url = `${SHEETS_ENDPOINT}?range=${encodeURIComponent(range)}&section=${encodeURIComponent(section)}`;
+    const url = `${SHEETS_ENDPOINT}?section=${encodeURIComponent(section)}`;
     const res = await fetch(url, { headers });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Sheets GET failed');
@@ -1503,7 +1472,6 @@ async function saveDrawerEdits() {
 
       const sheetBody = {
         section: _currentSection,
-        tab: sheetTab(_currentSection),
         caseNumber: t.caseNumber,
         status: t.status,
         actionTaken: t.actionTaken,
@@ -1581,7 +1549,6 @@ async function deleteTicket(idx) {
         headers,
         body: JSON.stringify({
           section: _currentSection,
-          tab: sheetTab(_currentSection),
           caseNumber: t.caseNumber,
           by: CURRENT_USER
         })
@@ -2019,6 +1986,8 @@ function logout() {
   if (confirmLogout) {
     localStorage.removeItem('cc_auth');
     localStorage.removeItem('cc_user');
+    localStorage.removeItem('cc_role');
+    localStorage.removeItem('cc_token');
     window.location.href = "login.html";
   }
 }

@@ -25,8 +25,13 @@ exports.handler = async (event) => {
     // ID الشيت من المتغير
     const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 
-    // اسم الشيت (الورقة) - عندك "July 2025"
-    const range = "July 2025!A:K";
+    const range = process.env.GOOGLE_SHEET_RANGE;
+    if (!range) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ ok: false, error: "Missing GOOGLE_SHEET_RANGE env var" }),
+      };
+    }
 
     // نبني صف جديد بنفس ترتيب الأعمدة
     const newRow = [

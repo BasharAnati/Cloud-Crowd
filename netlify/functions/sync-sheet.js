@@ -12,8 +12,8 @@ const JSON_HEADERS = { "Content-Type": "application/json", ...CORS };
 const {
   LARK_APP_ID,
   LARK_APP_SECRET,
-  LARK_SPREADSHEET_TOKEN, // e.g. YTVBwkRztibHsskxAy0lZTWggch
-  LARK_SHEET_RANGE,       // e.g. "July 2025!A1:K2000"
+  LARK_SPREADSHEET_TOKEN,
+  LARK_SHEET_RANGE,
 } = process.env;
 
 function assertEnv() {
@@ -29,7 +29,6 @@ function assertEnv() {
 
 // ====== A1 helpers ======
 function splitRange(a1) {
-  // "July 2025!A1:K2000" -> { sheet: 'July 2025', startCol:'A', startRow:1, endCol:'K', endRow:2000 }
   const [sheet, range] = a1.split("!");
   const [start, end] = range.split(":");
   const parse = (ref) => {
@@ -109,7 +108,7 @@ async function readSheetRange(range) {
   return values;
 }
 
-// Append a row at end (use whole columns A:K to always append)
+// Append a row at the end using the configured sheet columns.
 async function appendRow(sheet, startColIdx, endColIdx, rowValues) {
   const startLetter = colIndexToLetters(startColIdx);
   const endLetter = colIndexToLetters(endColIdx);
