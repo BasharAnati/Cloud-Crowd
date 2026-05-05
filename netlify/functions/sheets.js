@@ -55,7 +55,7 @@ function stripQuotes(name = "") {
 }
 
 function normalizeRange(r = "") {
-  // يحوّل "'Tab'!A2:N" إلى "Tab!A2:N"
+  // Removes wrapping quotes from the sheet name portion.
   return String(r).replace(/^'([^']+)'(!)/, (_, tab, bang) => `${tab}${bang}`);
 }
 
@@ -66,6 +66,14 @@ const SHEET_IDS = {
   complaints:    process.env.GOOGLE_SHEET_ID_DAILY_COMPLAINTS,
   'free-orders': process.env.GOOGLE_SHEET_ID_COMPLIMENTARY,
   'time-table':  process.env.GOOGLE_SHEET_ID_THYME_TABLE_PLATES,
+};
+
+const SHEET_RANGES = {
+  cctv:          process.env.GOOGLE_SHEET_RANGE_CCTV,
+  ce:            process.env.GOOGLE_SHEET_RANGE_CUSTOMER_EXPERIENCE,
+  complaints:    process.env.GOOGLE_SHEET_RANGE_DAILY_COMPLAINTS,
+  'free-orders': process.env.GOOGLE_SHEET_RANGE_COMPLIMENTARY,
+  'time-table':  process.env.GOOGLE_SHEET_RANGE_THYME_TABLE_PLATES,
 };
 
 // fallback لو لسه عندك GOOGLE_SHEET_ID قديم
@@ -92,6 +100,14 @@ function pickSpreadsheetId({ section, tab, range } = {}) {
   if (/^ThymeTablePlates/i.test(name)) return SHEET_IDS['time-table'] || DEFAULT_SHEET_ID;
 
   return DEFAULT_SHEET_ID;
+}
+
+function pickRange(section) {
+  return SHEET_RANGES[section] || process.env.GOOGLE_SHEET_RANGE || "";
+}
+
+function tabFromRange(range = "") {
+  return stripQuotes(String(range).split("!")[0] || "");
 }
 
 // أعمدة كل سكشن (مفتاح/حالة/أكشن) — لازم تطابق تصميم شيتاتك
@@ -125,7 +141,8 @@ exports.handler = async (event) => {
     /* ------------------------------- GET ------------------------------- */
     if (event.httpMethod === 'GET') {
       const qs = event.queryStringParameters || {};
-      let range = qs.range || 'Sheet1!A1:D20';
+      let range = pickRange(qs.section);
+      if (!range) return err(500, 'No sheet range configured');
       range = normalizeRange(range); // <-- مهم
       const spreadsheetId = pickSpreadsheetId({ section: qs.section, range });
       if (!spreadsheetId) return err(500, 'No Spreadsheet ID configured');
@@ -141,7 +158,8 @@ exports.handler = async (event) => {
       catch { return err(400, 'Invalid JSON body'); }
 
       const section = body.section || undefined;
-      let range = body.range || body.tab || 'CCTV_Sep2025';
+      let range = pickRange(section);
+      if (!range) return err(500, 'No sheet range configured');
       range = stripQuotes(range);
       range = normalizeRange(range);
       const spreadsheetId = pickSpreadsheetId({ section, tab: range });
@@ -170,7 +188,9 @@ exports.handler = async (event) => {
       catch { return err(400, 'Invalid JSON body'); }
 
       const section = String(body.section || 'cctv');
-      let tab = String(body.tab || 'CCTV_Sep2025');
+      const configuredRange = pickRange(section);
+      let tab = tabFromRange(configuredRange);
+      if (!tab) return err(500, 'No sheet range configured');
       tab = stripQuotes(tab); // <-- مهم
       const spreadsheetId = pickSpreadsheetId({ section, tab });
       if (!spreadsheetId) return err(500, 'No Spreadsheet ID configured');
@@ -250,7 +270,9 @@ exports.handler = async (event) => {
       catch { return err(400, 'Invalid JSON body'); }
 
       const section = String(body.section || 'cctv');
-      let tab = String(body.tab || 'CCTV_Sep2025');
+      const configuredRange = pickRange(section);
+      let tab = tabFromRange(configuredRange);
+      if (!tab) return err(500, 'No sheet range configured');
       tab = stripQuotes(tab); // <-- مهم
       const spreadsheetId = pickSpreadsheetId({ section, tab });
       if (!spreadsheetId) return err(500, 'No Spreadsheet ID configured');
