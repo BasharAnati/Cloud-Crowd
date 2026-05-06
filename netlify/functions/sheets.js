@@ -2,30 +2,46 @@
 const { google } = require('googleapis');
 
 /* ------------------------ helpers: http ------------------------ */
-function ok(data, extraHeaders = {}) {
+function corsHeaders(event, extraHeaders = {}) {
+  const headers = event?.headers || {};
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers':
+      headers['access-control-request-headers'] ||
+      headers['Access-Control-Request-Headers'] ||
+      'Content-Type, Authorization, X-App-Secret',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+    ...extraHeaders,
+  };
+}
+
+function ok(data, extraHeaders = {}, event) {
   return {
     statusCode: 200,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-App-Secret',
-      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-      ...extraHeaders,
+      ...corsHeaders(event, extraHeaders),
     },
     body: JSON.stringify(data),
   };
 }
 
-function err(statusCode, message) {
+function err(statusCode, message, event) {
   return {
     statusCode,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-App-Secret',
-      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+      ...corsHeaders(event),
     },
     body: JSON.stringify({ error: message }),
+  };
+}
+
+function options(event) {
+  return {
+    statusCode: 204,
+    headers: corsHeaders(event),
+    body: '',
   };
 }
 
@@ -124,16 +140,17 @@ function getCols(section = 'cctv') { return SECTION_COLS[section] || SECTION_COL
 exports.handler = async (event) => {
   try {
     // CORS preflight
-    if (event.httpMethod === 'OPTIONS') return ok({ ok: true });
+    if (event.httpMethod === 'OPTIONS') return options(event);
 
     // (اختياري) حماية برأس سري
     const appSecret = process.env.APP_SECRET;
     if (appSecret) {
+      const headers = event.headers || {};
       const clientSecret =
-        event.headers['x-app-secret'] ||
-        event.headers['X-App-Secret'] ||
-        event.headers['x-app-secret'];
-      if (clientSecret !== appSecret) return err(401, 'Unauthorized');
+        headers['x-app-secret'] ||
+        headers['X-App-Secret'] ||
+        headers['x-app-secret'];
+      if (clientSecret !== appSecret) return err(401, 'Unauthorized', event);
     }
 
     const sheets = await getSheetsClient();
