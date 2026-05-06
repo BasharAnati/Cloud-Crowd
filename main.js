@@ -27,6 +27,14 @@ Object.defineProperty(window, 'currentSection', {
 // اسم المستخدم الحالي (من صفحة اللوجين)
 const CURRENT_USER = localStorage.getItem('cc_user') || 'operator';
 
+function getAuthHeaders(extraHeaders = {}) {
+  const token = localStorage.getItem('cc_token') || '';
+  return {
+    ...extraHeaders,
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+}
+
 
 // من له صلاحية الإضافة
 const CREATOR_ALLOW = {
@@ -211,7 +219,7 @@ function rowFromTicketTimeTable(t) {
 async function pushToSheets(section, ticket) {
   if (!section) return;
 
-  const headers = { "Content-Type": "application/json" };
+  const headers = getAuthHeaders({ "Content-Type": "application/json" });
   if (SHEETS_APP_SECRET) headers["X-App-Secret"] = SHEETS_APP_SECRET;
 
   let row;
@@ -518,7 +526,7 @@ async function hydrateFromSheets(section) {
   if (!section) return;
 
   try {
-    const headers = {};
+    const headers = getAuthHeaders();
     if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
 
     const url = `${SHEETS_ENDPOINT}?section=${encodeURIComponent(section)}`;
@@ -1467,7 +1475,7 @@ async function saveDrawerEdits() {
     if (!t.caseNumber) {
       console.warn('No caseNumber on ticket → Sheets PUT skipped.');
     } else {
-      const headers = { 'Content-Type': 'application/json' };
+      const headers = getAuthHeaders({ 'Content-Type': 'application/json' });
       if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
 
       const sheetBody = {
@@ -1541,7 +1549,7 @@ async function deleteTicket(idx) {
 
     // 2) حذف من Google Sheets حسب caseNumber
     if (t.caseNumber) {
-      const headers = { 'Content-Type': 'application/json' };
+      const headers = getAuthHeaders({ 'Content-Type': 'application/json' });
       if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
 
       const resS = await fetch(SHEETS_ENDPOINT, {
