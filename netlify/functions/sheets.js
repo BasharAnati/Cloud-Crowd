@@ -1,5 +1,9 @@
 // netlify/functions/sheets.js  (CommonJS)
 const { google } = require('googleapis');
+const {
+  requireValidSession,
+  requireAdminSession,
+} = require('./_auth');
 
 /* ------------------------ helpers: http ------------------------ */
 function ok(data, extraHeaders = {}) {
@@ -126,13 +130,25 @@ exports.handler = async (event) => {
     // CORS preflight
     if (event.httpMethod === 'OPTIONS') return ok({ ok: true });
 
+    try {
+      if (event.httpMethod === 'DELETE') {
+        requireAdminSession(event);
+      } else if (['GET', 'POST', 'PUT'].includes(event.httpMethod)) {
+        requireValidSession(event);
+      }
+    } catch (authErr) {
+      if (!authErr.statusCode) throw authErr;
+      return err(authErr.statusCode, authErr.message);
+    }
+
     // (اختياري) حماية برأس سري
     const appSecret = process.env.APP_SECRET;
     if (appSecret) {
+      const headers = event.headers || {};
       const clientSecret =
-        event.headers['x-app-secret'] ||
-        event.headers['X-App-Secret'] ||
-        event.headers['x-app-secret'];
+        headers['x-app-secret'] ||
+        headers['X-App-Secret'] ||
+        headers['x-app-secret'];
       if (clientSecret !== appSecret) return err(401, 'Unauthorized');
     }
 
