@@ -27,6 +27,14 @@ Object.defineProperty(window, 'currentSection', {
 // اسم المستخدم الحالي (من صفحة اللوجين)
 const CURRENT_USER = localStorage.getItem('cc_user') || 'operator';
 
+function getAuthHeaders(extraHeaders = {}) {
+  const token = localStorage.getItem('cc_token') || '';
+  return {
+    ...extraHeaders,
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+}
+
 
 // من له صلاحية الإضافة
 const CREATOR_ALLOW = {
@@ -211,7 +219,7 @@ function rowFromTicketTimeTable(t) {
 async function pushToSheets(section, ticket) {
   if (!section) return;
 
-  const headers = { "Content-Type": "application/json" };
+  const headers = getAuthHeaders({ "Content-Type": "application/json" });
   if (SHEETS_APP_SECRET) headers["X-App-Secret"] = SHEETS_APP_SECRET;
 
   let row;
@@ -450,7 +458,7 @@ async function autoSeedSheetTickets(section) {
     try {
       const res = await fetch('/.netlify/functions/tickets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           section,
           status: ticket.status || 'Under Review',
@@ -518,7 +526,7 @@ async function hydrateFromSheets(section) {
   if (!section) return;
 
   try {
-    const headers = {};
+    const headers = getAuthHeaders();
     if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
 
     const url = `${SHEETS_ENDPOINT}?section=${encodeURIComponent(section)}`;
@@ -1352,7 +1360,9 @@ async function viewTicketHistory(ticketId){
   modal.style.display = 'flex';
 
   try {
-    const res = await fetch(`/.netlify/functions/tickets?history=1&id=${encodeURIComponent(ticketId)}`);
+    const res = await fetch(`/.netlify/functions/tickets?history=1&id=${encodeURIComponent(ticketId)}`, {
+      headers: getAuthHeaders()
+    });
     const data = await res.json();
     if (!res.ok || !data.ok) throw new Error(data.error || 'Failed loading history');
     body.innerHTML = buildHistoryHTML(data.history || []);
@@ -1410,7 +1420,7 @@ async function saveDrawerEdits() {
 
           const up = await fetch('/.netlify/functions/upload-cctv-pdf', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({
               caseNumber: t.caseNumber,
               pdfName: file.name,
@@ -1447,7 +1457,7 @@ async function saveDrawerEdits() {
     if (Number.isFinite(Number(t._id))) {
       const res = await fetch('/.netlify/functions/tickets', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           id: Number(t._id),
           section: String(_currentSection),
@@ -1467,7 +1477,7 @@ async function saveDrawerEdits() {
     if (!t.caseNumber) {
       console.warn('No caseNumber on ticket → Sheets PUT skipped.');
     } else {
-      const headers = { 'Content-Type': 'application/json' };
+      const headers = getAuthHeaders({ 'Content-Type': 'application/json' });
       if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
 
       const sheetBody = {
@@ -1532,7 +1542,7 @@ async function deleteTicket(idx) {
     if (Number.isFinite(Number(t._id))) {
       const res = await fetch('/.netlify/functions/tickets', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ id: Number(t._id), section: String(_currentSection), by: CURRENT_USER })
       });
       const data = await res.json();
@@ -1541,7 +1551,7 @@ async function deleteTicket(idx) {
 
     // 2) حذف من Google Sheets حسب caseNumber
     if (t.caseNumber) {
-      const headers = { 'Content-Type': 'application/json' };
+      const headers = getAuthHeaders({ 'Content-Type': 'application/json' });
       if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
 
       const resS = await fetch(SHEETS_ENDPOINT, {
@@ -1803,7 +1813,7 @@ else {
     try {
       await fetch('/.netlify/functions/tickets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           section: _currentSection,
           status: t.status || 'Under Review',
@@ -1898,7 +1908,9 @@ window.addEventListener('load', async () => {
 async function hydrateFromDB(section) {
   const sec = section || window.currentSection || 'cctv';
   try {
-    const res = await fetch(`/.netlify/functions/tickets?section=${encodeURIComponent(sec)}`);
+    const res = await fetch(`/.netlify/functions/tickets?section=${encodeURIComponent(sec)}`, {
+      headers: getAuthHeaders()
+    });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'fetch failed');
 

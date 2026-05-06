@@ -3,6 +3,10 @@
 // Works with Neon/Postgres via pg Pool
 
 const { Pool } = require("pg");
+const {
+  requireValidSession,
+  requireAdminSession,
+} = require("./_auth");
 
 // pick connection string (uses pooled URL if set)
 const CONNECTION_STRING =
@@ -16,9 +20,17 @@ const pool = new Pool({ connectionString: CONNECTION_STRING });
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS", // ← أضف DELETE
-  "Access-Control-Allow-Headers": "Content-Type, X-Admin-Secret", 
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Admin-Secret", 
 };
 const JSON_HEADERS = { "Content-Type": "application/json", ...CORS };
+
+function authErrorResponse(err) {
+  return {
+    statusCode: err.statusCode || 401,
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ ok: false, error: err.message }),
+  };
+}
 
 // --- bootstrap: ensure tickets table exists ---
 async function ensureTicketsTable() {
@@ -120,6 +132,23 @@ exports.handler = async (event) => {
   }
 
   try {
+    let session = null;
+    if (event.httpMethod === "GET" || event.httpMethod === "POST" || event.httpMethod === "PUT") {
+      try {
+        session = requireValidSession(event);
+      } catch (authErr) {
+        if (!authErr.statusCode) throw authErr;
+        return authErrorResponse(authErr);
+      }
+    } else if (event.httpMethod === "DELETE") {
+      try {
+        session = requireAdminSession(event);
+      } catch (authErr) {
+        if (!authErr.statusCode) throw authErr;
+        return authErrorResponse(authErr);
+      }
+    }
+
     await ensureTicketsTable();
     // history infra is optional but harmless; run once
     await ensureHistoryArtifacts();
@@ -289,36 +318,14 @@ exports.handler = async (event) => {
 
 // ===== DELETE  { id, by? } =====
 if (event.httpMethod === "DELETE") {
-  // (اختياري) تحصين بمفتاح سري من السيرفر فقط:
-  const ADMIN_SECRET = process.env.ADMIN_SECRET; // اتركه فارغًا إذا لا تريد استخدامه
-  const hdr = event.headers || {};
-  const reqSecret = hdr["x-admin-secret"] || hdr["X-Admin-Secret"];
-  if (ADMIN_SECRET && reqSecret !== ADMIN_SECRET) {
-    return {
-      statusCode: 401,
-      headers: JSON_HEADERS,
-      body: JSON.stringify({ ok: false, error: "Bad admin secret" }),
-    };
-  }
-
   const body = JSON.parse(event.body || "{}");
   const id = Number(body.id);
-  const byRaw = body.by ? String(body.by) : "";
+  const byRaw = String(session.username || "");
   if (!id) {
     return {
       statusCode: 400,
       headers: JSON_HEADERS,
       body: JSON.stringify({ ok: false, error: "id is required" }),
-    };
-  }
-
-  // اسم المصرّح بالحذف فقط (غير حساس لحالة الأحرف)
-  const ALLOWED_DELETER = (process.env.ADMIN_DELETER || "Anati").toLowerCase();
-  if (byRaw.toLowerCase() !== ALLOWED_DELETER) {
-    return {
-      statusCode: 403,
-      headers: JSON_HEADERS,
-      body: JSON.stringify({ ok: false, error: "Not authorized to delete" }),
     };
   }
 
