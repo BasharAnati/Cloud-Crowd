@@ -116,6 +116,13 @@
      ✅ OLD LOGIN FLOW (ENABLED)
      =========================== */
   const form = document.getElementById('form');
+  const expired = new URLSearchParams(window.location.search).get('expired') === '1';
+  if (expired) {
+    const err = document.getElementById('error');
+    err.textContent = 'Your session expired. Please sign in again.';
+    err.style.display = 'block';
+  }
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 

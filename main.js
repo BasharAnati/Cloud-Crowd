@@ -35,6 +35,17 @@ function getAuthHeaders(extraHeaders = {}) {
   };
 }
 
+function handleAuthFailure(response) {
+  if (response.status !== 401) return false;
+
+  localStorage.removeItem('cc_auth');
+  localStorage.removeItem('cc_user');
+  localStorage.removeItem('cc_role');
+  localStorage.removeItem('cc_token');
+  window.location.href = "login.html?expired=1";
+  return true;
+}
+
 
 // من له صلاحية الإضافة
 const CREATOR_ALLOW = {
@@ -238,6 +249,7 @@ async function pushToSheets(section, ticket) {
       values: [row]
     })
   });
+  if (handleAuthFailure(res)) return;
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Sheets error ${res.status}`);
   return data;
@@ -458,7 +470,7 @@ async function autoSeedSheetTickets(section) {
     try {
       const res = await fetch('/.netlify/functions/tickets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           section,
           status: ticket.status || 'Under Review',
@@ -466,6 +478,7 @@ async function autoSeedSheetTickets(section) {
           changedBy: CURRENT_USER || 'system-seed'
         })
       });
+      if (handleAuthFailure(res)) return;
 
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'seed failed');
@@ -531,6 +544,7 @@ async function hydrateFromSheets(section) {
 
     const url = `${SHEETS_ENDPOINT}?section=${encodeURIComponent(section)}`;
     const res = await fetch(url, { headers });
+    if (handleAuthFailure(res)) return;
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Sheets GET failed');
 
@@ -1360,7 +1374,10 @@ async function viewTicketHistory(ticketId){
   modal.style.display = 'flex';
 
   try {
-    const res = await fetch(`/.netlify/functions/tickets?history=1&id=${encodeURIComponent(ticketId)}`);
+    const res = await fetch(`/.netlify/functions/tickets?history=1&id=${encodeURIComponent(ticketId)}`, {
+      headers: getAuthHeaders()
+    });
+    if (handleAuthFailure(res)) return;
     const data = await res.json();
     if (!res.ok || !data.ok) throw new Error(data.error || 'Failed loading history');
     body.innerHTML = buildHistoryHTML(data.history || []);
@@ -1425,6 +1442,7 @@ async function saveDrawerEdits() {
               pdfBase64: dataUrl
             })
           });
+          if (handleAuthFailure(up)) return;
 
           const upData = await up.json().catch(() => ({}));
 
@@ -1455,7 +1473,7 @@ async function saveDrawerEdits() {
     if (Number.isFinite(Number(t._id))) {
       const res = await fetch('/.netlify/functions/tickets', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           id: Number(t._id),
           section: String(_currentSection),
@@ -1464,6 +1482,7 @@ async function saveDrawerEdits() {
           changedBy: CURRENT_USER
         })
       });
+      if (handleAuthFailure(res)) return;
 
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'Update failed');
@@ -1495,6 +1514,7 @@ async function saveDrawerEdits() {
         headers,
         body: JSON.stringify(sheetBody)
       });
+      if (handleAuthFailure(resS)) return;
 
       const dataS = await resS.json().catch(() => ({}));
       if (!resS.ok || dataS?.ok === false) {
@@ -1540,9 +1560,10 @@ async function deleteTicket(idx) {
     if (Number.isFinite(Number(t._id))) {
       const res = await fetch('/.netlify/functions/tickets', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ id: Number(t._id), section: String(_currentSection), by: CURRENT_USER })
       });
+      if (handleAuthFailure(res)) return;
       const data = await res.json();
       if (!res.ok || data?.ok === false) throw new Error(data?.error || 'DB delete failed');
     }
@@ -1561,6 +1582,7 @@ async function deleteTicket(idx) {
           by: CURRENT_USER
         })
       });
+      if (handleAuthFailure(resS)) return;
       const dataS = await resS.json().catch(() => ({}));
       if (!resS.ok || dataS?.ok === false) throw new Error(dataS?.error || 'Sheets delete failed');
     }
@@ -1809,9 +1831,9 @@ else {
 
     // ارفع إلى الداتابيس
     try {
-      await fetch('/.netlify/functions/tickets', {
+      const res = await fetch('/.netlify/functions/tickets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           section: _currentSection,
           status: t.status || 'Under Review',
@@ -1820,6 +1842,7 @@ else {
         })
       });
       // اسحب من الداتابيس لضمان التزامن + إعطاء ID رسمي
+      if (handleAuthFailure(res)) return;
       await hydrateFromDB(_currentSection);
     } catch (err) {
       console.error('POST to DB failed:', err);
@@ -1906,7 +1929,10 @@ window.addEventListener('load', async () => {
 async function hydrateFromDB(section) {
   const sec = section || window.currentSection || 'cctv';
   try {
-    const res = await fetch(`/.netlify/functions/tickets?section=${encodeURIComponent(sec)}`);
+    const res = await fetch(`/.netlify/functions/tickets?section=${encodeURIComponent(sec)}`, {
+      headers: getAuthHeaders()
+    });
+    if (handleAuthFailure(res)) return;
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'fetch failed');
 
