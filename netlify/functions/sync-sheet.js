@@ -1,10 +1,11 @@
 // netlify/functions/sync-sheet.js
 // Full Lark Sheets bridge: GET (list), POST (append), PUT (update row)
+const { requireAdminSession } = require("./_auth");
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,POST,PUT,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 const JSON_HEADERS = { "Content-Type": "application/json", ...CORS };
 
@@ -254,6 +255,18 @@ exports.handler = async (event) => {
     if (event.httpMethod === "OPTIONS") {
       return { statusCode: 204, headers: CORS, body: "" };
     }
+
+    try {
+      requireAdminSession(event);
+    } catch (authErr) {
+      if (!authErr.statusCode) throw authErr;
+      return {
+        statusCode: authErr.statusCode,
+        headers: JSON_HEADERS,
+        body: JSON.stringify({ ok: false, error: authErr.message }),
+      };
+    }
+
     assertEnv();
 
     // parse range info

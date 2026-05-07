@@ -1,16 +1,30 @@
 // netlify/functions/sheets-test.js
 const { google } = require("googleapis");
+const { requireAdminSession } = require("./_auth");
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
+
+const JSON_HEADERS = { ...CORS, "Content-Type": "application/json" };
+
+function json(statusCode, body) {
+  return { statusCode, headers: JSON_HEADERS, body: JSON.stringify(body) };
+}
 
 exports.handler = async (event) => {
   try {
     if (event.httpMethod === "OPTIONS") {
       return { statusCode: 204, headers: CORS, body: "" };
+    }
+
+    try {
+      requireAdminSession(event);
+    } catch (authErr) {
+      if (!authErr.statusCode) throw authErr;
+      return json(authErr.statusCode, { ok: false, error: authErr.message });
     }
 
     // 1) المتغيّرات من Netlify

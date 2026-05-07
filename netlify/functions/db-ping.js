@@ -1,21 +1,44 @@
 // netlify/functions/db-ping.js
 const { Client } = require('pg');
+const { requireAdminSession } = require('./_auth');
 
-exports.handler = async () => {
+const JSON_HEADERS = {
+  'content-type': 'application/json',
+  'access-control-allow-origin': '*',
+  'access-control-allow-methods': 'GET,OPTIONS',
+  'access-control-allow-headers': 'Content-Type, Authorization',
+};
+
+function json(statusCode, body) {
+  return { statusCode, headers: JSON_HEADERS, body: JSON.stringify(body) };
+}
+
+exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 204,
+      headers: {
+        'access-control-allow-origin': '*',
+        'access-control-allow-methods': 'GET,OPTIONS',
+        'access-control-allow-headers': 'Content-Type, Authorization',
+      },
+      body: '',
+    };
+  }
+
+  try {
+    requireAdminSession(event);
+  } catch (authErr) {
+    return json(authErr.statusCode || 500, { ok: false, error: authErr.message });
+  }
+
   const conn =
     process.env.NETLIFY_DATABASE_URL_UNPOOLED ||
     process.env.NETLIFY_DATABASE_URL ||
     process.env.DATABASE_URL;
 
   if (!conn) {
-    return {
-      statusCode: 500,
-      headers: {
-        'content-type': 'application/json',
-        'access-control-allow-origin': '*',
-      },
-      body: JSON.stringify({ ok: false, error: 'Missing DB connection string' }),
-    };
+    return json(500, { ok: false, error: 'Missing DB connection string' });
   }
 
   const client = new Client({
@@ -28,23 +51,9 @@ exports.handler = async () => {
     const { rows } = await client.query('select now() as now');
     await client.end();
 
-    return {
-      statusCode: 200,
-      headers: {
-        'content-type': 'application/json',
-        'access-control-allow-origin': '*',
-      },
-      body: JSON.stringify({ ok: true, now: rows[0].now }),
-    };
+    return json(200, { ok: true, now: rows[0].now });
   } catch (err) {
     try { await client.end(); } catch {}
-    return {
-      statusCode: 500,
-      headers: {
-        'content-type': 'application/json',
-        'access-control-allow-origin': '*',
-      },
-      body: JSON.stringify({ ok: false, error: err.message }),
-    };
+    return json(500, { ok: false, error: err.message });
   }
 };
