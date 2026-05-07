@@ -1418,7 +1418,7 @@ async function saveDrawerEdits() {
 
           const up = await fetch('/.netlify/functions/upload-cctv-pdf', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({
               caseNumber: t.caseNumber,
               pdfName: file.name,
