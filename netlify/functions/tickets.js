@@ -3,6 +3,10 @@
 // Works with Neon/Postgres via pg Pool
 
 const { Pool } = require("pg");
+const {
+  requireValidSession,
+  requireAdminSession,
+} = require("./_auth");
 
 // pick connection string (uses pooled URL if set)
 const CONNECTION_STRING =
@@ -16,7 +20,7 @@ const pool = new Pool({ connectionString: CONNECTION_STRING });
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS", // ← أضف DELETE
-  "Access-Control-Allow-Headers": "Content-Type, X-Admin-Secret", 
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 const JSON_HEADERS = { "Content-Type": "application/json", ...CORS };
 
@@ -120,6 +124,22 @@ exports.handler = async (event) => {
   }
 
   try {
+    let session = null;
+    try {
+      if (event.httpMethod === "DELETE") {
+        session = requireAdminSession(event);
+      } else if (["GET", "POST", "PUT"].includes(event.httpMethod)) {
+        session = requireValidSession(event);
+      }
+    } catch (authErr) {
+      if (!authErr.statusCode) throw authErr;
+      return {
+        statusCode: authErr.statusCode,
+        headers: JSON_HEADERS,
+        body: JSON.stringify({ ok: false, error: authErr.message }),
+      };
+    }
+
     await ensureTicketsTable();
     // history infra is optional but harmless; run once
     await ensureHistoryArtifacts();
@@ -287,38 +307,16 @@ exports.handler = async (event) => {
     }
 
 
-// ===== DELETE  { id, by? } =====
+// ===== DELETE  { id } =====
 if (event.httpMethod === "DELETE") {
-  // (اختياري) تحصين بمفتاح سري من السيرفر فقط:
-  const ADMIN_SECRET = process.env.ADMIN_SECRET; // اتركه فارغًا إذا لا تريد استخدامه
-  const hdr = event.headers || {};
-  const reqSecret = hdr["x-admin-secret"] || hdr["X-Admin-Secret"];
-  if (ADMIN_SECRET && reqSecret !== ADMIN_SECRET) {
-    return {
-      statusCode: 401,
-      headers: JSON_HEADERS,
-      body: JSON.stringify({ ok: false, error: "Bad admin secret" }),
-    };
-  }
-
   const body = JSON.parse(event.body || "{}");
   const id = Number(body.id);
-  const byRaw = body.by ? String(body.by) : "";
+  const byRaw = String(session?.username || "admin");
   if (!id) {
     return {
       statusCode: 400,
       headers: JSON_HEADERS,
       body: JSON.stringify({ ok: false, error: "id is required" }),
-    };
-  }
-
-  // اسم المصرّح بالحذف فقط (غير حساس لحالة الأحرف)
-  const ALLOWED_DELETER = (process.env.ADMIN_DELETER || "Anati").toLowerCase();
-  if (byRaw.toLowerCase() !== ALLOWED_DELETER) {
-    return {
-      statusCode: 403,
-      headers: JSON_HEADERS,
-      body: JSON.stringify({ ok: false, error: "Not authorized to delete" }),
     };
   }
 
