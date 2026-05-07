@@ -1,22 +1,39 @@
 const { google } = require("googleapis");
+const { requireValidSession } = require("./_auth");
 
 const RANGE_READ = process.env.GOOGLE_SHEET_RANGE_CCTV || process.env.GOOGLE_SHEET_RANGE || "";
 const CASE_COL_INDEX_1BASED = 11; // K column
 const PDF_NAME_COL = "L";
 const PDF_URL_COL  = "M";
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
 function tabFromRange(range = "") {
   return String(range).split("!")[0].replace(/^'+|'+$/g, "");
 }
 
 function json(statusCode, obj) {
-  return { statusCode, body: JSON.stringify(obj) };
+  return { statusCode, headers: CORS_HEADERS, body: JSON.stringify(obj) };
 }
 
 exports.handler = async (event) => {
   try {
+    if (event.httpMethod === "OPTIONS") {
+      return { statusCode: 204, headers: CORS_HEADERS, body: "" };
+    }
+
     if (event.httpMethod !== "POST") {
       return json(405, { ok: false, error: "Only POST allowed" });
+    }
+
+    try {
+      requireValidSession(event);
+    } catch (authErr) {
+      if (!authErr.statusCode) throw authErr;
+      return json(authErr.statusCode, { ok: false, error: authErr.message });
     }
 
     const body = JSON.parse(event.body || "{}");
