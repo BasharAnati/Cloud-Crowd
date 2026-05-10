@@ -77,27 +77,11 @@ function wasSeeded(section, key){
 
 
 // يحوّل الملف لصيغة Data URL (Base64)
-function fileToDataURL(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result);  // data:<mime>;base64,....
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
+
 
 
 // يساعدنا نعرف إذا القيمة صورة (string data:, blob:, http) أو object {dataUrl}
-function extractImageSrc(val) {
-  if (!val) return null;
-  if (typeof val === 'object' && val.dataUrl) return val.dataUrl;
-  if (typeof val === 'string') {
-    const s = val.trim();
-    if (/^data:image\//i.test(s)) return s;
-    if (/^blob:|^https?:\/\//i.test(s)) return s;
-  }
-  return null;
-}
+
 
 /* ==== Sheets row builders & sender ==== */
 function rowFromTicketCCTV(t) {
@@ -489,15 +473,9 @@ async function autoSeedSheetTickets(section) {
 
 // ============================================================================
 
-function caseKey(t) {
-  // مفتاح موحّد للتذكرة بأي قسم
-  return (t?.caseNumber || t?.orderNumber || '').toString().trim();
-}
 
-function isFromSheet(t) {
-  // التذكرة من الشيت إذا ما إلها _id (ID الداتابيس)
-  return !Number.isFinite(Number(t?._id));
-}
+
+
 
 // ============================================================================
 
@@ -592,19 +570,12 @@ async function hydrateFromSheets(section) {
 // ----------------------------
 // Display name remap (view only)
 // ----------------------------
-function displayStatusName(name) {
-  return STATUS_DISPLAY_MAP[name] || name;
-}
+
 
 // ----------------------------
 // Form fields per section
 // ----------------------------
-function toLabel(field){
-  if (FIELD_LABELS[field]) return FIELD_LABELS[field];
-  return field.replace(/[_-]/g,' ')
-              .replace(/([a-z])([A-Z])/g,'$1 $2')
-              .replace(/\b\w/g,ch=>ch.toUpperCase());
-}
+
 
 // ----------------------------
 // Case numbers
@@ -718,14 +689,7 @@ function statusColor(status){
 // ----------------------------
 // Helpers
 // ----------------------------
-function escapeHtml(s=''){
-  return String(s)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&#39;');
-}
+
 
 // ----------------------------
 // Ticket list rendering
@@ -1145,17 +1109,7 @@ function ensureHistoryModal() {
   return modal;
 }
 
-function formatDT(dtStr) {
-  try {
-    const d = new Date(dtStr);
-    if (isNaN(d)) return dtStr || '';
-    const dPart = d.toLocaleDateString('en-US');
-    const tPart = d.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12:true});
-    return `${dPart} ${tPart}`;
-  } catch {
-    return dtStr || '';
-  }
-}
+
 
 function buildHistoryHTML(rows) {
   if (!rows || rows.length === 0) {
@@ -1954,7 +1908,6 @@ function reopenTicketDrawerSafe(key){
     console.warn('reopenTicketDrawerSafe failed:', e);
   }
 }
-
 
 
 
