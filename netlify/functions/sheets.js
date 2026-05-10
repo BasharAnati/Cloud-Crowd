@@ -79,6 +79,7 @@ const SHEET_RANGES = {
   'free-orders': process.env.GOOGLE_SHEET_RANGE_COMPLIMENTARY,
   'time-table':  process.env.GOOGLE_SHEET_RANGE_THYME_TABLE_PLATES,
 };
+const KNOWN_SECTIONS = new Set(Object.keys(SHEET_RANGES));
 
 // fallback لو لسه عندك GOOGLE_SHEET_ID قديم
 const DEFAULT_SHEET_ID =
@@ -107,7 +108,16 @@ function pickSpreadsheetId({ section, tab, range } = {}) {
 }
 
 function pickRange(section) {
-  return SHEET_RANGES[section] || process.env.GOOGLE_SHEET_RANGE || "";
+  if (KNOWN_SECTIONS.has(section)) {
+    return SHEET_RANGES[section] || "";
+  }
+  return process.env.GOOGLE_SHEET_RANGE || "";
+}
+
+function missingRangeError(section) {
+  return section && KNOWN_SECTIONS.has(section)
+    ? `No sheet range configured for section: ${section}`
+    : 'No sheet range configured';
 }
 
 function tabFromRange(range = "") {
@@ -158,7 +168,7 @@ exports.handler = async (event) => {
     if (event.httpMethod === 'GET') {
       const qs = event.queryStringParameters || {};
       let range = pickRange(qs.section);
-      if (!range) return err(500, 'No sheet range configured');
+      if (!range) return err(500, missingRangeError(qs.section));
       range = normalizeRange(range); // <-- مهم
       const spreadsheetId = pickSpreadsheetId({ section: qs.section, range });
       if (!spreadsheetId) return err(500, 'No Spreadsheet ID configured');
@@ -175,7 +185,7 @@ exports.handler = async (event) => {
 
       const section = body.section || undefined;
       let range = pickRange(section);
-      if (!range) return err(500, 'No sheet range configured');
+      if (!range) return err(500, missingRangeError(section));
       range = stripQuotes(range);
       range = normalizeRange(range);
       const spreadsheetId = pickSpreadsheetId({ section, tab: range });
@@ -206,7 +216,7 @@ exports.handler = async (event) => {
       const section = String(body.section || 'cctv');
       const configuredRange = pickRange(section);
       let tab = tabFromRange(configuredRange);
-      if (!tab) return err(500, 'No sheet range configured');
+      if (!tab) return err(500, missingRangeError(section));
       tab = stripQuotes(tab); // <-- مهم
       const spreadsheetId = pickSpreadsheetId({ section, tab });
       if (!spreadsheetId) return err(500, 'No Spreadsheet ID configured');
@@ -288,7 +298,7 @@ exports.handler = async (event) => {
       const section = String(body.section || 'cctv');
       const configuredRange = pickRange(section);
       let tab = tabFromRange(configuredRange);
-      if (!tab) return err(500, 'No sheet range configured');
+      if (!tab) return err(500, missingRangeError(section));
       tab = stripQuotes(tab); // <-- مهم
       const spreadsheetId = pickSpreadsheetId({ section, tab });
       if (!spreadsheetId) return err(500, 'No Spreadsheet ID configured');
