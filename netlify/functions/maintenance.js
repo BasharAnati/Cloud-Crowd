@@ -1,8 +1,8 @@
 // netlify/functions/maintenance.js
 // Global maintenance mode API backed by Postgres/Neon.
 
-const crypto = require("crypto");
 const { Pool } = require("pg");
+const { requireAdminSession } = require("./_auth");
 
 const CONNECTION_STRING =
   process.env.NETLIFY_DATABASE_URL ||
@@ -48,49 +48,6 @@ async function setMaintenanceState(maintenance) {
   );
 }
 
-function base64UrlDecode(value) {
-  return Buffer.from(value, "base64url").toString("utf8");
-}
-
-function getBearerToken(event) {
-  const headers = event.headers || {};
-  const authorization = headers.authorization || headers.Authorization || "";
-  const match = authorization.match(/^Bearer\s+(.+)$/i);
-  return match ? match[1].trim() : "";
-}
-
-function verifySessionToken(token) {
-  const secret = process.env.SESSION_SECRET;
-  if (!secret) {
-    throw new Error("SESSION_SECRET is not configured");
-  }
-
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-
-    const [encodedHeader, encodedPayload, signature] = parts;
-    const expectedSignature = crypto
-      .createHmac("sha256", secret)
-      .update(`${encodedHeader}.${encodedPayload}`)
-      .digest("base64url");
-
-    const signatureBuffer = Buffer.from(signature);
-    const expectedBuffer = Buffer.from(expectedSignature);
-    if (signatureBuffer.length !== expectedBuffer.length) return null;
-    if (!crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) return null;
-
-    const payload = JSON.parse(base64UrlDecode(encodedPayload));
-    if (!payload.exp || Math.floor(Date.now() / 1000) >= payload.exp) {
-      return null;
-    }
-
-    return payload;
-  } catch {
-    return null;
-  }
-}
-
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 204, headers: CORS, body: "" };
@@ -101,42 +58,33 @@ exports.handler = async (event) => {
 
     if (event.httpMethod === "GET") {
       const maintenance = await getMaintenanceState();
-      const token = getBearerToken(event);
-      const session = token ? verifySessionToken(token) : null;
+      let admin = false;
+      try {
+        requireAdminSession(event);
+        admin = true;
+      } catch (authErr) {
+        if (!authErr.statusCode) throw authErr;
+      }
+
       return {
         statusCode: 200,
         headers: JSON_HEADERS,
         body: JSON.stringify({
           maintenance,
-          admin: session?.role === "admin"
+          admin,
         }),
       };
     }
 
     if (event.httpMethod === "POST") {
-      const token = getBearerToken(event);
-      if (!token) {
+      try {
+        requireAdminSession(event);
+      } catch (authErr) {
+        if (!authErr.statusCode) throw authErr;
         return {
-          statusCode: 401,
+          statusCode: authErr.statusCode,
           headers: JSON_HEADERS,
-          body: JSON.stringify({ error: "Missing session token" }),
-        };
-      }
-
-      const session = verifySessionToken(token);
-      if (!session) {
-        return {
-          statusCode: 401,
-          headers: JSON_HEADERS,
-          body: JSON.stringify({ error: "Invalid or expired session token" }),
-        };
-      }
-
-      if (session.role !== "admin") {
-        return {
-          statusCode: 403,
-          headers: JSON_HEADERS,
-          body: JSON.stringify({ error: "Admin role required" }),
+          body: JSON.stringify({ error: authErr.message }),
         };
       }
 
