@@ -3,252 +3,378 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+    <meta name="description" content="Cloud Crowd provides customer experience, complaint handling, operational review, reporting, and follow-up support for growing businesses.">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <title> Cloud Crowd </title>
-    <style>
-        :root {
-            --text-dark: #333333;
-            --text-light: #f0f0f0;
-            --accent-purple: #7a42f4;
-            --accent-blue: #42a5f5;
-            --accent-light-blue: #80d6ff;
-            --bg-white: #ffffff;
-        }
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: var(--bg-white);
-            color: var(--text-dark);
-            line-height: 1.6;
-        }
-        
-        /* Hero Section with Purple Background */
-        .hero {
-            background:
-                linear-gradient(rgba(92, 71, 137, 0.7), rgba(88, 82, 101, 0.7)),
-                url('WhatsApp Image 2025-06-29 at 4.39.41 PM.jpeg') center/cover no-repeat;
-            text-align: center;
-            padding: 80px 20px 100px;
-            color: var(--text-light);
-            position: relative;
-        }
-        
-        .logo-container { margin-bottom: 40px; }
-        
-        .main-logo {
-            height: 120px; width: auto; max-width: 100%;
-            object-fit: contain;
-            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
-        }
-        
-        h1 { font-size: 2.8rem; margin-bottom: 20px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); }
-        
-        .intro {
-            font-size: 1.2rem; max-width: 800px; margin: 0 auto 40px;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-        }
-        
-        /* Main Content */
-        .container { width: 90%; max-width: 1200px; margin: 0 auto; padding: 60px 0; }
-        
-        h2 { color: var(--accent-purple); font-size: 2rem; margin: 40px 0 30px; text-align: center; }
-        
-        /* Services Section */
-        .services {
-            display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; margin-bottom: 60px;
-        }
-        
-        .service {
-            flex: 1 1 300px;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 30px; border-radius: 10px;
-            border-top: 4px solid var(--accent-blue);
-            transition: all 0.3s ease; max-width: 350px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        .service:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(66, 165, 245, 0.2); }
-        
-        .service h3 { color: var(--accent-blue); font-size: 1.5rem; margin-bottom: 15px; }
-        .service p { margin-bottom: 10px; color: var(--text-dark); }
-        
-        /* Contact Form */
-        .contact-form {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 40px; border-radius: 10px; max-width: 600px; margin: 0 auto;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        .form-group { margin-bottom: 25px; }
-        
-        label { display: block; margin-bottom: 8px; color: var(--accent-purple); font-size: 1rem; font-weight: bold; }
-        
-        input, select, textarea {
-            width: 100%; padding: 12px 15px; background: rgba(255, 255, 255, 0.9);
-            border: 1px solid #ddd; border-radius: 5px; color: var(--text-dark);
-            font-size: 1rem; transition: all 0.3s;
-        }
-        
-        input:focus, select:focus, textarea:focus {
-            outline: none; border-color: var(--accent-blue);
-            box-shadow: 0 0 0 3px rgba(66, 165, 245, 0.2);
-        }
-        
-        button {
-            background: linear-gradient(to right, var(--accent-purple), var(--accent-blue));
-            color: white; border: none; padding: 14px 35px; border-radius: 5px; cursor: pointer;
-            font-size: 1rem; transition: all 0.3s; display: block; margin: 30px auto 0; width: fit-content;
-        }
-        
-        button:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(66, 165, 245, 0.3); }
-        
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .main-logo { height: 100px; }
-            h1 { font-size: 2.2rem; }
-            .hero { padding: 60px 20px 80px; }
-            .container { padding: 40px 0; }
-            .contact-form { padding: 25px; }
-        }
-        
-        @media (max-width: 480px) {
-            .main-logo { height: 80px; }
-            h1 { font-size: 1.8rem; }
-            .service { padding: 20px; }
-        }
-
-        .success-message {
-            display: none; color: #28a745; font-weight: bold; margin-top: 10px; font-size: 14px; text-align: center;
-        }
-        .success-message::before { content: "✔"; font-size: 16px; margin-right: 5px; }
-    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="homepage.css">
+    <title>Cloud Crowd | Operational Support Services</title>
 </head>
 <body>
+    <header class="site-header" data-header>
+        <nav class="navbar" aria-label="Primary navigation">
+            <a class="brand" href="#top" aria-label="Cloud Crowd home">
+                <img src="logo.png" alt="Cloud Crowd logo" class="brand-logo" width="56" height="56">
+                <span class="brand-copy">
+                    <span class="brand-name">Cloud Crowd</span>
+                    <span class="brand-subtitle">Operational Support Services</span>
+                </span>
+            </a>
 
-<a href="/login" style="position:fixed;top:16px;right:16px;z-index:9999;padding:10px 16px;border-radius:10px;background:linear-gradient(90deg,var(--accent-purple),var(--accent-blue));color:#fff;text-decoration:none;font-weight:700;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.15);">Login</a>
+            <button class="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false" data-menu-toggle>
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
 
-    <!-- Hero Section with Logo -->
-    <section class="hero">
-        <div class="logo-container">
-            <img src="Gemini_Generated_Image_5pv8v55pv8v55pv8-removebg-preview .png" alt="Company Logo" class="main-logo" width="250" height="250">
-        </div>
-        <h1>Welcome to Cloud Crowd</h1>
-        <p class="intro">We specialize in smart customer service and support solutions that help businesses grow. From handling customer calls to gathering feedback, monitoring staff performance, and improving operations, our team is here to elevate your brand experience.</p>
-    </section>
-    
-    <!-- Main Content -->
-    <main class="container">
-        <section id="services">
-            <h2>Our Services</h2>
-            <div class="services">
-                <div class="service" id="customer-service">
-                    <h3>   Customer Service</h3>
-                    <p>We provide comprehensive inbound and outbound customer service solutions designed to enhance customer experience and drive satisfaction.</p>
-                    <p>Our trained professionals handle all interactions with professionalism, empathy, and efficiency, ensuring every inquiry, request, or issue is resolved promptly and effectively.</p>
+            <div class="nav-panel" data-nav-panel>
+                <ul class="nav-links">
+                    <li><a href="#services">Services</a></li>
+                    <li><a href="#why">Why Cloud Crowd</a></li>
+                    <li><a href="#process">How It Works</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+
+                <div class="nav-actions">
+                    <a class="login-link" href="/login">Team Login</a>
+                    <a class="btn btn-primary btn-small" href="#contact">Contact Us</a>
                 </div>
-                
-                <div class="service" id="customer-support">
-                    <h3>Customer Experience</h3>
-                    <p>The Customer Experience Service focuses on enhancing service quality by directly engaging with customers after they receive the service. </p>
-                    <p>Feedback is collected, analyzed, and reflected in clear, structured reports that are shared with the relevant departments to drive improvements and ensure customer satisfaction.</p>
+            </div>
+        </nav>
+    </header>
+
+    <main id="top">
+        <section class="hero section-pad">
+            <div class="hero-bg" aria-hidden="true"></div>
+            <div class="container hero-grid">
+                <div class="hero-copy reveal">
+                    <p class="eyebrow">Customer experience operations</p>
+                    <h1>Customer experience and operational support for growing businesses.</h1>
+                    <p class="hero-text">
+                        Cloud Crowd helps teams strengthen customer experience through complaint handling,
+                        operational review, structured reporting, and disciplined follow-up that turns daily
+                        service activity into clear decisions.
+                    </p>
+                    <div class="hero-actions">
+                        <a class="btn btn-primary" href="#contact">Get In Touch</a>
+                        <a class="btn btn-secondary" href="#services">View Services</a>
+                    </div>
+                    <div class="trust-row" aria-label="Trust indicators">
+                        <span>Confidential</span>
+                        <span>Reliable</span>
+                        <span>Results Driven</span>
+                    </div>
                 </div>
-                
-                <div class="service" id="cctv-operator">
-                    <h3>CCTV Monitoring Service</h3>
-                    <p>This service focuses on reviewing recorded CCTV footage to support operational follow-up, investigate incidents, and ensure accountability. Additionally, real-time monitoring may be conducted when necessary.</p>
-                    <p>CCTV operators are responsible for accessing and analyzing footage, documenting relevant findings, and coordinating with the concerned departments.</p>
+
+                <div class="dashboard-preview reveal" aria-label="Operations dashboard preview">
+                    <div class="preview-shell">
+                        <div class="preview-topbar">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <strong>Operations Control</strong>
+                        </div>
+                        <div class="metric-row">
+                            <article class="metric-card">
+                                <span class="metric-label">Open Tickets</span>
+                                <strong>128</strong>
+                                <small>+14 today</small>
+                            </article>
+                            <article class="metric-card">
+                                <span class="metric-label">Resolved</span>
+                                <strong>94%</strong>
+                                <small>7 day trend</small>
+                            </article>
+                            <article class="metric-card">
+                                <span class="metric-label">Response</span>
+                                <strong>18m</strong>
+                                <small>avg. first touch</small>
+                            </article>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-head">
+                                <div>
+                                    <span>Service Quality</span>
+                                    <strong>Weekly operations pulse</strong>
+                                </div>
+                                <em>Live</em>
+                            </div>
+                            <div class="bar-chart" aria-hidden="true">
+                                <span style="height: 42%"></span>
+                                <span style="height: 58%"></span>
+                                <span style="height: 48%"></span>
+                                <span style="height: 74%"></span>
+                                <span style="height: 66%"></span>
+                                <span style="height: 84%"></span>
+                                <span style="height: 72%"></span>
+                            </div>
+                        </div>
+                        <div class="widget-grid">
+                            <article class="ticket-widget">
+                                <span class="status-dot"></span>
+                                <div>
+                                    <strong>Complaint Review</strong>
+                                    <small>Priority queue monitored</small>
+                                </div>
+                                <b>23</b>
+                            </article>
+                            <article class="ticket-widget">
+                                <span class="status-dot status-dot-blue"></span>
+                                <div>
+                                    <strong>CCTV Findings</strong>
+                                    <small>Documented for follow-up</small>
+                                </div>
+                                <b>11</b>
+                            </article>
+                            <article class="ticket-widget">
+                                <span class="status-dot status-dot-light"></span>
+                                <div>
+                                    <strong>Reports Ready</strong>
+                                    <small>Delivered to operations</small>
+                                </div>
+                                <b>8</b>
+                            </article>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
-        
-        <section id="contact">
-            <h2>Contact Us</h2>
 
-            <!-- Netlify form (with honeypot + proper JS-friendly structure) -->
-            <form class="contact-form"
-                  name="contact"
-                  method="POST"
-                  data-netlify="true"
-                  netlify-honeypot="bot-field"
-                  action="/">
-
-                <!-- Netlify required hidden name -->
-                <input type="hidden" name="form-name" value="contact" />
-
-                <!-- Honeypot (hidden from humans) -->
-                <p style="display:none;">
-                    <label>Don’t fill this out if you're human: <input name="bot-field"></label>
-                </p>
-
-                <div class="form-group">
-                    <label for="phone">Phone Number</label>
-                    <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" required>
+        <section class="services section-pad" id="services">
+            <div class="container">
+                <div class="section-heading reveal">
+                    <p class="eyebrow">What we handle</p>
+                    <h2>Our Services</h2>
+                    <p>Focused support services built for customer-facing teams that need clarity, consistency, and accountability.</p>
                 </div>
-                
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="message">Message</label>
-                    <textarea id="message" name="message" rows="5" placeholder="Your message here..." required></textarea>
-                </div>
-                
-                <button type="submit">Submit</button>
-            </form>
 
-            <div class="success-message" id="success-message">Message sent successfully!</div>
+                <div class="service-grid">
+                    <article class="service-card reveal">
+                        <span class="icon-wrap" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="M12 3a8 8 0 0 0-8 8v3a3 3 0 0 0 3 3h1v-6H6a6 6 0 0 1 12 0h-2v6h1a3 3 0 0 0 3-3v-3a8 8 0 0 0-8-8Zm-1 15h2v2h-2v-2Z"/></svg>
+                        </span>
+                        <h3>Customer Experience</h3>
+                        <p>Post-service engagement and feedback collection that turns customer sentiment into practical improvement signals.</p>
+                    </article>
+                    <article class="service-card reveal">
+                        <span class="icon-wrap" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3V4Zm4 5h8V7H8v2Zm0 4h6v-2H8v2Z"/></svg>
+                        </span>
+                        <h3>Complaint Handling</h3>
+                        <p>Structured complaint intake, classification, escalation, and follow-up designed to protect customer trust.</p>
+                    </article>
+                    <article class="service-card reveal">
+                        <span class="icon-wrap" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="M3 6h18v11H3V6Zm2 2v7h14V8H5Zm4 11h6v2H9v-2Zm2-9 5 2.5-5 2.5v-5Z"/></svg>
+                        </span>
+                        <h3>CCTV Operational Review</h3>
+                        <p>Recorded footage review for incidents, staff performance, process gaps, and operational accountability.</p>
+                    </article>
+                    <article class="service-card reveal">
+                        <span class="icon-wrap" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 1-7.45 5.08l1.86.74A6 6 0 1 0 12 6V3l4 4-4 4V8a4 4 0 1 1-3.46 2H6.35A6 6 0 0 0 12 18a6 6 0 0 0 0-12V4Z"/></svg>
+                        </span>
+                        <h3>Follow-Up & Reporting</h3>
+                        <p>Clear reporting cycles that document actions, outcomes, pending items, and department-level accountability.</p>
+                    </article>
+                    <article class="service-card reveal">
+                        <span class="icon-wrap" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3Zm-1 14-4-4 1.4-1.4 2.6 2.6 5.6-5.6L18 9l-7 7Z"/></svg>
+                        </span>
+                        <h3>Quality Monitoring</h3>
+                        <p>Service quality checks that highlight trends, risks, coaching needs, and measurable operational improvements.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="why section-pad" id="why">
+            <div class="container">
+                <div class="section-heading section-heading-light reveal">
+                    <p class="eyebrow">Why businesses choose us</p>
+                    <h2>Operational support with discipline and discretion.</h2>
+                </div>
+                <div class="feature-grid">
+                    <article class="feature-block reveal">
+                        <span>01</span>
+                        <h3>Trained Professionals</h3>
+                        <p>Experienced support specialists who communicate clearly and document accurately.</p>
+                    </article>
+                    <article class="feature-block reveal">
+                        <span>02</span>
+                        <h3>Confidential & Secure</h3>
+                        <p>Restricted handling practices for sensitive customer, staff, and operational information.</p>
+                    </article>
+                    <article class="feature-block reveal">
+                        <span>03</span>
+                        <h3>Fast Response</h3>
+                        <p>Focused workflows that keep cases moving and prevent unresolved issues from drifting.</p>
+                    </article>
+                    <article class="feature-block reveal">
+                        <span>04</span>
+                        <h3>Structured Reporting</h3>
+                        <p>Concise reporting formats that make performance, trends, and next steps easy to review.</p>
+                    </article>
+                    <article class="feature-block reveal">
+                        <span>05</span>
+                        <h3>Results Focused</h3>
+                        <p>Every review and follow-up is tied to better service outcomes and operational control.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="process section-pad" id="process">
+            <div class="container">
+                <div class="section-heading reveal">
+                    <p class="eyebrow">How it works</p>
+                    <h2>A simple operating rhythm.</h2>
+                </div>
+                <ol class="process-steps">
+                    <li class="process-step reveal">
+                        <span>1</span>
+                        <h3>Understand</h3>
+                        <p>We define the scope, channels, standards, and reporting expectations.</p>
+                    </li>
+                    <li class="process-step reveal">
+                        <span>2</span>
+                        <h3>Monitor & Document</h3>
+                        <p>Customer interactions, complaints, and operational observations are captured consistently.</p>
+                    </li>
+                    <li class="process-step reveal">
+                        <span>3</span>
+                        <h3>Follow Up</h3>
+                        <p>Open items are tracked with clear ownership and status updates.</p>
+                    </li>
+                    <li class="process-step reveal">
+                        <span>4</span>
+                        <h3>Deliver Reports</h3>
+                        <p>Leadership receives structured summaries, insights, and recommended actions.</p>
+                    </li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="confidentiality section-pad" aria-labelledby="confidentiality-title">
+            <div class="container">
+                <div class="confidential-card reveal">
+                    <div class="shield-visual" aria-hidden="true">
+                        <svg viewBox="0 0 96 96">
+                            <path d="M48 6 18 18v23c0 23 13 41 30 49 17-8 30-26 30-49V18L48 6Z"/>
+                            <path d="M36 44h24v22H36V44Zm5 0v-8a7 7 0 0 1 14 0v8h-6v-8a1 1 0 0 0-2 0v8h-6Z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="eyebrow">Confidentiality first</p>
+                        <h2 id="confidentiality-title">Trusted handling for sensitive operations.</h2>
+                        <p>
+                            Cloud Crowd supports work that often involves private customer details, staff performance,
+                            incident records, and internal operating data. Access is restricted, reporting is controlled,
+                            and documentation is handled with professional discretion.
+                        </p>
+                        <ul class="check-list">
+                            <li>Restricted access</li>
+                            <li>Secure data handling</li>
+                            <li>Confidential reporting</li>
+                            <li>Professional operations</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="contact section-pad" id="contact">
+            <div class="container contact-grid">
+                <aside class="contact-info reveal">
+                    <p class="eyebrow">Contact</p>
+                    <h2>Let us support your customer operations.</h2>
+                    <p>Share a few details and the Cloud Crowd team will follow up with the right next step.</p>
+                    <div class="contact-methods">
+                        <a href="tel:+962000000000">
+                            <span>Phone</span>
+                            <strong>+962 00 000 0000</strong>
+                        </a>
+                        <a href="mailto:info@cloudcrowd.example">
+                            <span>Email</span>
+                            <strong>info@cloudcrowd.example</strong>
+                        </a>
+                        <div>
+                            <span>Working Hours</span>
+                            <strong>Sunday to Thursday, 9:00 AM - 6:00 PM</strong>
+                        </div>
+                    </div>
+                </aside>
+
+                <div class="form-card reveal">
+                    <form class="contact-form" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/">
+                        <input type="hidden" name="form-name" value="contact">
+                        <p class="hidden-field">
+                            <label>Do not fill this out if you are human: <input name="bot-field"></label>
+                        </p>
+
+                        <div class="form-row">
+                            <label for="full-name">Full Name</label>
+                            <input type="text" id="full-name" name="full-name" placeholder="Your full name" required>
+                        </div>
+                        <div class="form-row">
+                            <label for="company-name">Company Name</label>
+                            <input type="text" id="company-name" name="company-name" placeholder="Company or organization">
+                        </div>
+                        <div class="form-row">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" placeholder="you@company.com" required>
+                        </div>
+                        <div class="form-row">
+                            <label for="phone">Phone</label>
+                            <input type="tel" id="phone" name="phone" placeholder="Your phone number" required>
+                        </div>
+                        <div class="form-row form-row-full">
+                            <label for="message">Message</label>
+                            <textarea id="message" name="message" rows="5" placeholder="Tell us what kind of operational support you need" required></textarea>
+                        </div>
+
+                        <button class="btn btn-primary form-submit" type="submit">Send Message</button>
+                        <p class="success-message" id="success-message" role="status" aria-live="polite">Message sent successfully.</p>
+                    </form>
+                </div>
+            </div>
         </section>
     </main>
 
-    <script>
-    // Handle Netlify form submission via fetch while treating 303 redirect as success
-    (function () {
-        const form = document.querySelector('.contact-form');
-        const successEl = document.getElementById('success-message');
+    <footer class="site-footer">
+        <div class="container footer-grid">
+            <a class="footer-brand" href="#top" aria-label="Cloud Crowd home">
+                <img src="logo.png" alt="Cloud Crowd logo" width="48" height="48">
+                <span>
+                    <strong>Cloud Crowd</strong>
+                    <small>Operational Support Services</small>
+                </span>
+            </a>
+            <nav class="footer-links" aria-label="Footer navigation">
+                <a href="#services">Services</a>
+                <a href="#why">Why Cloud Crowd</a>
+                <a href="#process">How It Works</a>
+                <a href="#contact">Contact</a>
+            </nav>
+            <div class="social-links" aria-label="Social links">
+                <a href="#" aria-label="LinkedIn">
+                    <svg viewBox="0 0 24 24"><path d="M5 8h4v12H5V8Zm2-5a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm5 5h4v2a4 4 0 0 1 4-2c3 0 5 2 5 6v6h-4v-6c0-2-1-3-2-3s-3 1-3 3v6h-4V8Z"/></svg>
+                </a>
+                <a href="#" aria-label="Instagram">
+                    <svg viewBox="0 0 24 24"><path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7Zm5 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm5.5-3.2a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4Z"/></svg>
+                </a>
+                <a href="#" aria-label="Facebook">
+                    <svg viewBox="0 0 24 24"><path d="M14 8h3V4h-3c-3 0-5 2-5 5v2H6v4h3v7h4v-7h3l1-4h-4V9c0-1 .5-1 1-1Z"/></svg>
+                </a>
+            </div>
+        </div>
+        <div class="container footer-bottom">
+            <p>&copy; 2026 Cloud Crowd. All rights reserved.</p>
+            <a href="/login">Team Login</a>
+        </div>
+    </footer>
 
-        if (!form) return;
-
-        form.addEventListener('submit', function (event) {
-            event.preventDefault();
-
-            const formData = new FormData(form);
-            // Ensure the form-name is included (it is, but this is defensive)
-            if (!formData.has('form-name')) {
-                formData.append('form-name', form.getAttribute('name') || 'contact');
-            }
-
-            fetch(form.getAttribute('action') || '/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams(formData).toString()
-            })
-            .then(function (response) {
-                // Netlify often returns 303 See Other on success; treat 200-303 as success
-                if ((response.status >= 200 && response.status < 300) || response.status === 303) {
-                    successEl.style.display = 'block';
-                    form.reset();
-                    return;
-                }
-                // If redirected, many browsers follow and end as 200; but just in case:
-                if (response.redirected) {
-                    successEl.style.display = 'block';
-                    form.reset();
-                    return;
-                }
-                throw new Error('Submission failed with status ' + response.status);
-            })
-            .catch(function (error) {
-                alert('An error occurred while submitting the form. Please try again.');
-                // console.error(error); // (اختياري) لأغراض الديبَغ
-            });
-        });
-    })();
-    </script>
+    <script src="homepage.js"></script>
 </body>
 </html>
