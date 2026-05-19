@@ -73,7 +73,9 @@ function getMainFieldsContent(ticket){
   const fields = mainFields[window.currentSection] || [];
   let html='';
   fields.forEach(f=>{
-    const v = ticket[f] ?? 'Not specified';
+    const v = (window.currentSection === 'ce' && f === 'orderNumber')
+      ? (ticket.orderNumber || ticket.caseNumber || 'Not specified')
+      : (ticket[f] ?? 'Not specified');
     html += `<p><strong>${toLabel(f)}:</strong> ${Array.isArray(v)? v.join(', ') : escapeHtml(v)}</p>`;
   });
   return html;
