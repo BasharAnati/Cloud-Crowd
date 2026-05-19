@@ -520,6 +520,13 @@ async function hydrateFromSheets(section) {
       pulled = rows.map(ticketFromSheetRowCCTV);
     } else if (section === 'ce') {
       pulled = rows.map(ticketFromSheetRowCE);
+      console.log('CE parsed sample:', {
+        status: pulled[0]?.status,
+        orderNumber: pulled[0]?.orderNumber,
+        customerName: pulled[0]?.customerName,
+        branch: pulled[0]?.branch,
+        satisfaction: pulled[0]?.satisfaction
+      });
     } else if (section === 'complaints') {
       pulled = rows.map(ticketFromSheetRowComplaints);
     } else if (section === 'free-orders') {
