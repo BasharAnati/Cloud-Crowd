@@ -7,7 +7,7 @@ const DELETER_USERNAME = 'Anati';
 
 const mainFields = {
   cctv: ['branch', 'staff', 'sections'],
-  ce: ['customerName', 'branch', 'restaurant'],
+  ce: ['orderNumber', 'customerName', 'branch', 'restaurant'],
   'free-orders': ['customerName', 'orderNumber', 'discountAmount'],
   complaints: ['customerName', 'branch', 'issueCategory'],
   'time-table': ['customerName', 'orderNumber', 'phone']

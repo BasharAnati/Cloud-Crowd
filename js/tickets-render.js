@@ -85,7 +85,9 @@ function getCaseDisplay(ticket){
   return ticket.orderNumber || ticket.caseNumber || '—';
 }
 
-function drawerCaseLabel(){ return 'Case Number'; }
+function drawerCaseLabel(){
+  return window.currentSection === 'ce' ? 'Order Number' : 'Case Number';
+}
 
 function renderTickets(){
   const wrap = document.getElementById('tickets');
