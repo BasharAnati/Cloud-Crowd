@@ -272,7 +272,8 @@ function ticketFromSheetRowCE(r = []) {
     customerNotes: customerNotes || '',
     actionTaken: actionTaken || '',
     satisfaction: satisfaction || '',
-    caseNumber: orderNumber || ''
+    caseNumber: orderNumber || '',
+    orderNumber: orderNumber || ''
   };
 }
 
@@ -1410,8 +1411,8 @@ async function hydrateFromDB(section) {
     const newTickets = (data.tickets || []).map(rowToTicket);
     const oldTickets = tickets[sec] || [];
 
-    const mapOld = new Map(oldTickets.map(t => [t.caseNumber || t.orderNumber, t]));
-    const mapNew = new Map(newTickets.map(t => [t.caseNumber || t.orderNumber, t]));
+    const mapOld = new Map(oldTickets.map(t => [caseKey(t), t]).filter(([key]) => key));
+    const mapNew = new Map(newTickets.map(t => [caseKey(t), t]).filter(([key]) => key));
 
     // مقارنة التكتات وحدة بوحدة
     for (const [key, newT] of mapNew.entries()) {
@@ -1426,14 +1427,31 @@ async function hydrateFromDB(section) {
     }
 
     // 🔴 احذف التكتات اللي انحذفت من DB
-    for (const [key] of mapOld.entries()) {
-      if (!mapNew.has(key)) {
+    for (const [key, oldT] of mapOld.entries()) {
+      if (!mapNew.has(key) && !isFromSheet(oldT)) {
         removeTicketFromDOM(key);
       }
     }
 
     // حدّث الكاش المحلي فقط
-    tickets[sec] = newTickets;
+    const mergedByKey = new Map();
+    const keylessExisting = [];
+    const keylessDb = [];
+
+    for (const ticket of oldTickets) {
+      const key = caseKey(ticket);
+      if (key) mergedByKey.set(key, ticket);
+      else keylessExisting.push(ticket);
+    }
+
+    for (const ticket of newTickets) {
+      const key = caseKey(ticket);
+      if (key) mergedByKey.set(key, ticket);
+      else keylessDb.push(ticket);
+    }
+
+    // Keep sheet-only tickets when DB has not seeded or returned the same key yet.
+    tickets[sec] = [...mergedByKey.values(), ...keylessExisting, ...keylessDb];
     saveTicketsToStorage();
 
     console.log(`✅ Synced ${sec} with DB (${newTickets.length} tickets)`);
