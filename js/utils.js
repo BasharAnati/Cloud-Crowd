@@ -19,6 +19,9 @@ function extractImageSrc(val) {
 }
 
 function caseKey(t) {
+  if (t?._sheetRowKey && String(t._sheetRowKey).startsWith('ce:')) {
+    return String(t._sheetRowKey).trim();
+  }
   return (t?.caseNumber || t?.orderNumber || '').toString().trim();
 }
 

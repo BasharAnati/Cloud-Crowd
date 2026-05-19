@@ -365,11 +365,30 @@ function ticketFromSheetRowTimeTable(r = []) {
 
 
 
-function mergeTicketsByCase(localArr, fromSheetArr) {
+function mergeTicketsByCase(localArr, fromSheetArr, section = _currentSection) {
   const byCase = new Map();
+  const sheetLegacyKeys = new Set();
+
+  if (section === 'ce') {
+    for (const s of fromSheetArr) {
+      if (!s?._sheetRowKey) continue;
+      const legacyKey = (s.caseNumber || s.orderNumber || '').toString().trim();
+      if (legacyKey) sheetLegacyKeys.add(legacyKey);
+    }
+  }
 
   // إضافة التذاكر من localStorage إلى Map
   for (const t of localArr) {
+    if (section === 'ce') {
+      const legacyKey = (t.caseNumber || t.orderNumber || '').toString().trim();
+      if (t._id && !t._sheetRowKey && sheetLegacyKeys.has(legacyKey)) continue;
+
+      const key = caseKey(t);
+      if (!key) continue;
+      byCase.set(key, t);
+      continue;
+    }
+
     const key = t.caseNumber || t.orderNumber || ''; // تأكد من أن caseNumber أو orderNumber موجود
     if (!key) continue; // إذا لم يوجد key لا تضيف التذكرة
     byCase.set(key, t); // حفظ التذكرة باستخدام المفتاح
@@ -377,6 +396,19 @@ function mergeTicketsByCase(localArr, fromSheetArr) {
 
   // إضافة التذاكر من الشيت إلى Map
   for (const s of fromSheetArr) {
+    if (section === 'ce') {
+      const key = caseKey(s);
+      if (!key) continue;
+
+      if (!byCase.has(key)) {
+        byCase.set(key, { ...s });
+      } else {
+        const cur = byCase.get(key);
+        byCase.set(key, { ...cur, ...s, _fromSheet: true });
+      }
+      continue;
+    }
+
     const key = s.caseNumber || s.orderNumber || ''; // تأكد من أن caseNumber أو orderNumber موجود
     if (!key) continue; // إذا لم يوجد key لا تضيف التذكرة
 
@@ -408,7 +440,7 @@ async function autoSeedSheetTickets(section) {
   const toSeed = [];
 
   for (const t of arr) {
-    const key = t.caseNumber || t.orderNumber;
+    const key = caseKey(t);
     if (!key) continue;
 
     // بدنا نسيّد فقط اللي جايات من Sheets (ما عندهن _id) ولسا ما سيّدناهن قبل
@@ -501,7 +533,10 @@ async function hydrateFromSheets(section) {
     if (section === 'cctv') {
       pulled = rows.map(ticketFromSheetRowCCTV);
     } else if (section === 'ce') {
-      pulled = rows.map(ticketFromSheetRowCE);
+      pulled = rows.map((row, rowIndex) => ({
+        ...ticketFromSheetRowCE(row),
+        _sheetRowKey: `${section}:${rowIndex + 2}`
+      }));
     } else if (section === 'complaints') {
       pulled = rows.map(ticketFromSheetRowComplaints);
     } else if (section === 'free-orders') {
@@ -517,7 +552,7 @@ async function hydrateFromSheets(section) {
     }
 
     // 1) دمج (يحدّث/يضيف)
-    tickets[section] = mergeTicketsByCase(tickets[section] || [], pulled);
+    tickets[section] = mergeTicketsByCase(tickets[section] || [], pulled, section);
 
     // 2) مصالحة (يمسح محليًا أي تذكرة من الشيت انحذفت من الشيت)
     reconcileAfterSheetsPull(section, pulled);
@@ -1410,9 +1445,25 @@ async function hydrateFromDB(section) {
 
     const newTickets = (data.tickets || []).map(rowToTicket);
     const oldTickets = tickets[sec] || [];
+    const dbTicketsForMerge = [];
+    const oldSheetLegacyKeys = new Set();
+
+    if (sec === 'ce') {
+      for (const ticket of oldTickets) {
+        if (!ticket?._sheetRowKey) continue;
+        const legacyKey = (ticket.caseNumber || ticket.orderNumber || '').toString().trim();
+        if (legacyKey) oldSheetLegacyKeys.add(legacyKey);
+      }
+    }
+
+    for (const ticket of newTickets) {
+      const legacyKey = (ticket.caseNumber || ticket.orderNumber || '').toString().trim();
+      if (sec === 'ce' && ticket._id && !ticket._sheetRowKey && oldSheetLegacyKeys.has(legacyKey)) continue;
+      dbTicketsForMerge.push(ticket);
+    }
 
     const mapOld = new Map(oldTickets.map(t => [caseKey(t), t]).filter(([key]) => key));
-    const mapNew = new Map(newTickets.map(t => [caseKey(t), t]).filter(([key]) => key));
+    const mapNew = new Map(dbTicketsForMerge.map(t => [caseKey(t), t]).filter(([key]) => key));
 
     // مقارنة التكتات وحدة بوحدة
     for (const [key, newT] of mapNew.entries()) {
@@ -1444,7 +1495,7 @@ async function hydrateFromDB(section) {
       else keylessExisting.push(ticket);
     }
 
-    for (const ticket of newTickets) {
+    for (const ticket of dbTicketsForMerge) {
       const key = caseKey(ticket);
       if (key) mergedByKey.set(key, ticket);
       else keylessDb.push(ticket);
