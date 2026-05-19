@@ -449,6 +449,12 @@ async function autoSeedSheetTickets(section) {
   }
 
   // بعد ما نخلص، اسحب من الـDB عشان التكت تاخذ _id
+  if (section === 'ce') {
+    saveTicketsToStorage();
+    renderTickets();
+    return;
+  }
+
   try {
     await hydrateFromDB(section);
     renderTickets();
@@ -469,11 +475,17 @@ async function autoSeedSheetTickets(section) {
  * (تذاكر الداتابيس بنتركها بحالها)
  */
 function reconcileAfterSheetsPull(section, pulled) {
-  const sheetKeys = new Set(pulled.map(caseKey).filter(Boolean));
+  const sheetKeyFor = (ticket) => (
+    section === 'ce'
+      ? (ticket?.orderNumber || ticket?.caseNumber || '').toString().trim()
+      : caseKey(ticket)
+  );
+  const sheetKeys = new Set(pulled.map(sheetKeyFor).filter(Boolean));
 
   const before = tickets[section] || [];
   const after = before.filter(t => {
-    const key = caseKey(t);
+    const key = sheetKeyFor(t);
+    if (section === 'ce') return !!key && sheetKeys.has(key);
     if (!key) return false;           // سطر تالف بدون مفتاح
     if (!isFromSheet(t)) return true; // من الـDB → نخليها
     return sheetKeys.has(key);        // من الشيت → نخليها فقط لو لسه موجودة بالشيت
@@ -523,7 +535,7 @@ async function hydrateFromSheets(section) {
     }
 
     // 1) دمج (يحدّث/يضيف)
-    tickets[section] = mergeTicketsByCase(tickets[section] || [], pulled, section);
+    tickets[section] = mergeTicketsByCase(section === 'ce' ? [] : (tickets[section] || []), pulled, section);
 
     // 2) مصالحة (يمسح محليًا أي تذكرة من الشيت انحذفت من الشيت)
     reconcileAfterSheetsPull(section, pulled);
