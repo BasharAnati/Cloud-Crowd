@@ -5,6 +5,12 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
+[[redirects]]
+  from = "/*"
+  to = "/system-update.html"
+  status = 200
+  force = true
+
 [[headers]]
   for = "/.netlify/functions/*"
   [headers.values]
