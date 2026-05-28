@@ -110,6 +110,7 @@
       display:flex;
       align-items:center;
       gap:14px;
+      transform:translate(-28px,-16px);
       margin-bottom:clamp(56px,9vh,96px);
     }
     .brand-lockup img{
@@ -136,6 +137,7 @@
       position:relative;
       width:min(680px,100%);
       padding:52px 0 72px;
+      transform:translateX(-36px);
     }
     .headline{
       margin:0;
@@ -184,18 +186,18 @@
       width:100%;
       max-width:430px;
       padding:34px;
-      border:1px solid rgba(167,235,242,.32);
+      border:1px solid rgba(167,235,242,.22);
       border-radius:20px;
       background:
-        linear-gradient(145deg,rgba(255,255,255,.2),rgba(255,255,255,.06) 38%,rgba(84,172,191,.085)),
-        rgba(1,19,40,.52);
+        linear-gradient(145deg,rgba(255,255,255,.13),rgba(255,255,255,.035) 38%,rgba(84,172,191,.045)),
+        rgba(1,18,40,.45);
       box-shadow:
-        0 34px 95px rgba(0,0,0,.64),
-        0 0 62px rgba(84,172,191,.22),
-        inset 0 1px 0 rgba(255,255,255,.22),
-        inset 0 0 44px rgba(167,235,242,.045);
-      backdrop-filter:blur(30px) saturate(152%);
-      -webkit-backdrop-filter:blur(30px) saturate(152%);
+        0 34px 95px rgba(0,0,0,.7),
+        0 0 52px rgba(84,172,191,.16),
+        inset 0 1px 0 rgba(255,255,255,.16),
+        inset 0 0 38px rgba(167,235,242,.035);
+      backdrop-filter:blur(22px) saturate(132%);
+      -webkit-backdrop-filter:blur(22px) saturate(132%);
       position:relative;
       overflow:hidden;
     }
@@ -205,9 +207,9 @@
       inset:0;
       pointer-events:none;
       background:
-        radial-gradient(circle at 18% 0%,rgba(255,255,255,.2),transparent 24%),
-        linear-gradient(115deg,rgba(255,255,255,.18),transparent 28%,transparent 72%,rgba(167,235,242,.13));
-      opacity:.9;
+        radial-gradient(circle at 18% 0%,rgba(255,255,255,.13),transparent 24%),
+        linear-gradient(115deg,rgba(255,255,255,.11),transparent 28%,transparent 72%,rgba(167,235,242,.08));
+      opacity:.72;
     }
     .card > *{
       position:relative;
@@ -319,6 +321,9 @@
       body{
         overflow:hidden;
       }
+      .form-panel{
+        transform:translateY(-24px);
+      }
     }
     @media (max-width:920px){
       body{
@@ -339,9 +344,11 @@
         padding:0;
       }
       .brand-lockup{
+        transform:none;
         margin-bottom:28px;
       }
       .hero-copy{
+        transform:none;
         padding:18px 0 36px;
       }
       .headline{
