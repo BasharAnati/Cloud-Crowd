@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <title>Call Queue - Cloud Crowd</title>
+  <style>
+    :root{
+      --navy:#011C40;
+      --deep:#023859;
+      --aqua:#54ACBF;
+      --ice:#A7EBF2;
+      --text:#eefcff;
+      --muted:rgba(238,252,255,.68);
+      --line:rgba(167,235,242,.22);
+      --glass:rgba(2,24,52,.62);
+      --glass-strong:rgba(3,35,70,.74);
+      --warn:#f6c76b;
+      --bad:#ff7b8a;
+      --ok:#65f2c2;
+    }
+    *{box-sizing:border-box}
+    html,body{width:100%;min-height:100%;overflow-x:hidden}
+    body{
+      min-height:100vh;
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 18% 12%,rgba(84,172,191,.18),transparent 28%),
+        radial-gradient(circle at 82% 18%,rgba(167,235,242,.12),transparent 28%),
+        linear-gradient(135deg,#010611 0%,#02152e 44%,#010914 100%);
+      line-height:1.5;
+    }
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:-1;
+      pointer-events:none;
+      background:
+        linear-gradient(rgba(167,235,242,.035) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(167,235,242,.035) 1px,transparent 1px);
+      background-size:72px 72px;
+      mask-image:radial-gradient(circle at 62% 22%,#000 0%,transparent 58%);
+    }
+    button,input,textarea{font:inherit}
+    button{cursor:pointer}
+    a{color:inherit;text-decoration:none}
+    .shell{
+      min-height:100vh;
+      display:grid;
+      grid-template-columns:280px minmax(0,1fr);
+    }
+    .sidebar{
+      position:sticky;
+      top:0;
+      min-height:100vh;
+      padding:28px 22px;
+      border-right:1px solid rgba(167,235,242,.16);
+      background:
+        linear-gradient(180deg,rgba(1,28,64,.82),rgba(1,10,24,.66)),
+        rgba(1,12,26,.72);
+      box-shadow:18px 0 70px rgba(0,0,0,.26);
+      backdrop-filter:blur(18px) saturate(132%);
+      -webkit-backdrop-filter:blur(18px) saturate(132%);
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:13px;
+      margin-bottom:34px;
+    }
+    .brand img{
+      width:58px;
+      height:58px;
+      object-fit:contain;
+      filter:drop-shadow(0 0 12px rgba(167,235,242,.55)) drop-shadow(0 0 28px rgba(84,172,191,.28));
+    }
+    .brand h1{margin:0;font-size:22px;line-height:1;font-weight:900}
+    .brand p{margin:6px 0 0;color:var(--ice);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+    .nav{display:grid;gap:8px}
+    .nav a{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-height:46px;
+      padding:10px 12px;
+      border:1px solid transparent;
+      border-radius:10px;
+      color:rgba(238,252,255,.76);
+      font-size:14px;
+      font-weight:800;
+    }
+    .nav a:hover,.nav a.active{
+      color:var(--text);
+      border-color:rgba(167,235,242,.22);
+      background:rgba(84,172,191,.11);
+    }
+    .nav-icon{
+      width:30px;
+      height:30px;
+      display:grid;
+      place-items:center;
+      border:1px solid rgba(167,235,242,.2);
+      border-radius:8px;
+      color:var(--ice);
+      background:rgba(84,172,191,.12);
+    }
+    .main{
+      min-width:0;
+      padding:26px clamp(18px,4vw,46px) 38px;
+    }
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:16px;
+      margin-bottom:24px;
+    }
+    .crumb{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      color:var(--ice);
+      font-size:13px;
+      font-weight:900;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+    .user-tools{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:10px;
+      min-width:0;
+    }
+    .user-pill,.role-pill{
+      min-height:38px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      max-width:260px;
+      padding:8px 12px;
+      border:1px solid rgba(167,235,242,.22);
+      border-radius:999px;
+      color:var(--ice);
+      background:rgba(84,172,191,.12);
+      font-size:12px;
+      font-weight:900;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .logout{
+      min-height:38px;
+      padding:8px 14px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:999px;
+      color:#fff;
+      background:linear-gradient(135deg,rgba(239,68,68,.95),rgba(185,28,28,.95));
+      box-shadow:0 12px 28px rgba(185,28,28,.22);
+      font-size:12px;
+      font-weight:900;
+    }
+    .hero{
+      position:relative;
+      overflow:hidden;
+      margin-bottom:22px;
+      padding:30px;
+      border:1px solid rgba(167,235,242,.18);
+      border-radius:22px;
+      background:
+        linear-gradient(135deg,rgba(255,255,255,.11),rgba(255,255,255,.035) 42%,rgba(84,172,191,.05)),
+        var(--glass);
+      box-shadow:0 34px 95px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.13);
+      backdrop-filter:blur(18px) saturate(128%);
+      -webkit-backdrop-filter:blur(18px) saturate(128%);
+    }
+    .hero::after{
+      content:"";
+      position:absolute;
+      right:-12%;
+      top:-42%;
+      width:min(620px,58vw);
+      aspect-ratio:1;
+      pointer-events:none;
+      background:radial-gradient(circle,rgba(84,172,191,.3),transparent 62%);
+      filter:blur(16px);
+    }
+    .hero h2{
+      position:relative;
+      margin:0;
+      font-size:clamp(34px,5vw,58px);
+      line-height:.95;
+      font-weight:950;
+    }
+    .hero p{
+      position:relative;
+      max-width:720px;
+      margin:16px 0 0;
+      color:var(--muted);
+      font-size:16px;
+      line-height:1.7;
+    }
+    .workspace{
+      display:grid;
+      grid-template-columns:minmax(330px,.82fr) minmax(0,1.18fr);
+      gap:18px;
+      align-items:start;
+    }
+    .panel{
+      border:1px solid rgba(167,235,242,.18);
+      border-radius:18px;
+      background:
+        linear-gradient(145deg,rgba(255,255,255,.1),rgba(255,255,255,.035) 46%,rgba(84,172,191,.055)),
+        var(--glass-strong);
+      box-shadow:0 22px 70px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.12);
+      backdrop-filter:blur(16px) saturate(126%);
+      -webkit-backdrop-filter:blur(16px) saturate(126%);
+    }
+    .queue-panel{padding:16px;max-height:calc(100vh - 230px);overflow:auto}
+    .workspace-panel{padding:22px;min-height:620px}
+    .status-group + .status-group{margin-top:16px}
+    .status-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:8px;
+      color:rgba(238,252,255,.82);
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.1em;
+      text-transform:uppercase;
+    }
+    .count{
+      display:inline-flex;
+      min-width:24px;
+      height:24px;
+      align-items:center;
+      justify-content:center;
+      border-radius:999px;
+      color:var(--ice);
+      background:rgba(84,172,191,.14);
+      border:1px solid rgba(167,235,242,.2);
+    }
+    .ticket{
+      width:100%;
+      display:block;
+      padding:14px;
+      margin-bottom:8px;
+      border:1px solid rgba(167,235,242,.14);
+      border-radius:14px;
+      color:var(--text);
+      text-align:left;
+      background:rgba(1,16,34,.54);
+      transition:transform .18s ease,border-color .18s ease,background .18s ease;
+    }
+    .ticket:hover,.ticket.active{
+      transform:translateY(-1px);
+      border-color:rgba(167,235,242,.38);
+      background:rgba(84,172,191,.12);
+    }
+    .ticket strong{display:block;font-size:15px}
+    .ticket span{display:block;margin-top:4px;color:var(--muted);font-size:12px}
+    .ticket-meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      margin-top:10px;
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      min-height:24px;
+      padding:4px 8px;
+      border-radius:999px;
+      color:rgba(238,252,255,.76);
+      background:rgba(255,255,255,.07);
+      font-size:11px;
+      font-weight:800;
+    }
+    .empty-state{
+      padding:34px;
+      text-align:center;
+      color:var(--muted);
+    }
+    .detail-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom:18px;
+    }
+    .detail-head h3{margin:0;font-size:28px;line-height:1.1}
+    .status-badge{
+      flex:0 0 auto;
+      padding:8px 11px;
+      border:1px solid rgba(167,235,242,.22);
+      border-radius:999px;
+      color:var(--ice);
+      background:rgba(84,172,191,.13);
+      font-size:12px;
+      font-weight:900;
+      text-transform:uppercase;
+    }
+    .info-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+      margin-bottom:18px;
+    }
+    .info{
+      padding:12px;
+      border:1px solid rgba(167,235,242,.13);
+      border-radius:12px;
+      background:rgba(1,16,34,.42);
+    }
+    .info span{
+      display:block;
+      margin-bottom:5px;
+      color:rgba(238,252,255,.52);
+      font-size:11px;
+      font-weight:900;
+      text-transform:uppercase;
+    }
+    .info strong{
+      display:block;
+      color:var(--text);
+      overflow-wrap:anywhere;
+    }
+    .image-box{
+      min-height:220px;
+      display:grid;
+      place-items:center;
+      overflow:hidden;
+      margin-bottom:18px;
+      border:1px solid rgba(167,235,242,.16);
+      border-radius:16px;
+      background:
+        linear-gradient(135deg,rgba(84,172,191,.12),rgba(255,255,255,.04)),
+        rgba(1,16,34,.52);
+    }
+    .image-box img{
+      width:100%;
+      height:100%;
+      max-height:360px;
+      object-fit:cover;
+      display:block;
+    }
+    .placeholder-art{
+      display:grid;
+      place-items:center;
+      gap:10px;
+      color:rgba(238,252,255,.54);
+      text-align:center;
+      font-weight:800;
+    }
+    .notes-box{
+      margin-bottom:18px;
+      padding:14px;
+      border:1px solid rgba(167,235,242,.13);
+      border-radius:14px;
+      background:rgba(1,16,34,.42);
+    }
+    .notes-box h4,.actions h4{margin:0 0 10px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ice)}
+    .latest-note{margin:0 0 12px;color:var(--muted);font-size:14px}
+    textarea,input{
+      width:100%;
+      border:1px solid rgba(167,235,242,.22);
+      border-radius:12px;
+      outline:0;
+      color:var(--text);
+      background:rgba(1,12,26,.56);
+    }
+    textarea{min-height:90px;padding:12px;resize:vertical}
+    input{min-height:42px;padding:10px 12px}
+    textarea:focus,input:focus{
+      border-color:var(--ice);
+      box-shadow:0 0 0 4px rgba(84,172,191,.13);
+    }
+    .action-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:12px;
+    }
+    .btn{
+      min-height:42px;
+      padding:10px 14px;
+      border:0;
+      border-radius:12px;
+      color:#011328;
+      background:linear-gradient(135deg,var(--ice),var(--aqua));
+      box-shadow:0 14px 34px rgba(84,172,191,.2);
+      font-weight:900;
+      transition:transform .18s ease,box-shadow .18s ease,opacity .18s ease;
+    }
+    .btn:hover{transform:translateY(-1px);box-shadow:0 18px 42px rgba(84,172,191,.28)}
+    .btn.secondary{color:var(--text);background:rgba(84,172,191,.13);border:1px solid rgba(167,235,242,.22)}
+    .btn.warning{color:#1c1301;background:linear-gradient(135deg,#ffe5a3,var(--warn))}
+    .btn.danger{color:#25030a;background:linear-gradient(135deg,#ffc5cc,var(--bad))}
+    .btn:disabled{opacity:.48;cursor:not-allowed;transform:none;box-shadow:none}
+    .negative-details{
+      display:none;
+      margin-top:14px;
+      padding:14px;
+      border:1px solid rgba(246,199,107,.3);
+      border-radius:14px;
+      background:rgba(246,199,107,.07);
+    }
+    .negative-details.open{display:block}
+    .negative-details label{
+      display:block;
+      margin:10px 0 6px;
+      color:rgba(238,252,255,.74);
+      font-size:12px;
+      font-weight:900;
+      text-transform:uppercase;
+    }
+    @media (max-width:1080px){
+      .shell{grid-template-columns:1fr}
+      .sidebar{position:relative;min-height:auto;padding:18px 20px;border-right:0;border-bottom:1px solid rgba(167,235,242,.16)}
+      .brand{margin-bottom:16px}
+      .nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .nav a.active{grid-column:1 / -1}
+      .workspace{grid-template-columns:1fr}
+      .queue-panel{max-height:none}
+    }
+    @media (max-width:680px){
+      .main{padding:18px 14px 28px}
+      .topbar{align-items:flex-start;flex-direction:column}
+      .user-tools{width:100%;justify-content:stretch;flex-wrap:wrap}
+      .user-pill,.role-pill,.logout{flex:1 1 auto}
+      .nav{grid-template-columns:1fr}
+      .hero{padding:24px 18px}
+      .workspace-panel{padding:18px}
+      .info-grid{grid-template-columns:1fr}
+      .detail-head{display:block}
+      .status-badge{display:inline-flex;margin-top:12px}
+    }
+  </style>
+  <script>
+    const MAINTENANCE_ADMIN = "Anati";
+    const MAINTENANCE_ENDPOINT = "/.netlify/functions/maintenance";
+
+    function isMaintenanceAdmin() {
+      return localStorage.getItem("cc_auth") === "1" &&
+        localStorage.getItem("cc_role") === "admin" &&
+        localStorage.getItem("cc_user") === MAINTENANCE_ADMIN;
+    }
+
+    async function fetchMaintenanceStatus() {
+      try {
+        const response = await fetch(MAINTENANCE_ENDPOINT, {
+          cache: "no-store",
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+          }
+        });
+        if (!response.ok) throw new Error(`Maintenance check failed: ${response.status}`);
+        const data = await response.json();
+        return {
+          maintenance: data.maintenance === true,
+          admin: data.admin === true
+        };
+      } catch (err) {
+        console.warn("Maintenance check failed.", err);
+        return null;
+      }
+    }
+
+    async function enforceMaintenanceMode() {
+      const status = await fetchMaintenanceStatus();
+      if (status?.maintenance === true && status.admin !== true) {
+        window.location.href = "system-update.html";
+      }
+    }
+
+    enforceMaintenanceMode();
+    setInterval(enforceMaintenanceMode, 3000);
+  </script>
+</head>
+<body>
+  <script>
+    if (localStorage.getItem('cc_auth') !== '1' || !localStorage.getItem('cc_token') || !localStorage.getItem('cc_role')) {
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html';
+    }
+
+    const allowedCallQueueRoles = ['admin', 'manager'];
+    const currentCallQueueRole = (localStorage.getItem('cc_role') || '').toLowerCase();
+    if (!allowedCallQueueRoles.includes(currentCallQueueRole)) {
+      window.location.href = 'dashboard.html';
+    }
+  </script>
+
+  <div class="shell">
+    <aside class="sidebar" aria-label="Call Queue navigation">
+      <a class="brand" href="dashboard.html" aria-label="Cloud Crowd dashboard">
+        <img src="logo.png" alt="Cloud Crowd logo">
+        <div>
+          <h1>Cloud Crowd</h1>
+          <p>Call Operations</p>
+        </div>
+      </a>
+      <nav class="nav">
+        <a href="dashboard.html">
+          <span class="nav-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M4 13h7V4H4v9Zm9 7h7V4h-7v16ZM4 20h7v-5H4v5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          Dashboard
+        </a>
+        <a class="active" href="call-queue.html" aria-current="page">
+          <span class="nav-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M6.5 5.5h3l1.5 4-2 1.2a10 10 0 0 0 4.3 4.3l1.2-2 4 1.5v3a2 2 0 0 1-2.2 2A15 15 0 0 1 4.5 7.7a2 2 0 0 1 2-2.2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          Call Queue
+        </a>
+        <a href="cctv.html">
+          <span class="nav-icon" aria-hidden="true">C</span>
+          CCTV Operator Observations
+        </a>
+        <a href="ce.html">
+          <span class="nav-icon" aria-hidden="true">CE</span>
+          Customer Experience
+        </a>
+        <a href="free-orders.html">
+          <span class="nav-icon" aria-hidden="true">CO</span>
+          Complimentary Orders
+        </a>
+        <a href="complaints.html">
+          <span class="nav-icon" aria-hidden="true">DC</span>
+          Daily Complaints
+        </a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <a class="crumb" href="dashboard.html">&larr; Dashboard</a>
+        <div class="user-tools">
+          <span class="user-pill" id="current-user">Team Member</span>
+          <span class="role-pill" id="current-role">operator</span>
+          <button class="logout" type="button" onclick="logout()">Log out</button>
+        </div>
+      </header>
+
+      <section class="hero">
+        <h2>Call Queue</h2>
+        <p>Dedicated customer follow-up workspace for moving calls from Need Call through In Call, Called, Pending, and Done.</p>
+      </section>
+
+      <section class="workspace" aria-label="Call queue workspace">
+        <div class="panel queue-panel" id="queue-list"></div>
+
+        <div class="panel workspace-panel" id="workspace-panel">
+          <div class="empty-state">Select a call ticket to open the workspace.</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'cc_call_queue_tickets_v1';
+    const STATUSES = ['Need Call', 'In Call', 'Called', 'Pending', 'Done'];
+    let tickets = loadTickets();
+    let selectedTicketId = tickets[0]?.id || null;
+
+    function nowLabel() {
+      return new Date().toLocaleString([], {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function seedTickets() {
+      const updated = nowLabel();
+      return [
+        {
+          id: 'CQ-1001',
+          customerName: 'Maya Haddad',
+          phone: '+962 79 000 1122',
+          branch: 'Abdoun',
+          restaurant: 'Cloud Crowd Kitchen',
+          orderNumber: 'ORD-84291',
+          callReason: 'Follow up after delayed delivery',
+          orderImage: '',
+          assignedTo: '',
+          status: 'Need Call',
+          notes: ['Customer reported the order arrived 35 minutes late.'],
+          negativeReason: '',
+          lastUpdated: updated
+        },
+        {
+          id: 'CQ-1002',
+          customerName: 'Omar Saleh',
+          phone: '+962 78 000 3344',
+          branch: 'Swefieh',
+          restaurant: 'Cloud Crowd Kitchen',
+          orderNumber: 'ORD-84308',
+          callReason: 'Confirm compensation satisfaction',
+          orderImage: '',
+          assignedTo: 'Supervisor',
+          status: 'Pending',
+          notes: ['Customer asked for a callback after 6 PM.'],
+          negativeReason: 'Customer unavailable',
+          lastUpdated: updated
+        },
+        {
+          id: 'CQ-1003',
+          customerName: 'Lina Nasser',
+          phone: '+962 77 000 5566',
+          branch: 'Khalda',
+          restaurant: 'Partner Restaurant',
+          orderNumber: 'ORD-84342',
+          callReason: 'Validate missing item complaint',
+          orderImage: '',
+          assignedTo: '',
+          status: 'Need Call',
+          notes: ['Missing drink reported by customer support.'],
+          negativeReason: '',
+          lastUpdated: updated
+        }
+      ];
+    }
+
+    function loadTickets() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+        if (Array.isArray(saved) && saved.length) return saved;
+      } catch {}
+      const seeded = seedTickets();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
+      return seeded;
+    }
+
+    function saveTickets() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+    }
+
+    function getCurrentUser() {
+      return localStorage.getItem('cc_user') || 'Team Member';
+    }
+
+    function findTicket() {
+      return tickets.find((ticket) => ticket.id === selectedTicketId) || null;
+    }
+
+    function renderQueue() {
+      const queue = document.getElementById('queue-list');
+      queue.innerHTML = STATUSES.map((status) => {
+        const group = tickets.filter((ticket) => ticket.status === status);
+        const cards = group.map((ticket) => `
+          <button class="ticket ${ticket.id === selectedTicketId ? 'active' : ''}" type="button" data-ticket-id="${ticket.id}">
+            <strong>${escapeHtml(ticket.customerName)}</strong>
+            <span>${escapeHtml(ticket.phone)} · ${escapeHtml(ticket.orderNumber)}</span>
+            <div class="ticket-meta">
+              <span class="chip">${escapeHtml(ticket.branch)}</span>
+              <span class="chip">${escapeHtml(ticket.assignedTo || 'Unassigned')}</span>
+            </div>
+          </button>
+        `).join('');
+
+        return `
+          <section class="status-group">
+            <div class="status-head">
+              <span>${status}</span>
+              <span class="count">${group.length}</span>
+            </div>
+            ${cards || '<div class="empty-state">No tickets</div>'}
+          </section>
+        `;
+      }).join('');
+
+      queue.querySelectorAll('[data-ticket-id]').forEach((button) => {
+        button.addEventListener('click', () => {
+          selectedTicketId = button.dataset.ticketId;
+          render();
+        });
+      });
+    }
+
+    function renderWorkspace() {
+      const panel = document.getElementById('workspace-panel');
+      const ticket = findTicket();
+      if (!ticket) {
+        panel.innerHTML = '<div class="empty-state">Select a call ticket to open the workspace.</div>';
+        return;
+      }
+
+      const latestNote = ticket.notes[ticket.notes.length - 1] || 'No notes yet.';
+      panel.innerHTML = `
+        <div class="detail-head">
+          <div>
+            <h3>${escapeHtml(ticket.customerName)}</h3>
+            <div class="chip">${escapeHtml(ticket.id)}</div>
+          </div>
+          <span class="status-badge">${escapeHtml(ticket.status)}</span>
+        </div>
+
+        <div class="info-grid">
+          <div class="info"><span>Phone Number</span><strong>${escapeHtml(ticket.phone)}</strong></div>
+          <div class="info"><span>Order Number</span><strong>${escapeHtml(ticket.orderNumber)}</strong></div>
+          <div class="info"><span>Branch</span><strong>${escapeHtml(ticket.branch)}</strong></div>
+          <div class="info"><span>Restaurant</span><strong>${escapeHtml(ticket.restaurant)}</strong></div>
+          <div class="info"><span>Call Reason</span><strong>${escapeHtml(ticket.callReason)}</strong></div>
+          <div class="info"><span>Assigned To</span><strong>${escapeHtml(ticket.assignedTo || 'Unassigned')}</strong></div>
+          <div class="info"><span>Last Updated</span><strong>${escapeHtml(ticket.lastUpdated)}</strong></div>
+          <div class="info"><span>Negative Reason</span><strong>${escapeHtml(ticket.negativeReason || 'None')}</strong></div>
+        </div>
+
+        <div class="image-box">
+          ${ticket.orderImage ? `<img src="${escapeAttribute(ticket.orderImage)}" alt="Order image for ${escapeAttribute(ticket.orderNumber)}">` : `
+            <div class="placeholder-art">
+              <svg width="54" height="54" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 6h16v12H4V6Z" stroke="currentColor" stroke-width="1.5"/>
+                <path d="m7 15 3-3 2 2 2.5-2.5L18 15" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                <circle cx="8.5" cy="9.5" r="1" fill="currentColor"/>
+              </svg>
+              <span>Order image placeholder</span>
+            </div>
+          `}
+        </div>
+
+        <div class="notes-box">
+          <h4>Latest Note</h4>
+          <p class="latest-note">${escapeHtml(latestNote)}</p>
+          <textarea id="note-input" placeholder="Add a call note"></textarea>
+          <div class="action-row">
+            <button class="btn secondary" type="button" id="add-note-btn">Add Note</button>
+          </div>
+        </div>
+
+        <div class="actions">
+          <h4>Call Actions</h4>
+          <div class="action-row">
+            <button class="btn" type="button" id="start-call-btn" ${ticket.status !== 'Need Call' ? 'disabled' : ''}>Start Call</button>
+            <button class="btn" type="button" id="positive-btn" ${ticket.status !== 'In Call' ? 'disabled' : ''}>Positive Result</button>
+            <button class="btn warning" type="button" id="negative-btn" ${ticket.status !== 'In Call' ? 'disabled' : ''}>Negative Result</button>
+            <button class="btn secondary" type="button" id="done-btn" ${ticket.status !== 'Called' && ticket.status !== 'Pending' ? 'disabled' : ''}>Move to Done</button>
+          </div>
+          <div class="negative-details" id="negative-details">
+            <label for="negative-reason">Reason</label>
+            <input id="negative-reason" placeholder="Example: No answer, customer busy">
+            <label for="negative-note">Note</label>
+            <textarea id="negative-note" placeholder="Add details for the pending follow-up"></textarea>
+            <div class="action-row">
+              <button class="btn danger" type="button" id="save-negative-btn">Save Negative Result</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('add-note-btn').addEventListener('click', addNote);
+      document.getElementById('start-call-btn').addEventListener('click', startCall);
+      document.getElementById('positive-btn').addEventListener('click', positiveResult);
+      document.getElementById('negative-btn').addEventListener('click', () => {
+        document.getElementById('negative-details').classList.add('open');
+      });
+      document.getElementById('save-negative-btn').addEventListener('click', negativeResult);
+      document.getElementById('done-btn').addEventListener('click', moveToDone);
+    }
+
+    function updateTicket(patch) {
+      const ticket = findTicket();
+      if (!ticket) return;
+      Object.assign(ticket, patch, { lastUpdated: nowLabel() });
+      saveTickets();
+      render();
+    }
+
+    function addNote() {
+      const ticket = findTicket();
+      const input = document.getElementById('note-input');
+      const value = input.value.trim();
+      if (!ticket || !value) return;
+      ticket.notes.push(`${getCurrentUser()}: ${value}`);
+      ticket.lastUpdated = nowLabel();
+      saveTickets();
+      render();
+    }
+
+    function startCall() {
+      updateTicket({
+        status: 'In Call',
+        assignedTo: getCurrentUser()
+      });
+    }
+
+    function positiveResult() {
+      const ticket = findTicket();
+      if (!ticket) return;
+      ticket.notes.push(`${getCurrentUser()}: Positive call result.`);
+      updateTicket({ status: 'Called' });
+    }
+
+    function negativeResult() {
+      const ticket = findTicket();
+      const reason = document.getElementById('negative-reason').value.trim();
+      const note = document.getElementById('negative-note').value.trim();
+      if (!ticket || !reason) return;
+      ticket.notes.push(`${getCurrentUser()}: Negative result - ${reason}${note ? `. ${note}` : ''}`);
+      updateTicket({
+        status: 'Pending',
+        negativeReason: reason
+      });
+    }
+
+    function moveToDone() {
+      const ticket = findTicket();
+      if (!ticket) return;
+      ticket.notes.push(`${getCurrentUser()}: Moved ticket to Done.`);
+      updateTicket({ status: 'Done' });
+    }
+
+    function render() {
+      renderQueue();
+      renderWorkspace();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    function escapeAttribute(value) {
+      return escapeHtml(value).replace(/`/g, '&#96;');
+    }
+
+    function logout() {
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html';
+    }
+
+    document.getElementById('current-user').textContent = getCurrentUser();
+    document.getElementById('current-role').textContent = localStorage.getItem('cc_role') || 'operator';
+    render();
+  </script>
+  <script src="idle-logout.js"></script>
+</body>
+</html>
