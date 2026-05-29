@@ -33,23 +33,25 @@
       background:#010611;
       overflow-x:hidden;
     }
-    .bg-video,
-    .video-overlay{
+    .page-bg,
+    .page-overlay{
       position:fixed;
       inset:0;
       width:100%;
       height:100%;
       pointer-events:none;
     }
-    .bg-video{
+    .page-bg{
       z-index:0;
-      object-fit:cover;
-      object-position:center;
-      background:#010611;
+      background:
+        #010611
+        url("assets/images/login-bg.webp")
+        center / cover
+        no-repeat;
     }
-    .video-overlay{
+    .page-overlay{
       z-index:1;
-      background:rgba(0,6,18,.55);
+      background:rgba(0,6,18,.25);
     }
     .topbar{
       position:fixed;
@@ -170,30 +172,7 @@
     .hero-copy{
       position:relative;
       width:min(680px,100%);
-      padding:52px 0 72px;
-      transform:translateX(-36px);
-      opacity:0;
-      animation:heroCopyIn 1.1s ease-out .34s forwards;
-    }
-    .headline{
-      margin:0;
-      max-width:610px;
-      font-size:clamp(54px,8vw,112px);
-      line-height:.88;
-      font-weight:900;
-      letter-spacing:0;
-      text-transform:uppercase;
-      text-shadow:
-        0 0 18px rgba(167,235,242,.32),
-        0 0 52px rgba(84,172,191,.52),
-        0 18px 42px rgba(0,0,0,.74);
-    }
-    .hero-text{
-      max-width:430px;
-      margin:24px 0 0;
-      color:var(--muted);
-      font-size:17px;
-      line-height:1.65;
+      min-height:clamp(120px,24vh,260px);
     }
     .hero-footer{
       position:relative;
@@ -473,17 +452,7 @@
         margin-bottom:28px;
       }
       .hero-copy{
-        transform:none;
-        padding:18px 0 36px;
-        animation-name:heroCopyInMobile;
-      }
-      .headline{
-        max-width:100%;
-        font-size:clamp(44px,13vw,76px);
-      }
-      .hero-text{
-        max-width:100%;
-        font-size:15px;
+        min-height:clamp(56px,12vh,120px);
       }
       .hero-footer{
         min-height:118px;
@@ -524,16 +493,6 @@
         font-size:12px;
       }
     }
-    @keyframes heroCopyInMobile{
-      from{
-        opacity:0;
-        transform:translateY(14px);
-      }
-      to{
-        opacity:1;
-        transform:translateY(0);
-      }
-    }
     @media (prefers-reduced-motion:reduce){
       *,
       *::before,
@@ -544,13 +503,9 @@
         transition-duration:.01ms !important;
       }
       .brand-lockup,
-      .hero-copy,
       .card{
         opacity:1;
         animation:none;
-      }
-      .hero-copy{
-        transform:translateX(-36px);
       }
       .btn:hover,
       .btn:active,
@@ -558,18 +513,11 @@
         transform:none;
       }
     }
-    @media (prefers-reduced-motion:reduce) and (max-width:920px){
-      .hero-copy{
-        transform:none;
-      }
-    }
   </style>
 </head>
 <body>
-  <video class="bg-video" autoplay loop muted playsinline aria-hidden="true">
-    <source src="assets/videos/cloudcrowd-bg.mp4" type="video/mp4">
-  </video>
-  <div class="video-overlay" aria-hidden="true"></div>
+  <div class="page-bg" aria-hidden="true"></div>
+  <div class="page-overlay" aria-hidden="true"></div>
   <div class="topbar"><a class="home" href="index.html">← Back to site</a></div>
 
   <main class="login-shell">
@@ -587,10 +535,7 @@
           </div>
         </div>
 
-        <div class="hero-copy">
-          <h2 class="headline">WELCOME BACK</h2>
-          <p class="hero-text">Join us and organize your work quickly and conveniently.</p>
-        </div>
+        <div class="hero-copy" aria-hidden="true"></div>
       </div>
 
       <div class="hero-footer">
