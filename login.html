@@ -283,25 +283,33 @@
     }
     label{
       display:block;
-      margin:16px 0 8px;
+      margin:18px 0 4px;
       color:rgba(238,252,255,.82);
       font-size:13px;
       font-weight:700;
+      transition:color .22s ease;
+    }
+    label:has(+ .input:focus-within){
+      color:rgba(167,235,242,.96);
     }
     .input{
       display:flex;
       align-items:center;
-      gap:10px;
-      min-height:52px;
-      padding:0 14px;
-      border:1px solid rgba(167,235,242,.22);
-      border-radius:12px;
-      background:rgba(1,12,26,.58);
-      box-shadow:inset 0 0 0 1px rgba(255,255,255,.05),0 0 24px rgba(84,172,191,.08);
+      gap:12px;
+      min-height:46px;
+      padding:0 2px 7px;
+      border:0;
+      border-bottom:1px solid rgba(167,235,242,.34);
+      border-radius:0;
+      background:transparent;
+      box-shadow:0 1px 0 rgba(255,255,255,.04);
+      transition:border-color .22s ease, box-shadow .22s ease;
     }
     .input:focus-within{
-      border-color:var(--ice);
-      box-shadow:0 0 0 4px rgba(84,172,191,.16),inset 0 0 0 1px rgba(255,255,255,.06);
+      border-bottom-color:var(--ice);
+      box-shadow:
+        0 1px 0 rgba(167,235,242,.72),
+        0 10px 22px -20px rgba(84,172,191,.92);
     }
     .input input{
       width:100%;
@@ -311,12 +319,26 @@
       background:transparent;
       color:var(--text);
       font:inherit;
+      line-height:1.4;
+      padding:8px 0 4px;
     }
-    .input input::placeholder{color:rgba(238,252,255,.38)}
+    .input input::placeholder{color:rgba(238,252,255,.42)}
     .eye{
       flex:0 0 auto;
-      color:rgba(167,235,242,.78);
+      width:20px;
+      height:20px;
+      margin-top:5px;
+      color:rgba(167,235,242,.76);
       cursor:pointer;
+      transition:color .22s ease, transform .22s ease, filter .22s ease;
+    }
+    .input:focus-within .eye,
+    .eye:hover{
+      color:var(--ice);
+      filter:drop-shadow(0 0 8px rgba(84,172,191,.28));
+    }
+    .eye:active{
+      transform:scale(.96);
     }
     .row{
       display:flex;
