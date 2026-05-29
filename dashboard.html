@@ -6,6 +6,464 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <title>Cloud Crowd - Service Management Platform</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    :root{
+      --navy:#011C40;
+      --deep:#023859;
+      --steel:#26658C;
+      --aqua:#54ACBF;
+      --ice:#A7EBF2;
+      --text:#eefcff;
+      --muted:rgba(238,252,255,.68);
+      --line:rgba(167,235,242,.22);
+      --glass:rgba(2,24,52,.58);
+      --glass-strong:rgba(3,35,70,.72);
+    }
+    *{box-sizing:border-box}
+    html,
+    body{
+      width:100%;
+      min-height:100%;
+      overflow-x:hidden;
+    }
+    body{
+      min-height:100vh;
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 18% 12%,rgba(84,172,191,.18),transparent 28%),
+        radial-gradient(circle at 82% 18%,rgba(167,235,242,.12),transparent 28%),
+        linear-gradient(135deg,#010611 0%,#02152e 44%,#010914 100%);
+      line-height:1.5;
+    }
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:-2;
+      pointer-events:none;
+      background:
+        linear-gradient(rgba(167,235,242,.035) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(167,235,242,.035) 1px,transparent 1px);
+      background-size:72px 72px;
+      mask-image:radial-gradient(circle at 65% 25%,#000 0%,transparent 58%);
+    }
+    body::after{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:-1;
+      pointer-events:none;
+      background:rgba(0,6,18,.28);
+    }
+    a{color:inherit}
+    button{font:inherit}
+    .dashboard-shell{
+      min-height:100vh;
+      display:grid;
+      grid-template-columns:280px minmax(0,1fr);
+    }
+    .sidebar{
+      position:sticky;
+      top:0;
+      min-height:100vh;
+      padding:28px 22px;
+      border-right:1px solid rgba(167,235,242,.16);
+      background:
+        linear-gradient(180deg,rgba(1,28,64,.82),rgba(1,10,24,.66)),
+        rgba(1,12,26,.72);
+      box-shadow:18px 0 70px rgba(0,0,0,.26);
+      backdrop-filter:blur(18px) saturate(132%);
+      -webkit-backdrop-filter:blur(18px) saturate(132%);
+    }
+    .sidebar-brand{
+      display:flex;
+      align-items:center;
+      gap:13px;
+      margin-bottom:34px;
+      text-decoration:none;
+    }
+    .sidebar-logo{
+      width:58px;
+      height:58px;
+      object-fit:contain;
+      filter:drop-shadow(0 0 12px rgba(167,235,242,.55)) drop-shadow(0 0 28px rgba(84,172,191,.28));
+    }
+    .sidebar-brand h1{
+      margin:0;
+      font-size:22px;
+      line-height:1;
+      font-weight:900;
+      letter-spacing:0;
+    }
+    .sidebar-brand p{
+      margin:6px 0 0;
+      color:var(--ice);
+      font-size:11px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .sidebar-nav{
+      display:grid;
+      gap:8px;
+    }
+    .nav-item{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-height:46px;
+      padding:10px 12px;
+      border:1px solid transparent;
+      border-radius:10px;
+      color:rgba(238,252,255,.76);
+      text-decoration:none;
+      font-size:14px;
+      font-weight:700;
+      transition:background .2s ease,border-color .2s ease,color .2s ease,transform .2s ease;
+    }
+    .nav-item:hover,
+    .nav-item.active{
+      color:var(--text);
+      border-color:rgba(167,235,242,.22);
+      background:rgba(84,172,191,.11);
+      transform:translateX(2px);
+    }
+    .nav-icon{
+      width:30px;
+      height:30px;
+      display:grid;
+      place-items:center;
+      border:1px solid rgba(167,235,242,.2);
+      border-radius:8px;
+      color:var(--ice);
+      background:rgba(84,172,191,.12);
+    }
+    .main-area{
+      min-width:0;
+      padding:26px clamp(20px,4vw,54px) 42px;
+    }
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:12px;
+      margin-bottom:26px;
+    }
+    .user-summary{
+      min-width:0;
+      text-align:right;
+    }
+    .user-summary span{
+      display:block;
+      color:rgba(238,252,255,.58);
+      font-size:12px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .user-summary strong{
+      display:block;
+      max-width:220px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      font-size:15px;
+      color:var(--text);
+    }
+    .role-badge,
+    .maintenance-toggle,
+    .logout-btn{
+      min-height:38px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.04em;
+    }
+    .role-badge{
+      padding:8px 12px;
+      border:1px solid rgba(167,235,242,.22);
+      color:var(--ice);
+      background:rgba(84,172,191,.12);
+      text-transform:uppercase;
+    }
+    .maintenance-toggle{
+      min-width:54px;
+      padding:8px 13px;
+      border:1px solid rgba(167,235,242,.22);
+      background:rgba(229,231,235,.92);
+      color:#111827;
+      cursor:pointer;
+      transition:transform .2s ease,box-shadow .2s ease;
+    }
+    .logout-btn{
+      margin-left:0;
+      padding:8px 14px;
+      border:1px solid rgba(255,255,255,.08);
+      color:#fff;
+      background:linear-gradient(135deg,rgba(239,68,68,.95),rgba(185,28,28,.95));
+      box-shadow:0 12px 28px rgba(185,28,28,.22);
+      cursor:pointer;
+      transition:transform .2s ease,box-shadow .2s ease,filter .2s ease;
+    }
+    .maintenance-toggle:hover,
+    .logout-btn:hover{
+      transform:translateY(-1px);
+      box-shadow:0 16px 34px rgba(84,172,191,.18);
+    }
+    .logout-btn:hover{
+      filter:saturate(108%);
+      background:linear-gradient(135deg,rgba(248,113,113,.98),rgba(220,38,38,.98));
+    }
+    .hero{
+      position:relative;
+      overflow:hidden;
+      margin-bottom:28px;
+      padding:34px;
+      border:1px solid rgba(167,235,242,.18);
+      border-radius:22px;
+      background:
+        linear-gradient(135deg,rgba(255,255,255,.11),rgba(255,255,255,.035) 42%,rgba(84,172,191,.05)),
+        var(--glass);
+      box-shadow:
+        0 34px 95px rgba(0,0,0,.38),
+        inset 0 1px 0 rgba(255,255,255,.13);
+      backdrop-filter:blur(18px) saturate(128%);
+      -webkit-backdrop-filter:blur(18px) saturate(128%);
+    }
+    .hero::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:
+        radial-gradient(ellipse at 76% 24%,rgba(84,172,191,.3),transparent 32%),
+        radial-gradient(ellipse at 80% 54%,rgba(167,235,242,.13),transparent 42%);
+      opacity:.9;
+    }
+    .hero::after{
+      content:"";
+      position:absolute;
+      right:-6%;
+      top:-22%;
+      width:min(520px,55vw);
+      aspect-ratio:1.8;
+      pointer-events:none;
+      opacity:.32;
+      background:
+        radial-gradient(circle at 18% 44%,rgba(167,235,242,.95) 0 2px,transparent 3px),
+        radial-gradient(circle at 34% 30%,rgba(167,235,242,.85) 0 1.5px,transparent 2.5px),
+        radial-gradient(circle at 50% 52%,rgba(167,235,242,.8) 0 2px,transparent 3px),
+        radial-gradient(circle at 67% 38%,rgba(167,235,242,.7) 0 1.5px,transparent 2.5px),
+        radial-gradient(circle at 82% 57%,rgba(167,235,242,.82) 0 2px,transparent 3px),
+        linear-gradient(15deg,transparent 48%,rgba(167,235,242,.2) 49%,transparent 50%),
+        linear-gradient(-10deg,transparent 52%,rgba(167,235,242,.15) 53%,transparent 54%);
+      filter:drop-shadow(0 0 18px rgba(84,172,191,.8));
+    }
+    .hero-content{
+      position:relative;
+      z-index:1;
+      max-width:680px;
+    }
+    .eyebrow{
+      margin:0 0 10px;
+      color:var(--ice);
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+    }
+    .hero h2{
+      margin:0;
+      font-size:clamp(36px,5vw,64px);
+      line-height:.95;
+      font-weight:950;
+      letter-spacing:0;
+    }
+    .hero p:last-child{
+      max-width:540px;
+      margin:18px 0 0;
+      color:var(--muted);
+      font-size:16px;
+      line-height:1.7;
+    }
+    .sections{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:18px;
+      margin:0;
+    }
+    .section-card{
+      position:relative;
+      overflow:hidden;
+      min-height:236px;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      padding:24px;
+      border:1px solid rgba(167,235,242,.2);
+      border-radius:18px;
+      color:var(--text);
+      text-align:left;
+      background:
+        linear-gradient(145deg,rgba(255,255,255,.1),rgba(255,255,255,.035) 46%,rgba(84,172,191,.055)),
+        var(--glass-strong);
+      box-shadow:
+        0 22px 70px rgba(0,0,0,.28),
+        inset 0 1px 0 rgba(255,255,255,.12);
+      cursor:pointer;
+      transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease,background .22s ease;
+      isolation:isolate;
+    }
+    .section-card::before{
+      content:"";
+      position:absolute;
+      inset:-40% -20% auto auto;
+      width:210px;
+      height:210px;
+      z-index:-1;
+      border-radius:50%;
+      background:radial-gradient(circle,rgba(84,172,191,.18),transparent 64%);
+      filter:blur(10px);
+    }
+    .section-card:hover{
+      transform:translateY(-4px);
+      border-color:rgba(167,235,242,.42);
+      box-shadow:
+        0 28px 80px rgba(0,0,0,.34),
+        0 0 34px rgba(84,172,191,.12),
+        inset 0 1px 0 rgba(255,255,255,.14);
+    }
+    .card-icon{
+      width:46px;
+      height:46px;
+      display:grid;
+      place-items:center;
+      margin-bottom:18px;
+      border:1px solid rgba(167,235,242,.3);
+      border-radius:12px;
+      color:var(--ice);
+      background:rgba(84,172,191,.14);
+      box-shadow:0 0 24px rgba(84,172,191,.14);
+    }
+    .section-card h2{
+      position:relative;
+      z-index:1;
+      margin:0;
+      color:var(--text);
+      font-size:22px;
+      line-height:1.2;
+      font-weight:900;
+    }
+    .section-card p{
+      position:relative;
+      z-index:1;
+      max-width:520px;
+      margin:12px 0 24px;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.65;
+    }
+    .card-action{
+      position:relative;
+      z-index:1;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      margin-top:auto;
+      color:var(--ice);
+      font-size:13px;
+      font-weight:900;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+    .ghost-icon{
+      position:absolute;
+      right:22px;
+      bottom:16px;
+      z-index:0;
+      color:rgba(167,235,242,.08);
+      transform:scale(3.4);
+      transform-origin:right bottom;
+      pointer-events:none;
+    }
+    .quote{
+      display:none;
+    }
+    .container{
+      max-width:none;
+      margin:0;
+      padding:0;
+    }
+    @media (max-width:980px){
+      .dashboard-shell{
+        grid-template-columns:1fr;
+      }
+      .sidebar{
+        position:relative;
+        min-height:auto;
+        padding:18px 20px;
+        border-right:0;
+        border-bottom:1px solid rgba(167,235,242,.16);
+      }
+      .sidebar-brand{
+        margin-bottom:16px;
+      }
+      .sidebar-nav{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+      }
+      .nav-item.active{
+        grid-column:1 / -1;
+      }
+      .main-area{
+        padding:20px 20px 34px;
+      }
+      .topbar{
+        justify-content:flex-start;
+        flex-wrap:wrap;
+      }
+      .user-summary{
+        text-align:left;
+        margin-right:auto;
+      }
+    }
+    @media (max-width:760px){
+      .sections{
+        grid-template-columns:1fr;
+      }
+      .hero{
+        padding:26px 20px;
+      }
+      .section-card{
+        min-height:220px;
+        padding:22px 20px;
+      }
+    }
+    @media (max-width:560px){
+      .sidebar-nav{
+        grid-template-columns:1fr;
+      }
+      .topbar{
+        align-items:stretch;
+      }
+      .user-summary{
+        width:100%;
+      }
+      .role-badge,
+      .maintenance-toggle,
+      .logout-btn{
+        flex:1 1 auto;
+      }
+      .hero h2{
+        font-size:34px;
+      }
+      .ghost-icon{
+        opacity:.65;
+      }
+    }
+  </style>
   <script>
     const MAINTENANCE_ADMIN = "Anati";
     const MAINTENANCE_ENDPOINT = "/.netlify/functions/maintenance";
@@ -59,58 +517,182 @@
     }
   </script>
 
-  <header class="navbar" role="banner">
-    <div class="brand" aria-hidden="false">
-      <div class="logo" title="Cloud Crowd" onclick="window.location.href='dashboard.html'" style="cursor:pointer;">CC</div>
-      <div>
-        <h1>Cloud Crowd</h1>
-        <p>Service Management Platform</p>
-      </div>
-    </div>
+  <div class="dashboard-shell">
+    <aside class="sidebar" aria-label="Dashboard navigation">
+      <a class="sidebar-brand" href="dashboard.html" aria-label="Cloud Crowd dashboard">
+        <img src="logo.png" alt="Cloud Crowd logo" class="sidebar-logo">
+        <div>
+          <h1>Cloud Crowd</h1>
+          <p>Operations Hub</p>
+        </div>
+      </a>
+
+      <nav class="sidebar-nav">
+        <a class="nav-item active" href="dashboard.html" aria-current="page">
+          <span class="nav-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M4 13h7V4H4v9Zm9 7h7V4h-7v16ZM4 20h7v-5H4v5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          Dashboard
+        </a>
+        <a class="nav-item" href="cctv.html">
+          <span class="nav-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M4 7h11a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H4V7Z" stroke="currentColor" stroke-width="1.7"/>
+              <path d="m18 11 3-2v6l-3-2" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          CCTV Operator Observations
+        </a>
+        <a class="nav-item" href="ce.html">
+          <span class="nav-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M12 14c3.3 0 6-2.2 6-5s-2.7-5-6-5-6 2.2-6 5 2.7 5 6 5Z" stroke="currentColor" stroke-width="1.7"/>
+              <path d="M8.5 13.3 6 18l5-3.1" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          Customer Experience
+        </a>
+        <a class="nav-item" href="free-orders.html">
+          <span class="nav-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M6 8h12l-1 12H7L6 8Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+              <path d="M9 8a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.7"/>
+            </svg>
+          </span>
+          Complimentary Orders
+        </a>
+        <a class="nav-item" href="complaints.html">
+          <span class="nav-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M6 4h12v16H6V4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+              <path d="M9 8h6M9 12h6M9 16h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            </svg>
+          </span>
+          Daily Complaints
+        </a>
+      </nav>
+    </aside>
 
     <!-- زر اللوج آوت -->
-    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
-      <button id="maintenance-toggle-btn" class="logout-btn" style="display:none;margin-left:0;min-width:44px;padding:6px 12px;border-radius:999px;background:#e5e7eb;color:#111827;font-size:12px;line-height:1;" onclick="toggleMaintenanceMode()">OFF</button>
-      <button class="logout-btn" style="margin-left:0;" onclick="logout()">Log out</button>
-    </div>
+    <main class="main-area" id="main-content">
+      <header class="topbar" role="banner">
+        <div class="user-summary">
+          <span>Welcome back</span>
+          <strong id="dashboard-user-name">Team Member</strong>
+        </div>
+        <span class="role-badge" id="dashboard-role-badge">Operator</span>
+        <button id="maintenance-toggle-btn" class="maintenance-toggle" style="display:none;" onclick="toggleMaintenanceMode()">OFF</button>
+        <button class="logout-btn" onclick="logout()">Log out</button>
+      </header>
 
-    <!-- centered company logo (clickable) -->
-    <img src="logo.png" alt="Company Logo" class="nav-center-logo" onclick="window.location.href='dashboard.html'">
-  </header>
+      <section class="hero" aria-labelledby="dashboard-title">
+        <div class="hero-content">
+          <p class="eyebrow">Service Management Platform</p>
+          <h2 id="dashboard-title">Operations Dashboard</h2>
+          <p>Monitor service workflows, document operational cases, and move quickly into the sections your team uses every day.</p>
+        </div>
+      </section>
 
-  <div class="quote">
-    "A great service starts with clear communication and attention to detail"
-  </div>
-
-  <div class="container" id="main-content">
-    <div class="sections" id="sections">
-      <div class="section-card" data-section="cctv" onclick="window.location.href='cctv.html'">
-        <h2>CCTV Operator Observations</h2>
-        <p>Tracking CCTV operator notes and documenting any observed violations to ensure improved security and discipline</p>
+      <div class="container">
+        <div class="sections" id="sections">
+          <div class="section-card" data-section="cctv" onclick="window.location.href='cctv.html'" role="link" tabindex="0" aria-label="Open CCTV Operator Observations">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M4 7h11a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H4V7Z" stroke="currentColor" stroke-width="1.7"/>
+                <path d="m18 11 3-2v6l-3-2" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <h2>CCTV Operator Observations</h2>
+            <p>Track CCTV operator notes and document observed violations to support stronger security and discipline.</p>
+            <span class="card-action">Open Section <span aria-hidden="true">&rarr;</span></span>
+            <span class="ghost-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M4 7h11a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H4V7Z" stroke="currentColor" stroke-width="1.7"/>
+                <path d="m18 11 3-2v6l-3-2" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </div>
+          <div class="section-card" data-section="ce" onclick="window.location.href='ce.html'" role="link" tabindex="0" aria-label="Open Customer Experience">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M12 14c3.3 0 6-2.2 6-5s-2.7-5-6-5-6 2.2-6 5 2.7 5 6 5Z" stroke="currentColor" stroke-width="1.7"/>
+                <path d="M8.5 13.3 6 18l5-3.1" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <h2>Customer Experience</h2>
+            <p>Collect customer feedback through calls and record complaints or comments that require follow-up.</p>
+            <span class="card-action">Open Section <span aria-hidden="true">&rarr;</span></span>
+            <span class="ghost-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M12 14c3.3 0 6-2.2 6-5s-2.7-5-6-5-6 2.2-6 5 2.7 5 6 5Z" stroke="currentColor" stroke-width="1.7"/>
+                <path d="M8.5 13.3 6 18l5-3.1" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </div>
+          <div class="section-card" data-section="free-orders" onclick="window.location.href='free-orders.html'" role="link" tabindex="0" aria-label="Open Complimentary Orders">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M6 8h12l-1 12H7L6 8Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                <path d="M9 8a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.7"/>
+              </svg>
+            </span>
+            <h2>Complimentary Orders</h2>
+            <p>Record order and customer details for discounts or compensations, including approval details.</p>
+            <span class="card-action">Open Section <span aria-hidden="true">&rarr;</span></span>
+            <span class="ghost-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M6 8h12l-1 12H7L6 8Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                <path d="M9 8a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.7"/>
+              </svg>
+            </span>
+          </div>
+          <div class="section-card" data-section="complaints" onclick="window.location.href='complaints.html'" role="link" tabindex="0" aria-label="Open Daily Complaints">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M6 4h12v16H6V4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                <path d="M9 8h6M9 12h6M9 16h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <h2>Daily Complaints</h2>
+            <p>Document all complaints received by the call center and keep daily operational follow-up visible.</p>
+            <span class="card-action">Open Section <span aria-hidden="true">&rarr;</span></span>
+            <span class="ghost-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M6 4h12v16H6V4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                <path d="M9 8h6M9 12h6M9 16h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+              </svg>
+            </span>
+          </div>
+        </div>
       </div>
-      <div class="section-card" data-section="ce" onclick="window.location.href='ce.html'">
-        <h2>Customer Experience</h2>
-        <p>Collecting customer feedback through random calls and recording any complaints or comments that require follow-up</p>
-      </div>
-      <div class="section-card" data-section="free-orders" onclick="window.location.href='free-orders.html'">
-        <h2>Complimentary</h2>
-        <p>Recording order and customer details for any discounts or compensations given due to issues, including who approved them</p>
-      </div>
-      <div class="section-card" data-section="complaints" onclick="window.location.href='complaints.html'">
-        <h2>Daily Complaints</h2>
-        <p>Documenting all complaints received by the call center on a daily basis</p>
-      </div>
-      <!-- TEMPORARILY DISABLED - Thyme Table Plates -->
-      <div class="section-card" data-section="time-table" onclick="window.location.href='time-table.html'" style="display:none;">
-        <h2>Thyme Table Plates</h2>
-        <p>Recording customer details for those who have borrowed plates from us, including their contact information</p>
-      </div>
-    </div>
+    </main>
   </div>
 
   <!-- سكربت اللوج آوت -->
   <script>
     let latestMaintenanceState = false;
+
+    function hydrateDashboardHeader() {
+      const userName = document.getElementById('dashboard-user-name');
+      const roleBadge = document.getElementById('dashboard-role-badge');
+      const currentUser = localStorage.getItem('cc_user') || 'Team Member';
+      const currentRole = localStorage.getItem('cc_role') || 'operator';
+
+      if (userName) userName.textContent = currentUser;
+      if (roleBadge) roleBadge.textContent = currentRole;
+    }
+
+    function enableDashboardCardKeyboardNavigation() {
+      document.querySelectorAll('.section-card[onclick]').forEach((card) => {
+        card.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          card.click();
+        });
+      });
+    }
 
     async function updateMaintenanceToggleButton() {
       const button = document.getElementById('maintenance-toggle-btn');
@@ -175,6 +757,8 @@
       window.location.href = 'login.html';
     }
 
+    hydrateDashboardHeader();
+    enableDashboardCardKeyboardNavigation();
     updateMaintenanceToggleButton();
     setInterval(updateMaintenanceToggleButton, 3000);
   </script>
