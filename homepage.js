@@ -5,10 +5,20 @@
     const successEl = document.getElementById("success-message");
     const form = document.querySelector(".contact-form");
     const heroVideo = document.querySelector(".hero-video");
+    let headerTicking = false;
 
     function setHeaderState() {
         if (!header) return;
-        header.classList.toggle("is-scrolled", window.scrollY > 18);
+        header.classList.toggle("is-hidden", window.scrollY > 150);
+    }
+
+    function requestHeaderState() {
+        if (headerTicking) return;
+        headerTicking = true;
+        window.requestAnimationFrame(function () {
+            setHeaderState();
+            headerTicking = false;
+        });
     }
 
     function closeMenu() {
@@ -19,7 +29,7 @@
     }
 
     setHeaderState();
-    window.addEventListener("scroll", setHeaderState, { passive: true });
+    window.addEventListener("scroll", requestHeaderState, { passive: true });
 
     if (menuToggle && navPanel) {
         menuToggle.addEventListener("click", function () {

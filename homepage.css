@@ -72,14 +72,16 @@ textarea {
     right: 0;
     z-index: 100;
     padding: 8px 0;
-    transition: padding 220ms ease, background 220ms ease, box-shadow 220ms ease;
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 220ms ease, transform 220ms ease;
+    pointer-events: auto;
 }
 
-.site-header.is-scrolled {
-    padding: 6px 0;
-    background: rgba(1, 12, 30, 0.42);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
-    backdrop-filter: blur(14px);
+.site-header.is-hidden {
+    opacity: 0;
+    transform: translateY(-18px);
+    pointer-events: none;
 }
 
 .navbar {
