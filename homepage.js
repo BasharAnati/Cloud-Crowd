@@ -4,6 +4,7 @@
     const navPanel = document.querySelector("[data-nav-panel]");
     const successEl = document.getElementById("success-message");
     const form = document.querySelector(".contact-form");
+    const heroVideo = document.querySelector(".hero-video");
 
     function setHeaderState() {
         if (!header) return;
@@ -32,6 +33,13 @@
             if (target instanceof HTMLAnchorElement) {
                 closeMenu();
             }
+        });
+    }
+
+    if (heroVideo instanceof HTMLVideoElement) {
+        heroVideo.loop = false;
+        heroVideo.addEventListener("ended", function () {
+            heroVideo.pause();
         });
     }
 
