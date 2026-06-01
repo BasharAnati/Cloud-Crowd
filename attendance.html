@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <title>Attendance & Shift Tracking - Cloud Crowd</title>
+  <style>
+    :root{
+      --ice:#A7EBF2;
+      --aqua:#54ACBF;
+      --steel:#26658C;
+      --deep:#023859;
+      --navy:#011C40;
+      --page:#f5fbfd;
+      --card:#ffffff;
+      --line:#d8eef3;
+      --text:#12324a;
+      --muted:#60798b;
+      --shadow:0 24px 70px rgba(2,56,89,.12);
+    }
+    *{box-sizing:border-box}
+    html,body{width:100%;min-height:100%;overflow-x:hidden}
+    body{
+      min-height:100vh;
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:
+        linear-gradient(135deg,rgba(167,235,242,.55),transparent 30%),
+        linear-gradient(225deg,rgba(84,172,191,.18),transparent 34%),
+        var(--page);
+      line-height:1.5;
+    }
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    a{color:inherit;text-decoration:none}
+    .attendance-shell{
+      min-height:100vh;
+      display:grid;
+      grid-template-columns:280px minmax(0,1fr);
+    }
+    .sidebar{
+      position:sticky;
+      top:0;
+      min-height:100vh;
+      padding:28px 22px;
+      border-right:1px solid var(--line);
+      background:rgba(255,255,255,.82);
+      box-shadow:18px 0 60px rgba(2,56,89,.08);
+      backdrop-filter:blur(16px) saturate(130%);
+      -webkit-backdrop-filter:blur(16px) saturate(130%);
+    }
+    .sidebar-brand{
+      display:flex;
+      align-items:center;
+      gap:13px;
+      margin-bottom:34px;
+    }
+    .sidebar-logo{
+      width:58px;
+      height:58px;
+      object-fit:contain;
+      filter:drop-shadow(0 10px 18px rgba(84,172,191,.2));
+    }
+    .sidebar-brand h1{margin:0;font-size:22px;line-height:1;font-weight:900;color:var(--navy)}
+    .sidebar-brand p{margin:6px 0 0;color:var(--steel);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:900}
+    .sidebar-nav{display:grid;gap:8px}
+    .nav-item{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-height:46px;
+      padding:10px 12px;
+      border:1px solid transparent;
+      border-radius:12px;
+      color:#31556d;
+      font-size:14px;
+      font-weight:800;
+      transition:background .2s ease,border-color .2s ease,color .2s ease,transform .2s ease;
+    }
+    .nav-item:hover,
+    .nav-item.active{
+      color:var(--deep);
+      border-color:rgba(84,172,191,.28);
+      background:rgba(167,235,242,.24);
+      transform:translateX(2px);
+    }
+    .nav-icon{
+      width:30px;
+      height:30px;
+      display:grid;
+      place-items:center;
+      border:1px solid rgba(84,172,191,.24);
+      border-radius:9px;
+      color:var(--steel);
+      background:#f0fbfd;
+      flex:0 0 auto;
+    }
+    .main-area{
+      min-width:0;
+      padding:26px clamp(20px,4vw,54px) 44px;
+    }
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom:24px;
+    }
+    .breadcrumb{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      color:var(--steel);
+      font-size:13px;
+      font-weight:900;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+    .user-tools{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:10px;
+      min-width:0;
+    }
+    .user-pill,.role-pill{
+      min-height:38px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      max-width:260px;
+      padding:8px 12px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      color:var(--deep);
+      background:rgba(255,255,255,.82);
+      font-size:12px;
+      font-weight:900;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .logout{
+      min-height:38px;
+      padding:8px 14px;
+      border:0;
+      border-radius:999px;
+      color:#fff;
+      background:linear-gradient(135deg,#ef4444,#b91c1c);
+      box-shadow:0 12px 26px rgba(185,28,28,.18);
+      font-size:12px;
+      font-weight:900;
+    }
+    .hero{
+      position:relative;
+      overflow:hidden;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:24px;
+      margin-bottom:22px;
+      padding:32px;
+      border:1px solid var(--line);
+      border-radius:24px;
+      background:
+        linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,255,255,.84)),
+        var(--card);
+      box-shadow:var(--shadow);
+    }
+    .hero::after{
+      content:"";
+      position:absolute;
+      right:-80px;
+      top:-120px;
+      width:360px;
+      height:360px;
+      border-radius:50%;
+      background:radial-gradient(circle,rgba(167,235,242,.62),rgba(84,172,191,.12) 58%,transparent 68%);
+      pointer-events:none;
+    }
+    .hero-content,
+    .hero-actions{position:relative;z-index:1}
+    .eyebrow{
+      margin:0 0 8px;
+      color:var(--steel);
+      font-size:12px;
+      font-weight:950;
+      letter-spacing:.1em;
+      text-transform:uppercase;
+    }
+    .hero h2{
+      margin:0;
+      color:var(--navy);
+      font-size:clamp(34px,5vw,58px);
+      line-height:1;
+      font-weight:950;
+      letter-spacing:0;
+    }
+    .hero p:last-child{
+      max-width:720px;
+      margin:16px 0 0;
+      color:var(--muted);
+      font-size:16px;
+      line-height:1.7;
+    }
+    .primary-btn{
+      min-height:46px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      padding:12px 18px;
+      border:0;
+      border-radius:12px;
+      color:#fff;
+      background:linear-gradient(135deg,var(--steel),var(--deep));
+      box-shadow:0 16px 34px rgba(38,101,140,.22);
+      font-weight:900;
+      white-space:nowrap;
+      transition:transform .2s ease,box-shadow .2s ease;
+    }
+    .primary-btn:hover{
+      transform:translateY(-1px);
+      box-shadow:0 20px 40px rgba(38,101,140,.28);
+    }
+    .content-card{
+      border:1px solid var(--line);
+      border-radius:24px;
+      background:rgba(255,255,255,.94);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .records-card{
+      margin-top:24px;
+    }
+    .card-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding:24px 28px;
+      border-bottom:1px solid var(--line);
+      background:linear-gradient(135deg,#fff,rgba(167,235,242,.18));
+    }
+    .card-header h3{
+      margin:0;
+      color:var(--navy);
+      font-size:22px;
+      line-height:1.2;
+      font-weight:950;
+    }
+    .card-header p{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size:14px;
+    }
+    .status-chip{
+      display:inline-flex;
+      align-items:center;
+      min-height:34px;
+      padding:7px 12px;
+      border-radius:999px;
+      background:rgba(167,235,242,.32);
+      color:var(--deep);
+      font-size:12px;
+      font-weight:950;
+      white-space:nowrap;
+    }
+    .attendance-form{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:18px;
+      padding:28px;
+    }
+    .field{
+      display:grid;
+      gap:8px;
+      min-width:0;
+    }
+    .field.full{grid-column:1 / -1}
+    .field label{
+      color:var(--deep);
+      font-size:13px;
+      font-weight:900;
+    }
+    .field input,
+    .field select,
+    .field textarea{
+      width:100%;
+      min-height:48px;
+      border:1px solid #cfe8ee;
+      border-radius:12px;
+      background:#fbfeff;
+      color:var(--text);
+      padding:12px 14px;
+      outline:none;
+      transition:border-color .2s ease,box-shadow .2s ease,background .2s ease;
+    }
+    .field textarea{
+      min-height:112px;
+      resize:vertical;
+    }
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus{
+      border-color:var(--aqua);
+      background:#fff;
+      box-shadow:0 0 0 4px rgba(84,172,191,.16);
+    }
+    .shift-times{
+      grid-column:1 / -1;
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:18px;
+      padding:18px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:linear-gradient(135deg,rgba(167,235,242,.16),rgba(255,255,255,.78));
+    }
+    .shift-times-title{
+      grid-column:1 / -1;
+      margin:0;
+      color:var(--navy);
+      font-size:15px;
+      font-weight:950;
+    }
+    .hidden-field{display:none}
+    .form-actions{
+      grid-column:1 / -1;
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:12px;
+      padding-top:4px;
+    }
+    .secondary-btn{
+      min-height:46px;
+      padding:12px 18px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      color:var(--deep);
+      background:#fff;
+      font-weight:900;
+    }
+    .table-tools{
+      display:grid;
+      grid-template-columns:minmax(220px,1fr) minmax(180px,240px);
+      gap:14px;
+      padding:22px 28px 0;
+    }
+    .table-wrap{
+      width:100%;
+      overflow-x:auto;
+      padding:22px 28px 28px;
+    }
+    .records-table{
+      width:100%;
+      min-width:980px;
+      border-collapse:separate;
+      border-spacing:0;
+      color:var(--text);
+    }
+    .records-table th,
+    .records-table td{
+      padding:14px 13px;
+      border-bottom:1px solid var(--line);
+      text-align:left;
+      vertical-align:top;
+      font-size:13px;
+    }
+    .records-table th{
+      color:var(--deep);
+      background:rgba(167,235,242,.18);
+      font-size:12px;
+      font-weight:950;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      white-space:nowrap;
+    }
+    .records-table th:first-child{border-top-left-radius:14px}
+    .records-table th:last-child{border-top-right-radius:14px}
+    .records-table tbody tr:hover{
+      background:rgba(167,235,242,.12);
+    }
+    .status-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:28px;
+      padding:5px 10px;
+      border-radius:999px;
+      color:#fff;
+      font-size:12px;
+      font-weight:950;
+      white-space:nowrap;
+    }
+    .status-on-time{background:#16a34a}
+    .status-left-early{background:#f59e0b}
+    .status-late-logout{background:#dc2626}
+    .empty-state{
+      padding:34px 18px;
+      text-align:center;
+      color:var(--muted);
+      border:1px dashed var(--line);
+      border-radius:16px;
+      background:rgba(167,235,242,.08);
+    }
+    .note-cell{
+      max-width:280px;
+      white-space:normal;
+    }
+    @media (max-width:980px){
+      .attendance-shell{grid-template-columns:1fr}
+      .sidebar{
+        position:relative;
+        min-height:auto;
+        padding:20px;
+      }
+      .sidebar-brand{margin-bottom:16px}
+      .sidebar-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .nav-item.active{grid-column:1 / -1}
+    }
+    @media (max-width:720px){
+      .main-area{padding:20px 16px 34px}
+      .topbar,
+      .hero,
+      .card-header{
+        flex-direction:column;
+        align-items:stretch;
+      }
+      .user-tools{justify-content:flex-start;flex-wrap:wrap}
+      .attendance-form,
+      .shift-times,
+      .table-tools{grid-template-columns:1fr}
+      .hero{padding:26px 22px}
+      .card-header,
+      .attendance-form,
+      .table-tools,
+      .table-wrap{padding-left:22px;padding-right:22px}
+    }
+    @media (max-width:520px){
+      .sidebar-nav{grid-template-columns:1fr}
+      .hero h2{font-size:34px}
+      .primary-btn,
+      .secondary-btn{width:100%}
+      .form-actions{flex-direction:column-reverse}
+    }
+  </style>
+  <script>
+    if (localStorage.getItem('cc_auth') !== '1' || !localStorage.getItem('cc_token') || !localStorage.getItem('cc_role')) {
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html';
+    }
+  </script>
+</head>
+<body>
+  <div class="attendance-shell">
+    <aside class="sidebar" aria-label="Attendance navigation">
+      <a class="sidebar-brand" href="dashboard.html" aria-label="Cloud Crowd dashboard">
+        <img src="logo.png" alt="Cloud Crowd logo" class="sidebar-logo">
+        <div>
+          <h1>Cloud Crowd</h1>
+          <p>Operations Hub</p>
+        </div>
+      </a>
+
+      <nav class="sidebar-nav">
+        <a class="nav-item" href="dashboard.html">
+          <span class="nav-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M4 13h7V4H4v9Zm9 7h7V4h-7v16ZM4 20h7v-5H4v5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          Dashboard
+        </a>
+        <a class="nav-item active" href="attendance.html" aria-current="page">
+          <span class="nav-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M8 3v3M16 3v3M4.5 9.5h15M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="m8 15 2.2 2.2L16 11.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          Attendance & Shift Tracking
+        </a>
+      </nav>
+    </aside>
+
+    <main class="main-area" id="main-content">
+      <header class="topbar" role="banner">
+        <a class="breadcrumb" href="dashboard.html">
+          <span aria-hidden="true">&larr;</span>
+          Dashboard
+        </a>
+        <div class="user-tools">
+          <span class="user-pill" id="attendance-user-name">Team Member</span>
+          <span class="role-pill" id="attendance-role-badge">Operator</span>
+          <button class="logout" type="button" onclick="logout()">Log out</button>
+        </div>
+      </header>
+
+      <section class="hero" aria-labelledby="attendance-title">
+        <div class="hero-content">
+          <p class="eyebrow">HR Operations</p>
+          <h2 id="attendance-title">Attendance & Shift Tracking</h2>
+          <p>Track employee attendance, shift schedules, and extra hours.</p>
+        </div>
+        <div class="hero-actions">
+          <button class="primary-btn" type="button" id="add-record-btn">+ Add New Record</button>
+        </div>
+      </section>
+
+      <section class="content-card" aria-labelledby="record-form-title">
+        <div class="card-header">
+          <div>
+            <h3 id="record-form-title">New Attendance Record</h3>
+            <p>Fill in shift status, timing, and notes for one agent.</p>
+          </div>
+          <span class="status-chip">Manual Entry</span>
+        </div>
+
+        <form class="attendance-form" id="attendance-form">
+          <div class="field">
+            <label for="agent">Agent</label>
+            <select id="agent" name="agent" required>
+              <option value="">Select agent</option>
+              <option>Ruba Kubari</option>
+              <option>Tala Alotebe</option>
+              <option>Vicktoria Khader</option>
+              <option>Tuleen Diab</option>
+              <option>Anmar dar omar</option>
+              <option>Haneen Nidal</option>
+              <option>Amani Jaber</option>
+              <option>Jana Al-Balawi</option>
+              <option>Mera Al Hasany</option>
+              <option>Yara Ayoub</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="record-date">Date</label>
+            <input id="record-date" name="date" type="date" required>
+          </div>
+
+          <div class="field">
+            <label for="login-status">Login Status</label>
+            <select id="login-status" name="loginStatus">
+              <option>On Time</option>
+              <option>Left Early</option>
+              <option>Late Logout</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="logout-status">Logout Status</label>
+            <select id="logout-status" name="logoutStatus">
+              <option>On Time</option>
+              <option>Left Early</option>
+              <option>Late Logout</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="extra-time">Extra Time</label>
+            <select id="extra-time" name="extraTime">
+              <option>No</option>
+              <option>Yes</option>
+            </select>
+          </div>
+
+          <div class="field hidden-field" id="extra-duration-field">
+            <label for="extra-duration">Extra Time Duration</label>
+            <input id="extra-duration" name="extraDuration" type="text" placeholder="00:15, 00:30, 01:00">
+          </div>
+
+          <div class="field">
+            <label for="note">Note</label>
+            <select id="note" name="note">
+              <option>Entered shift out of schedule</option>
+              <option>Didn't enter shift at all</option>
+              <option>Technical issue</option>
+              <option>Approved by manager</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="custom-note">Custom Note</label>
+            <textarea id="custom-note" name="customNote" placeholder="Add any extra context"></textarea>
+          </div>
+
+          <div class="shift-times" aria-labelledby="shift-times-title">
+            <h4 class="shift-times-title" id="shift-times-title">Supposed Shift Times</h4>
+            <div class="field">
+              <label for="from-time">From Time</label>
+              <input id="from-time" name="fromTime" type="time">
+            </div>
+            <div class="field">
+              <label for="to-time">To Time</label>
+              <input id="to-time" name="toTime" type="time">
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="secondary-btn" type="reset">Clear</button>
+            <button class="primary-btn" type="submit">Save Record</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="content-card records-card" aria-labelledby="records-title">
+        <div class="card-header">
+          <div>
+            <h3 id="records-title">Attendance Records</h3>
+            <p>Search, filter, and review saved attendance entries.</p>
+          </div>
+          <span class="status-chip" id="records-count">0 Records</span>
+        </div>
+
+        <div class="table-tools">
+          <div class="field">
+            <label for="agent-search">Search by agent</label>
+            <input id="agent-search" type="search" placeholder="Type an agent name">
+          </div>
+          <div class="field">
+            <label for="date-filter">Filter by date</label>
+            <input id="date-filter" type="date">
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="records-table" aria-describedby="records-title">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Agent</th>
+                <th>Supposed Shift Time</th>
+                <th>Login Status</th>
+                <th>Logout Status</th>
+                <th>Extra Time</th>
+                <th>Extra Time Duration</th>
+                <th>Note</th>
+                <th>Filled By</th>
+              </tr>
+            </thead>
+            <tbody id="records-table-body"></tbody>
+          </table>
+          <div class="empty-state" id="records-empty">No attendance records yet.</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const ATTENDANCE_STORAGE_KEY = 'cc_attendance_records_v1';
+
+    function hydrateAttendanceHeader() {
+      const userName = document.getElementById('attendance-user-name');
+      const roleBadge = document.getElementById('attendance-role-badge');
+      if (userName) userName.textContent = localStorage.getItem('cc_user') || 'Team Member';
+      if (roleBadge) roleBadge.textContent = localStorage.getItem('cc_role') || 'Operator';
+    }
+
+    function setTodayDate() {
+      const dateInput = document.getElementById('record-date');
+      if (!dateInput || dateInput.value) return;
+      dateInput.value = new Date().toISOString().slice(0, 10);
+    }
+
+    function toggleExtraDuration() {
+      const extraTime = document.getElementById('extra-time');
+      const durationField = document.getElementById('extra-duration-field');
+      const durationInput = document.getElementById('extra-duration');
+      const isVisible = extraTime && extraTime.value === 'Yes';
+      if (durationField) durationField.classList.toggle('hidden-field', !isVisible);
+      if (durationInput && !isVisible) durationInput.value = '';
+    }
+
+    function getAttendanceRecords() {
+      try {
+        const records = JSON.parse(localStorage.getItem(ATTENDANCE_STORAGE_KEY) || '[]');
+        return Array.isArray(records) ? records : [];
+      } catch (err) {
+        console.warn('Attendance records could not be read.', err);
+        return [];
+      }
+    }
+
+    function saveAttendanceRecords(records) {
+      localStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(records));
+    }
+
+    function getStatusClass(status) {
+      if (status === 'On Time') return 'status-on-time';
+      if (status === 'Left Early') return 'status-left-early';
+      if (status === 'Late Logout') return 'status-late-logout';
+      return '';
+    }
+
+    function createCell(text, className) {
+      const cell = document.createElement('td');
+      cell.textContent = text || '-';
+      if (className) cell.className = className;
+      return cell;
+    }
+
+    function createStatusCell(status) {
+      const cell = document.createElement('td');
+      const badge = document.createElement('span');
+      badge.className = `status-badge ${getStatusClass(status)}`;
+      badge.textContent = status || '-';
+      cell.appendChild(badge);
+      return cell;
+    }
+
+    function formatNote(record) {
+      const parts = [record.note, record.customNote].filter(Boolean);
+      return parts.length ? parts.join(' - ') : '-';
+    }
+
+    function getFilteredAttendanceRecords() {
+      const search = (document.getElementById('agent-search')?.value || '').trim().toLowerCase();
+      const date = document.getElementById('date-filter')?.value || '';
+      return getAttendanceRecords()
+        .filter((record) => !search || record.agent.toLowerCase().includes(search))
+        .filter((record) => !date || record.date === date)
+        .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+    }
+
+    function renderAttendanceRecords() {
+      const tableBody = document.getElementById('records-table-body');
+      const emptyState = document.getElementById('records-empty');
+      const countBadge = document.getElementById('records-count');
+      if (!tableBody || !emptyState || !countBadge) return;
+
+      const records = getFilteredAttendanceRecords();
+      tableBody.textContent = '';
+
+      records.forEach((record) => {
+        const row = document.createElement('tr');
+        row.appendChild(createCell(record.date));
+        row.appendChild(createCell(record.agent));
+        row.appendChild(createCell(`${record.fromTime || '-'} to ${record.toTime || '-'}`));
+        row.appendChild(createStatusCell(record.loginStatus));
+        row.appendChild(createStatusCell(record.logoutStatus));
+        row.appendChild(createCell(record.extraTime));
+        row.appendChild(createCell(record.extraDuration || '-'));
+        row.appendChild(createCell(formatNote(record), 'note-cell'));
+        row.appendChild(createCell(record.filledBy));
+        tableBody.appendChild(row);
+      });
+
+      emptyState.style.display = records.length ? 'none' : 'block';
+      countBadge.textContent = `${records.length} ${records.length === 1 ? 'Record' : 'Records'}`;
+    }
+
+    function buildAttendanceRecord(form) {
+      const formData = new FormData(form);
+      const extraTime = formData.get('extraTime') || 'No';
+      return {
+        id: `attendance-${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        date: formData.get('date') || '',
+        agent: formData.get('agent') || '',
+        loginStatus: formData.get('loginStatus') || 'On Time',
+        logoutStatus: formData.get('logoutStatus') || 'On Time',
+        extraTime,
+        extraDuration: extraTime === 'Yes' ? (formData.get('extraDuration') || '').trim() : '',
+        note: formData.get('note') || '',
+        customNote: (formData.get('customNote') || '').trim(),
+        fromTime: formData.get('fromTime') || '',
+        toTime: formData.get('toTime') || '',
+        filledBy: localStorage.getItem('cc_user') || 'Team Member'
+      };
+    }
+
+    function logout() {
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html';
+    }
+
+    hydrateAttendanceHeader();
+    setTodayDate();
+    toggleExtraDuration();
+    renderAttendanceRecords();
+
+    document.getElementById('extra-time')?.addEventListener('change', toggleExtraDuration);
+    document.getElementById('add-record-btn')?.addEventListener('click', () => {
+      document.getElementById('record-form-title')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById('agent')?.focus({ preventScroll: true });
+    });
+    document.getElementById('attendance-form')?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      if (!form.reportValidity()) return;
+
+      const records = getAttendanceRecords();
+      records.push(buildAttendanceRecord(form));
+      saveAttendanceRecords(records);
+
+      form.reset();
+      setTodayDate();
+      toggleExtraDuration();
+      renderAttendanceRecords();
+      document.getElementById('records-title')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    document.getElementById('attendance-form')?.addEventListener('reset', () => {
+      setTimeout(() => {
+        setTodayDate();
+        toggleExtraDuration();
+      }, 0);
+    });
+    document.getElementById('agent-search')?.addEventListener('input', renderAttendanceRecords);
+    document.getElementById('date-filter')?.addEventListener('change', renderAttendanceRecords);
+  </script>
+  <script src="idle-logout.js"></script>
+</body>
+</html>
