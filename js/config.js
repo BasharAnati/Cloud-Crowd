@@ -1,6 +1,5 @@
 const CREATOR_ALLOW = {
-  all: ['Anati'],
-  'time-table': ['Anati', 'Mai']
+  all: ['Anati']
 };
 
 const DELETER_USERNAME = 'Anati';
@@ -9,23 +8,14 @@ const mainFields = {
   cctv: ['branch', 'staff', 'sections'],
   ce: ['orderNumber', 'customerName', 'branch', 'restaurant'],
   'free-orders': ['customerName', 'orderNumber', 'discountAmount'],
-  complaints: ['customerName', 'branch', 'issueCategory'],
-  'time-table': ['customerName', 'orderNumber', 'phone']
+  complaints: ['customerName', 'branch', 'issueCategory']
 };
 
 const STATUS_COLUMNS = {
   cctv: ['Escalated', 'Under Review', 'Closed'],
   ce: ['Escalated', 'Under Review', 'Pending (Customer Call Required)', 'Closed'],
   'free-orders': ['New', 'Active', 'Taken'],
-  complaints: ['Escalated', 'Under Review', 'Pending (Customer Call Required)', 'Closed'],
-  'time-table': [
-    'No Call Needed',
-    'Pending Call',
-    'No Answer',
-    'Scheduled',
-    'Issue',
-    'Returned'
-  ]
+  complaints: ['Escalated', 'Under Review', 'Pending (Customer Call Required)', 'Closed']
 };
 
 const STATUS_DISPLAY_MAP = {
@@ -79,7 +69,7 @@ const formFields = {
     { label: 'Branch Name', type: 'select', name: 'branch', options: ['Swefieh','Wadi Saqra','Swefieh Village'] },
     { label: 'Restaurant', type: 'select', name: 'restaurant', options: [
       'Very Good Burger','Sager','Happy Tummies','Crunchychkn','Bun Run','Butter Me Up','Bint Halal',
-      'Colors Catering','Heat Burger','Thyme Table',"Evi's",'Chili Charms'
+      'Colors Catering','Heat Burger',"Evi's",'Chili Charms'
     ] },
     { label: 'Order Channel', type: 'select', name: 'channel', options: ['Web','Call Center'] },
     { label: 'Feedback Date', type: 'datetime-local', name: 'feedbackDate' },
@@ -121,7 +111,7 @@ const formFields = {
     { label: 'Branch Name', type: 'select', name: 'branch', options: ['Swefieh','Wadi Saqra','Swefieh Village'] },
     { label: 'Restaurant', type: 'select', name: 'restaurant', options: [
       'Very Good Burger','Sager','Happy Tummies','Crunchychkn','Bun Run','Butter Me Up','Bint Halal',
-      'Colors Catering','Heat Burger','Thyme Table',"Evi's",'Chili Charms'
+      'Colors Catering','Heat Burger',"Evi's",'Chili Charms'
     ] },
     { label: 'Order Channel', type: 'select', name: 'channel', options: ['Circa','Talabat','Careem','Direct Order (From Store)'] },
     { label: 'Issue Category', type: 'select', name: 'issueCategory', options: [
@@ -129,30 +119,15 @@ const formFields = {
     ] },
     { label: 'Case Details', type: 'textarea', name: 'complaintDetails' },
     { label: 'Action Taken', type: 'textarea', name: 'actionTaken' },
-  ],
-  'time-table': [
-    { label: 'Status', type: 'select', name: 'status', options: [
-      'No Call Needed', 'Pending Call', 'No Answer', 'Scheduled', 'Issue', 'Returned'
-    ] },
-    { label: 'Customer Name', type: 'text', name: 'customerName' },
-    { label: 'Phone Number', type: 'text', name: 'phone' },
-    { label: 'Order Number', type: 'text', name: 'orderNumber' },
-    { label: 'Order Date', type: 'datetime-local', name: 'orderDate' },
-    { label: 'Return Date', type: 'datetime-local', name: 'returnDate' },
-    { label: 'Amount to Be Refunded', type: 'text', name: 'amountToBeRefunded' },
-    { label: 'Delivery Fees', type: 'text', name: 'deliveryFees' },
-    { label: 'Plates Quantity', type: 'text', name: 'platesQuantity' },
-    { label: 'Plates Numbers', type: 'text', name: 'platesNumbers' },
-    { label: 'Note', type: 'textarea', name: 'note' }
   ]
 };
 
 const FIELD_LABELS = {
-  dateTime:'Date & Time', creationDate:'Creation Date', orderDate:'Order Date', returnDate:'Return Date',
+  dateTime:'Date & Time', creationDate:'Creation Date', orderDate:'Order Date',
   discountDate:'Discount Date', newOrderNumber:'New Order Number', orderNumber:'Order Number',
   phone:'Phone Number', reviewType:'Review Type', issueCategory:'Issue Category', decisionMaker:'Decision Maker',
-  deductionFrom:'Deduction From', amountToBeRefunded:'Amount to be Refunded', platesQuantity:'Plates Quantity',
-  platesNumbers:'Plates Numbers', caseDescription:'Case Description', customerNotes:'Case Details', actionTaken:'Action Taken'
+  deductionFrom:'Deduction From', caseDescription:'Case Description', customerNotes:'Case Details',
+  actionTaken:'Action Taken'
 };
 
 window.CREATOR_ALLOW = CREATOR_ALLOW;

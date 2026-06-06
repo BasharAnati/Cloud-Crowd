@@ -69,7 +69,6 @@ const SHEET_IDS = {
   ce:            process.env.GOOGLE_SHEET_ID_CUSTOMER_EXPERIENCE,
   complaints:    process.env.GOOGLE_SHEET_ID_DAILY_COMPLAINTS,
   'free-orders': process.env.GOOGLE_SHEET_ID_COMPLIMENTARY,
-  'time-table':  process.env.GOOGLE_SHEET_ID_THYME_TABLE_PLATES,
 };
 
 const SHEET_RANGES = {
@@ -77,7 +76,6 @@ const SHEET_RANGES = {
   ce:            process.env.GOOGLE_SHEET_RANGE_CUSTOMER_EXPERIENCE,
   complaints:    process.env.GOOGLE_SHEET_RANGE_DAILY_COMPLAINTS,
   'free-orders': process.env.GOOGLE_SHEET_RANGE_COMPLIMENTARY,
-  'time-table':  process.env.GOOGLE_SHEET_RANGE_THYME_TABLE_PLATES,
 };
 const KNOWN_SECTIONS = new Set(Object.keys(SHEET_RANGES));
 
@@ -87,8 +85,7 @@ const DEFAULT_SHEET_ID =
   process.env.GOOGLE_SHEET_ID ||
   SHEET_IDS['free-orders'] ||
   SHEET_IDS.ce ||
-  SHEET_IDS.complaints ||
-  SHEET_IDS['time-table'];
+  SHEET_IDS.complaints;
 
 // اختَر Spreadsheet ID حسب السكشن أو اسم التاب/الرينج
 function pickSpreadsheetId({ section, tab, range } = {}) {
@@ -102,7 +99,6 @@ function pickSpreadsheetId({ section, tab, range } = {}) {
   if (/^CircaCustomerExperience/i.test(name)) return SHEET_IDS.ce || DEFAULT_SHEET_ID;
   if (/^DailyComplaints/i.test(name)) return SHEET_IDS.complaints || DEFAULT_SHEET_ID;
   if (/^Complimentary/i.test(name)) return SHEET_IDS['free-orders'] || DEFAULT_SHEET_ID;
-  if (/^ThymeTablePlates/i.test(name)) return SHEET_IDS['time-table'] || DEFAULT_SHEET_ID;
 
   return DEFAULT_SHEET_ID;
 }
@@ -130,7 +126,6 @@ const SECTION_COLS = {
   ce:            { key: 'P', status: 'A', action: 'N' },
   complaints:    { key: 'N', status: 'A', action: 'M' },
   'free-orders': { key: 'M', status: 'A', action: 'L' },
-  'time-table':  { key: 'K', status: 'A', action: 'B' }, // ملاحظة: B = note بدال action
 };
 function getCols(section = 'cctv') { return SECTION_COLS[section] || SECTION_COLS.cctv; }
 
@@ -257,25 +252,6 @@ exports.handler = async (event) => {
         }
         if (newOrderNumber !== null) {
           dataUpdates.push({ range: `${tab}!I${rowIndex}:I${rowIndex}`, values: [[String(newOrderNumber)]] });
-        }
-      }
-
-      if (section === 'time-table') {
-        const note = body.note ?? null; // B
-        const returnDate = body.returnDate ?? null; // F
-        const amountToBeRefunded = body.amountToBeRefunded ?? null; // G
-        const deliveryFees = body.deliveryFees ?? null; // H
-        if (note !== null) {
-          dataUpdates.push({ range: `${tab}!B${rowIndex}:B${rowIndex}`, values: [[String(note)]] });
-        }
-        if (returnDate !== null) {
-          dataUpdates.push({ range: `${tab}!F${rowIndex}:F${rowIndex}`, values: [[String(returnDate)]] });
-        }
-        if (amountToBeRefunded !== null) {
-          dataUpdates.push({ range: `${tab}!G${rowIndex}:G${rowIndex}`, values: [[String(amountToBeRefunded)]] });
-        }
-        if (deliveryFees !== null) {
-          dataUpdates.push({ range: `${tab}!H${rowIndex}:H${rowIndex}`, values: [[String(deliveryFees)]] });
         }
       }
 

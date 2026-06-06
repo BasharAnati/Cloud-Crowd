@@ -23,9 +23,7 @@ function handleAuthFailure(response) {
 }
 
 function canUserCreate(section) {
-  if (CREATOR_ALLOW.all.includes(CURRENT_USER)) return true;
-  if (section === 'time-table' && CREATOR_ALLOW['time-table'].includes(CURRENT_USER)) return true;
-  return false;
+  return CREATOR_ALLOW.all.includes(CURRENT_USER);
 }
 
 function logout() {

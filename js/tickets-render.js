@@ -14,13 +14,7 @@ function bandClassForStatus(status){
     case 'Escalated': return 'band-escalated';
     case 'Resolved': return 'band-resolved';
     case 'Perfect Feedback': return 'band-perfect-feedback';
-    case 'No Call Needed': return 'band-no-call-needed';
-    case 'Pending Call': return 'band-pending-call';
     case 'Pending (Customer Call Required)': return 'band-pending-call';
-    case 'No Answer': return 'band-called-no-answer';
-    case 'Scheduled': return 'band-scheduled-for-delivery';
-    case 'Issue': return 'band-issue-needs-follow-up';
-    case 'Returned': return 'band-returned';
     case 'Closed': return 'band-closed';
     case 'Under Review': return 'band-under-review';
     default: return 'band-uncategorized';
@@ -42,14 +36,6 @@ function statusColor(status){
     // ce/complaints (alias)
     case 'Pending (Customer Call Required)':
     case 'Pending (Call Back)': return '#fd7e14';
-
-    // time-table
-    case 'Pending Call': return '#1b16a3';
-    case 'No Answer': return '#ffd700';
-    case 'Scheduled': return '#001f5b';
-    case 'Issue': return '#ff8c00';
-    case 'Returned': return '#1a9324';
-    case 'No Call Needed': return '#4b4b4b';
 
     // others (brown family)
     case 'Open':

@@ -9,8 +9,7 @@ let tickets = JSON.parse(localStorage.getItem('cloudCrowdTickets')) || {
   cctv: [],
   ce: [],
   'free-orders': [],
-  complaints: [],
-  'time-table': []
+  complaints: []
 };
 
 // المتغيّر الداخلي الحقيقي
@@ -158,26 +157,6 @@ function rowFromTicketFreeOrders(t) {
   ];
 }
 
-// === Time Table ===
-// (مراعاة خريطة السيرفر: status=A, note=B (هي الـaction بالسيرفر), F=returnDate, G=amountToBeRefunded, H=deliveryFees, K=key)
-// A..K = Status, Note, Customer Name, Phone, Order Date, Return Date,
-//        Amount to Be Refunded, Delivery Fees, Plates Quantity, Plates Numbers, Case Number
-function rowFromTicketTimeTable(t) {
-  return [
-    t.status || 'Pending Call',        // A
-    t.note || '',                      // B
-    t.customerName || '',              // C
-    t.phone || '',                     // D
-    t.orderDate || '',                 // E
-    t.returnDate || '',                // F
-    t.amountToBeRefunded || '',        // G
-    t.deliveryFees || '',              // H
-    t.platesQuantity || '',            // I
-    t.platesNumbers || '',             // J
-    (t.caseNumber || t.orderNumber || '') // K  ← المفتاح الظاهر في الموقع كـ Case Number
-  ];
-}
-
 
 async function pushToSheets(section, ticket) {
   if (!section) return;
@@ -190,7 +169,6 @@ async function pushToSheets(section, ticket) {
   else if (section === 'ce') row = rowFromTicketCE(ticket);
   else if (section === 'complaints') row = rowFromTicketComplaints(ticket);
   else if (section === 'free-orders') row = rowFromTicketFreeOrders(ticket);
-  else if (section === 'time-table') row = rowFromTicketTimeTable(ticket);
   else return; // قسم غير معروف
 
   const res = await fetch(SHEETS_ENDPOINT, {
@@ -335,29 +313,6 @@ function ticketFromSheetRowFreeOrders(r = []) {
   };
 }
 
-
-// Time Table
-function ticketFromSheetRowTimeTable(r = []) {
-  const [
-    status, note, customerName, phone, orderDate,
-    returnDate, amountToBeRefunded, deliveryFees,
-    platesQuantity, platesNumbers, caseNumber
-  ] = r; // A..K
-
-  return {
-    status: status || 'Pending Call',       // A
-    note: note || '',                       // B
-    customerName: customerName || '',       // C
-    phone: phone || '',                     // D
-    orderDate: orderDate || '',             // E
-    returnDate: returnDate || '',           // F
-    amountToBeRefunded: amountToBeRefunded || '', // G
-    deliveryFees: deliveryFees || '',       // H
-    platesQuantity: platesQuantity || '',   // I
-    platesNumbers: platesNumbers || '',     // J
-    caseNumber: caseNumber || ''            // K (يُعرض في الدروَّر كـ Case Number)
-  };
-}
 
 
 
@@ -531,8 +486,6 @@ async function hydrateFromSheets(section) {
       pulled = rows.map(ticketFromSheetRowComplaints);
     } else if (section === 'free-orders') {
       pulled = rows.map(ticketFromSheetRowFreeOrders);
-    } else if (section === 'time-table') {
-      pulled = rows.map(ticketFromSheetRowTimeTable);
     }
 
     if (Array.isArray(pulled) && pulled.length > 0) {
@@ -705,7 +658,7 @@ function buildDrawerReadonly(ticket){
 
   // الملاحظات
   if (notesText){
-    const noteTitle = (_currentSection === 'time-table' || notesKeyUsed === 'note') ? 'Note' : 'Case Details';
+    const noteTitle = notesKeyUsed === 'note' ? 'Note' : 'Case Details';
     html += `
       <div class="note-box full-span">
         <div class="note-title">${noteTitle}</div>
@@ -762,14 +715,6 @@ function buildDrawerEditForm(ticket){
   const statusField = formFields[_currentSection].find(f=>f.name==='status');
   const options = statusField ? statusField.options : [];
 
-  // حقل Return Date لقسم Thyme Table Plates فقط
-  const returnDateField = (_currentSection === 'time-table') ? `
-    <div class="form-group">
-      <label>Return Date</label>
-      <input type="date" name="returnDate" value="${escapeHtml((ticket.returnDate||'').split('T')[0])}">
-    </div>
-  ` : '';
-
   // ✅ PDF يظهر فقط في CCTV + فقط للتكتات Escalated / Under Review
   const allowPdf = (_currentSection === 'cctv') && (ticket.status === 'Escalated' || ticket.status === 'Under Review');
 
@@ -790,8 +735,6 @@ function buildDrawerEditForm(ticket){
         ${options.map(o=>`<option value="${o}" ${ticket.status===o?'selected':''}>${o}</option>`).join('')}
       </select>
     </div>
-
-    ${returnDateField}
 
     ${pdfField}
 
@@ -901,12 +844,6 @@ async function saveDrawerEdits() {
   t.status      = fd.get('status');
   t.actionTaken = fd.get('actionTaken');
 
-  // 👈 جديد: خزن Return Date محليًا فقط لقسم time-table
-  if (_currentSection === 'time-table') {
-    const rd = fd.get('returnDate') || '';
-    t.returnDate = rd; // YYYY-MM-DD
-  }
-
   // ✅ CCTV PDF upload (Edit only) + only for Escalated / Under Review
   if (_currentSection === 'cctv') {
     const newStatus = String(t.status || '');
@@ -1000,11 +937,6 @@ async function saveDrawerEdits() {
         status: t.status,
         actionTaken: t.actionTaken,
       };
-
-      // 👈 time-table returnDate
-      if (_currentSection === 'time-table') {
-        sheetBody.returnDate = t.returnDate ?? null;
-      }
 
       const resS = await fetch(SHEETS_ENDPOINT, {
         method: 'PUT',
