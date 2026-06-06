@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+  <title>Cloud Crowd - Weekly Quality Sheet</title>
+  <style>
+    :root {
+      --aqua: #A7EBF2;
+      --teal: #54ACBF;
+      --blue: #26658C;
+      --navy: #023859;
+      --deep: #011C40;
+      --white: #ffffff;
+      --surface: #f5fbfc;
+      --line: #d7e9ee;
+      --muted: #607b88;
+      --success: #19785e;
+      --warning: #9a6300;
+      --danger: #b53b4a;
+      --shadow: 0 18px 50px rgba(2, 56, 89, 0.1);
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --radius-sm: 11px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 88% 8%, rgba(167, 235, 242, 0.5), transparent 27%),
+        linear-gradient(180deg, #ffffff 0%, var(--surface) 52%, #edf8fa 100%);
+      color: var(--deep);
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+    }
+
+    button,
+    input,
+    select,
+    textarea { font: inherit; }
+
+    button,
+    a { -webkit-tap-highlight-color: transparent; }
+
+    .quality-shell {
+      display: grid;
+      grid-template-columns: 272px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 28px 20px;
+      border-right: 1px solid rgba(84, 172, 191, 0.22);
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(16px);
+      z-index: 10;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      margin-bottom: 30px;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .sidebar-logo {
+      width: 52px;
+      height: 52px;
+      object-fit: contain;
+    }
+
+    .sidebar-brand h1 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 21px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .sidebar-brand p {
+      margin: 7px 0 0;
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .sidebar-nav { display: grid; gap: 8px; }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-height: 46px;
+      padding: 11px 13px;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      color: var(--blue);
+      font-size: 14px;
+      font-weight: 750;
+      text-decoration: none;
+      transition: 160ms ease;
+    }
+
+    .nav-item:hover {
+      border-color: rgba(84, 172, 191, 0.35);
+      background: #f1fbfc;
+      color: var(--navy);
+    }
+
+    .nav-item.active {
+      border-color: rgba(84, 172, 191, 0.32);
+      background: linear-gradient(135deg, rgba(167, 235, 242, 0.75), rgba(84, 172, 191, 0.16));
+      color: var(--navy);
+      box-shadow: 0 8px 22px rgba(38, 101, 140, 0.09);
+    }
+
+    .nav-icon {
+      display: grid;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      border-radius: 9px;
+      background: rgba(167, 235, 242, 0.42);
+    }
+
+    .main-area {
+      min-width: 0;
+      padding: 24px 34px 50px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .breadcrumb {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--blue);
+      font-size: 14px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .breadcrumb:hover { color: var(--navy); }
+
+    .user-tools {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-pill,
+    .role-pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .user-pill {
+      background: var(--white);
+      border: 1px solid var(--line);
+      color: var(--navy);
+    }
+
+    .role-pill {
+      background: rgba(167, 235, 242, 0.55);
+      color: var(--navy);
+      text-transform: capitalize;
+    }
+
+    .logout {
+      min-height: 38px;
+      padding: 0 14px;
+      border: 1px solid rgba(181, 59, 74, 0.2);
+      border-radius: 10px;
+      background: #fff7f8;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .hero {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 28px;
+      margin-bottom: 24px;
+      padding: 34px;
+      overflow: hidden;
+      border: 1px solid rgba(84, 172, 191, 0.25);
+      border-radius: var(--radius-lg);
+      background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.98), rgba(167, 235, 242, 0.58)),
+        var(--white);
+      box-shadow: var(--shadow);
+    }
+
+    .hero h2 {
+      margin: 0 0 10px;
+      max-width: 680px;
+      color: var(--deep);
+      font-size: clamp(32px, 4vw, 48px);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+    }
+
+    .hero p {
+      max-width: 690px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    .score-orbit {
+      display: grid;
+      flex: 0 0 126px;
+      width: 126px;
+      height: 126px;
+      place-items: center;
+      border: 12px solid rgba(255, 255, 255, 0.78);
+      border-radius: 50%;
+      background: linear-gradient(145deg, var(--teal), var(--navy));
+      color: white;
+      box-shadow: 0 16px 34px rgba(2, 56, 89, 0.2);
+      text-align: center;
+    }
+
+    .score-orbit strong {
+      display: block;
+      font-size: 29px;
+      line-height: 1;
+    }
+
+    .score-orbit span {
+      display: block;
+      margin-top: 5px;
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 13px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      min-width: 0;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 10px 26px rgba(2, 56, 89, 0.06);
+    }
+
+    .stat-label {
+      display: block;
+      min-height: 30px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: 0.05em;
+      line-height: 1.35;
+      text-transform: uppercase;
+    }
+
+    .stat-value {
+      display: block;
+      margin-top: 8px;
+      color: var(--navy);
+      font-size: 27px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+    }
+
+    .content-card {
+      margin-bottom: 24px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--white);
+      box-shadow: var(--shadow);
+    }
+
+    .card-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 24px 28px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .card-heading h3 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 21px;
+    }
+
+    .card-heading p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .live-total {
+      min-width: 148px;
+      padding: 12px 16px;
+      border: 1px solid rgba(84, 172, 191, 0.3);
+      border-radius: 13px;
+      background: #effbfc;
+      text-align: right;
+    }
+
+    .live-total span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .live-total strong {
+      display: block;
+      margin-top: 4px;
+      color: var(--navy);
+      font-size: 21px;
+    }
+
+    .evaluation-form { padding: 0 28px 28px; }
+
+    .form-section {
+      padding: 27px 0 5px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .form-section:last-of-type { border-bottom: 0; }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 18px;
+      color: var(--navy);
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .section-number {
+      display: grid;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      border-radius: 9px;
+      background: var(--aqua);
+      color: var(--navy);
+      font-size: 12px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      align-content: start;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .field.wide { grid-column: span 2; }
+    .field.full { grid-column: 1 / -1; }
+
+    .field label {
+      color: var(--deep);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      border: 1px solid #cbdfe5;
+      border-radius: var(--radius-sm);
+      outline: none;
+      background: #fbfeff;
+      color: var(--deep);
+      transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+    }
+
+    .field input,
+    .field select {
+      height: 45px;
+      padding: 0 12px;
+    }
+
+    .field textarea {
+      min-height: 110px;
+      padding: 12px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: var(--teal);
+      background: var(--white);
+      box-shadow: 0 0 0 4px rgba(167, 235, 242, 0.42);
+    }
+
+    .score-field {
+      padding: 13px;
+      border: 1px solid #dcecef;
+      border-radius: 13px;
+      background: #f9fdfe;
+    }
+
+    .score-field select {
+      border-color: rgba(84, 172, 191, 0.35);
+      background: var(--white);
+      color: var(--navy);
+      font-size: 15px;
+      font-weight: 850;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding-top: 25px;
+    }
+
+    .primary-btn,
+    .secondary-btn {
+      min-height: 46px;
+      padding: 0 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 900;
+      transition: transform 150ms ease, box-shadow 150ms ease;
+    }
+
+    .primary-btn {
+      border: 0;
+      background: linear-gradient(135deg, var(--blue), var(--navy));
+      color: var(--white);
+      box-shadow: 0 12px 24px rgba(2, 56, 89, 0.2);
+    }
+
+    .secondary-btn {
+      border: 1px solid var(--line);
+      background: var(--white);
+      color: var(--blue);
+    }
+
+    .primary-btn:hover,
+    .secondary-btn:hover { transform: translateY(-1px); }
+
+    .table-tools {
+      display: grid;
+      grid-template-columns: minmax(220px, 1.5fr) minmax(150px, 0.7fr) minmax(160px, 0.7fr) auto;
+      gap: 12px;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfeff;
+    }
+
+    .table-tools input,
+    .table-tools select {
+      height: 42px;
+      padding: 0 12px;
+      border: 1px solid #cbdfe5;
+      border-radius: 10px;
+      outline: none;
+      background: var(--white);
+      color: var(--deep);
+      font-size: 13px;
+    }
+
+    .count-badge {
+      align-self: center;
+      justify-self: end;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      padding: 0 28px 28px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 1120px;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    th,
+    td {
+      padding: 14px 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      color: var(--blue);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    td {
+      color: #244b60;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    tbody tr:hover { background: #f8fcfd; }
+
+    .score-cell {
+      color: var(--navy);
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .status {
+      display: inline-flex;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .status.pending {
+      background: #fff3d5;
+      color: var(--warning);
+    }
+
+    .status.reviewed {
+      background: #ddf5ed;
+      color: var(--success);
+    }
+
+    .notes-cell {
+      max-width: 220px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .record-link {
+      color: var(--blue);
+      font-weight: 850;
+    }
+
+    .delete-btn {
+      padding: 7px 10px;
+      border: 1px solid rgba(181, 59, 74, 0.2);
+      border-radius: 8px;
+      background: #fff7f8;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .empty-state {
+      padding: 44px 20px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .empty-state strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--navy);
+      font-size: 16px;
+    }
+
+    @media (max-width: 1200px) {
+      .stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .score-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 900px) {
+      .quality-shell { grid-template-columns: 1fr; }
+      .sidebar {
+        position: relative;
+        width: auto;
+        height: auto;
+        padding: 18px 20px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .sidebar-brand { margin-bottom: 16px; }
+      .sidebar-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .main-area { padding: 22px 20px 40px; }
+    }
+
+    @media (max-width: 700px) {
+      .topbar,
+      .hero,
+      .card-heading {
+        align-items: stretch;
+        flex-direction: column;
+      }
+      .user-tools { flex-wrap: wrap; }
+      .score-orbit { display: none; }
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .form-grid,
+      .score-grid,
+      .table-tools { grid-template-columns: 1fr; }
+      .field.wide { grid-column: auto; }
+      .count-badge { justify-self: start; }
+      .hero,
+      .card-heading,
+      .evaluation-form,
+      .table-tools,
+      .table-wrap { padding-left: 20px; padding-right: 20px; }
+      .live-total { text-align: left; }
+    }
+
+    @media (max-width: 480px) {
+      .sidebar-nav,
+      .stats-grid { grid-template-columns: 1fr; }
+      .hero h2 { font-size: 34px; }
+      .form-actions { flex-direction: column-reverse; }
+      .primary-btn,
+      .secondary-btn { width: 100%; }
+    }
+  </style>
+  <script>
+    const WEEKLY_QUALITY_MAINTENANCE_ENDPOINT = "/.netlify/functions/maintenance";
+
+    async function enforceWeeklyQualityMaintenanceMode() {
+      try {
+        const response = await fetch(WEEKLY_QUALITY_MAINTENANCE_ENDPOINT, {
+          cache: "no-store",
+          headers: {
+            "Authorization": `Bearer ${localStorage.getItem("cc_token") || ""}`
+          }
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.maintenance === true && data.admin !== true) {
+          window.location.href = "system-update.html";
+        }
+      } catch (error) {
+        console.warn("Maintenance check failed.", error);
+      }
+    }
+
+    enforceWeeklyQualityMaintenanceMode();
+    setInterval(enforceWeeklyQualityMaintenanceMode, 3000);
+  </script>
+  <script>
+    if (localStorage.getItem('cc_auth') !== '1' || !localStorage.getItem('cc_token') || !localStorage.getItem('cc_role')) {
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html';
+    }
+  </script>
+</head>
+<body>
+  <div class="quality-shell">
+    <aside class="sidebar" aria-label="Weekly Quality navigation">
+      <a class="sidebar-brand" href="dashboard.html" aria-label="Cloud Crowd dashboard">
+        <img src="assets/images/logo.png" alt="Cloud Crowd logo" class="sidebar-logo">
+        <div>
+          <h1>Cloud Crowd</h1>
+          <p>Operations Hub</p>
+        </div>
+      </a>
+
+      <nav class="sidebar-nav">
+        <a class="nav-item" href="dashboard.html">
+          <span class="nav-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M4 13h7V4H4v9Zm9 7h7V4h-7v16ZM4 20h7v-5H4v5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          Dashboard
+        </a>
+        <a class="nav-item active" href="weekly-quality.html" aria-current="page">
+          <span class="nav-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M5 4h14v16H5V4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+              <path d="M8 9h8M8 13h4M15.5 12.5l1 1 2-2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          Weekly Quality Sheet
+        </a>
+      </nav>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <a class="breadcrumb" href="dashboard.html">
+          <span aria-hidden="true">&larr;</span>
+          Dashboard
+        </a>
+        <div class="user-tools">
+          <span class="user-pill" id="quality-user-name">Team Member</span>
+          <span class="role-pill" id="quality-role-badge">Operator</span>
+          <button class="logout" type="button" onclick="logout()">Log out</button>
+        </div>
+      </header>
+
+      <section class="hero" aria-labelledby="quality-title">
+        <div>
+          <h2 id="quality-title">Weekly Quality Sheet</h2>
+          <p>Evaluate call quality consistently, review coaching opportunities, and keep weekly performance records clear and accessible.</p>
+        </div>
+        <div class="score-orbit" aria-hidden="true">
+          <div>
+            <strong>100</strong>
+            <span>Quality Points</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="stats-grid" aria-label="Quality evaluation summary">
+        <article class="stat-card">
+          <span class="stat-label">Total Evaluations</span>
+          <strong class="stat-value" id="stat-total">0</strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Average Score</span>
+          <strong class="stat-value" id="stat-average">0%</strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Highest Score</span>
+          <strong class="stat-value" id="stat-highest">0%</strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Lowest Score</span>
+          <strong class="stat-value" id="stat-lowest">0%</strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Pending Reviews</span>
+          <strong class="stat-value" id="stat-pending">0</strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Reviewed Calls</span>
+          <strong class="stat-value" id="stat-reviewed">0</strong>
+        </article>
+      </section>
+
+      <section class="content-card" aria-labelledby="evaluation-form-title">
+        <div class="card-heading">
+          <div>
+            <h3 id="evaluation-form-title">New Call Evaluation</h3>
+            <p>Complete all call details and assign a score from 0 to 10 for each quality measure.</p>
+          </div>
+          <div class="live-total" aria-live="polite">
+            <span>Total Score</span>
+            <strong id="live-total-score">0 / 100 = 0%</strong>
+          </div>
+        </div>
+
+        <form class="evaluation-form" id="quality-form">
+          <section class="form-section">
+            <h4 class="section-title"><span class="section-number">1</span>Call Information</h4>
+            <div class="form-grid">
+              <div class="field">
+                <label for="evaluation-date">Date</label>
+                <input id="evaluation-date" name="date" type="date" required>
+              </div>
+              <div class="field">
+                <label for="call-time">Call Time</label>
+                <input id="call-time" name="callTime" type="time" required>
+              </div>
+              <div class="field">
+                <label for="auditor-name">Auditor Name</label>
+                <select id="auditor-name" name="auditor" required>
+                  <option value="">Select auditor</option>
+                  <option>Tala Alotebe</option>
+                  <option>Tuleen Diab</option>
+                  <option>Abdel Fattah Alanati</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="agent-name">Agent Name</label>
+                <select id="agent-name" name="agent" required>
+                  <option value="">Select agent</option>
+                  <option>Ruba Kubari</option>
+                  <option>Tala Alotebe</option>
+                  <option>Vicktoria Khader</option>
+                  <option>Haneen Nidal</option>
+                  <option>Anmar dar omar</option>
+                  <option>Amani Jaber</option>
+                  <option>Jana Al-Balawi</option>
+                  <option>Mera Al Hasany</option>
+                  <option>Yara Ayoub</option>
+                </select>
+              </div>
+              <div class="field wide">
+                <label for="campaign">Campaign / Restaurant</label>
+                <select id="campaign" name="campaign" required>
+                  <option value="">Select campaign</option>
+                  <option>Ned's Pizza</option>
+                  <option>Very Good Burger</option>
+                  <option>Safaeh Al Sager</option>
+                  <option>Happy Tummies</option>
+                  <option>Crunchychkn</option>
+                  <option>Bun Run</option>
+                  <option>Heat Burger</option>
+                  <option>Bint Halal</option>
+                  <option>Chili Charms</option>
+                  <option>Colors Catering</option>
+                  <option>UFO</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="phone-number">Phone Number</label>
+                <input id="phone-number" name="phoneNumber" type="tel" autocomplete="tel" required>
+              </div>
+              <div class="field">
+                <label for="review-status">Review Status</label>
+                <select id="review-status" name="status" required>
+                  <option>Pending</option>
+                  <option>Reviewed</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <h4 class="section-title"><span class="section-number">2</span>Quality Scores</h4>
+            <div class="score-grid" id="score-grid">
+              <div class="field score-field"><label for="score-greetings">Greetings</label><select id="score-greetings" name="greetings" class="score-select"></select></div>
+              <div class="field score-field"><label for="score-knowledge">Knowledge</label><select id="score-knowledge" name="knowledge" class="score-select"></select></div>
+              <div class="field score-field"><label for="score-upselling">Upselling</label><select id="score-upselling" name="upselling" class="score-select"></select></div>
+              <div class="field score-field"><label for="score-closure">Closure</label><select id="score-closure" name="closure" class="score-select"></select></div>
+              <div class="field score-field"><label for="score-repeating-orders">Repeating Orders</label><select id="score-repeating-orders" name="repeatingOrders" class="score-select"></select></div>
+              <div class="field score-field"><label for="score-phone-etiquette">Phone Etiquette</label><select id="score-phone-etiquette" name="phoneEtiquette" class="score-select"></select></div>
+              <div class="field score-field"><label for="score-clarity">Clarity</label><select id="score-clarity" name="clarity" class="score-select"></select></div>
+              <div class="field score-field"><label for="score-environment">Environment</label><select id="score-environment" name="environment" class="score-select"></select></div>
+              <div class="field score-field"><label for="score-equipment">Equipment</label><select id="score-equipment" name="equipment" class="score-select"></select></div>
+              <div class="field score-field"><label for="score-aat">AAT</label><select id="score-aat" name="aat" class="score-select"></select></div>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <h4 class="section-title"><span class="section-number">3</span>Notes &amp; Recording</h4>
+            <div class="form-grid">
+              <div class="field full">
+                <label for="notes">Notes</label>
+                <textarea id="notes" name="notes" placeholder="Add quality observations, strengths, or coaching points."></textarea>
+              </div>
+              <div class="field full">
+                <label for="call-record-link">Call Record Link</label>
+                <input id="call-record-link" name="callRecordLink" type="url" placeholder="https://...">
+              </div>
+            </div>
+          </section>
+
+          <div class="form-actions">
+            <button class="secondary-btn" type="reset">Clear Form</button>
+            <button class="primary-btn" type="submit">Save Evaluation</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="content-card" aria-labelledby="records-title">
+        <div class="card-heading">
+          <div>
+            <h3 id="records-title">Evaluation Records</h3>
+            <p>Records are stored in this browser and displayed newest first.</p>
+          </div>
+        </div>
+        <div class="table-tools">
+          <input id="record-search" type="search" placeholder="Search agent or campaign" aria-label="Search by agent or campaign">
+          <select id="status-filter" aria-label="Filter by review status">
+            <option value="">All statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Reviewed">Reviewed</option>
+          </select>
+          <input id="date-filter" type="date" aria-label="Filter by date">
+          <span class="count-badge" id="record-count">0 Records</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Auditor</th>
+                <th>Agent</th>
+                <th>Campaign</th>
+                <th>Phone Number</th>
+                <th>Total Score</th>
+                <th>Status</th>
+                <th>Notes</th>
+                <th>Call Record</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="records-body"></tbody>
+          </table>
+          <div class="empty-state" id="empty-state">
+            <strong>No evaluations found</strong>
+            Save an evaluation or adjust the active filters.
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const WEEKLY_QUALITY_STORAGE_KEY = 'cc_weekly_quality_records_v1';
+    const SCORE_FIELDS = [
+      'greetings',
+      'knowledge',
+      'upselling',
+      'closure',
+      'repeatingOrders',
+      'phoneEtiquette',
+      'clarity',
+      'environment',
+      'equipment',
+      'aat'
+    ];
+
+    function getQualityRecords() {
+      try {
+        const stored = JSON.parse(localStorage.getItem(WEEKLY_QUALITY_STORAGE_KEY) || '[]');
+        return Array.isArray(stored) ? stored : [];
+      } catch (error) {
+        console.warn('Weekly quality records could not be read.', error);
+        return [];
+      }
+    }
+
+    function saveQualityRecords(records) {
+      localStorage.setItem(WEEKLY_QUALITY_STORAGE_KEY, JSON.stringify(records));
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function safeRecordUrl(value) {
+      try {
+        const url = new URL(String(value || ''));
+        return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+      } catch {
+        return '';
+      }
+    }
+
+    function populateScoreSelects() {
+      document.querySelectorAll('.score-select').forEach((select) => {
+        select.innerHTML = Array.from({ length: 11 }, (_, score) => `<option value="${score}">${score}</option>`).join('');
+      });
+    }
+
+    function calculateFormTotal() {
+      const total = Array.from(document.querySelectorAll('.score-select'))
+        .reduce((sum, select) => sum + Number(select.value || 0), 0);
+      document.getElementById('live-total-score').textContent = `${total} / 100 = ${total}%`;
+      return total;
+    }
+
+    function setTodayDate() {
+      const dateInput = document.getElementById('evaluation-date');
+      if (dateInput && !dateInput.value) {
+        const now = new Date();
+        const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        dateInput.value = localDate.toISOString().slice(0, 10);
+      }
+    }
+
+    function hydrateHeader() {
+      document.getElementById('quality-user-name').textContent = localStorage.getItem('cc_user') || 'Team Member';
+      document.getElementById('quality-role-badge').textContent = localStorage.getItem('cc_role') || 'Operator';
+    }
+
+    function buildRecord(form) {
+      const formData = new FormData(form);
+      const scores = {};
+      SCORE_FIELDS.forEach((field) => {
+        scores[field] = Number(formData.get(field) || 0);
+      });
+      const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
+
+      return {
+        id: `weekly-quality-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        createdAt: new Date().toISOString(),
+        date: formData.get('date') || '',
+        callTime: formData.get('callTime') || '',
+        auditor: formData.get('auditor') || '',
+        agent: formData.get('agent') || '',
+        campaign: formData.get('campaign') || '',
+        phoneNumber: (formData.get('phoneNumber') || '').trim(),
+        status: formData.get('status') || 'Pending',
+        notes: (formData.get('notes') || '').trim(),
+        callRecordLink: (formData.get('callRecordLink') || '').trim(),
+        scores,
+        totalScore
+      };
+    }
+
+    function updateStats(records) {
+      const scores = records.map((record) => Number(record.totalScore) || 0);
+      const average = scores.length ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length) : 0;
+      const highest = scores.length ? Math.max(...scores) : 0;
+      const lowest = scores.length ? Math.min(...scores) : 0;
+      const pending = records.filter((record) => record.status === 'Pending').length;
+      const reviewed = records.filter((record) => record.status === 'Reviewed').length;
+
+      document.getElementById('stat-total').textContent = records.length;
+      document.getElementById('stat-average').textContent = `${average}%`;
+      document.getElementById('stat-highest').textContent = `${highest}%`;
+      document.getElementById('stat-lowest').textContent = `${lowest}%`;
+      document.getElementById('stat-pending').textContent = pending;
+      document.getElementById('stat-reviewed').textContent = reviewed;
+    }
+
+    function getFilteredRecords(records) {
+      const search = document.getElementById('record-search').value.trim().toLowerCase();
+      const status = document.getElementById('status-filter').value;
+      const date = document.getElementById('date-filter').value;
+
+      return records
+        .filter((record) => {
+          const matchesSearch = !search ||
+            String(record.agent || '').toLowerCase().includes(search) ||
+            String(record.campaign || '').toLowerCase().includes(search);
+          const matchesStatus = !status || record.status === status;
+          const matchesDate = !date || record.date === date;
+          return matchesSearch && matchesStatus && matchesDate;
+        })
+        .sort((a, b) => {
+          const aTime = Date.parse(a.createdAt || `${a.date || ''}T${a.callTime || '00:00'}`) || 0;
+          const bTime = Date.parse(b.createdAt || `${b.date || ''}T${b.callTime || '00:00'}`) || 0;
+          return bTime - aTime;
+        });
+    }
+
+    function renderRecords() {
+      const allRecords = getQualityRecords();
+      const records = getFilteredRecords(allRecords);
+      const body = document.getElementById('records-body');
+      const emptyState = document.getElementById('empty-state');
+
+      updateStats(allRecords);
+      body.innerHTML = records.map((record) => {
+        const recordUrl = safeRecordUrl(record.callRecordLink);
+        const statusClass = record.status === 'Reviewed' ? 'reviewed' : 'pending';
+        return `
+          <tr>
+            <td>${escapeHtml(record.date || '-')}<br><small>${escapeHtml(record.callTime || '')}</small></td>
+            <td>${escapeHtml(record.auditor || '-')}</td>
+            <td>${escapeHtml(record.agent || '-')}</td>
+            <td>${escapeHtml(record.campaign || '-')}</td>
+            <td>${escapeHtml(record.phoneNumber || '-')}</td>
+            <td class="score-cell">${Number(record.totalScore) || 0} / 100<br>${Number(record.totalScore) || 0}%</td>
+            <td><span class="status ${statusClass}">${escapeHtml(record.status || 'Pending')}</span></td>
+            <td class="notes-cell">${escapeHtml(record.notes || '-')}</td>
+            <td>${recordUrl ? `<a class="record-link" href="${escapeHtml(recordUrl)}" target="_blank" rel="noopener noreferrer">Open Record</a>` : '-'}</td>
+            <td><button class="delete-btn" type="button" data-delete-id="${escapeHtml(record.id)}">Delete</button></td>
+          </tr>
+        `;
+      }).join('');
+
+      emptyState.style.display = records.length ? 'none' : 'block';
+      document.getElementById('record-count').textContent = `${records.length} ${records.length === 1 ? 'Record' : 'Records'}`;
+    }
+
+    function deleteRecord(id) {
+      if (!confirm('Delete this quality evaluation?')) return;
+      const records = getQualityRecords().filter((record) => record.id !== id);
+      saveQualityRecords(records);
+      renderRecords();
+    }
+
+    function logout() {
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html';
+    }
+
+    populateScoreSelects();
+    hydrateHeader();
+    setTodayDate();
+    calculateFormTotal();
+    renderRecords();
+
+    document.getElementById('score-grid').addEventListener('change', calculateFormTotal);
+    document.getElementById('quality-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      if (!form.reportValidity()) return;
+
+      const records = getQualityRecords();
+      records.push(buildRecord(form));
+      saveQualityRecords(records);
+      form.reset();
+      setTodayDate();
+      calculateFormTotal();
+      renderRecords();
+      document.getElementById('records-title').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    document.getElementById('quality-form').addEventListener('reset', () => {
+      setTimeout(() => {
+        setTodayDate();
+        calculateFormTotal();
+      }, 0);
+    });
+    document.getElementById('record-search').addEventListener('input', renderRecords);
+    document.getElementById('status-filter').addEventListener('change', renderRecords);
+    document.getElementById('date-filter').addEventListener('change', renderRecords);
+    document.getElementById('records-body').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-delete-id]');
+      if (button) deleteRecord(button.dataset.deleteId);
+    });
+  </script>
+  <script src="idle-logout.js"></script>
+</body>
+</html>
