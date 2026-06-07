@@ -260,7 +260,7 @@
 
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 13px;
       margin-bottom: 24px;
     }
@@ -322,31 +322,6 @@
       margin: 6px 0 0;
       color: var(--muted);
       font-size: 13px;
-    }
-
-    .live-total {
-      min-width: 148px;
-      padding: 12px 16px;
-      border: 1px solid rgba(84, 172, 191, 0.3);
-      border-radius: 13px;
-      background: #effbfc;
-      text-align: right;
-    }
-
-    .live-total span {
-      display: block;
-      color: var(--muted);
-      font-size: 10px;
-      font-weight: 850;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
-    .live-total strong {
-      display: block;
-      margin-top: 4px;
-      color: var(--navy);
-      font-size: 21px;
     }
 
     .evaluation-form { padding: 0 28px 28px; }
@@ -455,6 +430,27 @@
       font-weight: 850;
     }
 
+    .score-summary {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .score-summary strong {
+      min-width: 64px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: #effbfc;
+      color: var(--navy);
+      font-size: 17px;
+      text-align: center;
+    }
+
     .form-actions {
       display: flex;
       justify-content: flex-end;
@@ -491,7 +487,7 @@
 
     .table-tools {
       display: grid;
-      grid-template-columns: minmax(220px, 1.5fr) minmax(150px, 0.7fr) minmax(160px, 0.7fr) auto;
+      grid-template-columns: minmax(200px, 1.4fr) repeat(3, minmax(150px, 0.8fr)) auto;
       gap: 12px;
       padding: 18px 28px;
       border-bottom: 1px solid var(--line);
@@ -526,7 +522,7 @@
 
     table {
       width: 100%;
-      min-width: 1120px;
+      min-width: 980px;
       border-collapse: separate;
       border-spacing: 0;
     }
@@ -561,44 +557,161 @@
       white-space: nowrap;
     }
 
-    .status {
-      display: inline-flex;
-      padding: 5px 9px;
-      border-radius: 999px;
-      font-size: 10px;
-      font-weight: 900;
-    }
-
-    .status.pending {
-      background: #fff3d5;
-      color: var(--warning);
-    }
-
-    .status.reviewed {
-      background: #ddf5ed;
+    .recording-state {
       color: var(--success);
-    }
-
-    .notes-cell {
-      max-width: 220px;
-      white-space: normal;
-      overflow-wrap: anywhere;
-    }
-
-    .record-link {
-      color: var(--blue);
       font-weight: 850;
     }
 
-    .delete-btn {
+    .actions-cell {
+      display: flex;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .details-btn,
+    .delete-btn,
+    .modal-close {
       padding: 7px 10px;
-      border: 1px solid rgba(181, 59, 74, 0.2);
       border-radius: 8px;
-      background: #fff7f8;
-      color: var(--danger);
       cursor: pointer;
       font-size: 11px;
       font-weight: 850;
+    }
+
+    .details-btn {
+      border: 0;
+      background: var(--navy);
+      color: var(--white);
+    }
+
+    .delete-btn {
+      border: 1px solid rgba(181, 59, 74, 0.2);
+      background: #fff7f8;
+      color: var(--danger);
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(1, 28, 64, 0.58);
+      backdrop-filter: blur(5px);
+      z-index: 100;
+    }
+
+    .modal.open { display: flex; }
+
+    .modal-panel {
+      width: min(820px, 100%);
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+      border: 1px solid rgba(167, 235, 242, 0.45);
+      border-radius: var(--radius-lg);
+      background: var(--white);
+      box-shadow: 0 28px 80px rgba(1, 28, 64, 0.32);
+    }
+
+    .modal-header {
+      position: sticky;
+      top: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 22px 26px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.97);
+      z-index: 1;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 21px;
+    }
+
+    .modal-close {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--navy);
+    }
+
+    .modal-body {
+      display: grid;
+      gap: 24px;
+      padding: 26px;
+    }
+
+    .details-section h4 {
+      margin: 0 0 14px;
+      color: var(--navy);
+      font-size: 15px;
+    }
+
+    .details-grid,
+    .score-breakdown {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 18px;
+    }
+
+    .detail-item {
+      min-width: 0;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: #f9fdfe;
+      overflow-wrap: anywhere;
+    }
+
+    .detail-item span {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .detail-item strong {
+      color: var(--deep);
+      font-size: 13px;
+    }
+
+    .detail-item.full { grid-column: 1 / -1; }
+
+    .modal-total {
+      padding: 18px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--blue), var(--navy));
+      color: var(--white);
+      font-size: 25px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .improvement-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .improvement-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 13px;
+      border-radius: 10px;
+      background: #fff7f0;
+      color: #744814;
+      font-size: 13px;
+      font-weight: 800;
     }
 
     .empty-state {
@@ -655,7 +768,9 @@
       .evaluation-form,
       .table-tools,
       .table-wrap { padding-left: 20px; padding-right: 20px; }
-      .live-total { text-align: left; }
+      .details-grid,
+      .score-breakdown { grid-template-columns: 1fr; }
+      .detail-item.full { grid-column: auto; }
     }
 
     @media (max-width: 480px) {
@@ -665,6 +780,10 @@
       .form-actions { flex-direction: column-reverse; }
       .primary-btn,
       .secondary-btn { width: 100%; }
+      .modal { padding: 10px; }
+      .modal-panel { max-height: calc(100vh - 20px); }
+      .modal-header,
+      .modal-body { padding: 18px; }
     }
   </style>
   <script>
@@ -776,25 +895,13 @@
           <span class="stat-label">Lowest Score</span>
           <strong class="stat-value" id="stat-lowest">0%</strong>
         </article>
-        <article class="stat-card">
-          <span class="stat-label">Pending Reviews</span>
-          <strong class="stat-value" id="stat-pending">0</strong>
-        </article>
-        <article class="stat-card">
-          <span class="stat-label">Reviewed Calls</span>
-          <strong class="stat-value" id="stat-reviewed">0</strong>
-        </article>
       </section>
 
       <section class="content-card" aria-labelledby="evaluation-form-title">
         <div class="card-heading">
           <div>
             <h3 id="evaluation-form-title">New Call Evaluation</h3>
-            <p>Complete all call details and assign a score from 0 to 10 for each quality measure.</p>
-          </div>
-          <div class="live-total" aria-live="polite">
-            <span>Total Score</span>
-            <strong id="live-total-score">0 / 100 = 0%</strong>
+            <p>Complete all call details and assign a score for each quality measure.</p>
           </div>
         </div>
 
@@ -803,12 +910,8 @@
             <h4 class="section-title"><span class="section-number">1</span>Call Information</h4>
             <div class="form-grid">
               <div class="field">
-                <label for="evaluation-date">Date</label>
-                <input id="evaluation-date" name="date" type="date" required>
-              </div>
-              <div class="field">
-                <label for="call-time">Call Time</label>
-                <input id="call-time" name="callTime" type="time" required>
+                <label for="call-date-time">Call Date &amp; Time</label>
+                <input id="call-date-time" name="callDateTime" type="text" placeholder="2026-06-07 14:08:27" pattern="\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}" title="Use YYYY-MM-DD HH:mm:ss" required>
               </div>
               <div class="field">
                 <label for="auditor-name">Auditor Name</label>
@@ -855,13 +958,6 @@
                 <label for="phone-number">Phone Number</label>
                 <input id="phone-number" name="phoneNumber" type="tel" autocomplete="tel" required>
               </div>
-              <div class="field">
-                <label for="review-status">Review Status</label>
-                <select id="review-status" name="status" required>
-                  <option>Pending</option>
-                  <option>Reviewed</option>
-                </select>
-              </div>
             </div>
           </section>
 
@@ -879,6 +975,10 @@
               <div class="field score-field"><label for="score-equipment">Equipment</label><select id="score-equipment" name="equipment" class="score-select"></select></div>
               <div class="field score-field"><label for="score-aat">AAT</label><select id="score-aat" name="aat" class="score-select"></select></div>
             </div>
+            <div class="score-summary" aria-live="polite">
+              Current Total
+              <strong id="live-total-score">0%</strong>
+            </div>
           </section>
 
           <section class="form-section">
@@ -889,8 +989,8 @@
                 <textarea id="notes" name="notes" placeholder="Add quality observations, strengths, or coaching points."></textarea>
               </div>
               <div class="field full">
-                <label for="call-record-link">Call Record Link</label>
-                <input id="call-record-link" name="callRecordLink" type="url" placeholder="https://...">
+                <label for="call-recording">Call Recording</label>
+                <input id="call-recording" name="callRecording" type="file" accept=".mp3,audio/mpeg">
               </div>
             </div>
           </section>
@@ -910,28 +1010,27 @@
           </div>
         </div>
         <div class="table-tools">
-          <input id="record-search" type="search" placeholder="Search agent or campaign" aria-label="Search by agent or campaign">
-          <select id="status-filter" aria-label="Filter by review status">
-            <option value="">All statuses</option>
-            <option value="Pending">Pending</option>
-            <option value="Reviewed">Reviewed</option>
+          <input id="record-search" type="search" placeholder="Search records" aria-label="Search records">
+          <input id="date-filter" type="date" aria-label="Filter by date" title="Filter by Date">
+          <select id="restaurant-filter" aria-label="Filter by restaurant">
+            <option value="">All restaurants</option>
           </select>
-          <input id="date-filter" type="date" aria-label="Filter by date">
+          <select id="agent-filter" aria-label="Filter by agent">
+            <option value="">All agents</option>
+          </select>
           <span class="count-badge" id="record-count">0 Records</span>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Date</th>
+                <th>Date &amp; Time</th>
                 <th>Auditor</th>
                 <th>Agent</th>
-                <th>Campaign</th>
+                <th>Restaurant</th>
                 <th>Phone Number</th>
                 <th>Total Score</th>
-                <th>Status</th>
-                <th>Notes</th>
-                <th>Call Record</th>
+                <th>Recording</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -946,8 +1045,19 @@
     </main>
   </div>
 
+  <div class="modal" id="details-modal" role="dialog" aria-modal="true" aria-labelledby="details-modal-title">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 id="details-modal-title">Evaluation Details</h3>
+        <button class="modal-close" id="details-modal-close" type="button" aria-label="Close evaluation details">Close</button>
+      </div>
+      <div class="modal-body" id="details-modal-body"></div>
+    </div>
+  </div>
+
   <script>
     const WEEKLY_QUALITY_STORAGE_KEY = 'cc_weekly_quality_records_v1';
+    const SCORE_OPTIONS = [0, 3, 5, 7, 10];
     const SCORE_FIELDS = [
       'greetings',
       'knowledge',
@@ -960,11 +1070,76 @@
       'equipment',
       'aat'
     ];
+    const SCORE_LABELS = {
+      greetings: 'Greetings',
+      knowledge: 'Knowledge',
+      upselling: 'Upselling',
+      closure: 'Closure',
+      repeatingOrders: 'Repeating Orders',
+      phoneEtiquette: 'Phone Etiquette',
+      clarity: 'Clarity',
+      environment: 'Environment',
+      equipment: 'Equipment',
+      aat: 'AAT'
+    };
+
+    function normalizeDateTime(record) {
+      if (record.callDateTime) return String(record.callDateTime);
+      if (!record.date) return '';
+      const time = String(record.callTime || '00:00:00');
+      return `${record.date} ${time.length === 5 ? `${time}:00` : time}`;
+    }
+
+    function normalizeRecording(record) {
+      if (record.recording && typeof record.recording === 'object') {
+        return {
+          name: String(record.recording.name || ''),
+          type: String(record.recording.type || 'audio/mpeg'),
+          size: Number(record.recording.size) || 0,
+          lastModified: Number(record.recording.lastModified) || 0,
+          kind: record.recording.kind === 'legacy-link' ? 'legacy-link' : 'file',
+          url: safeRecordUrl(record.recording.url)
+        };
+      }
+
+      const legacyUrl = safeRecordUrl(record.callRecordLink);
+      return legacyUrl ? {
+        name: 'Legacy call recording link',
+        type: 'text/uri-list',
+        size: 0,
+        lastModified: 0,
+        kind: 'legacy-link',
+        url: legacyUrl
+      } : null;
+    }
+
+    function normalizeRecord(record) {
+      const scores = {};
+      SCORE_FIELDS.forEach((field) => {
+        scores[field] = Number(record.scores?.[field]) || 0;
+      });
+
+      return {
+        id: record.id || `weekly-quality-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        createdAt: record.createdAt || new Date().toISOString(),
+        callDateTime: normalizeDateTime(record),
+        auditor: String(record.auditor || ''),
+        agent: String(record.agent || ''),
+        campaign: String(record.campaign || record.restaurant || ''),
+        phoneNumber: String(record.phoneNumber || ''),
+        notes: String(record.notes || ''),
+        recording: normalizeRecording(record),
+        scores,
+        totalScore: Number.isFinite(Number(record.totalScore))
+          ? Number(record.totalScore)
+          : Object.values(scores).reduce((sum, score) => sum + score, 0)
+      };
+    }
 
     function getQualityRecords() {
       try {
         const stored = JSON.parse(localStorage.getItem(WEEKLY_QUALITY_STORAGE_KEY) || '[]');
-        return Array.isArray(stored) ? stored : [];
+        return Array.isArray(stored) ? stored.map(normalizeRecord) : [];
       } catch (error) {
         console.warn('Weekly quality records could not be read.', error);
         return [];
@@ -995,23 +1170,23 @@
 
     function populateScoreSelects() {
       document.querySelectorAll('.score-select').forEach((select) => {
-        select.innerHTML = Array.from({ length: 11 }, (_, score) => `<option value="${score}">${score}</option>`).join('');
+        select.innerHTML = SCORE_OPTIONS.map((score) => `<option value="${score}">${score}</option>`).join('');
       });
     }
 
     function calculateFormTotal() {
       const total = Array.from(document.querySelectorAll('.score-select'))
         .reduce((sum, select) => sum + Number(select.value || 0), 0);
-      document.getElementById('live-total-score').textContent = `${total} / 100 = ${total}%`;
+      document.getElementById('live-total-score').textContent = `${total}%`;
       return total;
     }
 
-    function setTodayDate() {
-      const dateInput = document.getElementById('evaluation-date');
-      if (dateInput && !dateInput.value) {
+    function setCurrentDateTime() {
+      const dateTimeInput = document.getElementById('call-date-time');
+      if (dateTimeInput && !dateTimeInput.value) {
         const now = new Date();
         const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-        dateInput.value = localDate.toISOString().slice(0, 10);
+        dateTimeInput.value = localDate.toISOString().slice(0, 19).replace('T', ' ');
       }
     }
 
@@ -1022,6 +1197,7 @@
 
     function buildRecord(form) {
       const formData = new FormData(form);
+      const recordingFile = form.querySelector('#call-recording').files[0];
       const scores = {};
       SCORE_FIELDS.forEach((field) => {
         scores[field] = Number(formData.get(field) || 0);
@@ -1031,15 +1207,20 @@
       return {
         id: `weekly-quality-${Date.now()}-${Math.random().toString(16).slice(2)}`,
         createdAt: new Date().toISOString(),
-        date: formData.get('date') || '',
-        callTime: formData.get('callTime') || '',
+        callDateTime: formData.get('callDateTime') || '',
         auditor: formData.get('auditor') || '',
         agent: formData.get('agent') || '',
         campaign: formData.get('campaign') || '',
         phoneNumber: (formData.get('phoneNumber') || '').trim(),
-        status: formData.get('status') || 'Pending',
         notes: (formData.get('notes') || '').trim(),
-        callRecordLink: (formData.get('callRecordLink') || '').trim(),
+        recording: recordingFile ? {
+          name: recordingFile.name,
+          type: recordingFile.type || 'audio/mpeg',
+          size: recordingFile.size,
+          lastModified: recordingFile.lastModified,
+          kind: 'file',
+          url: ''
+        } : null,
         scores,
         totalScore
       };
@@ -1050,66 +1231,151 @@
       const average = scores.length ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length) : 0;
       const highest = scores.length ? Math.max(...scores) : 0;
       const lowest = scores.length ? Math.min(...scores) : 0;
-      const pending = records.filter((record) => record.status === 'Pending').length;
-      const reviewed = records.filter((record) => record.status === 'Reviewed').length;
 
       document.getElementById('stat-total').textContent = records.length;
       document.getElementById('stat-average').textContent = `${average}%`;
       document.getElementById('stat-highest').textContent = `${highest}%`;
       document.getElementById('stat-lowest').textContent = `${lowest}%`;
-      document.getElementById('stat-pending').textContent = pending;
-      document.getElementById('stat-reviewed').textContent = reviewed;
+    }
+
+    function populateFilterOptions(records) {
+      const filters = [
+        { element: document.getElementById('restaurant-filter'), values: records.map((record) => record.campaign) },
+        { element: document.getElementById('agent-filter'), values: records.map((record) => record.agent) }
+      ];
+
+      filters.forEach(({ element, values }) => {
+        const currentValue = element.value;
+        const firstOption = element.options[0].outerHTML;
+        const uniqueValues = [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b));
+        element.innerHTML = firstOption + uniqueValues
+          .map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`)
+          .join('');
+        element.value = uniqueValues.includes(currentValue) ? currentValue : '';
+      });
     }
 
     function getFilteredRecords(records) {
       const search = document.getElementById('record-search').value.trim().toLowerCase();
-      const status = document.getElementById('status-filter').value;
       const date = document.getElementById('date-filter').value;
+      const restaurant = document.getElementById('restaurant-filter').value;
+      const agent = document.getElementById('agent-filter').value;
 
       return records
         .filter((record) => {
           const matchesSearch = !search ||
+            String(record.callDateTime || '').toLowerCase().includes(search) ||
+            String(record.auditor || '').toLowerCase().includes(search) ||
             String(record.agent || '').toLowerCase().includes(search) ||
-            String(record.campaign || '').toLowerCase().includes(search);
-          const matchesStatus = !status || record.status === status;
-          const matchesDate = !date || record.date === date;
-          return matchesSearch && matchesStatus && matchesDate;
+            String(record.campaign || '').toLowerCase().includes(search) ||
+            String(record.phoneNumber || '').toLowerCase().includes(search) ||
+            String(record.notes || '').toLowerCase().includes(search);
+          const matchesDate = !date || String(record.callDateTime || '').slice(0, 10) === date;
+          const matchesRestaurant = !restaurant || record.campaign === restaurant;
+          const matchesAgent = !agent || record.agent === agent;
+          return matchesSearch && matchesDate && matchesRestaurant && matchesAgent;
         })
         .sort((a, b) => {
-          const aTime = Date.parse(a.createdAt || `${a.date || ''}T${a.callTime || '00:00'}`) || 0;
-          const bTime = Date.parse(b.createdAt || `${b.date || ''}T${b.callTime || '00:00'}`) || 0;
+          const aTime = Date.parse(a.createdAt || String(a.callDateTime).replace(' ', 'T')) || 0;
+          const bTime = Date.parse(b.createdAt || String(b.callDateTime).replace(' ', 'T')) || 0;
           return bTime - aTime;
         });
     }
 
+    function formatFileSize(bytes) {
+      if (!bytes) return 'Size unavailable';
+      if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    function recordingSummary(recording) {
+      if (!recording) return 'Not available';
+      if (recording.kind === 'legacy-link' && recording.url) return 'Legacy link available';
+      return `${recording.name || 'MP3 selected'} (${formatFileSize(recording.size)})`;
+    }
+
     function renderRecords() {
       const allRecords = getQualityRecords();
+      populateFilterOptions(allRecords);
       const records = getFilteredRecords(allRecords);
       const body = document.getElementById('records-body');
       const emptyState = document.getElementById('empty-state');
 
       updateStats(allRecords);
       body.innerHTML = records.map((record) => {
-        const recordUrl = safeRecordUrl(record.callRecordLink);
-        const statusClass = record.status === 'Reviewed' ? 'reviewed' : 'pending';
         return `
           <tr>
-            <td>${escapeHtml(record.date || '-')}<br><small>${escapeHtml(record.callTime || '')}</small></td>
+            <td>${escapeHtml(record.callDateTime || '-')}</td>
             <td>${escapeHtml(record.auditor || '-')}</td>
             <td>${escapeHtml(record.agent || '-')}</td>
             <td>${escapeHtml(record.campaign || '-')}</td>
             <td>${escapeHtml(record.phoneNumber || '-')}</td>
-            <td class="score-cell">${Number(record.totalScore) || 0} / 100<br>${Number(record.totalScore) || 0}%</td>
-            <td><span class="status ${statusClass}">${escapeHtml(record.status || 'Pending')}</span></td>
-            <td class="notes-cell">${escapeHtml(record.notes || '-')}</td>
-            <td>${recordUrl ? `<a class="record-link" href="${escapeHtml(recordUrl)}" target="_blank" rel="noopener noreferrer">Open Record</a>` : '-'}</td>
-            <td><button class="delete-btn" type="button" data-delete-id="${escapeHtml(record.id)}">Delete</button></td>
+            <td class="score-cell">${Number(record.totalScore) || 0}%</td>
+            <td class="${record.recording ? 'recording-state' : ''}">${record.recording ? 'Available' : '-'}</td>
+            <td class="actions-cell">
+              <button class="details-btn" type="button" data-details-id="${escapeHtml(record.id)}">View Details</button>
+              <button class="delete-btn" type="button" data-delete-id="${escapeHtml(record.id)}">Delete</button>
+            </td>
           </tr>
         `;
       }).join('');
 
       emptyState.style.display = records.length ? 'none' : 'block';
       document.getElementById('record-count').textContent = `${records.length} ${records.length === 1 ? 'Record' : 'Records'}`;
+    }
+
+    function openDetails(id) {
+      const record = getQualityRecords().find((item) => item.id === id);
+      if (!record) return;
+
+      const scoreItems = SCORE_FIELDS.map((field) => `
+        <div class="detail-item">
+          <span>${escapeHtml(SCORE_LABELS[field])}</span>
+          <strong>${Number(record.scores[field]) || 0}</strong>
+        </div>
+      `).join('');
+      const weakScores = SCORE_FIELDS.filter((field) => Number(record.scores[field]) < 7);
+      const improvements = weakScores.length
+        ? `<ul class="improvement-list">${weakScores.map((field) => `
+            <li><span>${escapeHtml(SCORE_LABELS[field])}</span><strong>${Number(record.scores[field]) || 0}</strong></li>
+          `).join('')}</ul>`
+        : '<div class="detail-item full"><strong>No improvement areas detected.</strong></div>';
+      const recordingDetails = record.recording?.kind === 'legacy-link' && record.recording.url
+        ? `<a href="${escapeHtml(record.recording.url)}" target="_blank" rel="noopener noreferrer">Open legacy recording link</a>`
+        : escapeHtml(recordingSummary(record.recording));
+
+      document.getElementById('details-modal-body').innerHTML = `
+        <section class="details-section">
+          <h4>General Information</h4>
+          <div class="details-grid">
+            <div class="detail-item"><span>Date &amp; Time</span><strong>${escapeHtml(record.callDateTime || '-')}</strong></div>
+            <div class="detail-item"><span>Auditor</span><strong>${escapeHtml(record.auditor || '-')}</strong></div>
+            <div class="detail-item"><span>Agent</span><strong>${escapeHtml(record.agent || '-')}</strong></div>
+            <div class="detail-item"><span>Restaurant</span><strong>${escapeHtml(record.campaign || '-')}</strong></div>
+            <div class="detail-item"><span>Phone Number</span><strong>${escapeHtml(record.phoneNumber || '-')}</strong></div>
+            <div class="detail-item"><span>Recording</span><strong>${recordingDetails}</strong></div>
+            <div class="detail-item full"><span>Notes</span><strong>${escapeHtml(record.notes || '-')}</strong></div>
+          </div>
+        </section>
+        <section class="details-section">
+          <h4>Score Breakdown</h4>
+          <div class="score-breakdown">${scoreItems}</div>
+        </section>
+        <div class="modal-total">Total Score: ${Number(record.totalScore) || 0}%</div>
+        <section class="details-section">
+          <h4>Areas For Improvement</h4>
+          ${improvements}
+        </section>
+      `;
+
+      document.getElementById('details-modal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      document.getElementById('details-modal-close').focus();
+    }
+
+    function closeDetails() {
+      document.getElementById('details-modal').classList.remove('open');
+      document.body.style.overflow = '';
     }
 
     function deleteRecord(id) {
@@ -1129,7 +1395,8 @@
 
     populateScoreSelects();
     hydrateHeader();
-    setTodayDate();
+    setCurrentDateTime();
+    saveQualityRecords(getQualityRecords());
     calculateFormTotal();
     renderRecords();
 
@@ -1137,29 +1404,46 @@
     document.getElementById('quality-form').addEventListener('submit', (event) => {
       event.preventDefault();
       const form = event.currentTarget;
+      const recordingFile = form.querySelector('#call-recording').files[0];
+      form.querySelector('#call-recording').setCustomValidity('');
+      if (recordingFile && !recordingFile.name.toLowerCase().endsWith('.mp3') && recordingFile.type !== 'audio/mpeg') {
+        form.querySelector('#call-recording').setCustomValidity('Please select an MP3 recording.');
+        form.querySelector('#call-recording').reportValidity();
+        return;
+      }
       if (!form.reportValidity()) return;
 
       const records = getQualityRecords();
       records.push(buildRecord(form));
       saveQualityRecords(records);
       form.reset();
-      setTodayDate();
+      setCurrentDateTime();
       calculateFormTotal();
       renderRecords();
       document.getElementById('records-title').scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
     document.getElementById('quality-form').addEventListener('reset', () => {
       setTimeout(() => {
-        setTodayDate();
+        setCurrentDateTime();
         calculateFormTotal();
       }, 0);
     });
     document.getElementById('record-search').addEventListener('input', renderRecords);
-    document.getElementById('status-filter').addEventListener('change', renderRecords);
-    document.getElementById('date-filter').addEventListener('change', renderRecords);
+    document.getElementById('date-filter').addEventListener('input', renderRecords);
+    document.getElementById('restaurant-filter').addEventListener('change', renderRecords);
+    document.getElementById('agent-filter').addEventListener('change', renderRecords);
     document.getElementById('records-body').addEventListener('click', (event) => {
-      const button = event.target.closest('[data-delete-id]');
-      if (button) deleteRecord(button.dataset.deleteId);
+      const detailsButton = event.target.closest('[data-details-id]');
+      const deleteButton = event.target.closest('[data-delete-id]');
+      if (detailsButton) openDetails(detailsButton.dataset.detailsId);
+      if (deleteButton) deleteRecord(deleteButton.dataset.deleteId);
+    });
+    document.getElementById('details-modal-close').addEventListener('click', closeDetails);
+    document.getElementById('details-modal').addEventListener('click', (event) => {
+      if (event.target.id === 'details-modal') closeDetails();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeDetails();
     });
   </script>
   <script src="idle-logout.js"></script>
