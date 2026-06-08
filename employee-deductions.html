@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+  <title>Employee Deductions - Cloud Crowd</title>
+  <style>
+    :root{
+      --ice:#A7EBF2;
+      --aqua:#54ACBF;
+      --steel:#26658C;
+      --deep:#023859;
+      --navy:#011C40;
+      --page:#f5fbfd;
+      --card:#ffffff;
+      --line:#d8eef3;
+      --text:#12324a;
+      --muted:#60798b;
+      --danger:#b91c1c;
+      --shadow:0 24px 70px rgba(2,56,89,.12);
+    }
+    *{box-sizing:border-box}
+    html,body{width:100%;min-height:100%;overflow-x:hidden}
+    body{
+      min-height:100vh;
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:
+        linear-gradient(135deg,rgba(167,235,242,.55),transparent 30%),
+        linear-gradient(225deg,rgba(84,172,191,.18),transparent 34%),
+        var(--page);
+      line-height:1.5;
+    }
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    button:disabled{cursor:not-allowed;opacity:.58}
+    a{color:inherit;text-decoration:none}
+    .app-shell{min-height:100vh;display:grid;grid-template-columns:280px minmax(0,1fr)}
+    .sidebar{
+      position:sticky;top:0;min-height:100vh;padding:28px 22px;border-right:1px solid var(--line);
+      background:rgba(255,255,255,.82);box-shadow:18px 0 60px rgba(2,56,89,.08);
+      backdrop-filter:blur(16px) saturate(130%);
+    }
+    .sidebar-brand{display:flex;align-items:center;gap:13px;margin-bottom:34px}
+    .sidebar-logo{width:58px;height:58px;object-fit:contain;filter:drop-shadow(0 10px 18px rgba(84,172,191,.2))}
+    .sidebar-brand h1{margin:0;font-size:22px;line-height:1;font-weight:900;color:var(--navy)}
+    .sidebar-brand p{margin:6px 0 0;color:var(--steel);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:900}
+    .sidebar-nav{display:grid;gap:8px}
+    .nav-item{
+      display:flex;align-items:center;gap:12px;min-height:46px;padding:10px 12px;border:1px solid transparent;
+      border-radius:12px;color:#31556d;font-size:14px;font-weight:800;transition:.2s ease;
+    }
+    .nav-item:hover,.nav-item.active{color:var(--deep);border-color:rgba(84,172,191,.28);background:rgba(167,235,242,.24);transform:translateX(2px)}
+    .nav-icon{width:30px;height:30px;display:grid;place-items:center;border:1px solid rgba(84,172,191,.24);border-radius:9px;color:var(--steel);background:#f0fbfd;flex:0 0 auto}
+    .main-area{min-width:0;padding:26px clamp(20px,4vw,54px) 44px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}
+    .breadcrumb{color:var(--steel);font-size:13px;font-weight:900;letter-spacing:.04em;text-transform:uppercase}
+    .user-tools{display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0}
+    .user-pill,.role-pill{
+      min-height:38px;display:inline-flex;align-items:center;justify-content:center;max-width:260px;padding:8px 12px;
+      border:1px solid var(--line);border-radius:999px;color:var(--deep);background:rgba(255,255,255,.82);font-size:12px;font-weight:900;
+    }
+    .logout{min-height:38px;padding:8px 14px;border:0;border-radius:999px;color:#fff;background:linear-gradient(135deg,#ef4444,#b91c1c);font-size:12px;font-weight:900}
+    .hero{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:22px;padding:32px;
+      border:1px solid var(--line);border-radius:24px;background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,255,255,.84));box-shadow:var(--shadow);
+    }
+    .eyebrow{margin:0 0 8px;color:var(--steel);font-size:12px;font-weight:950;letter-spacing:.1em;text-transform:uppercase}
+    .hero h2{margin:0;color:var(--navy);font-size:clamp(34px,5vw,58px);line-height:1;font-weight:950}
+    .hero p:last-child{max-width:760px;margin:16px 0 0;color:var(--muted);font-size:16px;line-height:1.7}
+    .primary-btn,.secondary-btn,.danger-btn,.small-btn{
+      min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 15px;border-radius:11px;font-weight:900;
+    }
+    .primary-btn{border:0;color:#fff;background:linear-gradient(135deg,var(--steel),var(--deep));box-shadow:0 16px 34px rgba(38,101,140,.22)}
+    .secondary-btn,.small-btn{border:1px solid var(--line);color:var(--deep);background:#fff}
+    .danger-btn{border:1px solid #fecaca;color:var(--danger);background:#fff7f7}
+    .small-btn{min-height:32px;padding:6px 9px;font-size:11px}
+    .message{display:none;margin-bottom:18px;padding:13px 16px;border-radius:12px;font-size:13px;font-weight:800}
+    .message.show{display:block}
+    .message.error{color:#991b1b;background:#fee2e2;border:1px solid #fecaca}
+    .message.success{color:#166534;background:#dcfce7;border:1px solid #bbf7d0}
+    .message.warning{color:#92400e;background:#fffbeb;border:1px solid #fde68a}
+    .stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:22px}
+    .stat-card{padding:20px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.92);box-shadow:0 14px 38px rgba(2,56,89,.08)}
+    .stat-card span{display:block;color:var(--muted);font-size:11px;font-weight:900;text-transform:uppercase}
+    .stat-card strong{display:block;margin-top:8px;color:var(--navy);font-size:28px;line-height:1.1;font-weight:950;overflow-wrap:anywhere}
+    .content-card{border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.94);box-shadow:var(--shadow);overflow:hidden}
+    .card-header{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:24px 28px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,#fff,rgba(167,235,242,.18))}
+    .card-header h3{margin:0;color:var(--navy);font-size:22px;font-weight:950}
+    .card-header p{margin:6px 0 0;color:var(--muted);font-size:14px}
+    .filters{display:grid;grid-template-columns:minmax(210px,1fr) repeat(3,minmax(150px,220px));gap:12px;padding:22px 28px}
+    .control{width:100%;min-height:46px;padding:11px 13px;border:1px solid #cfe8ee;border-radius:12px;background:#fbfeff;color:var(--text);outline:none}
+    .control:focus{border-color:var(--aqua);box-shadow:0 0 0 4px rgba(84,172,191,.16)}
+    .table-wrap{width:100%;overflow-x:auto;padding:0 28px 28px}
+    .records-table{width:100%;min-width:1180px;border-collapse:collapse}
+    .records-table th,.records-table td{padding:12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:12px}
+    .records-table th{color:var(--deep);background:rgba(167,235,242,.18);font-size:10px;font-weight:950;text-transform:uppercase;white-space:nowrap}
+    .amount{color:var(--deep);font-weight:950;white-space:nowrap}
+    .discount-badge{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:950;white-space:nowrap}
+    .discount-yes{color:#166534;background:#dcfce7}
+    .discount-no{color:#475569;background:#e2e8f0}
+    .actions{display:flex;gap:6px;white-space:nowrap}
+    .empty-state{padding:36px 18px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:16px;background:rgba(167,235,242,.08)}
+    .modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(1,28,64,.62);backdrop-filter:blur(8px)}
+    .modal.open{display:flex}
+    .modal-panel{width:min(940px,100%);max-height:92vh;overflow:auto;border:1px solid rgba(167,235,242,.5);border-radius:24px;background:#fff;box-shadow:0 30px 90px rgba(1,28,64,.34)}
+    .modal-panel.details-panel{width:min(760px,100%)}
+    .modal-header{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 26px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.97)}
+    .modal-header h3{margin:0;color:var(--navy);font-size:24px;font-weight:950}
+    .icon-btn{width:38px;height:38px;border:1px solid var(--line);border-radius:50%;color:var(--deep);background:#fff;font-size:20px;font-weight:950}
+    .modal-body{padding:26px}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    .field{display:grid;gap:8px;min-width:0}
+    .field.full{grid-column:1/-1}
+    .field label{color:var(--deep);font-size:13px;font-weight:900}
+    .field textarea{min-height:105px;resize:vertical}
+    .checkbox-field{display:flex;align-items:center;gap:10px;min-height:46px;padding:11px 13px;border:1px solid #cfe8ee;border-radius:12px;background:#fbfeff}
+    .checkbox-field input{width:18px;height:18px;accent-color:var(--steel)}
+    .checkbox-field label{color:var(--deep);font-size:13px;font-weight:900}
+    .calculation-band{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:17px;border:1px solid var(--line);border-radius:16px;background:rgba(167,235,242,.12)}
+    .calculation-item span{display:block;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase}
+    .calculation-item strong{display:block;margin-top:5px;color:var(--navy);font-size:22px;font-weight:950}
+    .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+    .detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .detail-item{padding:13px;border:1px solid #e3f1f4;border-radius:12px;background:#fbfeff}
+    .detail-item.full{grid-column:1/-1}
+    .detail-item span{display:block;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase}
+    .detail-item strong{display:block;margin-top:5px;color:var(--deep);font-size:14px;overflow-wrap:anywhere}
+    @media (max-width:1050px){
+      .app-shell{grid-template-columns:1fr}
+      .sidebar{position:relative;min-height:auto;padding:20px}
+      .sidebar-brand{margin-bottom:16px}
+      .sidebar-nav{grid-template-columns:repeat(3,minmax(0,1fr))}
+    }
+    @media (max-width:850px){
+      .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media (max-width:620px){
+      .main-area{padding:20px 16px 34px}
+      .topbar,.hero,.card-header{flex-direction:column;align-items:stretch}
+      .user-tools{justify-content:flex-start;flex-wrap:wrap}
+      .sidebar-nav,.stats-grid,.filters,.form-grid,.detail-grid,.calculation-band{grid-template-columns:1fr}
+      .field.full,.calculation-band,.detail-item.full{grid-column:auto}
+      .card-header,.filters,.table-wrap{padding-left:20px;padding-right:20px}
+      .modal{padding:10px}
+      .modal-body{padding:20px}
+      .modal-actions{flex-direction:column-reverse}
+      .modal-actions button{width:100%}
+    }
+  </style>
+  <script>
+    if (localStorage.getItem('cc_auth') !== '1' || !localStorage.getItem('cc_token') || !localStorage.getItem('cc_role')) {
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html';
+    }
+  </script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Employee Deductions navigation">
+      <a class="sidebar-brand" href="dashboard.html" aria-label="Cloud Crowd dashboard">
+        <img src="assets/images/logo.png" alt="Cloud Crowd logo" class="sidebar-logo">
+        <div><h1>Cloud Crowd</h1><p>Operations Hub</p></div>
+      </a>
+      <nav class="sidebar-nav">
+        <a class="nav-item" href="dashboard.html"><span class="nav-icon" aria-hidden="true">&#8962;</span>Dashboard</a>
+        <a class="nav-item" href="employee-profiles.html"><span class="nav-icon" aria-hidden="true">&#9783;</span>Employee Profiles</a>
+        <a class="nav-item active" href="employee-deductions.html" aria-current="page"><span class="nav-icon" aria-hidden="true">&#8722;</span>Employee Deductions</a>
+      </nav>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <a class="breadcrumb" href="dashboard.html">&larr; Dashboard</a>
+        <div class="user-tools">
+          <span class="user-pill" id="current-user">Team Member</span>
+          <span class="role-pill" id="current-role">operator</span>
+          <button class="logout" type="button" id="logout-btn">Log out</button>
+        </div>
+      </header>
+
+      <section class="hero" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">People Operations</p>
+          <h2 id="page-title">Employee Deductions</h2>
+          <p>Track employee deductions, personal orders, discounts, and financial adjustments.</p>
+        </div>
+        <button class="primary-btn management-control" type="button" id="new-deduction-btn">+ New Deduction</button>
+      </section>
+
+      <div class="message" id="page-message" role="status"></div>
+
+      <section class="stats-grid" aria-label="Deduction summary">
+        <article class="stat-card"><span>Total Deductions Amount</span><strong id="stat-total">0.00</strong></article>
+        <article class="stat-card"><span>This Month Deductions</span><strong id="stat-month">0.00</strong></article>
+        <article class="stat-card"><span>Employees With Deductions</span><strong id="stat-employees">0</strong></article>
+        <article class="stat-card"><span>Most Common Deduction Type</span><strong id="stat-type">-</strong></article>
+      </section>
+
+      <section class="content-card" aria-labelledby="records-title">
+        <div class="card-header">
+          <div><h3 id="records-title">Deduction Records</h3><p>Review and filter employee financial adjustments.</p></div>
+          <span class="role-pill" id="record-count">0 records</span>
+        </div>
+        <div class="filters">
+          <input class="control" id="employee-search" type="search" placeholder="Search by employee">
+          <select class="control" id="restaurant-filter" aria-label="Filter by restaurant"><option value="">All restaurants</option></select>
+          <select class="control" id="type-filter" aria-label="Filter by deduction type">
+            <option value="">All deduction types</option>
+            <option>Personal Order</option><option>Order Mistake</option><option>Health Insurance</option><option>Delivery Cost</option><option>Other</option>
+          </select>
+          <input class="control" id="month-filter" type="month" aria-label="Filter by month">
+        </div>
+        <div class="table-wrap">
+          <table class="records-table">
+            <thead>
+              <tr>
+                <th>Employee</th><th>Deduction Type</th><th>Restaurant</th><th>Order Number</th>
+                <th>Original Amount</th><th>Employee Discount</th><th>Final Deduction</th>
+                <th>Order Date</th><th>Approved By</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="records-body"></tbody>
+          </table>
+          <div class="empty-state" id="records-empty">Loading deduction records...</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal" id="deduction-modal" role="dialog" aria-modal="true" aria-labelledby="deduction-modal-title">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 id="deduction-modal-title">New Deduction</h3>
+        <button class="icon-btn" type="button" data-close-modal="deduction-modal" aria-label="Close deduction form">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="deduction-form">
+          <input id="deduction-id" type="hidden">
+          <div class="form-grid">
+            <div class="field">
+              <label for="employee-id">Employee</label>
+              <select class="control" id="employee-id" name="employeeId" required disabled>
+                <option value="">Loading employees...</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="deduction-type">Deduction Type</label>
+              <select class="control" id="deduction-type" name="deductionType" required>
+                <option value="">Select type</option>
+                <option>Personal Order</option><option>Order Mistake</option><option>Health Insurance</option><option>Delivery Cost</option><option>Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="restaurant-name">Restaurant</label>
+              <input class="control" id="restaurant-name" name="restaurantName" type="text" list="restaurant-options" maxlength="200" placeholder="Select or enter a restaurant">
+              <datalist id="restaurant-options">
+                <option value="Ned's Pizza"><option value="Very Good Burger"><option value="Safaeh Al Sager">
+                <option value="Happy Tummies"><option value="Crunchychkn"><option value="Bun Run">
+                <option value="Heat Burger"><option value="Bint Halal"><option value="Chili Charms">
+                <option value="Colors Catering"><option value="UFO">
+              </datalist>
+            </div>
+            <div class="field">
+              <label for="order-number">Order Number</label>
+              <input class="control" id="order-number" name="orderNumber" type="text" maxlength="120">
+            </div>
+            <div class="field">
+              <label for="order-date-time">Order Date &amp; Time</label>
+              <input class="control" id="order-date-time" name="orderDateTime" type="text" placeholder="2026-06-07 14:08:27" pattern="\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}" title="Use YYYY-MM-DD HH:mm:ss">
+            </div>
+            <div class="field">
+              <label for="original-amount">Original Amount</label>
+              <input class="control" id="original-amount" name="originalAmount" type="number" min="0" step="0.01" required>
+            </div>
+            <div class="field full">
+              <div class="checkbox-field">
+                <input id="apply-discount" name="applyEmployeeDiscount" type="checkbox">
+                <label for="apply-discount">Apply Employee Discount (10%)</label>
+              </div>
+            </div>
+            <div class="calculation-band" aria-live="polite">
+              <div class="calculation-item"><span>Original Amount</span><strong id="calculated-original">0.00</strong></div>
+              <div class="calculation-item"><span>Discount Value</span><strong id="calculated-discount">0.00</strong></div>
+              <div class="calculation-item"><span>Final Deduction Amount</span><strong id="calculated-final">0.00</strong></div>
+            </div>
+            <div class="field">
+              <label for="approved-by">Approved By</label>
+              <input class="control" id="approved-by" name="approvedBy" type="text" maxlength="200">
+            </div>
+            <div class="field full">
+              <label for="notes">Notes</label>
+              <textarea class="control" id="notes" name="notes" maxlength="5000"></textarea>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button class="secondary-btn" type="button" data-close-modal="deduction-modal">Cancel</button>
+            <button class="primary-btn" type="submit" id="save-deduction-btn">Save Deduction</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="details-modal" role="dialog" aria-modal="true" aria-labelledby="details-modal-title">
+    <div class="modal-panel details-panel">
+      <div class="modal-header">
+        <h3 id="details-modal-title">Deduction Details</h3>
+        <button class="icon-btn" type="button" data-close-modal="details-modal" aria-label="Close deduction details">&times;</button>
+      </div>
+      <div class="modal-body" id="details-modal-body"></div>
+    </div>
+  </div>
+
+  <script>
+    const EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
+    const DEDUCTIONS_ENDPOINT = '/.netlify/functions/deductions';
+    const DISCOUNT_PERCENTAGE = 10;
+    const currentRole = (localStorage.getItem('cc_role') || '').toLowerCase();
+    const canManageDeductions = ['admin', 'manager'].includes(currentRole);
+    let employees = [];
+    let deductions = [];
+    let employeesAvailable = false;
+
+    function authHeaders(extra = {}) {
+      return {
+        ...extra,
+        'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+      };
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[character]));
+    }
+
+    function logout() {
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html';
+    }
+
+    async function apiRequest(url, options = {}) {
+      const response = await fetch(url, {
+        ...options,
+        cache: 'no-store',
+        headers: authHeaders(options.headers || {})
+      });
+      if (response.status === 401) {
+        logout();
+        throw new Error('Session expired');
+      }
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || `Request failed (${response.status})`);
+      }
+      return data;
+    }
+
+    function showMessage(message, type = 'error', persistent = false) {
+      const element = document.getElementById('page-message');
+      element.textContent = message;
+      element.className = `message show ${type}`;
+      if (!persistent) {
+        window.setTimeout(() => {
+          element.className = 'message';
+        }, 5000);
+      }
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+      if (!document.querySelector('.modal.open')) document.body.style.overflow = '';
+    }
+
+    function formatAmount(value) {
+      return Number(value || 0).toFixed(2);
+    }
+
+    function currentMonth() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    function setCurrentDateTime() {
+      const input = document.getElementById('order-date-time');
+      if (input.value) return;
+      const now = new Date();
+      const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+      input.value = local.toISOString().slice(0, 19).replace('T', ' ');
+    }
+
+    function calculateAmounts() {
+      const original = Math.max(0, Number(document.getElementById('original-amount').value || 0));
+      const applyDiscount = document.getElementById('apply-discount').checked;
+      const discount = applyDiscount
+        ? Math.round((original * (DISCOUNT_PERCENTAGE / 100) + Number.EPSILON) * 100) / 100
+        : 0;
+      const finalAmount = Math.max(0, Math.round((original - discount + Number.EPSILON) * 100) / 100);
+      document.getElementById('calculated-original').textContent = formatAmount(original);
+      document.getElementById('calculated-discount').textContent = formatAmount(discount);
+      document.getElementById('calculated-final').textContent = formatAmount(finalAmount);
+      return { original, discount, finalAmount };
+    }
+
+    async function loadEmployees() {
+      const select = document.getElementById('employee-id');
+      try {
+        const data = await apiRequest(EMPLOYEES_ENDPOINT);
+        employees = (Array.isArray(data.employees) ? data.employees : [])
+          .filter((employee) => employee.status === 'active')
+          .map((employee) => ({
+            employeeId: String(employee.employeeId || ''),
+            fullName: String(employee.fullName || '').trim()
+          }))
+          .filter((employee) => employee.employeeId && employee.fullName)
+          .sort((a, b) => a.fullName.localeCompare(b.fullName));
+        if (!employees.length) throw new Error('No active employees are available.');
+        select.innerHTML = '<option value="">Select employee</option>' + employees
+          .map((employee) => `<option value="${escapeHtml(employee.employeeId)}">${escapeHtml(employee.fullName)}</option>`)
+          .join('');
+        select.disabled = false;
+        employeesAvailable = true;
+      } catch (error) {
+        employees = [];
+        employeesAvailable = false;
+        select.innerHTML = '<option value="">Employees unavailable</option>';
+        select.disabled = true;
+        document.getElementById('new-deduction-btn').disabled = true;
+        showMessage(
+          'Employee Profiles could not be loaded. Existing deductions remain available, but new deductions cannot be created.',
+          'warning',
+          true
+        );
+      }
+    }
+
+    async function loadDeductions() {
+      try {
+        const data = await apiRequest(DEDUCTIONS_ENDPOINT);
+        deductions = Array.isArray(data.deductions) ? data.deductions : [];
+        populateRestaurantFilter();
+        renderDeductions();
+        renderStats();
+      } catch (error) {
+        deductions = [];
+        document.getElementById('records-body').innerHTML = '';
+        document.getElementById('records-empty').textContent = error.message;
+        document.getElementById('records-empty').style.display = 'block';
+        renderStats();
+      }
+    }
+
+    function populateRestaurantFilter() {
+      const select = document.getElementById('restaurant-filter');
+      const currentValue = select.value;
+      const restaurants = [...new Set(
+        deductions.map((deduction) => deduction.restaurantName).filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b));
+      select.innerHTML = '<option value="">All restaurants</option>' + restaurants
+        .map((restaurant) => `<option value="${escapeHtml(restaurant)}">${escapeHtml(restaurant)}</option>`)
+        .join('');
+      select.value = restaurants.includes(currentValue) ? currentValue : '';
+    }
+
+    function renderStats() {
+      const total = deductions.reduce((sum, deduction) => sum + Number(deduction.finalDeductionAmount || 0), 0);
+      const month = currentMonth();
+      const monthTotal = deductions
+        .filter((deduction) => String(deduction.orderDateTime || deduction.createdAt || '').slice(0, 7) === month)
+        .reduce((sum, deduction) => sum + Number(deduction.finalDeductionAmount || 0), 0);
+      const employeeCount = new Set(deductions.map((deduction) => deduction.employeeId).filter(Boolean)).size;
+      const typeCounts = new Map();
+      deductions.forEach((deduction) => {
+        typeCounts.set(deduction.deductionType, (typeCounts.get(deduction.deductionType) || 0) + 1);
+      });
+      const commonType = Array.from(typeCounts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] || '-';
+      document.getElementById('stat-total').textContent = formatAmount(total);
+      document.getElementById('stat-month').textContent = formatAmount(monthTotal);
+      document.getElementById('stat-employees').textContent = employeeCount;
+      document.getElementById('stat-type').textContent = commonType;
+    }
+
+    function getFilteredDeductions() {
+      const search = document.getElementById('employee-search').value.trim().toLowerCase();
+      const restaurant = document.getElementById('restaurant-filter').value;
+      const type = document.getElementById('type-filter').value;
+      const month = document.getElementById('month-filter').value;
+      return deductions.filter((deduction) => {
+        const matchesEmployee = !search ||
+          String(deduction.employeeNameSnapshot || '').toLowerCase().includes(search);
+        const matchesRestaurant = !restaurant || deduction.restaurantName === restaurant;
+        const matchesType = !type || deduction.deductionType === type;
+        const matchesMonth = !month ||
+          String(deduction.orderDateTime || deduction.createdAt || '').slice(0, 7) === month;
+        return matchesEmployee && matchesRestaurant && matchesType && matchesMonth;
+      });
+    }
+
+    function renderDeductions() {
+      const filtered = getFilteredDeductions();
+      const body = document.getElementById('records-body');
+      const empty = document.getElementById('records-empty');
+      body.innerHTML = filtered.map((deduction) => {
+        const managementActions = canManageDeductions ? `
+          <button class="small-btn" type="button" data-edit-id="${escapeHtml(deduction.deductionId)}">Edit</button>
+          <button class="small-btn danger-btn" type="button" data-delete-id="${escapeHtml(deduction.deductionId)}">Delete</button>
+        ` : '';
+        return `
+          <tr>
+            <td>${escapeHtml(deduction.employeeNameSnapshot || '-')}</td>
+            <td>${escapeHtml(deduction.deductionType || '-')}</td>
+            <td>${escapeHtml(deduction.restaurantName || '-')}</td>
+            <td>${escapeHtml(deduction.orderNumber || '-')}</td>
+            <td class="amount">${formatAmount(deduction.originalAmount)}</td>
+            <td><span class="discount-badge ${deduction.applyEmployeeDiscount ? 'discount-yes' : 'discount-no'}">${deduction.applyEmployeeDiscount ? 'Yes (10%)' : 'No'}</span></td>
+            <td class="amount">${formatAmount(deduction.finalDeductionAmount)}</td>
+            <td>${escapeHtml(deduction.orderDateTime || '-')}</td>
+            <td>${escapeHtml(deduction.approvedBy || '-')}</td>
+            <td><div class="actions">
+              <button class="small-btn" type="button" data-view-id="${escapeHtml(deduction.deductionId)}">View Details</button>
+              ${managementActions}
+            </div></td>
+          </tr>
+        `;
+      }).join('');
+      empty.textContent = 'No deduction records match this view.';
+      empty.style.display = filtered.length ? 'none' : 'block';
+      document.getElementById('record-count').textContent =
+        `${filtered.length} ${filtered.length === 1 ? 'record' : 'records'}`;
+    }
+
+    function resetDeductionForm() {
+      document.getElementById('deduction-form').reset();
+      document.getElementById('deduction-id').value = '';
+      document.getElementById('deduction-modal-title').textContent = 'New Deduction';
+      setCurrentDateTime();
+      calculateAmounts();
+    }
+
+    function openCreateDeduction() {
+      if (!canManageDeductions || !employeesAvailable) return;
+      resetDeductionForm();
+      openModal('deduction-modal');
+    }
+
+    function collectDeductionData() {
+      const select = document.getElementById('employee-id');
+      const employee = employees.find((item) => item.employeeId === select.value);
+      return {
+        employeeId: employee?.employeeId || '',
+        employeeNameSnapshot: employee?.fullName || '',
+        deductionType: document.getElementById('deduction-type').value,
+        restaurantName: document.getElementById('restaurant-name').value.trim(),
+        orderNumber: document.getElementById('order-number').value.trim(),
+        orderDateTime: document.getElementById('order-date-time').value.trim(),
+        originalAmount: document.getElementById('original-amount').value,
+        applyEmployeeDiscount: document.getElementById('apply-discount').checked,
+        approvedBy: document.getElementById('approved-by').value.trim(),
+        notes: document.getElementById('notes').value.trim()
+      };
+    }
+
+    async function saveDeduction(event) {
+      event.preventDefault();
+      if (!canManageDeductions || !employeesAvailable || !event.currentTarget.reportValidity()) return;
+      const data = collectDeductionData();
+      if (!data.employeeId || !data.employeeNameSnapshot) return;
+      const deductionId = document.getElementById('deduction-id').value;
+      const button = document.getElementById('save-deduction-btn');
+      button.disabled = true;
+      try {
+        await apiRequest(
+          deductionId ? `${DEDUCTIONS_ENDPOINT}?id=${encodeURIComponent(deductionId)}` : DEDUCTIONS_ENDPOINT,
+          {
+            method: deductionId ? 'PUT' : 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+          }
+        );
+        closeModal('deduction-modal');
+        showMessage(deductionId ? 'Deduction updated.' : 'Deduction created.', 'success');
+        await loadDeductions();
+      } catch (error) {
+        showMessage(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function findDeduction(id) {
+      return deductions.find((deduction) => deduction.deductionId === id);
+    }
+
+    function viewDeduction(id) {
+      const deduction = findDeduction(id);
+      if (!deduction) return;
+      document.getElementById('details-modal-body').innerHTML = `
+        <div class="detail-grid">
+          <div class="detail-item"><span>Employee</span><strong>${escapeHtml(deduction.employeeNameSnapshot)}</strong></div>
+          <div class="detail-item"><span>Type</span><strong>${escapeHtml(deduction.deductionType)}</strong></div>
+          <div class="detail-item"><span>Restaurant</span><strong>${escapeHtml(deduction.restaurantName || '-')}</strong></div>
+          <div class="detail-item"><span>Order Number</span><strong>${escapeHtml(deduction.orderNumber || '-')}</strong></div>
+          <div class="detail-item"><span>Order Date &amp; Time</span><strong>${escapeHtml(deduction.orderDateTime || '-')}</strong></div>
+          <div class="detail-item"><span>Original Amount</span><strong>${formatAmount(deduction.originalAmount)}</strong></div>
+          <div class="detail-item"><span>Discount Applied</span><strong>${deduction.applyEmployeeDiscount ? 'Yes' : 'No'}</strong></div>
+          <div class="detail-item"><span>Discount Percentage</span><strong>${formatAmount(deduction.discountPercentage)}%</strong></div>
+          <div class="detail-item"><span>Discount Value</span><strong>${formatAmount(deduction.discountValue)}</strong></div>
+          <div class="detail-item"><span>Final Deduction Amount</span><strong>${formatAmount(deduction.finalDeductionAmount)}</strong></div>
+          <div class="detail-item"><span>Approved By</span><strong>${escapeHtml(deduction.approvedBy || '-')}</strong></div>
+          <div class="detail-item"><span>Created By</span><strong>${escapeHtml(deduction.createdBy || '-')}</strong></div>
+          <div class="detail-item"><span>Created At</span><strong>${escapeHtml(deduction.createdAt ? new Date(deduction.createdAt).toLocaleString() : '-')}</strong></div>
+          <div class="detail-item full"><span>Notes</span><strong>${escapeHtml(deduction.notes || '-')}</strong></div>
+        </div>
+      `;
+      openModal('details-modal');
+    }
+
+    function editDeduction(id) {
+      if (!canManageDeductions || !employeesAvailable) return;
+      const deduction = findDeduction(id);
+      if (!deduction) return;
+      resetDeductionForm();
+      document.getElementById('deduction-id').value = deduction.deductionId;
+      document.getElementById('employee-id').value = deduction.employeeId;
+      document.getElementById('deduction-type').value = deduction.deductionType;
+      document.getElementById('restaurant-name').value = deduction.restaurantName || '';
+      document.getElementById('order-number').value = deduction.orderNumber || '';
+      document.getElementById('order-date-time').value = deduction.orderDateTime || '';
+      document.getElementById('original-amount').value = deduction.originalAmount;
+      document.getElementById('apply-discount').checked = deduction.applyEmployeeDiscount === true;
+      document.getElementById('approved-by').value = deduction.approvedBy || '';
+      document.getElementById('notes').value = deduction.notes || '';
+      document.getElementById('deduction-modal-title').textContent = 'Edit Deduction';
+      calculateAmounts();
+      openModal('deduction-modal');
+    }
+
+    async function deleteDeduction(id) {
+      if (!canManageDeductions) return;
+      const deduction = findDeduction(id);
+      if (!deduction || !window.confirm(`Delete the deduction for ${deduction.employeeNameSnapshot}?`)) return;
+      try {
+        await apiRequest(`${DEDUCTIONS_ENDPOINT}?id=${encodeURIComponent(id)}`, {method: 'DELETE'});
+        showMessage('Deduction deleted.', 'success');
+        await loadDeductions();
+      } catch (error) {
+        showMessage(error.message);
+      }
+    }
+
+    document.getElementById('current-user').textContent = localStorage.getItem('cc_user') || 'Team Member';
+    document.getElementById('current-role').textContent = currentRole || 'operator';
+    document.querySelectorAll('.management-control').forEach((element) => {
+      element.hidden = !canManageDeductions;
+    });
+    document.getElementById('logout-btn').addEventListener('click', logout);
+    document.getElementById('new-deduction-btn').addEventListener('click', openCreateDeduction);
+    document.getElementById('deduction-form').addEventListener('submit', saveDeduction);
+    document.getElementById('original-amount').addEventListener('input', calculateAmounts);
+    document.getElementById('apply-discount').addEventListener('change', calculateAmounts);
+    ['employee-search','restaurant-filter','type-filter','month-filter'].forEach((id) => {
+      document.getElementById(id).addEventListener(id === 'employee-search' ? 'input' : 'change', renderDeductions);
+    });
+
+    document.addEventListener('click', (event) => {
+      const closeButton = event.target.closest('[data-close-modal]');
+      const viewButton = event.target.closest('[data-view-id]');
+      const editButton = event.target.closest('[data-edit-id]');
+      const deleteButton = event.target.closest('[data-delete-id]');
+      if (closeButton) closeModal(closeButton.dataset.closeModal);
+      if (viewButton) viewDeduction(viewButton.dataset.viewId);
+      if (editButton) editDeduction(editButton.dataset.editId);
+      if (deleteButton) deleteDeduction(deleteButton.dataset.deleteId);
+    });
+    document.querySelectorAll('.modal').forEach((modal) => {
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) closeModal(modal.id);
+      });
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      const open = document.querySelector('.modal.open');
+      if (open) closeModal(open.id);
+    });
+
+    Promise.allSettled([loadEmployees(), loadDeductions()]);
+  </script>
+  <script src="idle-logout.js"></script>
+</body>
+</html>

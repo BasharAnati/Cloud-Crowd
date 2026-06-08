@@ -194,6 +194,7 @@
     }
     .modal.open{display:flex}
     .modal-panel{width:min(920px,100%);max-height:92vh;overflow:auto;border:1px solid rgba(167,235,242,.5);border-radius:24px;background:#fff;box-shadow:0 30px 90px rgba(1,28,64,.34)}
+    #profile-modal .modal-panel{width:min(1180px,100%)}
     .modal-header{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 26px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.96)}
     .modal-header h3{margin:0;color:var(--navy);font-size:24px;font-weight:950}
     .icon-btn{width:38px;height:38px;border:1px solid var(--line);border-radius:50%;color:var(--deep);background:#fff;font-weight:950}
@@ -218,7 +219,28 @@
     .detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
     .detail-item{padding:12px;border-radius:12px;background:#fff;border:1px solid #e8f4f6}
     .detail-item span{display:block;color:var(--muted);font-size:11px;font-weight:900;text-transform:uppercase}
+    .detail-item .chip{display:inline-flex;color:var(--deep);font-size:11px;text-transform:none}
     .detail-item strong{display:block;margin-top:5px;color:var(--deep);font-size:14px;overflow-wrap:anywhere}
+    .profile-section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}
+    .profile-section-heading h4{margin:0}
+    .section-source{display:inline-flex;align-items:center;min-height:28px;padding:5px 9px;border-radius:999px;color:var(--deep);background:rgba(167,235,242,.28);font-size:11px;font-weight:900;white-space:nowrap}
+    .metrics-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+    .metric-card{min-height:96px;padding:14px;border:1px solid #dceff3;border-radius:13px;background:#fff}
+    .metric-card span{display:block;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase}
+    .metric-card strong{display:block;margin-top:8px;color:var(--navy);font-size:22px;line-height:1.15;font-weight:950;overflow-wrap:anywhere}
+    .metric-card small{display:block;margin-top:6px;color:var(--muted);font-size:10px;font-weight:800}
+    .profile-table-wrap{width:100%;overflow-x:auto;border:1px solid #e3f1f4;border-radius:13px;background:#fff}
+    .profile-table{width:100%;min-width:760px;border-collapse:collapse}
+    .profile-table th,.profile-table td{padding:11px 12px;border-bottom:1px solid #e8f4f6;text-align:left;vertical-align:top;font-size:12px}
+    .profile-table th{color:var(--deep);background:rgba(167,235,242,.16);font-size:10px;font-weight:950;text-transform:uppercase;white-space:nowrap}
+    .profile-table tbody tr:last-child td{border-bottom:0}
+    .profile-score{color:var(--deep);font-weight:950;white-space:nowrap}
+    .profile-status{font-weight:900;white-space:nowrap}
+    .profile-note{max-width:260px;white-space:normal}
+    .evaluation-details{min-width:150px}
+    .evaluation-details summary{color:var(--steel);font-weight:900;cursor:pointer}
+    .evaluation-details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:8px;color:var(--muted);font-size:10px}
+    .profile-empty{padding:24px 16px;text-align:center;color:var(--muted);border:1px dashed #b8dce4;border-radius:13px;background:#fff;font-size:13px;font-weight:800}
     .future-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
     .future-card{min-height:94px;padding:13px;border:1px dashed #b8dce4;border-radius:13px;background:#f4fafc;color:var(--muted)}
     .future-card strong{display:block;color:#47677a;font-size:13px}
@@ -232,6 +254,7 @@
     }
     @media (max-width:800px){
       .stats-grid,.employee-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
       .future-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
     @media (max-width:620px){
@@ -239,8 +262,13 @@
       .topbar,.hero,.card-header{flex-direction:column;align-items:stretch}
       .user-tools{justify-content:flex-start;flex-wrap:wrap}
       .stats-grid,.employee-grid,.filters,.form-grid,.detail-grid{grid-template-columns:1fr}
+      .metrics-grid{grid-template-columns:1fr}
       .field.full,.form-section{grid-column:auto}
       .employee-grid,.filters,.card-header{padding-left:20px;padding-right:20px}
+      .modal{padding:10px}
+      .modal-body{padding:18px}
+      .profile-section-heading{align-items:stretch;flex-direction:column}
+      .section-source{align-self:flex-start}
       .dynamic-row,.contact-row{grid-template-columns:1fr}
       .restaurant-row{grid-template-columns:1fr auto}
       .primary-check{min-height:36px}
@@ -397,6 +425,21 @@
 
   <script>
     const EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
+    const DEDUCTIONS_ENDPOINT = '/.netlify/functions/deductions';
+    const WEEKLY_QUALITY_STORAGE_KEY = 'cc_weekly_quality_records_v1';
+    const ATTENDANCE_STORAGE_KEY = 'cc_attendance_records_v1';
+    const QUALITY_SCORE_LABELS = {
+      greetings: 'Greetings',
+      knowledge: 'Knowledge',
+      upselling: 'Upselling',
+      closure: 'Closure',
+      repeatingOrders: 'Repeating Orders',
+      phoneEtiquette: 'Phone Etiquette',
+      clarity: 'Clarity',
+      environment: 'Environment',
+      equipment: 'Equipment',
+      aat: 'AAT'
+    };
     const currentRole = (localStorage.getItem('cc_role') || '').toLowerCase();
     const canManageEmployees = ['admin', 'manager'].includes(currentRole);
     let employees = [];
@@ -615,9 +658,203 @@
       return escapeHtml(value || '-');
     }
 
+    function readStoredRecords(key, label) {
+      try {
+        const records = JSON.parse(localStorage.getItem(key) || '[]');
+        return Array.isArray(records) ? records : [];
+      } catch (error) {
+        console.warn(`${label} records could not be read.`, error);
+        return [];
+      }
+    }
+
+    function normalizeEmployeeName(value) {
+      return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
+    function canUseLegacyNameMatch(employee) {
+      const normalizedName = normalizeEmployeeName(employee.fullName);
+      if (!normalizedName) return false;
+      return employees.filter(
+        (candidate) => normalizeEmployeeName(candidate.fullName) === normalizedName
+      ).length === 1;
+    }
+
+    function recordMatchesEmployee(record, employee, idField, snapshotField, legacyField) {
+      const recordEmployeeId = String(record?.[idField] || '').trim();
+      if (recordEmployeeId) return recordEmployeeId === String(employee.employeeId);
+      if (!canUseLegacyNameMatch(employee)) return false;
+      const recordName = normalizeEmployeeName(
+        record?.[snapshotField] || record?.[legacyField]
+      );
+      return recordName && recordName === normalizeEmployeeName(employee.fullName);
+    }
+
+    function recordTimestamp(record, primaryField) {
+      const primary = String(record?.[primaryField] || '').trim().replace(' ', 'T');
+      return Date.parse(primary) || Date.parse(record?.createdAt || '') || 0;
+    }
+
+    function getQualityScore(record) {
+      if (Number.isFinite(Number(record?.totalScore))) return Number(record.totalScore);
+      const scores = record?.scores && typeof record.scores === 'object'
+        ? Object.values(record.scores)
+        : [];
+      return scores.reduce((sum, score) => sum + (Number(score) || 0), 0);
+    }
+
+    function formatScore(value) {
+      const rounded = Math.round(Number(value || 0) * 10) / 10;
+      return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)}%`;
+    }
+
+    function getQualitySummary(employee) {
+      const records = readStoredRecords(WEEKLY_QUALITY_STORAGE_KEY, 'Weekly quality')
+        .filter((record) => recordMatchesEmployee(
+          record,
+          employee,
+          'agentEmployeeId',
+          'agentNameSnapshot',
+          'agent'
+        ))
+        .sort((a, b) => recordTimestamp(b, 'callDateTime') - recordTimestamp(a, 'callDateTime'));
+      const scores = records.map(getQualityScore);
+      const campaignGroups = new Map();
+
+      records.forEach((record) => {
+        const campaign = String(record.campaign || record.restaurant || '').trim();
+        if (!campaign) return;
+        const group = campaignGroups.get(campaign) || { total: 0, count: 0 };
+        group.total += getQualityScore(record);
+        group.count += 1;
+        campaignGroups.set(campaign, group);
+      });
+
+      const topCampaign = Array.from(campaignGroups, ([name, group]) => ({
+        name,
+        average: group.total / group.count,
+        count: group.count
+      })).sort((a, b) =>
+        b.average - a.average ||
+        b.count - a.count ||
+        a.name.localeCompare(b.name)
+      )[0] || null;
+
+      return {
+        records,
+        average: scores.length
+          ? scores.reduce((sum, score) => sum + score, 0) / scores.length
+          : 0,
+        best: scores.length ? Math.max(...scores) : 0,
+        worst: scores.length ? Math.min(...scores) : 0,
+        lastDate: records[0]?.callDateTime || records[0]?.date || '',
+        topCampaign
+      };
+    }
+
+    function parseDurationMinutes(value) {
+      const duration = String(value || '').trim().toLowerCase();
+      if (!duration) return null;
+      const colonMatch = duration.match(/^(\d+):([0-5]?\d)$/);
+      if (colonMatch) return Number(colonMatch[1]) * 60 + Number(colonMatch[2]);
+      const hoursMatch = duration.match(/(\d+(?:\.\d+)?)\s*h/);
+      const minutesMatch = duration.match(/(\d+)\s*m/);
+      if (!hoursMatch && !minutesMatch) return null;
+      return Math.round((Number(hoursMatch?.[1] || 0) * 60) + Number(minutesMatch?.[1] || 0));
+    }
+
+    function formatDuration(totalMinutes) {
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    }
+
+    function attendanceHasStatus(record, status) {
+      return [record.loginStatus, record.logoutStatus].some(
+        (value) => String(value || '').trim().toLowerCase() === status.toLowerCase()
+      );
+    }
+
+    function getAttendanceSummary(employee) {
+      const records = readStoredRecords(ATTENDANCE_STORAGE_KEY, 'Attendance')
+        .filter((record) => recordMatchesEmployee(
+          record,
+          employee,
+          'employeeId',
+          'employeeNameSnapshot',
+          'agent'
+        ))
+        .sort((a, b) => recordTimestamp(b, 'date') - recordTimestamp(a, 'date'));
+      const durationValues = records
+        .filter((record) => String(record.extraTime || '').toLowerCase() === 'yes')
+        .map((record) => parseDurationMinutes(record.extraDuration));
+      const parsedDurations = durationValues.filter((value) => value !== null);
+
+      return {
+        records,
+        onTime: records.filter((record) => attendanceHasStatus(record, 'On Time')).length,
+        leftEarly: records.filter((record) => attendanceHasStatus(record, 'Left Early')).length,
+        lateLogout: records.filter((record) => attendanceHasStatus(record, 'Late Logout')).length,
+        extraTime: records.filter(
+          (record) => String(record.extraTime || '').trim().toLowerCase() === 'yes'
+        ).length,
+        totalExtraMinutes: parsedDurations.reduce((sum, value) => sum + value, 0),
+        unparsedDurations: durationValues.length - parsedDurations.length,
+        lastDate: records[0]?.date || ''
+      };
+    }
+
+    function qualityDetails(record) {
+      const scores = record.scores && typeof record.scores === 'object'
+        ? Object.entries(record.scores)
+        : [];
+      if (!scores.length && !record.notes) return '-';
+      const breakdown = scores.length
+        ? `<div class="evaluation-details-grid">${scores.map(([field, score]) => (
+            `<span>${escapeHtml(QUALITY_SCORE_LABELS[field] || field)}: <strong>${Number(score) || 0}</strong></span>`
+          )).join('')}</div>`
+        : '';
+      return `
+        <details class="evaluation-details">
+          <summary>View details</summary>
+          ${breakdown}
+          ${record.notes ? `<p>${escapeHtml(record.notes)}</p>` : ''}
+        </details>
+      `;
+    }
+
+    function attendanceNote(record) {
+      return [record.note, record.customNote].filter(Boolean).join(' - ') || '-';
+    }
+
+    function currentProfileMonth() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    function formatDeductionAmount(value) {
+      return Number(value || 0).toFixed(2);
+    }
+
+    async function getEmployeeDeductions(employeeId) {
+      const data = await apiRequest(
+        `${DEDUCTIONS_ENDPOINT}?employeeId=${encodeURIComponent(employeeId)}`
+      );
+      return Array.isArray(data.deductions) ? data.deductions : [];
+    }
+
     async function viewEmployee(employeeId) {
       try {
         const employee = await getEmployeeProfile(employeeId);
+        const quality = getQualitySummary(employee);
+        const attendance = getAttendanceSummary(employee);
+        let deductionRecords = [];
+        let deductionsError = '';
+        try {
+          deductionRecords = await getEmployeeDeductions(employee.employeeId);
+        } catch (error) {
+          deductionsError = error.message || 'Deductions could not be loaded.';
+        }
         const phones = employee.phoneNumbers.length
           ? employee.phoneNumbers.map((phone) => `
               <div class="detail-item">
@@ -637,32 +874,164 @@
         const restaurants = employee.assignedRestaurants.length
           ? employee.assignedRestaurants.map((name) => `<span class="chip">${escapeHtml(name)}</span>`).join('')
           : '<span class="chip">No restaurants assigned</span>';
+        const qualityRows = quality.records.slice(0, 5).map((record) => `
+          <tr>
+            <td>${escapeHtml(record.callDateTime || record.date || '-')}</td>
+            <td>${escapeHtml(record.campaign || record.restaurant || '-')}</td>
+            <td>${escapeHtml(record.auditorNameSnapshot || record.auditor || '-')}</td>
+            <td class="profile-score">${formatScore(getQualityScore(record))}</td>
+            <td>${qualityDetails(record)}</td>
+          </tr>
+        `).join('');
+        const attendanceRows = attendance.records.slice(0, 5).map((record) => `
+          <tr>
+            <td>${escapeHtml(record.date || '-')}</td>
+            <td>${escapeHtml(`${record.fromTime || '-'} to ${record.toTime || '-'}`)}</td>
+            <td class="profile-status">${escapeHtml(record.loginStatus || '-')}</td>
+            <td class="profile-status">${escapeHtml(record.logoutStatus || '-')}</td>
+            <td>${escapeHtml(record.extraTime || 'No')}${record.extraDuration ? ` (${escapeHtml(record.extraDuration)})` : ''}</td>
+            <td class="profile-note">${escapeHtml(attendanceNote(record))}</td>
+          </tr>
+        `).join('');
+        const durationValue = attendance.unparsedDurations && !attendance.totalExtraMinutes
+          ? 'Unavailable'
+          : formatDuration(attendance.totalExtraMinutes);
+        const durationNote = attendance.unparsedDurations
+          ? `Excludes ${attendance.unparsedDurations} unrecognized duration${attendance.unparsedDurations === 1 ? '' : 's'}`
+          : 'HH:MM';
+        const deductionMonth = currentProfileMonth();
+        const totalDeductions = deductionRecords.reduce(
+          (sum, deduction) => sum + Number(deduction.finalDeductionAmount || 0),
+          0
+        );
+        const monthDeductions = deductionRecords
+          .filter((deduction) => String(
+            deduction.orderDateTime || deduction.createdAt || ''
+          ).slice(0, 7) === deductionMonth)
+          .reduce(
+            (sum, deduction) => sum + Number(deduction.finalDeductionAmount || 0),
+            0
+          );
+        const deductionCount = (type) => deductionRecords.filter(
+          (deduction) => deduction.deductionType === type
+        ).length;
+        const sortedDeductions = [...deductionRecords].sort((a, b) => {
+          const aTime = Date.parse(
+            String(a.orderDateTime || a.createdAt || '').replace(' ', 'T')
+          ) || 0;
+          const bTime = Date.parse(
+            String(b.orderDateTime || b.createdAt || '').replace(' ', 'T')
+          ) || 0;
+          return bTime - aTime;
+        });
+        const deductionRows = sortedDeductions.slice(0, 5).map((deduction) => `
+          <tr>
+            <td>${escapeHtml(deduction.orderDateTime || deduction.createdAt || '-')}</td>
+            <td>${escapeHtml(deduction.deductionType || '-')}</td>
+            <td>${escapeHtml(deduction.restaurantName || '-')}</td>
+            <td>${escapeHtml(deduction.orderNumber || '-')}</td>
+            <td class="profile-score">${formatDeductionAmount(deduction.finalDeductionAmount)}</td>
+          </tr>
+        `).join('');
+        const deductionsSection = deductionsError
+          ? `<div class="profile-empty">Financial deductions could not be loaded. ${escapeHtml(deductionsError)}</div>`
+          : deductionRecords.length
+            ? `
+              <div class="metrics-grid">
+                <div class="metric-card"><span>Total Deductions</span><strong>${formatDeductionAmount(totalDeductions)}</strong></div>
+                <div class="metric-card"><span>This Month Deductions</span><strong>${formatDeductionAmount(monthDeductions)}</strong></div>
+                <div class="metric-card"><span>Personal Orders</span><strong>${deductionCount('Personal Order')}</strong></div>
+                <div class="metric-card"><span>Order Mistakes</span><strong>${deductionCount('Order Mistake')}</strong></div>
+                <div class="metric-card"><span>Health Insurance</span><strong>${deductionCount('Health Insurance')}</strong></div>
+                <div class="metric-card"><span>Last Deduction</span><strong>${escapeHtml(sortedDeductions[0]?.orderDateTime || sortedDeductions[0]?.createdAt || '-')}</strong></div>
+              </div>
+              <div class="profile-table-wrap">
+                <table class="profile-table">
+                  <thead><tr><th>Date</th><th>Type</th><th>Restaurant</th><th>Order Number</th><th>Final Amount</th></tr></thead>
+                  <tbody>${deductionRows}</tbody>
+                </table>
+              </div>
+            `
+            : '<div class="profile-empty">No financial deduction records yet.</div>';
         const futureMetrics = [
-          'Weekly Quality Average', 'Best Score', 'Worst Score', 'Total Evaluations',
-          'Attendance', 'Training', 'Discounts', 'Call Queue'
+          'Training', 'Call Queue', 'Free Orders'
         ].map((label) => `
           <div class="future-card">
             <strong>${escapeHtml(label)}</strong>
-            <span>Future linked metric</span>
+            <span>Coming soon</span>
           </div>
         `).join('');
 
         document.getElementById('profile-modal-title').textContent = employee.fullName;
         document.getElementById('profile-modal-body').innerHTML = `
           <section class="detail-section">
-            <h4>Personal Information</h4>
+            <div class="profile-section-heading">
+              <h4>Profile Overview</h4>
+              <span class="section-source">Employee Profiles</span>
+            </div>
             <div class="detail-grid">
               <div class="detail-item"><span>Full Name</span><strong>${escapeHtml(employee.fullName)}</strong></div>
               <div class="detail-item"><span>Status</span><strong>${escapeHtml(employee.status)}</strong></div>
               <div class="detail-item"><span>Primary Phone</span><strong>${valueOrDash(employee.phoneNumbers.find((phone) => phone.isPrimary)?.phoneNumber || employee.phoneNumbers[0]?.phoneNumber)}</strong></div>
-              <div class="detail-item"><span>Updated</span><strong>${employee.updatedAt ? escapeHtml(new Date(employee.updatedAt).toLocaleString()) : '-'}</strong></div>
+              <div class="detail-item"><span>Assigned Restaurants</span><div class="restaurant-list">${restaurants}</div></div>
               <div class="detail-item" style="grid-column:1/-1"><span>Notes</span><strong>${valueOrDash(employee.notes)}</strong></div>
             </div>
           </section>
           <section class="detail-section"><h4>Phone Numbers</h4><div class="detail-grid">${phones}</div></section>
           <section class="detail-section"><h4>Emergency Contacts</h4><div class="detail-grid">${contacts}</div></section>
-          <section class="detail-section"><h4>Assigned Restaurants</h4><div class="restaurant-list">${restaurants}</div></section>
-          <section class="detail-section"><h4>Future Performance</h4><div class="future-grid">${futureMetrics}</div></section>
+          <section class="detail-section">
+            <div class="profile-section-heading">
+              <h4>Weekly Quality Performance</h4>
+              <span class="section-source">Weekly Quality</span>
+            </div>
+            ${quality.records.length ? `
+              <div class="metrics-grid">
+                <div class="metric-card"><span>Average Score</span><strong>${formatScore(quality.average)}</strong></div>
+                <div class="metric-card"><span>Best Score</span><strong>${formatScore(quality.best)}</strong></div>
+                <div class="metric-card"><span>Worst Score</span><strong>${formatScore(quality.worst)}</strong></div>
+                <div class="metric-card"><span>Total Evaluations</span><strong>${quality.records.length}</strong></div>
+                <div class="metric-card"><span>Last Evaluation</span><strong>${escapeHtml(quality.lastDate || '-')}</strong></div>
+                <div class="metric-card"><span>Top Restaurant / Campaign</span><strong>${escapeHtml(quality.topCampaign?.name || '-')}</strong><small>${quality.topCampaign ? `${formatScore(quality.topCampaign.average)} average` : ''}</small></div>
+              </div>
+              <div class="profile-table-wrap">
+                <table class="profile-table">
+                  <thead><tr><th>Date &amp; Time</th><th>Campaign</th><th>Auditor</th><th>Score</th><th>Details</th></tr></thead>
+                  <tbody>${qualityRows}</tbody>
+                </table>
+              </div>
+            ` : '<div class="profile-empty">No weekly quality records yet.</div>'}
+          </section>
+          <section class="detail-section">
+            <div class="profile-section-heading">
+              <h4>Attendance Summary</h4>
+              <span class="section-source">Attendance</span>
+            </div>
+            ${attendance.records.length ? `
+              <div class="metrics-grid">
+                <div class="metric-card"><span>Total Records</span><strong>${attendance.records.length}</strong></div>
+                <div class="metric-card"><span>On Time Count</span><strong>${attendance.onTime}</strong></div>
+                <div class="metric-card"><span>Left Early Count</span><strong>${attendance.leftEarly}</strong></div>
+                <div class="metric-card"><span>Late Logout Count</span><strong>${attendance.lateLogout}</strong></div>
+                <div class="metric-card"><span>Extra Time Count</span><strong>${attendance.extraTime}</strong></div>
+                <div class="metric-card"><span>Total Extra Time</span><strong>${durationValue}</strong><small>${durationNote}</small></div>
+                <div class="metric-card"><span>Last Attendance</span><strong>${escapeHtml(attendance.lastDate || '-')}</strong></div>
+              </div>
+              <div class="profile-table-wrap">
+                <table class="profile-table">
+                  <thead><tr><th>Date</th><th>Shift Time</th><th>Login Status</th><th>Logout Status</th><th>Extra Time</th><th>Note</th></tr></thead>
+                  <tbody>${attendanceRows}</tbody>
+                </table>
+              </div>
+            ` : '<div class="profile-empty">No attendance records yet.</div>'}
+          </section>
+          <section class="detail-section">
+            <div class="profile-section-heading">
+              <h4>Financial Deductions</h4>
+              <span class="section-source">Employee Deductions</span>
+            </div>
+            ${deductionsSection}
+          </section>
+          <section class="detail-section"><h4>Future Linked Modules</h4><div class="future-grid">${futureMetrics}</div></section>
         `;
         openModal('profile-modal');
       } catch (error) {
