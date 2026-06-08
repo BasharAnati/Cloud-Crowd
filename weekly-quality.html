@@ -714,6 +714,20 @@
       font-weight: 800;
     }
 
+    .employee-load-warning {
+      display: none;
+      margin: 0 28px 20px;
+      padding: 13px 15px;
+      border: 1px solid #f6c76f;
+      border-radius: 12px;
+      color: #854d0e;
+      background: #fffbeb;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .employee-load-warning.show { display: block; }
+
     .empty-state {
       padding: 44px 20px;
       color: var(--muted);
@@ -904,6 +918,7 @@
             <p>Complete all call details and assign a score for each quality measure.</p>
           </div>
         </div>
+        <div class="employee-load-warning" id="employee-load-warning" role="alert"></div>
 
         <form class="evaluation-form" id="quality-form">
           <section class="form-section">
@@ -915,26 +930,14 @@
               </div>
               <div class="field">
                 <label for="auditor-name">Auditor Name</label>
-                <select id="auditor-name" name="auditor" required>
-                  <option value="">Select auditor</option>
-                  <option>Tala Alotebe</option>
-                  <option>Tuleen Diab</option>
-                  <option>Abdel Fattah Alanati</option>
+                <select id="auditor-name" name="auditorEmployeeId" required disabled>
+                  <option value="">Loading employees...</option>
                 </select>
               </div>
               <div class="field">
                 <label for="agent-name">Agent Name</label>
-                <select id="agent-name" name="agent" required>
-                  <option value="">Select agent</option>
-                  <option>Ruba Kubari</option>
-                  <option>Tala Alotebe</option>
-                  <option>Vicktoria Khader</option>
-                  <option>Haneen Nidal</option>
-                  <option>Anmar dar omar</option>
-                  <option>Amani Jaber</option>
-                  <option>Jana Al-Balawi</option>
-                  <option>Mera Al Hasany</option>
-                  <option>Yara Ayoub</option>
+                <select id="agent-name" name="agentEmployeeId" required disabled>
+                  <option value="">Loading employees...</option>
                 </select>
               </div>
               <div class="field wide">
@@ -1057,6 +1060,7 @@
 
   <script>
     const WEEKLY_QUALITY_STORAGE_KEY = 'cc_weekly_quality_records_v1';
+    const WEEKLY_QUALITY_EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
     const SCORE_OPTIONS = [0, 3, 5, 7, 10];
     const SCORE_FIELDS = [
       'greetings',
@@ -1123,6 +1127,10 @@
         id: record.id || `weekly-quality-${Date.now()}-${Math.random().toString(16).slice(2)}`,
         createdAt: record.createdAt || new Date().toISOString(),
         callDateTime: normalizeDateTime(record),
+        auditorEmployeeId: String(record.auditorEmployeeId || ''),
+        auditorNameSnapshot: String(record.auditorNameSnapshot || ''),
+        agentEmployeeId: String(record.agentEmployeeId || ''),
+        agentNameSnapshot: String(record.agentNameSnapshot || ''),
         auditor: String(record.auditor || ''),
         agent: String(record.agent || ''),
         campaign: String(record.campaign || record.restaurant || ''),
@@ -1134,6 +1142,14 @@
           ? Number(record.totalScore)
           : Object.values(scores).reduce((sum, score) => sum + score, 0)
       };
+    }
+
+    function getAuditorName(record) {
+      return String(record.auditorNameSnapshot || record.auditor || '');
+    }
+
+    function getAgentName(record) {
+      return String(record.agentNameSnapshot || record.agent || '');
     }
 
     function getQualityRecords() {
@@ -1195,9 +1211,79 @@
       document.getElementById('quality-role-badge').textContent = localStorage.getItem('cc_role') || 'Operator';
     }
 
+    function setEmployeeSelectState(message, disabled) {
+      [
+        document.getElementById('auditor-name'),
+        document.getElementById('agent-name')
+      ].forEach((select) => {
+        select.disabled = disabled;
+        select.innerHTML = `<option value="">${escapeHtml(message)}</option>`;
+      });
+    }
+
+    async function loadActiveEmployees() {
+      const warning = document.getElementById('employee-load-warning');
+      setEmployeeSelectState('Loading employees...', true);
+      warning.classList.remove('show');
+      warning.textContent = '';
+
+      try {
+        const response = await fetch(WEEKLY_QUALITY_EMPLOYEES_ENDPOINT, {
+          cache: 'no-store',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+          }
+        });
+
+        if (response.status === 401) {
+          logout();
+          return;
+        }
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.ok === false) {
+          throw new Error(data.error || `Employee request failed (${response.status})`);
+        }
+
+        const employees = Array.isArray(data.employees)
+          ? data.employees.filter((employee) => employee.status === 'active')
+          : [];
+        const options = employees
+          .map((employee) => ({
+            employeeId: String(employee.employeeId || ''),
+            fullName: String(employee.fullName || '').trim()
+          }))
+          .filter((employee) => employee.employeeId && employee.fullName)
+          .sort((a, b) => a.fullName.localeCompare(b.fullName));
+
+        if (!options.length) {
+          throw new Error('No active employees are available in Employee Profiles.');
+        }
+
+        [
+          { select: document.getElementById('auditor-name'), placeholder: 'Select auditor' },
+          { select: document.getElementById('agent-name'), placeholder: 'Select agent' }
+        ].forEach(({ select, placeholder }) => {
+          select.innerHTML = `<option value="">${placeholder}</option>` + options
+            .map((employee) => (
+              `<option value="${escapeHtml(employee.employeeId)}">${escapeHtml(employee.fullName)}</option>`
+            ))
+            .join('');
+          select.disabled = false;
+        });
+      } catch (error) {
+        console.warn('Employee Profiles could not be loaded.', error);
+        setEmployeeSelectState('Employees unavailable', true);
+        warning.textContent = 'Employee Profiles could not be loaded. Existing evaluations remain available, but a new evaluation cannot be saved until the employee directory is available.';
+        warning.classList.add('show');
+      }
+    }
+
     function buildRecord(form) {
       const formData = new FormData(form);
       const recordingFile = form.querySelector('#call-recording').files[0];
+      const auditorSelect = form.querySelector('#auditor-name');
+      const agentSelect = form.querySelector('#agent-name');
       const scores = {};
       SCORE_FIELDS.forEach((field) => {
         scores[field] = Number(formData.get(field) || 0);
@@ -1208,8 +1294,10 @@
         id: `weekly-quality-${Date.now()}-${Math.random().toString(16).slice(2)}`,
         createdAt: new Date().toISOString(),
         callDateTime: formData.get('callDateTime') || '',
-        auditor: formData.get('auditor') || '',
-        agent: formData.get('agent') || '',
+        auditorEmployeeId: formData.get('auditorEmployeeId') || '',
+        auditorNameSnapshot: auditorSelect.selectedOptions[0]?.textContent.trim() || '',
+        agentEmployeeId: formData.get('agentEmployeeId') || '',
+        agentNameSnapshot: agentSelect.selectedOptions[0]?.textContent.trim() || '',
         campaign: formData.get('campaign') || '',
         phoneNumber: (formData.get('phoneNumber') || '').trim(),
         notes: (formData.get('notes') || '').trim(),
@@ -1241,7 +1329,7 @@
     function populateFilterOptions(records) {
       const filters = [
         { element: document.getElementById('restaurant-filter'), values: records.map((record) => record.campaign) },
-        { element: document.getElementById('agent-filter'), values: records.map((record) => record.agent) }
+        { element: document.getElementById('agent-filter'), values: records.map(getAgentName) }
       ];
 
       filters.forEach(({ element, values }) => {
@@ -1263,16 +1351,18 @@
 
       return records
         .filter((record) => {
+          const auditorName = getAuditorName(record);
+          const agentName = getAgentName(record);
           const matchesSearch = !search ||
             String(record.callDateTime || '').toLowerCase().includes(search) ||
-            String(record.auditor || '').toLowerCase().includes(search) ||
-            String(record.agent || '').toLowerCase().includes(search) ||
+            auditorName.toLowerCase().includes(search) ||
+            agentName.toLowerCase().includes(search) ||
             String(record.campaign || '').toLowerCase().includes(search) ||
             String(record.phoneNumber || '').toLowerCase().includes(search) ||
             String(record.notes || '').toLowerCase().includes(search);
           const matchesDate = !date || String(record.callDateTime || '').slice(0, 10) === date;
           const matchesRestaurant = !restaurant || record.campaign === restaurant;
-          const matchesAgent = !agent || record.agent === agent;
+          const matchesAgent = !agent || agentName === agent;
           return matchesSearch && matchesDate && matchesRestaurant && matchesAgent;
         })
         .sort((a, b) => {
@@ -1306,8 +1396,8 @@
         return `
           <tr>
             <td>${escapeHtml(record.callDateTime || '-')}</td>
-            <td>${escapeHtml(record.auditor || '-')}</td>
-            <td>${escapeHtml(record.agent || '-')}</td>
+            <td>${escapeHtml(getAuditorName(record) || '-')}</td>
+            <td>${escapeHtml(getAgentName(record) || '-')}</td>
             <td>${escapeHtml(record.campaign || '-')}</td>
             <td>${escapeHtml(record.phoneNumber || '-')}</td>
             <td class="score-cell">${Number(record.totalScore) || 0}%</td>
@@ -1349,8 +1439,8 @@
           <h4>General Information</h4>
           <div class="details-grid">
             <div class="detail-item"><span>Date &amp; Time</span><strong>${escapeHtml(record.callDateTime || '-')}</strong></div>
-            <div class="detail-item"><span>Auditor</span><strong>${escapeHtml(record.auditor || '-')}</strong></div>
-            <div class="detail-item"><span>Agent</span><strong>${escapeHtml(record.agent || '-')}</strong></div>
+            <div class="detail-item"><span>Auditor</span><strong>${escapeHtml(getAuditorName(record) || '-')}</strong></div>
+            <div class="detail-item"><span>Agent</span><strong>${escapeHtml(getAgentName(record) || '-')}</strong></div>
             <div class="detail-item"><span>Restaurant</span><strong>${escapeHtml(record.campaign || '-')}</strong></div>
             <div class="detail-item"><span>Phone Number</span><strong>${escapeHtml(record.phoneNumber || '-')}</strong></div>
             <div class="detail-item"><span>Recording</span><strong>${recordingDetails}</strong></div>
@@ -1396,15 +1486,21 @@
     populateScoreSelects();
     hydrateHeader();
     setCurrentDateTime();
-    saveQualityRecords(getQualityRecords());
     calculateFormTotal();
     renderRecords();
+    loadActiveEmployees();
 
     document.getElementById('score-grid').addEventListener('change', calculateFormTotal);
     document.getElementById('quality-form').addEventListener('submit', (event) => {
       event.preventDefault();
       const form = event.currentTarget;
       const recordingFile = form.querySelector('#call-recording').files[0];
+      if (form.querySelector('#auditor-name').disabled || form.querySelector('#agent-name').disabled) {
+        const warning = document.getElementById('employee-load-warning');
+        warning.textContent = 'Employee Profiles must be available before a new evaluation can be saved.';
+        warning.classList.add('show');
+        return;
+      }
       form.querySelector('#call-recording').setCustomValidity('');
       if (recordingFile && !recordingFile.name.toLowerCase().endsWith('.mp3') && recordingFile.type !== 'audio/mpeg') {
         form.querySelector('#call-recording').setCustomValidity('Please select an MP3 recording.');
