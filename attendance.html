@@ -34,6 +34,7 @@
     }
     button,input,select,textarea{font:inherit}
     button{cursor:pointer}
+    button:disabled{cursor:not-allowed;opacity:.58}
     a{color:inherit;text-decoration:none}
     .attendance-shell{
       min-height:100vh;
@@ -232,6 +233,18 @@
       box-shadow:var(--shadow);
       overflow:hidden;
     }
+    .employee-warning{
+      display:none;
+      margin-bottom:18px;
+      padding:14px 16px;
+      border:1px solid #fbbf24;
+      border-radius:12px;
+      color:#92400e;
+      background:#fffbeb;
+      font-size:13px;
+      font-weight:850;
+    }
+    .employee-warning.show{display:block}
     .records-card{
       margin-top:24px;
     }
@@ -514,6 +527,8 @@
         </div>
       </section>
 
+      <div class="employee-warning" id="employee-load-warning" role="alert"></div>
+
       <section class="content-card" aria-labelledby="record-form-title">
         <div class="card-header">
           <div>
@@ -526,18 +541,8 @@
         <form class="attendance-form" id="attendance-form">
           <div class="field">
             <label for="agent">Agent</label>
-            <select id="agent" name="agent" required>
-              <option value="">Select agent</option>
-              <option>Ruba Kubari</option>
-              <option>Tala Alotebe</option>
-              <option>Vicktoria Khader</option>
-              <option>Tuleen Diab</option>
-              <option>Anmar dar omar</option>
-              <option>Haneen Nidal</option>
-              <option>Amani Jaber</option>
-              <option>Jana Al-Balawi</option>
-              <option>Mera Al Hasany</option>
-              <option>Yara Ayoub</option>
+            <select id="agent" name="employeeId" required disabled>
+              <option value="">Loading employees...</option>
             </select>
           </div>
 
@@ -606,7 +611,7 @@
 
           <div class="form-actions">
             <button class="secondary-btn" type="reset">Clear</button>
-            <button class="primary-btn" type="submit">Save Record</button>
+            <button class="primary-btn" type="submit" id="save-record-btn" disabled>Save Record</button>
           </div>
         </form>
       </section>
@@ -656,6 +661,8 @@
 
   <script>
     const ATTENDANCE_STORAGE_KEY = 'cc_attendance_records_v1';
+    const EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
+    let activeEmployees = [];
 
     function hydrateAttendanceHeader() {
       const userName = document.getElementById('attendance-user-name');
@@ -693,6 +700,98 @@
       localStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(records));
     }
 
+    function getRecordEmployeeName(record) {
+      return String(record?.employeeNameSnapshot || record?.agent || '').trim();
+    }
+
+    function setEmployeeSelectState(message, disabled) {
+      const select = document.getElementById('agent');
+      const saveButton = document.getElementById('save-record-btn');
+      if (select) {
+        select.disabled = disabled;
+        select.innerHTML = '';
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = message;
+        select.appendChild(option);
+      }
+      if (saveButton) saveButton.disabled = disabled;
+    }
+
+    function showEmployeeLoadWarning(message) {
+      const warning = document.getElementById('employee-load-warning');
+      if (!warning) return;
+      warning.textContent = message;
+      warning.classList.add('show');
+    }
+
+    function clearEmployeeLoadWarning() {
+      const warning = document.getElementById('employee-load-warning');
+      if (!warning) return;
+      warning.textContent = '';
+      warning.classList.remove('show');
+    }
+
+    async function loadActiveEmployees() {
+      setEmployeeSelectState('Loading employees...', true);
+      clearEmployeeLoadWarning();
+
+      try {
+        const response = await fetch(EMPLOYEES_ENDPOINT, {
+          cache: 'no-store',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+          }
+        });
+
+        if (response.status === 401) {
+          logout();
+          return;
+        }
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.ok === false) {
+          throw new Error(data.error || `Employee request failed (${response.status})`);
+        }
+
+        activeEmployees = (Array.isArray(data.employees) ? data.employees : [])
+          .filter((employee) => employee.status === 'active')
+          .map((employee) => ({
+            employeeId: String(employee.employeeId || '').trim(),
+            fullName: String(employee.fullName || '').trim()
+          }))
+          .filter((employee) => employee.employeeId && employee.fullName)
+          .sort((a, b) => a.fullName.localeCompare(b.fullName));
+
+        if (!activeEmployees.length) {
+          throw new Error('No active employees are available in Employee Profiles.');
+        }
+
+        const select = document.getElementById('agent');
+        if (!select) return;
+        select.innerHTML = '';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Select employee';
+        select.appendChild(placeholder);
+        activeEmployees.forEach((employee) => {
+          const option = document.createElement('option');
+          option.value = employee.employeeId;
+          option.textContent = employee.fullName;
+          select.appendChild(option);
+        });
+        select.disabled = false;
+        document.getElementById('save-record-btn').disabled = false;
+      } catch (error) {
+        console.warn('Employee Profiles could not be loaded.', error);
+        activeEmployees = [];
+        setEmployeeSelectState('Employees unavailable', true);
+        showEmployeeLoadWarning(
+          'Employee Profiles could not be loaded. Existing attendance records remain available, but a new record cannot be saved until the employee directory is available.'
+        );
+      }
+    }
+
     function getStatusClass(status) {
       if (status === 'On Time') return 'status-on-time';
       if (status === 'Left Early') return 'status-left-early';
@@ -725,7 +824,13 @@
       const search = (document.getElementById('agent-search')?.value || '').trim().toLowerCase();
       const date = document.getElementById('date-filter')?.value || '';
       return getAttendanceRecords()
-        .filter((record) => !search || record.agent.toLowerCase().includes(search))
+        .filter((record) => {
+          const searchableEmployee = [
+            getRecordEmployeeName(record),
+            record?.employeeId
+          ].filter(Boolean).join(' ').toLowerCase();
+          return !search || searchableEmployee.includes(search);
+        })
         .filter((record) => !date || record.date === date)
         .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
     }
@@ -742,7 +847,7 @@
       records.forEach((record) => {
         const row = document.createElement('tr');
         row.appendChild(createCell(record.date));
-        row.appendChild(createCell(record.agent));
+        row.appendChild(createCell(getRecordEmployeeName(record)));
         row.appendChild(createCell(`${record.fromTime || '-'} to ${record.toTime || '-'}`));
         row.appendChild(createStatusCell(record.loginStatus));
         row.appendChild(createStatusCell(record.logoutStatus));
@@ -760,11 +865,16 @@
     function buildAttendanceRecord(form) {
       const formData = new FormData(form);
       const extraTime = formData.get('extraTime') || 'No';
+      const employeeId = String(formData.get('employeeId') || '');
+      const selectedEmployee = activeEmployees.find(
+        (employee) => employee.employeeId === employeeId
+      );
       return {
         id: `attendance-${Date.now()}`,
         createdAt: new Date().toISOString(),
         date: formData.get('date') || '',
-        agent: formData.get('agent') || '',
+        employeeId,
+        employeeNameSnapshot: selectedEmployee?.fullName || '',
         loginStatus: formData.get('loginStatus') || 'On Time',
         logoutStatus: formData.get('logoutStatus') || 'On Time',
         extraTime,
@@ -789,6 +899,7 @@
     setTodayDate();
     toggleExtraDuration();
     renderAttendanceRecords();
+    loadActiveEmployees();
 
     document.getElementById('extra-time')?.addEventListener('change', toggleExtraDuration);
     document.getElementById('add-record-btn')?.addEventListener('click', () => {
@@ -798,7 +909,11 @@
     document.getElementById('attendance-form')?.addEventListener('submit', (event) => {
       event.preventDefault();
       const form = event.currentTarget;
-      if (!form.reportValidity()) return;
+      const employeeId = String(new FormData(form).get('employeeId') || '');
+      const hasLoadedEmployee = activeEmployees.some(
+        (employee) => employee.employeeId === employeeId
+      );
+      if (!form.reportValidity() || !hasLoadedEmployee) return;
 
       const records = getAttendanceRecords();
       records.push(buildAttendanceRecord(form));
