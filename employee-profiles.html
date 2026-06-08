@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+  <title>Employee Profiles - Cloud Crowd</title>
+  <style>
+    :root{
+      --ice:#A7EBF2;
+      --aqua:#54ACBF;
+      --steel:#26658C;
+      --deep:#023859;
+      --navy:#011C40;
+      --page:#f5fbfd;
+      --card:#ffffff;
+      --line:#d8eef3;
+      --text:#12324a;
+      --muted:#60798b;
+      --danger:#b91c1c;
+      --shadow:0 24px 70px rgba(2,56,89,.12);
+    }
+    *{box-sizing:border-box}
+    html,body{width:100%;min-height:100%;overflow-x:hidden}
+    body{
+      min-height:100vh;
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:
+        linear-gradient(135deg,rgba(167,235,242,.55),transparent 30%),
+        linear-gradient(225deg,rgba(84,172,191,.18),transparent 34%),
+        var(--page);
+      line-height:1.5;
+    }
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    button:disabled{cursor:not-allowed;opacity:.58}
+    a{color:inherit;text-decoration:none}
+    .profiles-shell{min-height:100vh;display:grid;grid-template-columns:280px minmax(0,1fr)}
+    .sidebar{
+      position:sticky;
+      top:0;
+      min-height:100vh;
+      padding:28px 22px;
+      border-right:1px solid var(--line);
+      background:rgba(255,255,255,.82);
+      box-shadow:18px 0 60px rgba(2,56,89,.08);
+      backdrop-filter:blur(16px) saturate(130%);
+    }
+    .sidebar-brand{display:flex;align-items:center;gap:13px;margin-bottom:34px}
+    .sidebar-logo{width:58px;height:58px;object-fit:contain;filter:drop-shadow(0 10px 18px rgba(84,172,191,.2))}
+    .sidebar-brand h1{margin:0;font-size:22px;line-height:1;font-weight:900;color:var(--navy)}
+    .sidebar-brand p{margin:6px 0 0;color:var(--steel);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:900}
+    .sidebar-nav{display:grid;gap:8px}
+    .nav-item{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-height:46px;
+      padding:10px 12px;
+      border:1px solid transparent;
+      border-radius:12px;
+      color:#31556d;
+      font-size:14px;
+      font-weight:800;
+      transition:.2s ease;
+    }
+    .nav-item:hover,.nav-item.active{
+      color:var(--deep);
+      border-color:rgba(84,172,191,.28);
+      background:rgba(167,235,242,.24);
+      transform:translateX(2px);
+    }
+    .nav-icon{
+      width:30px;
+      height:30px;
+      display:grid;
+      place-items:center;
+      border:1px solid rgba(84,172,191,.24);
+      border-radius:9px;
+      color:var(--steel);
+      background:#f0fbfd;
+      flex:0 0 auto;
+    }
+    .main-area{min-width:0;padding:26px clamp(20px,4vw,54px) 44px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}
+    .breadcrumb{color:var(--steel);font-size:13px;font-weight:900;letter-spacing:.04em;text-transform:uppercase}
+    .user-tools{display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0}
+    .user-pill,.role-pill{
+      min-height:38px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      max-width:260px;
+      padding:8px 12px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      color:var(--deep);
+      background:rgba(255,255,255,.82);
+      font-size:12px;
+      font-weight:900;
+    }
+    .logout{
+      min-height:38px;
+      padding:8px 14px;
+      border:0;
+      border-radius:999px;
+      color:#fff;
+      background:linear-gradient(135deg,#ef4444,#b91c1c);
+      font-size:12px;
+      font-weight:900;
+    }
+    .hero{
+      position:relative;
+      overflow:hidden;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:24px;
+      margin-bottom:22px;
+      padding:32px;
+      border:1px solid var(--line);
+      border-radius:24px;
+      background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,255,255,.84));
+      box-shadow:var(--shadow);
+    }
+    .hero::after{
+      content:"";
+      position:absolute;
+      right:-80px;
+      top:-120px;
+      width:360px;
+      height:360px;
+      border-radius:50%;
+      background:radial-gradient(circle,rgba(167,235,242,.62),rgba(84,172,191,.12) 58%,transparent 68%);
+      pointer-events:none;
+    }
+    .hero-content,.hero-actions{position:relative;z-index:1}
+    .eyebrow{margin:0 0 8px;color:var(--steel);font-size:12px;font-weight:950;letter-spacing:.1em;text-transform:uppercase}
+    .hero h2{margin:0;color:var(--navy);font-size:clamp(34px,5vw,58px);line-height:1;font-weight:950}
+    .hero p:last-child{max-width:720px;margin:16px 0 0;color:var(--muted);font-size:16px;line-height:1.7}
+    .primary-btn,.secondary-btn,.danger-btn,.small-btn{
+      min-height:42px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:7px;
+      padding:10px 15px;
+      border-radius:11px;
+      font-weight:900;
+    }
+    .primary-btn{border:0;color:#fff;background:linear-gradient(135deg,var(--steel),var(--deep));box-shadow:0 16px 34px rgba(38,101,140,.22)}
+    .secondary-btn,.small-btn{border:1px solid var(--line);color:var(--deep);background:#fff}
+    .danger-btn{border:1px solid #fecaca;color:var(--danger);background:#fff7f7}
+    .small-btn{min-height:34px;padding:7px 10px;font-size:12px}
+    .stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:22px}
+    .stat-card{padding:20px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.92);box-shadow:0 14px 38px rgba(2,56,89,.08)}
+    .stat-card span{display:block;color:var(--muted);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+    .stat-card strong{display:block;margin-top:8px;color:var(--navy);font-size:30px;line-height:1;font-weight:950}
+    .content-card{border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.94);box-shadow:var(--shadow);overflow:hidden}
+    .card-header{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:24px 28px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,#fff,rgba(167,235,242,.18))}
+    .card-header h3{margin:0;color:var(--navy);font-size:22px;font-weight:950}
+    .card-header p{margin:6px 0 0;color:var(--muted);font-size:14px}
+    .filters{display:grid;grid-template-columns:minmax(220px,1fr) minmax(170px,230px);gap:14px;padding:22px 28px}
+    .control{width:100%;min-height:46px;padding:11px 13px;border:1px solid #cfe8ee;border-radius:12px;background:#fbfeff;color:var(--text);outline:none}
+    .control:focus{border-color:var(--aqua);box-shadow:0 0 0 4px rgba(84,172,191,.16)}
+    .employee-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:0 28px 28px}
+    .employee-card{display:grid;gap:14px;padding:20px;border:1px solid var(--line);border-radius:18px;background:#fff;box-shadow:0 12px 30px rgba(2,56,89,.06)}
+    .employee-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+    .employee-card h4{margin:0;color:var(--navy);font-size:20px;font-weight:950}
+    .employee-card p{margin:4px 0 0;color:var(--muted);font-size:13px}
+    .status-badge{display:inline-flex;align-items:center;min-height:28px;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:950;text-transform:uppercase}
+    .status-active{color:#166534;background:#dcfce7}
+    .status-inactive{color:#991b1b;background:#fee2e2}
+    .restaurant-list{display:flex;flex-wrap:wrap;gap:7px;min-height:28px}
+    .chip{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;color:var(--deep);background:rgba(167,235,242,.3);font-size:11px;font-weight:850}
+    .card-actions{display:flex;flex-wrap:wrap;gap:8px;padding-top:3px;border-top:1px solid #edf6f8}
+    .empty-state{grid-column:1/-1;padding:42px 20px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:18px;background:rgba(167,235,242,.08)}
+    .message{display:none;margin-bottom:18px;padding:13px 16px;border-radius:12px;font-size:13px;font-weight:800}
+    .message.show{display:block}
+    .message.error{color:#991b1b;background:#fee2e2;border:1px solid #fecaca}
+    .message.success{color:#166534;background:#dcfce7;border:1px solid #bbf7d0}
+    .modal{
+      position:fixed;
+      inset:0;
+      z-index:50;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:22px;
+      background:rgba(1,28,64,.62);
+      backdrop-filter:blur(8px);
+    }
+    .modal.open{display:flex}
+    .modal-panel{width:min(920px,100%);max-height:92vh;overflow:auto;border:1px solid rgba(167,235,242,.5);border-radius:24px;background:#fff;box-shadow:0 30px 90px rgba(1,28,64,.34)}
+    .modal-header{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 26px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.96)}
+    .modal-header h3{margin:0;color:var(--navy);font-size:24px;font-weight:950}
+    .icon-btn{width:38px;height:38px;border:1px solid var(--line);border-radius:50%;color:var(--deep);background:#fff;font-weight:950}
+    .modal-body{padding:26px}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    .field{display:grid;gap:8px;min-width:0}
+    .field.full{grid-column:1/-1}
+    .field label,.section-label{color:var(--deep);font-size:13px;font-weight:900}
+    .field textarea{min-height:110px;resize:vertical}
+    .form-section{grid-column:1/-1;padding:18px;border:1px solid var(--line);border-radius:17px;background:rgba(245,251,253,.7)}
+    .section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+    .section-heading h4{margin:0;color:var(--navy);font-size:16px;font-weight:950}
+    .dynamic-list{display:grid;gap:10px}
+    .dynamic-row{display:grid;grid-template-columns:1fr 1.3fr auto auto;gap:10px;align-items:center}
+    .contact-row{grid-template-columns:1.1fr 1fr 1.2fr auto}
+    .restaurant-row{grid-template-columns:1fr auto}
+    .primary-check{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px;font-weight:800;white-space:nowrap}
+    .remove-row{width:36px;height:36px;border:1px solid #fecaca;border-radius:10px;color:var(--danger);background:#fff7f7;font-weight:950}
+    .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+    .detail-section{margin-bottom:20px;padding:19px;border:1px solid var(--line);border-radius:18px;background:#fbfeff}
+    .detail-section h4{margin:0 0 14px;color:var(--navy);font-size:17px;font-weight:950}
+    .detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .detail-item{padding:12px;border-radius:12px;background:#fff;border:1px solid #e8f4f6}
+    .detail-item span{display:block;color:var(--muted);font-size:11px;font-weight:900;text-transform:uppercase}
+    .detail-item strong{display:block;margin-top:5px;color:var(--deep);font-size:14px;overflow-wrap:anywhere}
+    .future-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .future-card{min-height:94px;padding:13px;border:1px dashed #b8dce4;border-radius:13px;background:#f4fafc;color:var(--muted)}
+    .future-card strong{display:block;color:#47677a;font-size:13px}
+    .future-card span{display:block;margin-top:8px;font-size:11px;font-weight:800}
+    @media (max-width:1050px){
+      .profiles-shell{grid-template-columns:1fr}
+      .sidebar{position:relative;min-height:auto;padding:20px}
+      .sidebar-brand{margin-bottom:16px}
+      .sidebar-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .nav-item.active{grid-column:1/-1}
+    }
+    @media (max-width:800px){
+      .stats-grid,.employee-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .future-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media (max-width:620px){
+      .main-area{padding:20px 16px 34px}
+      .topbar,.hero,.card-header{flex-direction:column;align-items:stretch}
+      .user-tools{justify-content:flex-start;flex-wrap:wrap}
+      .stats-grid,.employee-grid,.filters,.form-grid,.detail-grid{grid-template-columns:1fr}
+      .field.full,.form-section{grid-column:auto}
+      .employee-grid,.filters,.card-header{padding-left:20px;padding-right:20px}
+      .dynamic-row,.contact-row{grid-template-columns:1fr}
+      .restaurant-row{grid-template-columns:1fr auto}
+      .primary-check{min-height:36px}
+      .modal-actions{flex-direction:column-reverse}
+      .modal-actions button{width:100%}
+    }
+  </style>
+  <script>
+    if (localStorage.getItem('cc_auth') !== '1' || !localStorage.getItem('cc_token') || !localStorage.getItem('cc_role')) {
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html';
+    }
+  </script>
+</head>
+<body>
+  <div class="profiles-shell">
+    <aside class="sidebar" aria-label="Employee Profiles navigation">
+      <a class="sidebar-brand" href="dashboard.html" aria-label="Cloud Crowd dashboard">
+        <img src="assets/images/logo.png" alt="Cloud Crowd logo" class="sidebar-logo">
+        <div>
+          <h1>Cloud Crowd</h1>
+          <p>Operations Hub</p>
+        </div>
+      </a>
+      <nav class="sidebar-nav">
+        <a class="nav-item" href="dashboard.html">
+          <span class="nav-icon" aria-hidden="true">&#8962;</span>
+          Dashboard
+        </a>
+        <a class="nav-item active" href="employee-profiles.html" aria-current="page">
+          <span class="nav-icon" aria-hidden="true">&#9783;</span>
+          Employee Profiles
+        </a>
+      </nav>
+    </aside>
+
+    <main class="main-area" id="main-content">
+      <header class="topbar">
+        <a class="breadcrumb" href="dashboard.html">&larr; Dashboard</a>
+        <div class="user-tools">
+          <span class="user-pill" id="current-user">Team Member</span>
+          <span class="role-pill" id="current-role">operator</span>
+          <button class="logout" type="button" id="logout-btn">Log out</button>
+        </div>
+      </header>
+
+      <section class="hero" aria-labelledby="page-title">
+        <div class="hero-content">
+          <p class="eyebrow">People Operations</p>
+          <h2 id="page-title">Employee Profiles</h2>
+          <p>Central employee records for Cloud Crowd operations.</p>
+        </div>
+        <div class="hero-actions">
+          <button class="primary-btn write-control" type="button" id="add-employee-btn">+ Add Employee</button>
+        </div>
+      </section>
+
+      <div class="message" id="page-message" role="status"></div>
+
+      <section class="stats-grid" aria-label="Employee summary">
+        <article class="stat-card"><span>Total Employees</span><strong id="stat-total">0</strong></article>
+        <article class="stat-card"><span>Active Employees</span><strong id="stat-active">0</strong></article>
+        <article class="stat-card"><span>Archived Employees</span><strong id="stat-archived">0</strong></article>
+        <article class="stat-card"><span>Assigned Restaurants</span><strong id="stat-restaurants">0</strong></article>
+      </section>
+
+      <section class="content-card" aria-labelledby="directory-title">
+        <div class="card-header">
+          <div>
+            <h3 id="directory-title">Employee Directory</h3>
+            <p>Search employee records and open a complete operational profile.</p>
+          </div>
+          <span class="role-pill" id="record-count">0 records</span>
+        </div>
+        <div class="filters">
+          <input class="control" id="employee-search" type="search" placeholder="Search employee or restaurant">
+          <select class="control" id="status-filter" aria-label="Filter employees by status">
+            <option value="all">All employees</option>
+            <option value="active">Active employees</option>
+            <option value="inactive">Archived employees</option>
+          </select>
+        </div>
+        <div class="employee-grid" id="employee-grid">
+          <div class="empty-state">Loading employee profiles...</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal" id="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 id="profile-modal-title">Employee Profile</h3>
+        <button class="icon-btn" type="button" data-close-modal="profile-modal" aria-label="Close profile">&times;</button>
+      </div>
+      <div class="modal-body" id="profile-modal-body"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="employee-modal" role="dialog" aria-modal="true" aria-labelledby="employee-modal-title">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 id="employee-modal-title">Add Employee</h3>
+        <button class="icon-btn" type="button" data-close-modal="employee-modal" aria-label="Close form">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="employee-form">
+          <input id="employee-id" type="hidden">
+          <div class="form-grid">
+            <div class="field full">
+              <label for="full-name">Full Name</label>
+              <input class="control" id="full-name" name="fullName" type="text" maxlength="200" required>
+            </div>
+            <div class="field full">
+              <label for="employee-notes">Notes</label>
+              <textarea class="control" id="employee-notes" name="notes" maxlength="5000"></textarea>
+            </div>
+
+            <section class="form-section">
+              <div class="section-heading">
+                <h4>Phone Numbers</h4>
+                <button class="small-btn" type="button" id="add-phone-btn">+ Add Number</button>
+              </div>
+              <div class="dynamic-list" id="phone-list"></div>
+            </section>
+
+            <section class="form-section">
+              <div class="section-heading">
+                <h4>Emergency Contacts</h4>
+                <button class="small-btn" type="button" id="add-contact-btn">+ Add Contact</button>
+              </div>
+              <div class="dynamic-list" id="contact-list"></div>
+            </section>
+
+            <section class="form-section">
+              <div class="section-heading">
+                <h4>Assigned Restaurants</h4>
+                <button class="small-btn" type="button" id="add-restaurant-btn">+ Add Restaurant</button>
+              </div>
+              <div class="dynamic-list" id="restaurant-list"></div>
+            </section>
+          </div>
+          <div class="modal-actions">
+            <button class="secondary-btn" type="button" data-close-modal="employee-modal">Cancel</button>
+            <button class="primary-btn" type="submit" id="save-employee-btn">Save Employee</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
+    const currentRole = (localStorage.getItem('cc_role') || '').toLowerCase();
+    const canManageEmployees = ['admin', 'manager'].includes(currentRole);
+    let employees = [];
+
+    function authHeaders(extra = {}) {
+      return {
+        ...extra,
+        'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+      };
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[character]));
+    }
+
+    function showMessage(message, type = 'error') {
+      const element = document.getElementById('page-message');
+      element.textContent = message;
+      element.className = `message show ${type}`;
+      window.setTimeout(() => {
+        element.className = 'message';
+      }, 5000);
+    }
+
+    function handleAuthFailure(response) {
+      if (response.status !== 401) return false;
+      logout(false);
+      return true;
+    }
+
+    function logout(confirmFirst = true) {
+      if (confirmFirst && !window.confirm('Confirm logout?')) return;
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html';
+    }
+
+    async function apiRequest(url, options = {}) {
+      const response = await fetch(url, {
+        ...options,
+        cache: 'no-store',
+        headers: authHeaders(options.headers || {})
+      });
+      if (handleAuthFailure(response)) throw new Error('Session expired');
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || `Request failed (${response.status})`);
+      }
+      return data;
+    }
+
+    async function loadEmployees() {
+      try {
+        const data = await apiRequest(`${EMPLOYEES_ENDPOINT}?status=all`);
+        employees = Array.isArray(data.employees) ? data.employees : [];
+        renderEmployees();
+        renderStats();
+      } catch (error) {
+        document.getElementById('employee-grid').innerHTML =
+          `<div class="empty-state">${escapeHtml(error.message)}</div>`;
+      }
+    }
+
+    function renderStats() {
+      const active = employees.filter((employee) => employee.status === 'active');
+      const archived = employees.filter((employee) => employee.status === 'inactive');
+      const restaurants = new Set(
+        employees.flatMap((employee) => employee.assignedRestaurants || [])
+      );
+      document.getElementById('stat-total').textContent = employees.length;
+      document.getElementById('stat-active').textContent = active.length;
+      document.getElementById('stat-archived').textContent = archived.length;
+      document.getElementById('stat-restaurants').textContent = restaurants.size;
+    }
+
+    function getFilteredEmployees() {
+      const search = document.getElementById('employee-search').value.trim().toLowerCase();
+      const status = document.getElementById('status-filter').value;
+      return employees.filter((employee) => {
+        const matchesStatus = status === 'all' || employee.status === status;
+        const searchable = [
+          employee.fullName,
+          employee.primaryPhone,
+          ...(employee.assignedRestaurants || [])
+        ].join(' ').toLowerCase();
+        return matchesStatus && (!search || searchable.includes(search));
+      });
+    }
+
+    function renderEmployees() {
+      const filtered = getFilteredEmployees();
+      const grid = document.getElementById('employee-grid');
+      document.getElementById('record-count').textContent =
+        `${filtered.length} ${filtered.length === 1 ? 'record' : 'records'}`;
+
+      if (!filtered.length) {
+        grid.innerHTML = '<div class="empty-state">No employee profiles match this view.</div>';
+        return;
+      }
+
+      grid.innerHTML = filtered.map((employee) => {
+        const restaurants = (employee.assignedRestaurants || []).length
+          ? employee.assignedRestaurants.map((name) => `<span class="chip">${escapeHtml(name)}</span>`).join('')
+          : '<span class="chip">No restaurants assigned</span>';
+        const writeActions = canManageEmployees
+          ? `
+            <button class="small-btn" type="button" data-edit-id="${escapeHtml(employee.employeeId)}">Edit</button>
+            ${employee.status === 'active'
+              ? `<button class="small-btn danger-btn" type="button" data-archive-id="${escapeHtml(employee.employeeId)}">Archive</button>`
+              : ''}
+          `
+          : '';
+
+        return `
+          <article class="employee-card">
+            <div class="employee-card-head">
+              <div>
+                <h4>${escapeHtml(employee.fullName)}</h4>
+                <p>${escapeHtml(employee.primaryPhone || 'No primary phone')}</p>
+              </div>
+              <span class="status-badge status-${escapeHtml(employee.status)}">${escapeHtml(employee.status)}</span>
+            </div>
+            <div class="restaurant-list">${restaurants}</div>
+            <div class="card-actions">
+              <button class="small-btn" type="button" data-view-id="${escapeHtml(employee.employeeId)}">View Profile</button>
+              ${writeActions}
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+      if (!document.querySelector('.modal.open')) document.body.style.overflow = '';
+    }
+
+    function phoneRow(phone = {}) {
+      const row = document.createElement('div');
+      row.className = 'dynamic-row phone-row';
+      row.innerHTML = `
+        <input class="control phone-label" type="text" maxlength="80" placeholder="Label, e.g. Personal" value="${escapeHtml(phone.label || '')}">
+        <input class="control phone-number" type="tel" maxlength="60" placeholder="Phone number" value="${escapeHtml(phone.phoneNumber || '')}">
+        <label class="primary-check">
+          <input class="phone-primary" type="checkbox" ${phone.isPrimary ? 'checked' : ''}>
+          Primary
+        </label>
+        <button class="remove-row" type="button" aria-label="Remove phone number">&times;</button>
+      `;
+      return row;
+    }
+
+    function contactRow(contact = {}) {
+      const row = document.createElement('div');
+      row.className = 'dynamic-row contact-row';
+      row.innerHTML = `
+        <input class="control contact-name" type="text" maxlength="160" placeholder="Contact name" value="${escapeHtml(contact.contactName || '')}">
+        <input class="control contact-relationship" type="text" maxlength="100" placeholder="Relationship" value="${escapeHtml(contact.relationship || '')}">
+        <input class="control contact-phone" type="tel" maxlength="60" placeholder="Phone number" value="${escapeHtml(contact.phoneNumber || '')}">
+        <button class="remove-row" type="button" aria-label="Remove emergency contact">&times;</button>
+      `;
+      return row;
+    }
+
+    function restaurantRow(name = '') {
+      const row = document.createElement('div');
+      row.className = 'dynamic-row restaurant-row';
+      row.innerHTML = `
+        <input class="control restaurant-name" type="text" maxlength="160" placeholder="Restaurant name" value="${escapeHtml(name)}">
+        <button class="remove-row" type="button" aria-label="Remove restaurant">&times;</button>
+      `;
+      return row;
+    }
+
+    function addRow(containerId, row) {
+      document.getElementById(containerId).appendChild(row);
+    }
+
+    function resetEmployeeForm() {
+      document.getElementById('employee-form').reset();
+      document.getElementById('employee-id').value = '';
+      document.getElementById('phone-list').textContent = '';
+      document.getElementById('contact-list').textContent = '';
+      document.getElementById('restaurant-list').textContent = '';
+      addRow('phone-list', phoneRow({ isPrimary: true }));
+    }
+
+    function openCreateEmployee() {
+      if (!canManageEmployees) return;
+      resetEmployeeForm();
+      document.getElementById('employee-modal-title').textContent = 'Add Employee';
+      openModal('employee-modal');
+    }
+
+    async function getEmployeeProfile(employeeId) {
+      const data = await apiRequest(
+        `${EMPLOYEES_ENDPOINT}?id=${encodeURIComponent(employeeId)}`
+      );
+      return data.employee;
+    }
+
+    function valueOrDash(value) {
+      return escapeHtml(value || '-');
+    }
+
+    async function viewEmployee(employeeId) {
+      try {
+        const employee = await getEmployeeProfile(employeeId);
+        const phones = employee.phoneNumbers.length
+          ? employee.phoneNumbers.map((phone) => `
+              <div class="detail-item">
+                <span>${escapeHtml(phone.label || 'Phone')}</span>
+                <strong>${valueOrDash(phone.phoneNumber)}${phone.isPrimary ? ' (Primary)' : ''}</strong>
+              </div>
+            `).join('')
+          : '<div class="detail-item"><strong>No phone numbers recorded.</strong></div>';
+        const contacts = employee.emergencyContacts.length
+          ? employee.emergencyContacts.map((contact) => `
+              <div class="detail-item">
+                <span>${escapeHtml(contact.relationship || 'Emergency Contact')}</span>
+                <strong>${valueOrDash(contact.contactName)} - ${valueOrDash(contact.phoneNumber)}</strong>
+              </div>
+            `).join('')
+          : '<div class="detail-item"><strong>No emergency contacts recorded.</strong></div>';
+        const restaurants = employee.assignedRestaurants.length
+          ? employee.assignedRestaurants.map((name) => `<span class="chip">${escapeHtml(name)}</span>`).join('')
+          : '<span class="chip">No restaurants assigned</span>';
+        const futureMetrics = [
+          'Weekly Quality Average', 'Best Score', 'Worst Score', 'Total Evaluations',
+          'Attendance', 'Training', 'Discounts', 'Call Queue'
+        ].map((label) => `
+          <div class="future-card">
+            <strong>${escapeHtml(label)}</strong>
+            <span>Future linked metric</span>
+          </div>
+        `).join('');
+
+        document.getElementById('profile-modal-title').textContent = employee.fullName;
+        document.getElementById('profile-modal-body').innerHTML = `
+          <section class="detail-section">
+            <h4>Personal Information</h4>
+            <div class="detail-grid">
+              <div class="detail-item"><span>Full Name</span><strong>${escapeHtml(employee.fullName)}</strong></div>
+              <div class="detail-item"><span>Status</span><strong>${escapeHtml(employee.status)}</strong></div>
+              <div class="detail-item"><span>Primary Phone</span><strong>${valueOrDash(employee.phoneNumbers.find((phone) => phone.isPrimary)?.phoneNumber || employee.phoneNumbers[0]?.phoneNumber)}</strong></div>
+              <div class="detail-item"><span>Updated</span><strong>${employee.updatedAt ? escapeHtml(new Date(employee.updatedAt).toLocaleString()) : '-'}</strong></div>
+              <div class="detail-item" style="grid-column:1/-1"><span>Notes</span><strong>${valueOrDash(employee.notes)}</strong></div>
+            </div>
+          </section>
+          <section class="detail-section"><h4>Phone Numbers</h4><div class="detail-grid">${phones}</div></section>
+          <section class="detail-section"><h4>Emergency Contacts</h4><div class="detail-grid">${contacts}</div></section>
+          <section class="detail-section"><h4>Assigned Restaurants</h4><div class="restaurant-list">${restaurants}</div></section>
+          <section class="detail-section"><h4>Future Performance</h4><div class="future-grid">${futureMetrics}</div></section>
+        `;
+        openModal('profile-modal');
+      } catch (error) {
+        showMessage(error.message);
+      }
+    }
+
+    async function editEmployee(employeeId) {
+      if (!canManageEmployees) return;
+      try {
+        const employee = await getEmployeeProfile(employeeId);
+        resetEmployeeForm();
+        document.getElementById('employee-id').value = employee.employeeId;
+        document.getElementById('full-name').value = employee.fullName;
+        document.getElementById('employee-notes').value = employee.notes || '';
+        document.getElementById('phone-list').textContent = '';
+        employee.phoneNumbers.forEach((phone) => addRow('phone-list', phoneRow(phone)));
+        employee.emergencyContacts.forEach((contact) => addRow('contact-list', contactRow(contact)));
+        employee.assignedRestaurants.forEach((name) => addRow('restaurant-list', restaurantRow(name)));
+        document.getElementById('employee-modal-title').textContent = 'Edit Employee';
+        openModal('employee-modal');
+      } catch (error) {
+        showMessage(error.message);
+      }
+    }
+
+    function collectFormData() {
+      return {
+        fullName: document.getElementById('full-name').value.trim(),
+        notes: document.getElementById('employee-notes').value.trim(),
+        phoneNumbers: Array.from(document.querySelectorAll('.phone-row')).map((row) => ({
+          label: row.querySelector('.phone-label').value.trim(),
+          phoneNumber: row.querySelector('.phone-number').value.trim(),
+          isPrimary: row.querySelector('.phone-primary').checked
+        })).filter((phone) => phone.label || phone.phoneNumber),
+        emergencyContacts: Array.from(document.querySelectorAll('.contact-row')).map((row) => ({
+          contactName: row.querySelector('.contact-name').value.trim(),
+          relationship: row.querySelector('.contact-relationship').value.trim(),
+          phoneNumber: row.querySelector('.contact-phone').value.trim()
+        })).filter((contact) => contact.contactName || contact.relationship || contact.phoneNumber),
+        assignedRestaurants: Array.from(document.querySelectorAll('.restaurant-row .restaurant-name'))
+          .map((input) => input.value.trim())
+          .filter(Boolean)
+      };
+    }
+
+    async function saveEmployee(event) {
+      event.preventDefault();
+      if (!canManageEmployees || !event.currentTarget.reportValidity()) return;
+
+      const employeeId = document.getElementById('employee-id').value;
+      const button = document.getElementById('save-employee-btn');
+      button.disabled = true;
+      try {
+        await apiRequest(
+          employeeId
+            ? `${EMPLOYEES_ENDPOINT}?id=${encodeURIComponent(employeeId)}`
+            : EMPLOYEES_ENDPOINT,
+          {
+            method: employeeId ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(collectFormData())
+          }
+        );
+        closeModal('employee-modal');
+        showMessage(employeeId ? 'Employee updated.' : 'Employee created.', 'success');
+        await loadEmployees();
+      } catch (error) {
+        showMessage(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function archiveEmployee(employeeId) {
+      if (!canManageEmployees) return;
+      const employee = employees.find((item) => item.employeeId === employeeId);
+      if (!window.confirm(`Archive ${employee?.fullName || 'this employee'}? Historical records will remain available.`)) return;
+
+      try {
+        await apiRequest(
+          `${EMPLOYEES_ENDPOINT}?id=${encodeURIComponent(employeeId)}`,
+          { method: 'DELETE' }
+        );
+        showMessage('Employee archived.', 'success');
+        await loadEmployees();
+      } catch (error) {
+        showMessage(error.message);
+      }
+    }
+
+    function enforceSinglePrimary(event) {
+      if (!event.target.classList.contains('phone-primary') || !event.target.checked) return;
+      document.querySelectorAll('.phone-primary').forEach((checkbox) => {
+        if (checkbox !== event.target) checkbox.checked = false;
+      });
+    }
+
+    document.getElementById('current-user').textContent = localStorage.getItem('cc_user') || 'Team Member';
+    document.getElementById('current-role').textContent = currentRole || 'operator';
+    document.querySelectorAll('.write-control').forEach((element) => {
+      element.hidden = !canManageEmployees;
+    });
+    document.getElementById('logout-btn').addEventListener('click', () => logout(true));
+    document.getElementById('add-employee-btn').addEventListener('click', openCreateEmployee);
+    document.getElementById('employee-search').addEventListener('input', renderEmployees);
+    document.getElementById('status-filter').addEventListener('change', renderEmployees);
+    document.getElementById('employee-form').addEventListener('submit', saveEmployee);
+    document.getElementById('add-phone-btn').addEventListener('click', () => addRow('phone-list', phoneRow()));
+    document.getElementById('add-contact-btn').addEventListener('click', () => addRow('contact-list', contactRow()));
+    document.getElementById('add-restaurant-btn').addEventListener('click', () => addRow('restaurant-list', restaurantRow()));
+    document.getElementById('phone-list').addEventListener('change', enforceSinglePrimary);
+
+    document.addEventListener('click', (event) => {
+      const closeButton = event.target.closest('[data-close-modal]');
+      const removeButton = event.target.closest('.remove-row');
+      const viewButton = event.target.closest('[data-view-id]');
+      const editButton = event.target.closest('[data-edit-id]');
+      const archiveButton = event.target.closest('[data-archive-id]');
+      if (closeButton) closeModal(closeButton.dataset.closeModal);
+      if (removeButton) removeButton.closest('.dynamic-row').remove();
+      if (viewButton) viewEmployee(viewButton.dataset.viewId);
+      if (editButton) editEmployee(editButton.dataset.editId);
+      if (archiveButton) archiveEmployee(archiveButton.dataset.archiveId);
+    });
+
+    document.querySelectorAll('.modal').forEach((modal) => {
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) closeModal(modal.id);
+      });
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      const open = document.querySelector('.modal.open');
+      if (open) closeModal(open.id);
+    });
+
+    loadEmployees();
+  </script>
+  <script src="idle-logout.js"></script>
+</body>
+</html>
