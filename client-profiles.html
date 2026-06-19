@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+  <title>Client Profiles - Cloud Crowd</title>
+  <style>
+    :root{
+      --ice:#A7EBF2;
+      --aqua:#54ACBF;
+      --steel:#26658C;
+      --deep:#023859;
+      --navy:#011C40;
+      --page:#f5fbfd;
+      --card:#ffffff;
+      --line:#d8eef3;
+      --text:#12324a;
+      --muted:#60798b;
+      --danger:#b91c1c;
+      --shadow:0 24px 70px rgba(2,56,89,.12);
+    }
+    *{box-sizing:border-box}
+    html,body{width:100%;min-height:100%;overflow-x:hidden}
+    body{
+      min-height:100vh;
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:
+        linear-gradient(135deg,rgba(167,235,242,.55),transparent 30%),
+        linear-gradient(225deg,rgba(84,172,191,.18),transparent 34%),
+        var(--page);
+      line-height:1.5;
+    }
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    button:disabled{cursor:not-allowed;opacity:.58}
+    a{color:inherit;text-decoration:none}
+    .clients-shell{min-height:100vh;display:grid;grid-template-columns:280px minmax(0,1fr)}
+    .sidebar{
+      position:sticky;top:0;min-height:100vh;padding:28px 22px;border-right:1px solid var(--line);
+      background:rgba(255,255,255,.82);box-shadow:18px 0 60px rgba(2,56,89,.08);
+      backdrop-filter:blur(16px) saturate(130%);
+    }
+    .sidebar-brand{display:flex;align-items:center;gap:13px;margin-bottom:34px}
+    .sidebar-logo{width:58px;height:58px;object-fit:contain;filter:drop-shadow(0 10px 18px rgba(84,172,191,.2))}
+    .sidebar-brand h1{margin:0;font-size:22px;line-height:1;font-weight:900;color:var(--navy)}
+    .sidebar-brand p{margin:6px 0 0;color:var(--steel);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:900}
+    .sidebar-nav{display:grid;gap:8px}
+    .nav-item{
+      display:flex;align-items:center;gap:12px;min-height:46px;padding:10px 12px;border:1px solid transparent;
+      border-radius:12px;color:#31556d;font-size:14px;font-weight:800;transition:.2s ease;
+    }
+    .nav-item:hover,.nav-item.active{color:var(--deep);border-color:rgba(84,172,191,.28);background:rgba(167,235,242,.24);transform:translateX(2px)}
+    .nav-icon{width:30px;height:30px;display:grid;place-items:center;border:1px solid rgba(84,172,191,.24);border-radius:9px;color:var(--steel);background:#f0fbfd;flex:0 0 auto}
+    .main-area{min-width:0;padding:26px clamp(20px,4vw,54px) 44px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}
+    .breadcrumb{color:var(--steel);font-size:13px;font-weight:900;letter-spacing:.04em;text-transform:uppercase}
+    .user-tools{display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0}
+    .user-pill,.role-pill{
+      min-height:38px;display:inline-flex;align-items:center;justify-content:center;max-width:260px;padding:8px 12px;
+      border:1px solid var(--line);border-radius:999px;color:var(--deep);background:rgba(255,255,255,.82);font-size:12px;font-weight:900;
+    }
+    .logout{min-height:38px;padding:8px 14px;border:0;border-radius:999px;color:#fff;background:linear-gradient(135deg,#ef4444,#b91c1c);font-size:12px;font-weight:900}
+    .hero{
+      position:relative;overflow:hidden;display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:22px;padding:32px;
+      border:1px solid var(--line);border-radius:24px;background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,255,255,.84));box-shadow:var(--shadow);
+    }
+    .hero::after{
+      content:"";position:absolute;right:-80px;top:-120px;width:360px;height:360px;border-radius:50%;
+      background:radial-gradient(circle,rgba(167,235,242,.62),rgba(84,172,191,.12) 58%,transparent 68%);pointer-events:none;
+    }
+    .hero-content,.hero-actions{position:relative;z-index:1}
+    .eyebrow{margin:0 0 8px;color:var(--steel);font-size:12px;font-weight:950;letter-spacing:.1em;text-transform:uppercase}
+    .hero h2{margin:0;color:var(--navy);font-size:clamp(34px,5vw,58px);line-height:1;font-weight:950}
+    .hero p:last-child{max-width:760px;margin:16px 0 0;color:var(--muted);font-size:16px;line-height:1.7}
+    .primary-btn,.secondary-btn,.danger-btn,.small-btn{
+      min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 15px;border-radius:11px;font-weight:900;
+    }
+    .primary-btn{border:0;color:#fff;background:linear-gradient(135deg,var(--steel),var(--deep));box-shadow:0 16px 34px rgba(38,101,140,.22)}
+    .secondary-btn,.small-btn{border:1px solid var(--line);color:var(--deep);background:#fff}
+    .danger-btn{border:1px solid #fecaca;color:var(--danger);background:#fff7f7}
+    .small-btn{min-height:34px;padding:7px 10px;font-size:12px}
+    .message{display:none;margin-bottom:18px;padding:13px 16px;border-radius:12px;font-size:13px;font-weight:800}
+    .message.show{display:block}
+    .message.error{color:#991b1b;background:#fee2e2;border:1px solid #fecaca}
+    .message.success{color:#166534;background:#dcfce7;border:1px solid #bbf7d0}
+    .message.warning{color:#92400e;background:#fffbeb;border:1px solid #fde68a}
+    .stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:22px}
+    .stat-card{padding:20px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.92);box-shadow:0 14px 38px rgba(2,56,89,.08)}
+    .stat-card span{display:block;color:var(--muted);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+    .stat-card strong{display:block;margin-top:8px;color:var(--navy);font-size:30px;line-height:1;font-weight:950}
+    .content-card{border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.94);box-shadow:var(--shadow);overflow:hidden}
+    .card-header{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:24px 28px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,#fff,rgba(167,235,242,.18))}
+    .card-header h3{margin:0;color:var(--navy);font-size:22px;font-weight:950}
+    .card-header p{margin:6px 0 0;color:var(--muted);font-size:14px}
+    .filters{display:grid;grid-template-columns:minmax(220px,1fr) minmax(170px,230px);gap:14px;padding:22px 28px}
+    .control{width:100%;min-height:46px;padding:11px 13px;border:1px solid #cfe8ee;border-radius:12px;background:#fbfeff;color:var(--text);outline:none}
+    .control:focus{border-color:var(--aqua);box-shadow:0 0 0 4px rgba(84,172,191,.16)}
+    .client-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:0 28px 28px}
+    .client-card{display:grid;gap:14px;padding:20px;border:1px solid var(--line);border-radius:18px;background:#fff;box-shadow:0 12px 30px rgba(2,56,89,.06)}
+    .client-card-head{display:grid;grid-template-columns:74px minmax(0,1fr) auto;gap:14px;align-items:start}
+    .client-logo,.client-logo-placeholder{
+      width:74px;height:74px;border:1px solid #d8eef3;border-radius:18px;display:grid;place-items:center;overflow:hidden;background:linear-gradient(135deg,#f4fcfe,#e8f8fb);
+      color:var(--deep);font-size:22px;font-weight:950;
+    }
+    .client-logo img{width:100%;height:100%;object-fit:contain;background:#fff}
+    .client-card h4{margin:0;color:var(--navy);font-size:20px;font-weight:950}
+    .client-card p{margin:4px 0 0;color:var(--muted);font-size:13px}
+    .status-badge{display:inline-flex;align-items:center;min-height:28px;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:950;text-transform:uppercase}
+    .status-active{color:#166534;background:#dcfce7}
+    .status-inactive{color:#991b1b;background:#fee2e2}
+    .client-meta{display:grid;gap:8px;color:var(--muted);font-size:12px;font-weight:800}
+    .card-actions{display:flex;flex-wrap:wrap;gap:8px;padding-top:3px;border-top:1px solid #edf6f8}
+    .empty-state{grid-column:1/-1;padding:42px 20px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:18px;background:rgba(167,235,242,.08)}
+    .modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(1,28,64,.62);backdrop-filter:blur(8px)}
+    .modal.open{display:flex}
+    .modal-panel{width:min(940px,100%);max-height:92vh;overflow:auto;border:1px solid rgba(167,235,242,.5);border-radius:24px;background:#fff;box-shadow:0 30px 90px rgba(1,28,64,.34)}
+    #profile-modal .modal-panel{width:min(1120px,100%)}
+    .modal-header{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 26px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.96)}
+    .modal-header h3{margin:0;color:var(--navy);font-size:24px;font-weight:950}
+    .icon-btn{width:38px;height:38px;border:1px solid var(--line);border-radius:50%;color:var(--deep);background:#fff;font-size:20px;font-weight:950}
+    .modal-body{padding:26px}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    .field{display:grid;gap:8px;min-width:0}
+    .field.full{grid-column:1/-1}
+    .field label{color:var(--deep);font-size:13px;font-weight:900}
+    .field textarea{min-height:110px;resize:vertical}
+    .logo-upload-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+    .logo-preview{width:86px;height:86px;border:1px dashed #b8dce4;border-radius:18px;display:grid;place-items:center;overflow:hidden;background:#f4fafc;color:var(--deep);font-weight:950}
+    .logo-preview img{width:100%;height:100%;object-fit:contain;background:#fff}
+    .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+    .detail-section{margin-bottom:20px;padding:19px;border:1px solid var(--line);border-radius:18px;background:#fbfeff}
+    .detail-section h4{margin:0 0 14px;color:var(--navy);font-size:17px;font-weight:950}
+    .detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .detail-item{padding:12px;border-radius:12px;background:#fff;border:1px solid #e8f4f6}
+    .detail-item.full{grid-column:1/-1}
+    .detail-item span{display:block;color:var(--muted);font-size:11px;font-weight:900;text-transform:uppercase}
+    .detail-item strong{display:block;margin-top:5px;color:var(--deep);font-size:14px;overflow-wrap:anywhere}
+    .profile-brand{display:grid;grid-template-columns:100px minmax(0,1fr);gap:16px;align-items:center}
+    .future-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+    .future-card{min-height:94px;padding:13px;border:1px dashed #b8dce4;border-radius:13px;background:#f4fafc;color:var(--muted)}
+    .future-card strong{display:block;color:#47677a;font-size:13px}
+    .future-card span{display:block;margin-top:8px;font-size:11px;font-weight:800}
+    @media (max-width:1050px){
+      .clients-shell{grid-template-columns:1fr}
+      .sidebar{position:relative;min-height:auto;padding:20px}
+      .sidebar-brand{margin-bottom:16px}
+      .sidebar-nav{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .nav-item.active{grid-column:1/-1}
+    }
+    @media (max-width:850px){
+      .stats-grid,.client-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .future-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media (max-width:620px){
+      .main-area{padding:20px 16px 34px}
+      .topbar,.hero,.card-header{flex-direction:column;align-items:stretch}
+      .user-tools{justify-content:flex-start;flex-wrap:wrap}
+      .sidebar-nav,.stats-grid,.client-grid,.filters,.form-grid,.detail-grid,.future-grid,.profile-brand{grid-template-columns:1fr}
+      .field.full,.detail-item.full{grid-column:auto}
+      .client-card-head{grid-template-columns:62px minmax(0,1fr)}
+      .client-card-head .status-badge{grid-column:1/-1;justify-self:start}
+      .client-grid,.filters,.card-header{padding-left:20px;padding-right:20px}
+      .modal{padding:10px}
+      .modal-body{padding:18px}
+      .modal-actions{flex-direction:column-reverse}
+      .modal-actions button{width:100%}
+    }
+  </style>
+  <script>
+    if (localStorage.getItem('cc_auth') !== '1' || !localStorage.getItem('cc_token') || !localStorage.getItem('cc_role')) {
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html';
+    }
+  </script>
+</head>
+<body>
+  <div class="clients-shell">
+    <aside class="sidebar" aria-label="Client Profiles navigation">
+      <a class="sidebar-brand" href="dashboard.html" aria-label="Cloud Crowd dashboard">
+        <img src="assets/images/logo.png" alt="Cloud Crowd logo" class="sidebar-logo">
+        <div><h1>Cloud Crowd</h1><p>Operations Hub</p></div>
+      </a>
+      <nav class="sidebar-nav">
+        <a class="nav-item" href="dashboard.html"><span class="nav-icon" aria-hidden="true">&#8962;</span>Dashboard</a>
+        <a class="nav-item active" href="client-profiles.html" aria-current="page"><span class="nav-icon" aria-hidden="true">&#9638;</span>Client Profiles</a>
+        <a class="nav-item" href="employee-profiles.html"><span class="nav-icon" aria-hidden="true">&#9783;</span>Employee Profiles</a>
+        <a class="nav-item" href="employee-deductions.html"><span class="nav-icon" aria-hidden="true">&#8722;</span>Employee Deductions</a>
+      </nav>
+    </aside>
+
+    <main class="main-area" id="main-content">
+      <header class="topbar">
+        <a class="breadcrumb" href="dashboard.html">&larr; Dashboard</a>
+        <div class="user-tools">
+          <span class="user-pill" id="current-user">Team Member</span>
+          <span class="role-pill" id="current-role">operator</span>
+          <button class="logout" type="button" id="logout-btn">Log out</button>
+        </div>
+      </header>
+
+      <section class="hero" aria-labelledby="page-title">
+        <div class="hero-content">
+          <p class="eyebrow">Client Operations</p>
+          <h2 id="page-title">Client Profiles</h2>
+          <p>Manage restaurants, brands, ownership information and operational details.</p>
+        </div>
+        <div class="hero-actions">
+          <button class="primary-btn management-control" type="button" id="add-client-btn">+ Add Client</button>
+        </div>
+      </section>
+
+      <div class="message" id="page-message" role="status"></div>
+
+      <section class="stats-grid" aria-label="Client summary">
+        <article class="stat-card"><span>Total Clients</span><strong id="stat-total">0</strong></article>
+        <article class="stat-card"><span>Active Clients</span><strong id="stat-active">0</strong></article>
+        <article class="stat-card"><span>Archived Clients</span><strong id="stat-archived">0</strong></article>
+        <article class="stat-card"><span>Assigned Agents</span><strong id="stat-agents">0</strong></article>
+      </section>
+
+      <section class="content-card" aria-labelledby="directory-title">
+        <div class="card-header">
+          <div>
+            <h3 id="directory-title">Client Directory</h3>
+            <p>Search restaurants and open the full operational profile.</p>
+          </div>
+          <span class="role-pill" id="record-count">0 records</span>
+        </div>
+        <div class="filters">
+          <input class="control" id="client-search" type="search" placeholder="Search brand, owner, or number">
+          <select class="control" id="status-filter" aria-label="Filter clients by status">
+            <option value="all">All clients</option>
+            <option value="active">Active clients</option>
+            <option value="inactive">Archived clients</option>
+          </select>
+        </div>
+        <div class="client-grid" id="client-grid">
+          <div class="empty-state">Loading client profiles...</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal" id="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 id="profile-modal-title">Client Profile</h3>
+        <button class="icon-btn" type="button" data-close-modal="profile-modal" aria-label="Close client profile">&times;</button>
+      </div>
+      <div class="modal-body" id="profile-modal-body"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="client-modal" role="dialog" aria-modal="true" aria-labelledby="client-modal-title">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 id="client-modal-title">Add Client</h3>
+        <button class="icon-btn" type="button" data-close-modal="client-modal" aria-label="Close client form">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="client-form">
+          <input id="restaurant-id" type="hidden">
+          <input id="logo-url" type="hidden">
+          <div class="form-grid">
+            <div class="field">
+              <label for="brand-name">Brand Name</label>
+              <input class="control" id="brand-name" name="brandName" type="text" maxlength="200" required>
+            </div>
+            <div class="field">
+              <label for="status">Status</label>
+              <select class="control" id="status" name="status" required>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+            <div class="field full">
+              <label for="logo-upload">Logo Upload</label>
+              <div class="logo-upload-row">
+                <div class="logo-preview" id="logo-preview">--</div>
+                <input class="control" id="logo-upload" name="logoUpload" type="file" accept="image/*">
+                <button class="secondary-btn" type="button" id="clear-logo-btn">Remove Logo</button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="call-center-number">Call Center Number</label>
+              <input class="control" id="call-center-number" name="callCenterNumber" type="text" maxlength="80">
+            </div>
+            <div class="field">
+              <label for="original-restaurant-number">Original Restaurant Number</label>
+              <input class="control" id="original-restaurant-number" name="originalRestaurantNumber" type="text" maxlength="80">
+            </div>
+            <div class="field">
+              <label for="forwarded-number">Forwarded Number</label>
+              <input class="control" id="forwarded-number" name="forwardedNumber" type="text" maxlength="80">
+            </div>
+            <div class="field">
+              <label for="brand-owner-name">Brand Owner Name</label>
+              <input class="control" id="brand-owner-name" name="brandOwnerName" type="text" maxlength="200">
+            </div>
+            <div class="field">
+              <label for="brand-owner-phone">Brand Owner Phone</label>
+              <input class="control" id="brand-owner-phone" name="brandOwnerPhone" type="text" maxlength="80">
+            </div>
+            <div class="field">
+              <label for="account-manager-name">Account Manager Name</label>
+              <input class="control" id="account-manager-name" name="accountManagerName" type="text" maxlength="200">
+            </div>
+            <div class="field">
+              <label for="restaurant-manager-name">Restaurant Manager Name</label>
+              <input class="control" id="restaurant-manager-name" name="restaurantManagerName" type="text" maxlength="200">
+            </div>
+            <div class="field full">
+              <label for="notes">Notes</label>
+              <textarea class="control" id="notes" name="notes" maxlength="5000"></textarea>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button class="secondary-btn" type="button" data-close-modal="client-modal">Cancel</button>
+            <button class="primary-btn" type="submit" id="save-client-btn">Save Client</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const RESTAURANTS_ENDPOINT = '/.netlify/functions/restaurants';
+    const MAX_LOGO_BYTES = 750 * 1024;
+    const currentRole = (localStorage.getItem('cc_role') || '').toLowerCase();
+    const canManageClients = ['admin', 'manager'].includes(currentRole);
+    let restaurants = [];
+
+    function authHeaders(extra = {}) {
+      return {
+        ...extra,
+        'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+      };
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[character]));
+    }
+
+    function logout(confirmFirst = true) {
+      if (confirmFirst && !window.confirm('Confirm logout?')) return;
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html';
+    }
+
+    async function apiRequest(url, options = {}) {
+      const response = await fetch(url, {
+        ...options,
+        cache: 'no-store',
+        headers: authHeaders(options.headers || {})
+      });
+      if (response.status === 401) {
+        logout(false);
+        throw new Error('Session expired');
+      }
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || `Request failed (${response.status})`);
+      }
+      return data;
+    }
+
+    function showMessage(message, type = 'error') {
+      const element = document.getElementById('page-message');
+      element.textContent = message;
+      element.className = `message show ${type}`;
+      window.setTimeout(() => {
+        element.className = 'message';
+      }, 5000);
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+      if (!document.querySelector('.modal.open')) document.body.style.overflow = '';
+    }
+
+    function initials(name) {
+      const words = String(name || '').trim().split(/\s+/).filter(Boolean);
+      if (!words.length) return '--';
+      if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+      return `${words[0][0]}${words[1][0]}`.toUpperCase();
+    }
+
+    function logoMarkup(restaurant, className = 'client-logo') {
+      if (restaurant.logoUrl) {
+        return `<div class="${className}"><img src="${escapeHtml(restaurant.logoUrl)}" alt="${escapeHtml(restaurant.brandName)} logo"></div>`;
+      }
+      return `<div class="${className} client-logo-placeholder" aria-label="${escapeHtml(restaurant.brandName)} placeholder">${escapeHtml(initials(restaurant.brandName))}</div>`;
+    }
+
+    function statusLabel(status) {
+      return status === 'inactive' ? 'Inactive' : 'Active';
+    }
+
+    function statusBadge(status) {
+      const safeStatus = status === 'inactive' ? 'inactive' : 'active';
+      return `<span class="status-badge status-${safeStatus}">${statusLabel(safeStatus)}</span>`;
+    }
+
+    function valueOrDash(value) {
+      return escapeHtml(value || '-');
+    }
+
+    async function loadRestaurants() {
+      try {
+        const data = await apiRequest(`${RESTAURANTS_ENDPOINT}?status=all`);
+        restaurants = Array.isArray(data.restaurants) ? data.restaurants : [];
+        renderStats();
+        renderRestaurants();
+      } catch (error) {
+        restaurants = [];
+        document.getElementById('client-grid').innerHTML =
+          `<div class="empty-state">${escapeHtml(error.message)}</div>`;
+        renderStats();
+      }
+    }
+
+    function renderStats() {
+      document.getElementById('stat-total').textContent = restaurants.length;
+      document.getElementById('stat-active').textContent = restaurants.filter((restaurant) => restaurant.status === 'active').length;
+      document.getElementById('stat-archived').textContent = restaurants.filter((restaurant) => restaurant.status === 'inactive').length;
+      document.getElementById('stat-agents').textContent = '0';
+    }
+
+    function getFilteredRestaurants() {
+      const search = document.getElementById('client-search').value.trim().toLowerCase();
+      const status = document.getElementById('status-filter').value;
+      return restaurants.filter((restaurant) => {
+        const matchesStatus = status === 'all' || restaurant.status === status;
+        const searchable = [
+          restaurant.brandName,
+          restaurant.callCenterNumber,
+          restaurant.brandOwnerName,
+          restaurant.accountManagerName,
+          restaurant.restaurantManagerName
+        ].join(' ').toLowerCase();
+        return matchesStatus && (!search || searchable.includes(search));
+      });
+    }
+
+    function renderRestaurants() {
+      const filtered = getFilteredRestaurants();
+      const grid = document.getElementById('client-grid');
+      if (!filtered.length) {
+        grid.innerHTML = '<div class="empty-state">No client profiles match this view.</div>';
+      } else {
+        grid.innerHTML = filtered.map((restaurant) => {
+          const managementActions = canManageClients ? `
+            <button class="small-btn" type="button" data-edit-id="${escapeHtml(restaurant.restaurantId)}">Edit</button>
+            <button class="small-btn danger-btn" type="button" data-archive-id="${escapeHtml(restaurant.restaurantId)}">Archive</button>
+          ` : '';
+          return `
+            <article class="client-card">
+              <div class="client-card-head">
+                ${logoMarkup(restaurant)}
+                <div>
+                  <h4>${escapeHtml(restaurant.brandName)}</h4>
+                  <p>Call Center: ${valueOrDash(restaurant.callCenterNumber)}</p>
+                </div>
+                ${statusBadge(restaurant.status)}
+              </div>
+              <div class="client-meta">
+                <span>Owner: ${valueOrDash(restaurant.brandOwnerName)}</span>
+                <span>Account Manager: ${valueOrDash(restaurant.accountManagerName)}</span>
+              </div>
+              <div class="card-actions">
+                <button class="small-btn" type="button" data-view-id="${escapeHtml(restaurant.restaurantId)}">View Profile</button>
+                ${managementActions}
+              </div>
+            </article>
+          `;
+        }).join('');
+      }
+      document.getElementById('record-count').textContent =
+        `${filtered.length} ${filtered.length === 1 ? 'record' : 'records'}`;
+    }
+
+    function updateLogoPreview() {
+      const brandName = document.getElementById('brand-name').value;
+      const logoUrl = document.getElementById('logo-url').value;
+      const preview = document.getElementById('logo-preview');
+      preview.innerHTML = logoUrl
+        ? `<img src="${escapeHtml(logoUrl)}" alt="Logo preview">`
+        : escapeHtml(initials(brandName));
+    }
+
+    function resetClientForm() {
+      document.getElementById('client-form').reset();
+      document.getElementById('restaurant-id').value = '';
+      document.getElementById('logo-url').value = '';
+      document.getElementById('status').value = 'active';
+      document.getElementById('client-modal-title').textContent = 'Add Client';
+      document.getElementById('save-client-btn').textContent = 'Save Client';
+      updateLogoPreview();
+    }
+
+    function openCreateClient() {
+      if (!canManageClients) return;
+      resetClientForm();
+      openModal('client-modal');
+      document.getElementById('brand-name').focus();
+    }
+
+    async function readLogoFile(file) {
+      if (!file) return '';
+      if (!file.type.startsWith('image/')) {
+        throw new Error('Logo upload must be an image file.');
+      }
+      if (file.size > MAX_LOGO_BYTES) {
+        throw new Error('Logo file must be 750 KB or smaller.');
+      }
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(new Error('Logo file could not be read.'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function collectClientData() {
+      return {
+        brandName: document.getElementById('brand-name').value.trim(),
+        logoUrl: document.getElementById('logo-url').value,
+        status: document.getElementById('status').value,
+        callCenterNumber: document.getElementById('call-center-number').value.trim(),
+        originalRestaurantNumber: document.getElementById('original-restaurant-number').value.trim(),
+        forwardedNumber: document.getElementById('forwarded-number').value.trim(),
+        brandOwnerName: document.getElementById('brand-owner-name').value.trim(),
+        brandOwnerPhone: document.getElementById('brand-owner-phone').value.trim(),
+        accountManagerName: document.getElementById('account-manager-name').value.trim(),
+        restaurantManagerName: document.getElementById('restaurant-manager-name').value.trim(),
+        notes: document.getElementById('notes').value.trim()
+      };
+    }
+
+    async function saveClient(event) {
+      event.preventDefault();
+      if (!canManageClients || !event.currentTarget.reportValidity()) return;
+      const restaurantId = document.getElementById('restaurant-id').value;
+      const button = document.getElementById('save-client-btn');
+      button.disabled = true;
+      try {
+        await apiRequest(
+          restaurantId ? `${RESTAURANTS_ENDPOINT}?id=${encodeURIComponent(restaurantId)}` : RESTAURANTS_ENDPOINT,
+          {
+            method: restaurantId ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(collectClientData())
+          }
+        );
+        closeModal('client-modal');
+        showMessage(restaurantId ? 'Client updated.' : 'Client created.', 'success');
+        await loadRestaurants();
+      } catch (error) {
+        showMessage(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function getRestaurantProfile(restaurantId) {
+      const data = await apiRequest(
+        `${RESTAURANTS_ENDPOINT}?id=${encodeURIComponent(restaurantId)}`
+      );
+      return data.restaurant;
+    }
+
+    async function viewRestaurant(restaurantId) {
+      try {
+        const restaurant = await getRestaurantProfile(restaurantId);
+        const futureModules = [
+          'Complaints',
+          'Free Orders',
+          'Call Queue',
+          'Talabat Rating',
+          'Careem Rating'
+        ].map((label) => `
+          <div class="future-card">
+            <strong>${escapeHtml(label)}</strong>
+            <span>Future module</span>
+          </div>
+        `).join('');
+
+        document.getElementById('profile-modal-title').textContent = restaurant.brandName;
+        document.getElementById('profile-modal-body').innerHTML = `
+          <section class="detail-section">
+            <h4>Brand Information</h4>
+            <div class="profile-brand">
+              ${logoMarkup(restaurant)}
+              <div class="detail-grid">
+                <div class="detail-item"><span>Brand Name</span><strong>${escapeHtml(restaurant.brandName)}</strong></div>
+                <div class="detail-item"><span>Status</span><strong>${statusBadge(restaurant.status)}</strong></div>
+                <div class="detail-item full"><span>Notes</span><strong>${valueOrDash(restaurant.notes)}</strong></div>
+              </div>
+            </div>
+          </section>
+          <section class="detail-section">
+            <h4>Contact Information</h4>
+            <div class="detail-grid">
+              <div class="detail-item"><span>Call Center Number</span><strong>${valueOrDash(restaurant.callCenterNumber)}</strong></div>
+              <div class="detail-item"><span>Original Restaurant Number</span><strong>${valueOrDash(restaurant.originalRestaurantNumber)}</strong></div>
+              <div class="detail-item"><span>Forwarded Number</span><strong>${valueOrDash(restaurant.forwardedNumber)}</strong></div>
+            </div>
+          </section>
+          <section class="detail-section">
+            <h4>Ownership &amp; Management</h4>
+            <div class="detail-grid">
+              <div class="detail-item"><span>Brand Owner</span><strong>${valueOrDash(restaurant.brandOwnerName)}</strong></div>
+              <div class="detail-item"><span>Brand Owner Phone</span><strong>${valueOrDash(restaurant.brandOwnerPhone)}</strong></div>
+              <div class="detail-item"><span>Account Manager</span><strong>${valueOrDash(restaurant.accountManagerName)}</strong></div>
+              <div class="detail-item"><span>Restaurant Manager</span><strong>${valueOrDash(restaurant.restaurantManagerName)}</strong></div>
+            </div>
+          </section>
+          <section class="detail-section">
+            <h4>Assigned Agents</h4>
+            <div class="empty-state">Will be connected through Agent Training.</div>
+          </section>
+          <section class="detail-section">
+            <h4>Quality Performance</h4>
+            <div class="empty-state">Will be connected through Weekly Quality.</div>
+          </section>
+          <section class="detail-section">
+            <h4>Future Modules</h4>
+            <div class="future-grid">${futureModules}</div>
+          </section>
+        `;
+        openModal('profile-modal');
+      } catch (error) {
+        showMessage(error.message);
+      }
+    }
+
+    async function editRestaurant(restaurantId) {
+      if (!canManageClients) return;
+      try {
+        const restaurant = await getRestaurantProfile(restaurantId);
+        resetClientForm();
+        document.getElementById('restaurant-id').value = restaurant.restaurantId;
+        document.getElementById('brand-name').value = restaurant.brandName;
+        document.getElementById('logo-url').value = restaurant.logoUrl || '';
+        document.getElementById('status').value = restaurant.status || 'active';
+        document.getElementById('call-center-number').value = restaurant.callCenterNumber || '';
+        document.getElementById('original-restaurant-number').value = restaurant.originalRestaurantNumber || '';
+        document.getElementById('forwarded-number').value = restaurant.forwardedNumber || '';
+        document.getElementById('brand-owner-name').value = restaurant.brandOwnerName || '';
+        document.getElementById('brand-owner-phone').value = restaurant.brandOwnerPhone || '';
+        document.getElementById('account-manager-name').value = restaurant.accountManagerName || '';
+        document.getElementById('restaurant-manager-name').value = restaurant.restaurantManagerName || '';
+        document.getElementById('notes').value = restaurant.notes || '';
+        document.getElementById('client-modal-title').textContent = 'Edit Client';
+        document.getElementById('save-client-btn').textContent = 'Save Client';
+        updateLogoPreview();
+        openModal('client-modal');
+      } catch (error) {
+        showMessage(error.message);
+      }
+    }
+
+    async function archiveRestaurant(restaurantId) {
+      if (!canManageClients) return;
+      const restaurant = restaurants.find((item) => item.restaurantId === restaurantId);
+      if (!window.confirm(`Archive ${restaurant?.brandName || 'this client'}?`)) return;
+
+      try {
+        await apiRequest(
+          `${RESTAURANTS_ENDPOINT}?id=${encodeURIComponent(restaurantId)}`,
+          { method: 'DELETE' }
+        );
+        showMessage('Client archived.', 'success');
+        await loadRestaurants();
+      } catch (error) {
+        showMessage(error.message);
+      }
+    }
+
+    document.getElementById('current-user').textContent = localStorage.getItem('cc_user') || 'Team Member';
+    document.getElementById('current-role').textContent = currentRole || 'operator';
+    document.querySelectorAll('.management-control').forEach((element) => {
+      element.hidden = !canManageClients;
+    });
+    document.getElementById('logout-btn').addEventListener('click', () => logout(true));
+    document.getElementById('add-client-btn').addEventListener('click', openCreateClient);
+    document.getElementById('client-form').addEventListener('submit', saveClient);
+    document.getElementById('brand-name').addEventListener('input', updateLogoPreview);
+    document.getElementById('clear-logo-btn').addEventListener('click', () => {
+      document.getElementById('logo-upload').value = '';
+      document.getElementById('logo-url').value = '';
+      updateLogoPreview();
+    });
+    document.getElementById('logo-upload').addEventListener('change', async (event) => {
+      try {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        document.getElementById('logo-url').value = await readLogoFile(file);
+        updateLogoPreview();
+      } catch (error) {
+        event.target.value = '';
+        showMessage(error.message);
+      }
+    });
+    ['client-search','status-filter'].forEach((id) => {
+      document.getElementById(id).addEventListener(id === 'client-search' ? 'input' : 'change', renderRestaurants);
+    });
+
+    document.addEventListener('click', (event) => {
+      const closeButton = event.target.closest('[data-close-modal]');
+      const viewButton = event.target.closest('[data-view-id]');
+      const editButton = event.target.closest('[data-edit-id]');
+      const archiveButton = event.target.closest('[data-archive-id]');
+      if (closeButton) closeModal(closeButton.dataset.closeModal);
+      if (viewButton) viewRestaurant(viewButton.dataset.viewId);
+      if (editButton) editRestaurant(editButton.dataset.editId);
+      if (archiveButton) archiveRestaurant(archiveButton.dataset.archiveId);
+    });
+    document.querySelectorAll('.modal').forEach((modal) => {
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) closeModal(modal.id);
+      });
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      const open = document.querySelector('.modal.open');
+      if (open) closeModal(open.id);
+    });
+
+    loadRestaurants();
+  </script>
+  <script src="idle-logout.js"></script>
+</body>
+</html>
