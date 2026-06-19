@@ -139,15 +139,28 @@
     .detail-item span{display:block;color:var(--muted);font-size:11px;font-weight:900;text-transform:uppercase}
     .detail-item strong{display:block;margin-top:5px;color:var(--deep);font-size:14px;overflow-wrap:anywhere}
     .profile-brand{display:grid;grid-template-columns:100px minmax(0,1fr);gap:16px;align-items:center}
-    .metrics-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:16px}
+    .profile-brand .client-logo,.profile-brand .client-logo-placeholder{width:100px;height:100px;border-radius:22px}
+    .metrics-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:16px}
     .metric-card{min-height:86px;padding:13px;border:1px solid #dceff3;border-radius:13px;background:#fff}
     .metric-card span{display:block;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase}
     .metric-card strong{display:block;margin-top:8px;color:var(--navy);font-size:22px;line-height:1.15;font-weight:950;overflow-wrap:anywhere}
+    .metric-card small{display:block;margin-top:4px;color:var(--muted);font-size:11px;font-weight:800}
     .profile-table-wrap{width:100%;overflow-x:auto;border:1px solid #e3f1f4;border-radius:13px;background:#fff}
     .profile-table{width:100%;min-width:680px;border-collapse:collapse}
     .profile-table th,.profile-table td{padding:11px 12px;border-bottom:1px solid #e8f4f6;text-align:left;vertical-align:top;font-size:12px}
     .profile-table th{color:var(--deep);background:rgba(167,235,242,.16);font-size:10px;font-weight:950;text-transform:uppercase;white-space:nowrap}
     .profile-table tbody tr:last-child td{border-bottom:0}
+    .status-assigned,.status-trained{background:#e4fbf6;color:#08755c}
+    .status-unassigned{background:#f6f0d7;color:#7a5a05}
+    .status-not-trained{background:#ffe8e8;color:#9b1c1c}
+    .status-coaching{background:#fff0dd;color:#8a4a00}
+    .status-neutral{background:#eef2f5;color:#526474}
+    .quality-details summary{cursor:pointer;color:var(--blue);font-weight:950}
+    .quality-details div{margin-top:8px;color:var(--muted);line-height:1.6}
+    .weak-list{display:grid;gap:10px}
+    .weak-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid #e3f1f4;border-radius:13px;background:#fff}
+    .weak-item span{color:var(--deep);font-weight:950}
+    .weak-item strong{color:var(--navy);font-size:18px}
     .future-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
     .future-card{min-height:94px;padding:13px;border:1px dashed #b8dce4;border-radius:13px;background:#f4fafc;color:var(--muted)}
     .future-card strong{display:block;color:#47677a;font-size:13px}
@@ -341,6 +354,31 @@
   <script>
     const RESTAURANTS_ENDPOINT = '/.netlify/functions/restaurants';
     const TRAINING_ENDPOINT = '/.netlify/functions/training';
+    const WEEKLY_QUALITY_STORAGE_KEY = 'cc_weekly_quality_records_v1';
+    const QUALITY_SCORE_FIELDS = [
+      'greetings',
+      'knowledge',
+      'upselling',
+      'closure',
+      'repeatingOrders',
+      'phoneEtiquette',
+      'clarity',
+      'environment',
+      'equipment',
+      'aat'
+    ];
+    const QUALITY_SCORE_LABELS = {
+      greetings: 'Greetings',
+      knowledge: 'Knowledge',
+      upselling: 'Upselling',
+      closure: 'Closure',
+      repeatingOrders: 'Repeating Orders',
+      phoneEtiquette: 'Phone Etiquette',
+      clarity: 'Clarity',
+      environment: 'Environment',
+      equipment: 'Equipment',
+      aat: 'AAT'
+    };
     const MAX_LOGO_BYTES = 750 * 1024;
     const currentRole = (localStorage.getItem('cc_role') || '').toLowerCase();
     const canManageClients = ['admin', 'manager'].includes(currentRole);
@@ -433,6 +471,87 @@
 
     function valueOrDash(value) {
       return escapeHtml(value || '-');
+    }
+
+    function normalizeName(value) {
+      return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
+    function getQualityRestaurantName(record) {
+      return String(record.restaurantNameSnapshot || record.campaign || record.restaurant || '').trim();
+    }
+
+    function getQualityAgentName(record) {
+      return String(record.agentNameSnapshot || record.agent || '').trim();
+    }
+
+    function getQualityAuditorName(record) {
+      return String(record.auditorNameSnapshot || record.auditor || '').trim();
+    }
+
+    function getQualityDateTime(record) {
+      if (record.callDateTime) return String(record.callDateTime);
+      if (!record.date) return '';
+      const time = String(record.callTime || '00:00:00');
+      return `${record.date} ${time.length === 5 ? `${time}:00` : time}`;
+    }
+
+    function getQualityScore(record, field) {
+      const score = Number(record.scores?.[field]);
+      return Number.isFinite(score) ? score : null;
+    }
+
+    function getQualityTotal(record) {
+      const explicitTotal = Number(record.totalScore);
+      if (Number.isFinite(explicitTotal)) return explicitTotal;
+      return QUALITY_SCORE_FIELDS.reduce((sum, field) => {
+        const score = getQualityScore(record, field);
+        return sum + (score ?? 0);
+      }, 0);
+    }
+
+    function formatScore(value, suffix = '') {
+      const score = Number(value);
+      if (!Number.isFinite(score)) return '-';
+      const rounded = Math.round(score * 10) / 10;
+      return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)}${suffix}`;
+    }
+
+    function qualitySortTime(record) {
+      return Date.parse(record.createdAt || getQualityDateTime(record).replace(' ', 'T')) || 0;
+    }
+
+    function readWeeklyQualityRecords() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(WEEKLY_QUALITY_STORAGE_KEY) || '[]');
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function getClientQualityRecords(restaurant) {
+      const restaurantId = String(restaurant.restaurantId || '');
+      const restaurantName = normalizeName(restaurant.brandName);
+      return readWeeklyQualityRecords().filter((record) => {
+        const recordRestaurantId = String(record.restaurantId || '');
+        if (restaurantId && recordRestaurantId) return recordRestaurantId === restaurantId;
+        if (recordRestaurantId) return false;
+        return restaurantName && normalizeName(getQualityRestaurantName(record)) === restaurantName;
+      });
+    }
+
+    function trainingStatusBadge(status) {
+      const statusMap = {
+        Assigned: 'assigned',
+        Unassigned: 'unassigned',
+        Trained: 'trained',
+        'Not Trained': 'not-trained',
+        'Coaching Needed': 'coaching',
+        'No training or assignment needed': 'neutral'
+      };
+      const className = statusMap[status] || 'neutral';
+      return `<span class="status-badge status-${className}">${escapeHtml(status || '-')}</span>`;
     }
 
     async function loadRestaurants() {
@@ -614,12 +733,16 @@
         return '<div class="empty-state">No assigned agents yet.</div>';
       }
 
-      const countByTrainingStatus = (status) => trainingRecords.filter(
-        (record) => record.trainingStatus === status
-      ).length;
       const assignedRecords = trainingRecords.filter(
         (record) => record.assignmentStatus === 'Assigned'
       );
+      const assignedTrained = assignedRecords.filter((record) => record.trainingStatus === 'Trained').length;
+      const trainingCompletion = assignedRecords.length
+        ? Math.round((assignedTrained / assignedRecords.length) * 100)
+        : 0;
+      const countByTrainingStatus = (status) => trainingRecords.filter(
+        (record) => record.trainingStatus === status
+      ).length;
       const latestAssignedRows = [...assignedRecords]
         .sort((a, b) => {
           const aTime = Date.parse(String(a.trainingDate || a.updatedAt || a.createdAt || '').replace(' ', 'T')) || 0;
@@ -630,16 +753,17 @@
         .map((record) => `
           <tr>
             <td>${escapeHtml(record.employeeNameSnapshot || '-')}</td>
-            <td>${escapeHtml(record.assignmentStatus || '-')}</td>
-            <td>${escapeHtml(record.trainingStatus || '-')}</td>
+            <td>${trainingStatusBadge(record.assignmentStatus)}</td>
+            <td>${trainingStatusBadge(record.trainingStatus)}</td>
             <td>${escapeHtml(record.trainingDate || '-')}</td>
+            <td>${escapeHtml(record.notes || '-')}</td>
           </tr>
         `).join('');
       const latestAssignedSection = latestAssignedRows
         ? `
           <div class="profile-table-wrap">
             <table class="profile-table">
-              <thead><tr><th>Employee</th><th>Assignment Status</th><th>Training Status</th><th>Training Date</th></tr></thead>
+              <thead><tr><th>Employee</th><th>Assignment Status</th><th>Training Status</th><th>Training Date</th><th>Notes</th></tr></thead>
               <tbody>${latestAssignedRows}</tbody>
             </table>
           </div>
@@ -649,12 +773,118 @@
       return `
         <div class="metrics-grid">
           <div class="metric-card"><span>Assigned Agents</span><strong>${assignedRecords.length}</strong></div>
-          <div class="metric-card"><span>Trained</span><strong>${countByTrainingStatus('Trained')}</strong></div>
+          <div class="metric-card"><span>Trained</span><strong>${assignedTrained}</strong></div>
           <div class="metric-card"><span>Coaching Needed</span><strong>${countByTrainingStatus('Coaching Needed')}</strong></div>
           <div class="metric-card"><span>Not Trained</span><strong>${countByTrainingStatus('Not Trained')}</strong></div>
           <div class="metric-card"><span>No Training Needed</span><strong>${countByTrainingStatus('No training or assignment needed')}</strong></div>
+          <div class="metric-card"><span>Training Completion</span><strong>${trainingCompletion}%</strong><small>Trained / assigned</small></div>
         </div>
         ${latestAssignedSection}
+      `;
+    }
+
+    function renderQualityDetails(record) {
+      const scoreRows = QUALITY_SCORE_FIELDS.map((field) => {
+        const score = getQualityScore(record, field);
+        return `${QUALITY_SCORE_LABELS[field]}: ${score ?? '-'}`;
+      }).join('<br>');
+      const notes = record.notes ? `<br>Notes: ${escapeHtml(record.notes)}` : '';
+      return `
+        <details class="quality-details">
+          <summary>View Details</summary>
+          <div>${scoreRows}${notes}</div>
+        </details>
+      `;
+    }
+
+    function renderQualityPerformanceSection(qualityRecords) {
+      if (!qualityRecords.length) {
+        return '<div class="empty-state">No weekly quality records yet.</div>';
+      }
+
+      const totals = qualityRecords.map(getQualityTotal).filter((score) => Number.isFinite(score));
+      const average = totals.reduce((sum, score) => sum + score, 0) / totals.length;
+      const best = Math.max(...totals);
+      const worst = Math.min(...totals);
+      const latestDate = [...qualityRecords]
+        .sort((a, b) => qualitySortTime(b) - qualitySortTime(a))[0];
+      const agentScores = new Map();
+      qualityRecords.forEach((record) => {
+        const agentName = getQualityAgentName(record);
+        if (!agentName) return;
+        const current = agentScores.get(agentName) || { total: 0, count: 0 };
+        current.total += getQualityTotal(record);
+        current.count += 1;
+        agentScores.set(agentName, current);
+      });
+      const topAgent = [...agentScores.entries()]
+        .map(([name, data]) => ({ name, average: data.total / data.count }))
+        .sort((a, b) => b.average - a.average)[0];
+
+      const latestRows = [...qualityRecords]
+        .sort((a, b) => qualitySortTime(b) - qualitySortTime(a))
+        .slice(0, 5)
+        .map((record) => `
+          <tr>
+            <td>${escapeHtml(getQualityDateTime(record) || '-')}</td>
+            <td>${escapeHtml(getQualityAgentName(record) || '-')}</td>
+            <td>${escapeHtml(getQualityAuditorName(record) || '-')}</td>
+            <td><strong>${formatScore(getQualityTotal(record), '%')}</strong></td>
+            <td>${renderQualityDetails(record)}</td>
+          </tr>
+        `).join('');
+
+      return `
+        <div class="metrics-grid">
+          <div class="metric-card"><span>Average Quality Score</span><strong>${formatScore(average, '%')}</strong></div>
+          <div class="metric-card"><span>Best Score</span><strong>${formatScore(best, '%')}</strong></div>
+          <div class="metric-card"><span>Worst Score</span><strong>${formatScore(worst, '%')}</strong></div>
+          <div class="metric-card"><span>Total Evaluations</span><strong>${qualityRecords.length}</strong></div>
+          <div class="metric-card"><span>Last Evaluation Date</span><strong>${escapeHtml(getQualityDateTime(latestDate) || '-')}</strong></div>
+          <div class="metric-card"><span>Top Agent</span><strong>${escapeHtml(topAgent?.name || '-')}</strong>${topAgent ? `<small>${formatScore(topAgent.average, '%')} avg</small>` : ''}</div>
+        </div>
+        <div class="profile-table-wrap">
+          <table class="profile-table">
+            <thead><tr><th>Date &amp; Time</th><th>Agent</th><th>Auditor</th><th>Total Score</th><th>Details</th></tr></thead>
+            <tbody>${latestRows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderWeakAreasSection(qualityRecords) {
+      if (!qualityRecords.length) {
+        return '<div class="empty-state">No quality records yet.</div>';
+      }
+
+      const categoryAverages = QUALITY_SCORE_FIELDS.map((field) => {
+        const scores = qualityRecords
+          .map((record) => getQualityScore(record, field))
+          .filter((score) => score !== null);
+        if (!scores.length) return null;
+        return {
+          field,
+          label: QUALITY_SCORE_LABELS[field],
+          average: scores.reduce((sum, score) => sum + score, 0) / scores.length
+        };
+      }).filter(Boolean);
+
+      if (!categoryAverages.length) {
+        return '<div class="empty-state">No weak areas detected.</div>';
+      }
+
+      return `
+        <div class="weak-list">
+          ${categoryAverages
+            .sort((a, b) => a.average - b.average)
+            .slice(0, 3)
+            .map((item) => `
+              <div class="weak-item">
+                <span>${escapeHtml(item.label)}</span>
+                <strong>${formatScore(item.average)} / 10</strong>
+              </div>
+            `).join('')}
+        </div>
       `;
     }
 
@@ -669,6 +899,9 @@
           trainingError = error.message || 'Training records could not be loaded.';
         }
         const trainingSection = renderTrainingSection(trainingRecords, trainingError);
+        const qualityRecords = getClientQualityRecords(restaurant);
+        const qualityPerformanceSection = renderQualityPerformanceSection(qualityRecords);
+        const weakAreasSection = renderWeakAreasSection(qualityRecords);
         const futureModules = [
           'Complaints',
           'Free Orders',
@@ -678,38 +911,27 @@
         ].map((label) => `
           <div class="future-card">
             <strong>${escapeHtml(label)}</strong>
-            <span>Future module</span>
+            <span>Coming soon</span>
           </div>
         `).join('');
 
         document.getElementById('profile-modal-title').textContent = restaurant.brandName;
         document.getElementById('profile-modal-body').innerHTML = `
           <section class="detail-section">
-            <h4>Brand Information</h4>
+            <h4>Brand Overview</h4>
             <div class="profile-brand">
               ${logoMarkup(restaurant)}
               <div class="detail-grid">
                 <div class="detail-item"><span>Brand Name</span><strong>${escapeHtml(restaurant.brandName)}</strong></div>
                 <div class="detail-item"><span>Status</span><strong>${statusBadge(restaurant.status)}</strong></div>
+                <div class="detail-item"><span>Call Center Number</span><strong>${valueOrDash(restaurant.callCenterNumber)}</strong></div>
+                <div class="detail-item"><span>Original Restaurant Number</span><strong>${valueOrDash(restaurant.originalRestaurantNumber)}</strong></div>
+                <div class="detail-item"><span>Forwarded Number</span><strong>${valueOrDash(restaurant.forwardedNumber)}</strong></div>
+                <div class="detail-item"><span>Brand Owner</span><strong>${valueOrDash(restaurant.brandOwnerName)}</strong></div>
+                <div class="detail-item"><span>Account Manager</span><strong>${valueOrDash(restaurant.accountManagerName)}</strong></div>
+                <div class="detail-item"><span>Restaurant Manager</span><strong>${valueOrDash(restaurant.restaurantManagerName)}</strong></div>
                 <div class="detail-item full"><span>Notes</span><strong>${valueOrDash(restaurant.notes)}</strong></div>
               </div>
-            </div>
-          </section>
-          <section class="detail-section">
-            <h4>Contact Information</h4>
-            <div class="detail-grid">
-              <div class="detail-item"><span>Call Center Number</span><strong>${valueOrDash(restaurant.callCenterNumber)}</strong></div>
-              <div class="detail-item"><span>Original Restaurant Number</span><strong>${valueOrDash(restaurant.originalRestaurantNumber)}</strong></div>
-              <div class="detail-item"><span>Forwarded Number</span><strong>${valueOrDash(restaurant.forwardedNumber)}</strong></div>
-            </div>
-          </section>
-          <section class="detail-section">
-            <h4>Ownership &amp; Management</h4>
-            <div class="detail-grid">
-              <div class="detail-item"><span>Brand Owner</span><strong>${valueOrDash(restaurant.brandOwnerName)}</strong></div>
-              <div class="detail-item"><span>Brand Owner Phone</span><strong>${valueOrDash(restaurant.brandOwnerPhone)}</strong></div>
-              <div class="detail-item"><span>Account Manager</span><strong>${valueOrDash(restaurant.accountManagerName)}</strong></div>
-              <div class="detail-item"><span>Restaurant Manager</span><strong>${valueOrDash(restaurant.restaurantManagerName)}</strong></div>
             </div>
           </section>
           <section class="detail-section">
@@ -717,8 +939,12 @@
             ${trainingSection}
           </section>
           <section class="detail-section">
-            <h4>Quality Performance</h4>
-            <div class="empty-state">Will be connected through Weekly Quality.</div>
+            <h4>Weekly Quality Performance</h4>
+            ${qualityPerformanceSection}
+          </section>
+          <section class="detail-section">
+            <h4>Quality Weak Areas</h4>
+            ${weakAreasSection}
           </section>
           <section class="detail-section">
             <h4>Future Modules</h4>
