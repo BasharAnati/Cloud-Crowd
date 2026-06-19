@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+  <title>Agent Training - Cloud Crowd</title>
+  <style>
+    :root{
+      --ice:#A7EBF2;
+      --aqua:#54ACBF;
+      --steel:#26658C;
+      --deep:#023859;
+      --navy:#011C40;
+      --page:#f5fbfd;
+      --card:#ffffff;
+      --line:#d8eef3;
+      --text:#12324a;
+      --muted:#60798b;
+      --danger:#b91c1c;
+      --shadow:0 24px 70px rgba(2,56,89,.12);
+    }
+    *{box-sizing:border-box}
+    html,body{width:100%;min-height:100%;overflow-x:hidden}
+    body{
+      min-height:100vh;
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:
+        linear-gradient(135deg,rgba(167,235,242,.55),transparent 30%),
+        linear-gradient(225deg,rgba(84,172,191,.18),transparent 34%),
+        var(--page);
+      line-height:1.5;
+    }
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    button:disabled{cursor:not-allowed;opacity:.58}
+    a{color:inherit;text-decoration:none}
+    .app-shell{min-height:100vh;display:grid;grid-template-columns:280px minmax(0,1fr)}
+    .sidebar{
+      position:sticky;top:0;min-height:100vh;padding:28px 22px;border-right:1px solid var(--line);
+      background:rgba(255,255,255,.82);box-shadow:18px 0 60px rgba(2,56,89,.08);
+      backdrop-filter:blur(16px) saturate(130%);
+    }
+    .sidebar-brand{display:flex;align-items:center;gap:13px;margin-bottom:34px}
+    .sidebar-logo{width:58px;height:58px;object-fit:contain;filter:drop-shadow(0 10px 18px rgba(84,172,191,.2))}
+    .sidebar-brand h1{margin:0;font-size:22px;line-height:1;font-weight:900;color:var(--navy)}
+    .sidebar-brand p{margin:6px 0 0;color:var(--steel);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:900}
+    .sidebar-nav{display:grid;gap:8px}
+    .nav-item{
+      display:flex;align-items:center;gap:12px;min-height:46px;padding:10px 12px;border:1px solid transparent;
+      border-radius:12px;color:#31556d;font-size:14px;font-weight:800;transition:.2s ease;
+    }
+    .nav-item:hover,.nav-item.active{color:var(--deep);border-color:rgba(84,172,191,.28);background:rgba(167,235,242,.24);transform:translateX(2px)}
+    .nav-icon{width:30px;height:30px;display:grid;place-items:center;border:1px solid rgba(84,172,191,.24);border-radius:9px;color:var(--steel);background:#f0fbfd;flex:0 0 auto}
+    .main-area{min-width:0;padding:26px clamp(20px,4vw,54px) 44px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}
+    .breadcrumb{color:var(--steel);font-size:13px;font-weight:900;letter-spacing:.04em;text-transform:uppercase}
+    .user-tools{display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0}
+    .user-pill,.role-pill{
+      min-height:38px;display:inline-flex;align-items:center;justify-content:center;max-width:260px;padding:8px 12px;
+      border:1px solid var(--line);border-radius:999px;color:var(--deep);background:rgba(255,255,255,.82);font-size:12px;font-weight:900;
+    }
+    .logout{min-height:38px;padding:8px 14px;border:0;border-radius:999px;color:#fff;background:linear-gradient(135deg,#ef4444,#b91c1c);font-size:12px;font-weight:900}
+    .hero{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:22px;padding:32px;
+      border:1px solid var(--line);border-radius:24px;background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,255,255,.84));box-shadow:var(--shadow);
+    }
+    .eyebrow{margin:0 0 8px;color:var(--steel);font-size:12px;font-weight:950;letter-spacing:.1em;text-transform:uppercase}
+    .hero h2{margin:0;color:var(--navy);font-size:clamp(34px,5vw,58px);line-height:1;font-weight:950}
+    .hero p:last-child{max-width:760px;margin:16px 0 0;color:var(--muted);font-size:16px;line-height:1.7}
+    .primary-btn,.secondary-btn,.danger-btn,.small-btn{
+      min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 15px;border-radius:11px;font-weight:900;
+    }
+    .primary-btn{border:0;color:#fff;background:linear-gradient(135deg,var(--steel),var(--deep));box-shadow:0 16px 34px rgba(38,101,140,.22)}
+    .secondary-btn,.small-btn{border:1px solid var(--line);color:var(--deep);background:#fff}
+    .danger-btn{border:1px solid #fecaca;color:var(--danger);background:#fff7f7}
+    .small-btn{min-height:32px;padding:6px 9px;font-size:11px}
+    .message{display:none;margin-bottom:18px;padding:13px 16px;border-radius:12px;font-size:13px;font-weight:800}
+    .message.show{display:block}
+    .message.error{color:#991b1b;background:#fee2e2;border:1px solid #fecaca}
+    .message.success{color:#166534;background:#dcfce7;border:1px solid #bbf7d0}
+    .message.warning{color:#92400e;background:#fffbeb;border:1px solid #fde68a}
+    .stats-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px;margin-bottom:22px}
+    .stat-card{padding:20px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.92);box-shadow:0 14px 38px rgba(2,56,89,.08)}
+    .stat-card span{display:block;color:var(--muted);font-size:11px;font-weight:900;text-transform:uppercase}
+    .stat-card strong{display:block;margin-top:8px;color:var(--navy);font-size:28px;line-height:1.1;font-weight:950;overflow-wrap:anywhere}
+    .section-layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;margin-bottom:22px}
+    .content-card{border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.94);box-shadow:var(--shadow);overflow:hidden}
+    .card-header{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:24px 28px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,#fff,rgba(167,235,242,.18))}
+    .card-header h3{margin:0;color:var(--navy);font-size:22px;font-weight:950}
+    .card-header p{margin:6px 0 0;color:var(--muted);font-size:14px}
+    .quick-form{padding:24px 28px}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    .field{display:grid;gap:8px;min-width:0}
+    .field.full{grid-column:1/-1}
+    .field label{color:var(--deep);font-size:13px;font-weight:900}
+    .field textarea{min-height:105px;resize:vertical}
+    .control{width:100%;min-height:46px;padding:11px 13px;border:1px solid #cfe8ee;border-radius:12px;background:#fbfeff;color:var(--text);outline:none}
+    .control:focus{border-color:var(--aqua);box-shadow:0 0 0 4px rgba(84,172,191,.16)}
+    .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+    .guide-list{display:grid;gap:12px;padding:22px}
+    .guide-item{padding:13px;border:1px solid #e3f1f4;border-radius:13px;background:#fbfeff}
+    .guide-item strong{display:block;color:var(--deep);font-size:13px;font-weight:950}
+    .guide-item span{display:block;margin-top:5px;color:var(--muted);font-size:12px;font-weight:750}
+    .filters{display:grid;grid-template-columns:minmax(210px,1fr) repeat(3,minmax(150px,220px));gap:12px;padding:22px 28px}
+    .table-wrap{width:100%;overflow-x:auto;padding:0 28px 28px}
+    .records-table{width:100%;min-width:1120px;border-collapse:collapse}
+    .records-table th,.records-table td{padding:12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:12px}
+    .records-table th{color:var(--deep);background:rgba(167,235,242,.18);font-size:10px;font-weight:950;text-transform:uppercase;white-space:nowrap}
+    .status-badge{display:inline-flex;align-items:center;min-height:26px;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:950;white-space:nowrap}
+    .status-assigned{color:#075985;background:#e0f2fe}
+    .status-unassigned{color:#854d0e;background:#fef3c7}
+    .status-trained{color:#166534;background:#dcfce7}
+    .status-not-trained{color:#991b1b;background:#fee2e2}
+    .status-coaching{color:#92400e;background:#ffedd5}
+    .status-neutral{color:#475569;background:#e2e8f0}
+    .actions{display:flex;gap:6px;white-space:nowrap}
+    .notes-cell{max-width:260px;white-space:normal}
+    .empty-state{padding:36px 18px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:16px;background:rgba(167,235,242,.08)}
+    .modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(1,28,64,.62);backdrop-filter:blur(8px)}
+    .modal.open{display:flex}
+    .modal-panel{width:min(760px,100%);max-height:92vh;overflow:auto;border:1px solid rgba(167,235,242,.5);border-radius:24px;background:#fff;box-shadow:0 30px 90px rgba(1,28,64,.34)}
+    .modal-header{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 26px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.97)}
+    .modal-header h3{margin:0;color:var(--navy);font-size:24px;font-weight:950}
+    .icon-btn{width:38px;height:38px;border:1px solid var(--line);border-radius:50%;color:var(--deep);background:#fff;font-size:20px;font-weight:950}
+    .modal-body{padding:26px}
+    .detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .detail-item{padding:13px;border:1px solid #e3f1f4;border-radius:12px;background:#fbfeff}
+    .detail-item.full{grid-column:1/-1}
+    .detail-item span{display:block;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase}
+    .detail-item strong{display:block;margin-top:5px;color:var(--deep);font-size:14px;overflow-wrap:anywhere}
+    @media (max-width:1150px){
+      .stats-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .section-layout{grid-template-columns:1fr}
+    }
+    @media (max-width:1050px){
+      .app-shell{grid-template-columns:1fr}
+      .sidebar{position:relative;min-height:auto;padding:20px}
+      .sidebar-brand{margin-bottom:16px}
+      .sidebar-nav{grid-template-columns:repeat(3,minmax(0,1fr))}
+    }
+    @media (max-width:850px){
+      .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media (max-width:620px){
+      .main-area{padding:20px 16px 34px}
+      .topbar,.hero,.card-header{flex-direction:column;align-items:stretch}
+      .user-tools{justify-content:flex-start;flex-wrap:wrap}
+      .sidebar-nav,.stats-grid,.filters,.form-grid,.detail-grid{grid-template-columns:1fr}
+      .field.full,.detail-item.full{grid-column:auto}
+      .card-header,.filters,.table-wrap,.quick-form{padding-left:20px;padding-right:20px}
+      .modal{padding:10px}
+      .modal-body{padding:20px}
+      .modal-actions{flex-direction:column-reverse}
+      .modal-actions button{width:100%}
+    }
+  </style>
+  <script>
+    if (localStorage.getItem('cc_auth') !== '1' || !localStorage.getItem('cc_token') || !localStorage.getItem('cc_role')) {
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html';
+    }
+  </script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Agent Training navigation">
+      <a class="sidebar-brand" href="dashboard.html" aria-label="Cloud Crowd dashboard">
+        <img src="assets/images/logo.png" alt="Cloud Crowd logo" class="sidebar-logo">
+        <div><h1>Cloud Crowd</h1><p>Operations Hub</p></div>
+      </a>
+      <nav class="sidebar-nav">
+        <a class="nav-item" href="dashboard.html"><span class="nav-icon" aria-hidden="true">&#8962;</span>Dashboard</a>
+        <a class="nav-item" href="employee-profiles.html"><span class="nav-icon" aria-hidden="true">&#9783;</span>Employee Profiles</a>
+        <a class="nav-item active" href="agent-training.html" aria-current="page"><span class="nav-icon" aria-hidden="true">&#9733;</span>Agent Training</a>
+        <a class="nav-item" href="employee-deductions.html"><span class="nav-icon" aria-hidden="true">&#8722;</span>Employee Deductions</a>
+      </nav>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <a class="breadcrumb" href="dashboard.html">&larr; Dashboard</a>
+        <div class="user-tools">
+          <span class="user-pill" id="current-user">Team Member</span>
+          <span class="role-pill" id="current-role">operator</span>
+          <button class="logout" type="button" id="logout-btn">Log out</button>
+        </div>
+      </header>
+
+      <section class="hero" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">People Operations</p>
+          <h2 id="page-title">Agent Training</h2>
+          <p>Manage assignments, training progress, and coaching needs.</p>
+        </div>
+        <button class="primary-btn management-control" type="button" id="new-training-btn">+ New Training Assignment</button>
+      </section>
+
+      <div class="message" id="page-message" role="status"></div>
+
+      <section class="stats-grid" aria-label="Training summary">
+        <article class="stat-card"><span>Total Employees</span><strong id="stat-employees">0</strong></article>
+        <article class="stat-card"><span>Assigned Brands</span><strong id="stat-assigned">0</strong></article>
+        <article class="stat-card"><span>Fully Trained</span><strong id="stat-trained">0</strong></article>
+        <article class="stat-card"><span>Coaching Needed</span><strong id="stat-coaching">0</strong></article>
+        <article class="stat-card"><span>Unassigned Brands</span><strong id="stat-unassigned">0</strong></article>
+      </section>
+
+      <div class="section-layout">
+        <section class="content-card management-control" aria-labelledby="form-title">
+          <div class="card-header">
+            <div><h3 id="form-title">New Training Assignment</h3><p>Create or update agent assignment coverage by restaurant or brand.</p></div>
+          </div>
+          <div class="quick-form">
+            <form id="training-form">
+              <input id="training-id" type="hidden">
+              <div class="form-grid">
+                <div class="field">
+                  <label for="employee-id">Employee</label>
+                  <select class="control" id="employee-id" name="employeeId" required disabled>
+                    <option value="">Loading employees...</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="restaurant-name">Restaurant / Brand</label>
+                  <input class="control" id="restaurant-name" name="restaurantName" type="text" list="restaurant-options" maxlength="200" required placeholder="Select or enter a brand">
+                  <datalist id="restaurant-options"></datalist>
+                </div>
+                <div class="field">
+                  <label for="assignment-status">Assignment Status</label>
+                  <select class="control" id="assignment-status" name="assignmentStatus" required>
+                    <option value="">Select assignment status</option>
+                    <option>Assigned</option>
+                    <option>Unassigned</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="training-status">Training Status</label>
+                  <select class="control" id="training-status" name="trainingStatus" required>
+                    <option value="">Select training status</option>
+                    <option>Trained</option>
+                    <option>Not Trained</option>
+                    <option>Coaching Needed</option>
+                    <option>No training or assignment needed</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="training-date">Training Date</label>
+                  <input class="control" id="training-date" name="trainingDate" type="date">
+                </div>
+                <div class="field">
+                  <label for="updated-by-name">Updated By</label>
+                  <input class="control" id="updated-by-name" name="updatedByName" type="text" maxlength="200">
+                </div>
+                <div class="field full">
+                  <label for="notes">Notes</label>
+                  <textarea class="control" id="notes" name="notes" maxlength="5000"></textarea>
+                </div>
+              </div>
+              <div class="modal-actions">
+                <button class="secondary-btn" type="button" id="reset-training-btn">Clear</button>
+                <button class="primary-btn" type="submit" id="save-training-btn">Save Assignment</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section class="content-card" aria-labelledby="guide-title">
+          <div class="card-header">
+            <div><h3 id="guide-title">Training Status Guide</h3><p>Use consistent labels across restaurant coverage.</p></div>
+          </div>
+          <div class="guide-list">
+            <div class="guide-item"><strong>Trained</strong><span>Employee completed training and is ready.</span></div>
+            <div class="guide-item"><strong>Coaching Needed</strong><span>Employee is assigned but needs additional coaching.</span></div>
+            <div class="guide-item"><strong>Not Trained</strong><span>Employee is assigned but not trained yet.</span></div>
+            <div class="guide-item"><strong>Unassigned</strong><span>Employee is not assigned to this restaurant/brand.</span></div>
+            <div class="guide-item"><strong>No training or assignment needed</strong><span>No action is required for this employee/brand.</span></div>
+          </div>
+        </section>
+      </div>
+
+      <section class="content-card" aria-labelledby="records-title">
+        <div class="card-header">
+          <div><h3 id="records-title">Training Assignments</h3><p>Review, filter, and maintain agent restaurant training records.</p></div>
+          <span class="role-pill" id="record-count">0 records</span>
+        </div>
+        <div class="filters">
+          <input class="control" id="employee-search" type="search" placeholder="Search employee">
+          <select class="control" id="restaurant-filter" aria-label="Filter by restaurant"><option value="">All brands</option></select>
+          <select class="control" id="training-filter" aria-label="Filter by training status">
+            <option value="">All training statuses</option>
+            <option>Trained</option>
+            <option>Not Trained</option>
+            <option>Coaching Needed</option>
+            <option>No training or assignment needed</option>
+          </select>
+          <select class="control" id="assignment-filter" aria-label="Filter by assignment status">
+            <option value="">All assignment statuses</option>
+            <option>Assigned</option>
+            <option>Unassigned</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table class="records-table">
+            <thead>
+              <tr>
+                <th>Employee</th><th>Restaurant / Brand</th><th>Assignment Status</th><th>Training Status</th>
+                <th>Training Date</th><th>Updated By</th><th>Notes</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="records-body"></tbody>
+          </table>
+          <div class="empty-state" id="records-empty">Loading training assignments...</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal" id="details-modal" role="dialog" aria-modal="true" aria-labelledby="details-modal-title">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 id="details-modal-title">Training Assignment Details</h3>
+        <button class="icon-btn" type="button" data-close-modal="details-modal" aria-label="Close training details">&times;</button>
+      </div>
+      <div class="modal-body" id="details-modal-body"></div>
+    </div>
+  </div>
+
+  <script>
+    const EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
+    const TRAINING_ENDPOINT = '/.netlify/functions/training';
+    const RESTAURANT_OPTIONS = [
+      "Ned's Pizza",
+      "Ned's Pizza \"Main\"",
+      "Very Good Burger",
+      "Evi's Chimney Cake",
+      "Crunchy Chicken",
+      "Happy Tummies",
+      "Bint Halal",
+      "Safaeh Al Sager",
+      "Cloud Crowd",
+      "Bun Run",
+      "Circa Restaurants",
+      "Heat Burger",
+      "UFO",
+      "Ka3kawi \"Wadi Saqra\"",
+      "Hombre",
+      "Dope Burger",
+      "AlfoKash",
+      "0.1 Gravity",
+      "Latshé"
+    ];
+    const currentRole = (localStorage.getItem('cc_role') || '').toLowerCase();
+    const canManageTraining = ['admin', 'manager'].includes(currentRole);
+    let employees = [];
+    let trainingRecords = [];
+    let employeesAvailable = false;
+
+    function authHeaders(extra = {}) {
+      return {
+        ...extra,
+        'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+      };
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[character]));
+    }
+
+    function logout() {
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html';
+    }
+
+    async function apiRequest(url, options = {}) {
+      const response = await fetch(url, {
+        ...options,
+        cache: 'no-store',
+        headers: authHeaders(options.headers || {})
+      });
+      if (response.status === 401) {
+        logout();
+        throw new Error('Session expired');
+      }
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || `Request failed (${response.status})`);
+      }
+      return data;
+    }
+
+    function showMessage(message, type = 'error', persistent = false) {
+      const element = document.getElementById('page-message');
+      element.textContent = message;
+      element.className = `message show ${type}`;
+      if (!persistent) {
+        window.setTimeout(() => {
+          element.className = 'message';
+        }, 5000);
+      }
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+      if (!document.querySelector('.modal.open')) document.body.style.overflow = '';
+    }
+
+    function statusClass(status) {
+      if (status === 'Assigned') return 'status-assigned';
+      if (status === 'Unassigned') return 'status-unassigned';
+      if (status === 'Trained') return 'status-trained';
+      if (status === 'Not Trained') return 'status-not-trained';
+      if (status === 'Coaching Needed') return 'status-coaching';
+      return 'status-neutral';
+    }
+
+    function statusBadge(status) {
+      return `<span class="status-badge ${statusClass(status)}">${escapeHtml(status || '-')}</span>`;
+    }
+
+    function populateRestaurantOptions() {
+      document.getElementById('restaurant-options').innerHTML = RESTAURANT_OPTIONS
+        .map((restaurant) => `<option value="${escapeHtml(restaurant)}">`)
+        .join('');
+    }
+
+    async function loadEmployees() {
+      const select = document.getElementById('employee-id');
+      try {
+        const data = await apiRequest(EMPLOYEES_ENDPOINT);
+        employees = (Array.isArray(data.employees) ? data.employees : [])
+          .filter((employee) => employee.status === 'active')
+          .map((employee) => ({
+            employeeId: String(employee.employeeId || ''),
+            fullName: String(employee.fullName || '').trim()
+          }))
+          .filter((employee) => employee.employeeId && employee.fullName)
+          .sort((a, b) => a.fullName.localeCompare(b.fullName));
+        if (!employees.length) throw new Error('No active employees are available.');
+        select.innerHTML = '<option value="">Select employee</option>' + employees
+          .map((employee) => `<option value="${escapeHtml(employee.employeeId)}">${escapeHtml(employee.fullName)}</option>`)
+          .join('');
+        select.disabled = false;
+        employeesAvailable = true;
+      } catch (error) {
+        employees = [];
+        employeesAvailable = false;
+        select.innerHTML = '<option value="">Employees unavailable</option>';
+        select.disabled = true;
+        document.getElementById('new-training-btn').disabled = true;
+        document.getElementById('save-training-btn').disabled = true;
+        showMessage(
+          'Employee Profiles could not be loaded. Existing training records remain available, but new assignments cannot be created.',
+          'warning',
+          true
+        );
+      }
+    }
+
+    async function loadTraining() {
+      try {
+        const data = await apiRequest(TRAINING_ENDPOINT);
+        trainingRecords = Array.isArray(data.training) ? data.training : [];
+        populateRestaurantFilter();
+        renderTraining();
+        renderStats();
+      } catch (error) {
+        trainingRecords = [];
+        document.getElementById('records-body').innerHTML = '';
+        document.getElementById('records-empty').textContent = error.message;
+        document.getElementById('records-empty').style.display = 'block';
+        renderStats();
+      }
+    }
+
+    function populateRestaurantFilter() {
+      const select = document.getElementById('restaurant-filter');
+      const currentValue = select.value;
+      const restaurants = [...new Set(
+        trainingRecords.map((record) => record.restaurantName).filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b));
+      select.innerHTML = '<option value="">All brands</option>' + restaurants
+        .map((restaurant) => `<option value="${escapeHtml(restaurant)}">${escapeHtml(restaurant)}</option>`)
+        .join('');
+      select.value = restaurants.includes(currentValue) ? currentValue : '';
+    }
+
+    function renderStats() {
+      document.getElementById('stat-employees').textContent = employees.length || new Set(trainingRecords.map((record) => record.employeeId).filter(Boolean)).size;
+      document.getElementById('stat-assigned').textContent = trainingRecords.filter((record) => record.assignmentStatus === 'Assigned').length;
+      document.getElementById('stat-trained').textContent = trainingRecords.filter((record) => record.trainingStatus === 'Trained').length;
+      document.getElementById('stat-coaching').textContent = trainingRecords.filter((record) => record.trainingStatus === 'Coaching Needed').length;
+      document.getElementById('stat-unassigned').textContent = trainingRecords.filter((record) => record.assignmentStatus === 'Unassigned').length;
+    }
+
+    function getFilteredTraining() {
+      const search = document.getElementById('employee-search').value.trim().toLowerCase();
+      const restaurant = document.getElementById('restaurant-filter').value;
+      const trainingStatus = document.getElementById('training-filter').value;
+      const assignmentStatus = document.getElementById('assignment-filter').value;
+      return trainingRecords.filter((record) => {
+        const matchesEmployee = !search ||
+          String(record.employeeNameSnapshot || '').toLowerCase().includes(search);
+        const matchesRestaurant = !restaurant || record.restaurantName === restaurant;
+        const matchesTraining = !trainingStatus || record.trainingStatus === trainingStatus;
+        const matchesAssignment = !assignmentStatus || record.assignmentStatus === assignmentStatus;
+        return matchesEmployee && matchesRestaurant && matchesTraining && matchesAssignment;
+      });
+    }
+
+    function renderTraining() {
+      const filtered = getFilteredTraining();
+      const body = document.getElementById('records-body');
+      const empty = document.getElementById('records-empty');
+      body.innerHTML = filtered.map((record) => {
+        const managementActions = canManageTraining ? `
+          <button class="small-btn" type="button" data-edit-id="${escapeHtml(record.trainingId)}">Edit</button>
+          <button class="small-btn danger-btn" type="button" data-delete-id="${escapeHtml(record.trainingId)}">Delete</button>
+        ` : '';
+        return `
+          <tr>
+            <td>${escapeHtml(record.employeeNameSnapshot || '-')}</td>
+            <td>${escapeHtml(record.restaurantName || '-')}</td>
+            <td>${statusBadge(record.assignmentStatus)}</td>
+            <td>${statusBadge(record.trainingStatus)}</td>
+            <td>${escapeHtml(record.trainingDate || '-')}</td>
+            <td>${escapeHtml(record.updatedByName || record.updatedBy || '-')}</td>
+            <td class="notes-cell">${escapeHtml(record.notes || '-')}</td>
+            <td><div class="actions">
+              <button class="small-btn" type="button" data-view-id="${escapeHtml(record.trainingId)}">View Details</button>
+              ${managementActions}
+            </div></td>
+          </tr>
+        `;
+      }).join('');
+      empty.textContent = 'No training assignments match this view.';
+      empty.style.display = filtered.length ? 'none' : 'block';
+      document.getElementById('record-count').textContent =
+        `${filtered.length} ${filtered.length === 1 ? 'record' : 'records'}`;
+    }
+
+    function resetTrainingForm() {
+      document.getElementById('training-form').reset();
+      document.getElementById('training-id').value = '';
+      document.getElementById('updated-by-name').value = localStorage.getItem('cc_user') || '';
+      document.getElementById('form-title').textContent = 'New Training Assignment';
+      document.getElementById('save-training-btn').textContent = 'Save Assignment';
+    }
+
+    function openCreateTraining() {
+      if (!canManageTraining || !employeesAvailable) return;
+      resetTrainingForm();
+      document.getElementById('employee-id').focus();
+    }
+
+    function collectTrainingData() {
+      const select = document.getElementById('employee-id');
+      const employee = employees.find((item) => item.employeeId === select.value);
+      return {
+        employeeId: employee?.employeeId || '',
+        employeeNameSnapshot: employee?.fullName || '',
+        restaurantName: document.getElementById('restaurant-name').value.trim(),
+        assignmentStatus: document.getElementById('assignment-status').value,
+        trainingStatus: document.getElementById('training-status').value,
+        trainingDate: document.getElementById('training-date').value.trim(),
+        updatedByName: document.getElementById('updated-by-name').value.trim(),
+        notes: document.getElementById('notes').value.trim()
+      };
+    }
+
+    async function saveTraining(event) {
+      event.preventDefault();
+      if (!canManageTraining || !employeesAvailable || !event.currentTarget.reportValidity()) return;
+      const data = collectTrainingData();
+      if (!data.employeeId || !data.employeeNameSnapshot) return;
+      const trainingId = document.getElementById('training-id').value;
+      const button = document.getElementById('save-training-btn');
+      button.disabled = true;
+      try {
+        await apiRequest(
+          trainingId ? `${TRAINING_ENDPOINT}?id=${encodeURIComponent(trainingId)}` : TRAINING_ENDPOINT,
+          {
+            method: trainingId ? 'PUT' : 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+          }
+        );
+        resetTrainingForm();
+        showMessage(trainingId ? 'Training assignment updated.' : 'Training assignment created.', 'success');
+        await loadTraining();
+      } catch (error) {
+        showMessage(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function findTraining(id) {
+      return trainingRecords.find((record) => record.trainingId === id);
+    }
+
+    function viewTraining(id) {
+      const record = findTraining(id);
+      if (!record) return;
+      document.getElementById('details-modal-body').innerHTML = `
+        <div class="detail-grid">
+          <div class="detail-item"><span>Employee</span><strong>${escapeHtml(record.employeeNameSnapshot)}</strong></div>
+          <div class="detail-item"><span>Restaurant / Brand</span><strong>${escapeHtml(record.restaurantName)}</strong></div>
+          <div class="detail-item"><span>Assignment Status</span><strong>${statusBadge(record.assignmentStatus)}</strong></div>
+          <div class="detail-item"><span>Training Status</span><strong>${statusBadge(record.trainingStatus)}</strong></div>
+          <div class="detail-item"><span>Training Date</span><strong>${escapeHtml(record.trainingDate || '-')}</strong></div>
+          <div class="detail-item"><span>Updated By</span><strong>${escapeHtml(record.updatedByName || record.updatedBy || '-')}</strong></div>
+          <div class="detail-item"><span>Created By</span><strong>${escapeHtml(record.createdBy || '-')}</strong></div>
+          <div class="detail-item"><span>Updated At</span><strong>${escapeHtml(record.updatedAt ? new Date(record.updatedAt).toLocaleString() : '-')}</strong></div>
+          <div class="detail-item full"><span>Notes</span><strong>${escapeHtml(record.notes || '-')}</strong></div>
+        </div>
+      `;
+      openModal('details-modal');
+    }
+
+    function editTraining(id) {
+      if (!canManageTraining || !employeesAvailable) return;
+      const record = findTraining(id);
+      if (!record) return;
+      resetTrainingForm();
+      document.getElementById('training-id').value = record.trainingId;
+      document.getElementById('employee-id').value = record.employeeId;
+      document.getElementById('restaurant-name').value = record.restaurantName || '';
+      document.getElementById('assignment-status').value = record.assignmentStatus || '';
+      document.getElementById('training-status').value = record.trainingStatus || '';
+      document.getElementById('training-date').value = record.trainingDate || '';
+      document.getElementById('updated-by-name').value = record.updatedByName || localStorage.getItem('cc_user') || '';
+      document.getElementById('notes').value = record.notes || '';
+      document.getElementById('form-title').textContent = 'Edit Training Assignment';
+      document.getElementById('save-training-btn').textContent = 'Update Assignment';
+      document.getElementById('training-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    async function deleteTraining(id) {
+      if (!canManageTraining) return;
+      const record = findTraining(id);
+      if (!record || !window.confirm(`Archive the training assignment for ${record.employeeNameSnapshot}?`)) return;
+      try {
+        await apiRequest(`${TRAINING_ENDPOINT}?id=${encodeURIComponent(id)}`, {method: 'DELETE'});
+        showMessage('Training assignment archived.', 'success');
+        await loadTraining();
+      } catch (error) {
+        showMessage(error.message);
+      }
+    }
+
+    document.getElementById('current-user').textContent = localStorage.getItem('cc_user') || 'Team Member';
+    document.getElementById('current-role').textContent = currentRole || 'operator';
+    document.querySelectorAll('.management-control').forEach((element) => {
+      element.hidden = !canManageTraining;
+    });
+    populateRestaurantOptions();
+    resetTrainingForm();
+    document.getElementById('logout-btn').addEventListener('click', logout);
+    document.getElementById('new-training-btn').addEventListener('click', openCreateTraining);
+    document.getElementById('training-form').addEventListener('submit', saveTraining);
+    document.getElementById('reset-training-btn').addEventListener('click', resetTrainingForm);
+    ['employee-search','restaurant-filter','training-filter','assignment-filter'].forEach((id) => {
+      document.getElementById(id).addEventListener(id === 'employee-search' ? 'input' : 'change', renderTraining);
+    });
+
+    document.addEventListener('click', (event) => {
+      const closeButton = event.target.closest('[data-close-modal]');
+      const viewButton = event.target.closest('[data-view-id]');
+      const editButton = event.target.closest('[data-edit-id]');
+      const deleteButton = event.target.closest('[data-delete-id]');
+      if (closeButton) closeModal(closeButton.dataset.closeModal);
+      if (viewButton) viewTraining(viewButton.dataset.viewId);
+      if (editButton) editTraining(editButton.dataset.editId);
+      if (deleteButton) deleteTraining(deleteButton.dataset.deleteId);
+    });
+    document.querySelectorAll('.modal').forEach((modal) => {
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) closeModal(modal.id);
+      });
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      const open = document.querySelector('.modal.open');
+      if (open) closeModal(open.id);
+    });
+
+    Promise.allSettled([loadEmployees(), loadTraining()]);
+  </script>
+  <script src="idle-logout.js"></script>
+</body>
+</html>

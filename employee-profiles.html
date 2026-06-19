@@ -237,6 +237,8 @@
     .profile-score{color:var(--deep);font-weight:950;white-space:nowrap}
     .profile-status{font-weight:900;white-space:nowrap}
     .profile-note{max-width:260px;white-space:normal}
+    .training-progress{height:13px;margin:4px 0 16px;border-radius:999px;background:#e2e8f0;overflow:hidden}
+    .training-progress span{display:block;height:100%;border-radius:999px;background:linear-gradient(135deg,var(--aqua),var(--deep))}
     .evaluation-details{min-width:150px}
     .evaluation-details summary{color:var(--steel);font-weight:900;cursor:pointer}
     .evaluation-details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:8px;color:var(--muted);font-size:10px}
@@ -426,6 +428,7 @@
   <script>
     const EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
     const DEDUCTIONS_ENDPOINT = '/.netlify/functions/deductions';
+    const TRAINING_ENDPOINT = '/.netlify/functions/training';
     const WEEKLY_QUALITY_STORAGE_KEY = 'cc_weekly_quality_records_v1';
     const ATTENDANCE_STORAGE_KEY = 'cc_attendance_records_v1';
     const QUALITY_SCORE_LABELS = {
@@ -843,6 +846,13 @@
       return Array.isArray(data.deductions) ? data.deductions : [];
     }
 
+    async function getEmployeeTraining(employeeId) {
+      const data = await apiRequest(
+        `${TRAINING_ENDPOINT}?employeeId=${encodeURIComponent(employeeId)}`
+      );
+      return Array.isArray(data.training) ? data.training : [];
+    }
+
     async function viewEmployee(employeeId) {
       try {
         const employee = await getEmployeeProfile(employeeId);
@@ -850,10 +860,17 @@
         const attendance = getAttendanceSummary(employee);
         let deductionRecords = [];
         let deductionsError = '';
+        let trainingRecords = [];
+        let trainingError = '';
         try {
           deductionRecords = await getEmployeeDeductions(employee.employeeId);
         } catch (error) {
           deductionsError = error.message || 'Deductions could not be loaded.';
+        }
+        try {
+          trainingRecords = await getEmployeeTraining(employee.employeeId);
+        } catch (error) {
+          trainingError = error.message || 'Training records could not be loaded.';
         }
         const phones = employee.phoneNumbers.length
           ? employee.phoneNumbers.map((phone) => `
@@ -953,8 +970,60 @@
               </div>
             `
             : '<div class="profile-empty">No financial deduction records yet.</div>';
+        const sortedTraining = [...trainingRecords].sort((a, b) => {
+          const aTime = Date.parse(
+            String(a.trainingDate || a.updatedAt || a.createdAt || '').replace(' ', 'T')
+          ) || 0;
+          const bTime = Date.parse(
+            String(b.trainingDate || b.updatedAt || b.createdAt || '').replace(' ', 'T')
+          ) || 0;
+          return bTime - aTime;
+        });
+        const assignedTraining = trainingRecords.filter(
+          (record) => record.assignmentStatus === 'Assigned'
+        );
+        const trainedCount = assignedTraining.filter(
+          (record) => record.trainingStatus === 'Trained'
+        ).length;
+        const trainingProgress = assignedTraining.length
+          ? Math.round((trainedCount / assignedTraining.length) * 100)
+          : 0;
+        const trainingCount = (status) => trainingRecords.filter(
+          (record) => record.trainingStatus === status
+        ).length;
+        const trainingRows = sortedTraining.slice(0, 5).map((record) => `
+          <tr>
+            <td>${escapeHtml(record.trainingDate || record.updatedAt || '-')}</td>
+            <td>${escapeHtml(record.restaurantName || '-')}</td>
+            <td class="profile-status">${escapeHtml(record.assignmentStatus || '-')}</td>
+            <td class="profile-status">${escapeHtml(record.trainingStatus || '-')}</td>
+            <td>${escapeHtml(record.updatedByName || record.updatedBy || '-')}</td>
+          </tr>
+        `).join('');
+        const trainingSection = trainingError
+          ? `<div class="profile-empty">Training records could not be loaded. ${escapeHtml(trainingError)}</div>`
+          : trainingRecords.length
+            ? `
+              <div class="metrics-grid">
+                <div class="metric-card"><span>Assigned Brands</span><strong>${assignedTraining.length}</strong></div>
+                <div class="metric-card"><span>Trained Brands</span><strong>${trainedCount}</strong></div>
+                <div class="metric-card"><span>Coaching Needed</span><strong>${trainingCount('Coaching Needed')}</strong></div>
+                <div class="metric-card"><span>Not Trained</span><strong>${trainingCount('Not Trained')}</strong></div>
+                <div class="metric-card"><span>Training Progress</span><strong>${trainingProgress}%</strong><small>Trained / assigned brands</small></div>
+              </div>
+              <div class="training-progress" aria-label="Training progress ${trainingProgress}%">
+                <span style="width:${trainingProgress}%"></span>
+              </div>
+              <div class="profile-table-wrap">
+                <table class="profile-table">
+                  <thead><tr><th>Date</th><th>Restaurant / Brand</th><th>Assignment</th><th>Training Status</th><th>Updated By</th></tr></thead>
+                  <tbody>${trainingRows}</tbody>
+                </table>
+              </div>
+            `
+            : '<div class="profile-empty">No training records yet.</div>';
         const futureMetrics = [
-          'Training', 'Call Queue', 'Free Orders'
+          'Call Queue', 'Free Orders'
         ].map((label) => `
           <div class="future-card">
             <strong>${escapeHtml(label)}</strong>
@@ -979,6 +1048,13 @@
           </section>
           <section class="detail-section"><h4>Phone Numbers</h4><div class="detail-grid">${phones}</div></section>
           <section class="detail-section"><h4>Emergency Contacts</h4><div class="detail-grid">${contacts}</div></section>
+          <section class="detail-section">
+            <div class="profile-section-heading">
+              <h4>Agent Training</h4>
+              <span class="section-source">Agent Training</span>
+            </div>
+            ${trainingSection}
+          </section>
           <section class="detail-section">
             <div class="profile-section-heading">
               <h4>Weekly Quality Performance</h4>
