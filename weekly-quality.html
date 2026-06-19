@@ -919,6 +919,7 @@
           </div>
         </div>
         <div class="employee-load-warning" id="employee-load-warning" role="alert"></div>
+        <div class="employee-load-warning" id="restaurant-load-warning" role="alert"></div>
 
         <form class="evaluation-form" id="quality-form">
           <section class="form-section">
@@ -942,19 +943,8 @@
               </div>
               <div class="field wide">
                 <label for="campaign">Campaign / Restaurant</label>
-                <select id="campaign" name="campaign" required>
-                  <option value="">Select campaign</option>
-                  <option>Ned's Pizza</option>
-                  <option>Very Good Burger</option>
-                  <option>Safaeh Al Sager</option>
-                  <option>Happy Tummies</option>
-                  <option>Crunchychkn</option>
-                  <option>Bun Run</option>
-                  <option>Heat Burger</option>
-                  <option>Bint Halal</option>
-                  <option>Chili Charms</option>
-                  <option>Colors Catering</option>
-                  <option>UFO</option>
+                <select id="campaign" name="restaurantId" required disabled>
+                  <option value="">Loading restaurants...</option>
                 </select>
               </div>
               <div class="field">
@@ -1061,6 +1051,7 @@
   <script>
     const WEEKLY_QUALITY_STORAGE_KEY = 'cc_weekly_quality_records_v1';
     const WEEKLY_QUALITY_EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
+    const WEEKLY_QUALITY_RESTAURANTS_ENDPOINT = '/.netlify/functions/restaurants';
     const SCORE_OPTIONS = [0, 3, 5, 7, 10];
     const SCORE_FIELDS = [
       'greetings',
@@ -1086,6 +1077,8 @@
       equipment: 'Equipment',
       aat: 'AAT'
     };
+    let qualityRestaurants = [];
+    let qualityRestaurantsAvailable = false;
 
     function normalizeDateTime(record) {
       if (record.callDateTime) return String(record.callDateTime);
@@ -1133,7 +1126,9 @@
         agentNameSnapshot: String(record.agentNameSnapshot || ''),
         auditor: String(record.auditor || ''),
         agent: String(record.agent || ''),
-        campaign: String(record.campaign || record.restaurant || ''),
+        restaurantId: String(record.restaurantId || ''),
+        restaurantNameSnapshot: String(record.restaurantNameSnapshot || ''),
+        campaign: String(record.restaurantNameSnapshot || record.campaign || record.restaurant || ''),
         phoneNumber: String(record.phoneNumber || ''),
         notes: String(record.notes || ''),
         recording: normalizeRecording(record),
@@ -1150,6 +1145,75 @@
 
     function getAgentName(record) {
       return String(record.agentNameSnapshot || record.agent || '');
+    }
+
+    function getRecordRestaurantName(record) {
+      return String(record.restaurantNameSnapshot || record.campaign || record.restaurant || '').trim();
+    }
+
+    function findRestaurantById(restaurantId) {
+      return qualityRestaurants.find((restaurant) => restaurant.restaurantId === restaurantId);
+    }
+
+    function setRestaurantSelectState(message, disabled) {
+      const select = document.getElementById('campaign');
+      select.disabled = disabled;
+      select.innerHTML = `<option value="">${escapeHtml(message)}</option>`;
+    }
+
+    async function loadActiveRestaurants() {
+      const warning = document.getElementById('restaurant-load-warning');
+      setRestaurantSelectState('Loading restaurants...', true);
+      warning.classList.remove('show');
+      warning.textContent = '';
+
+      try {
+        const response = await fetch(WEEKLY_QUALITY_RESTAURANTS_ENDPOINT, {
+          cache: 'no-store',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+          }
+        });
+
+        if (response.status === 401) {
+          logout();
+          return;
+        }
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.ok === false) {
+          throw new Error(data.error || `Restaurant request failed (${response.status})`);
+        }
+
+        qualityRestaurants = (Array.isArray(data.restaurants) ? data.restaurants : [])
+          .filter((restaurant) => restaurant.status === 'active')
+          .map((restaurant) => ({
+            restaurantId: String(restaurant.restaurantId || ''),
+            brandName: String(restaurant.brandName || '').trim()
+          }))
+          .filter((restaurant) => restaurant.restaurantId && restaurant.brandName)
+          .sort((a, b) => a.brandName.localeCompare(b.brandName));
+
+        if (!qualityRestaurants.length) {
+          throw new Error('No active restaurants are available in Client Profiles.');
+        }
+
+        const select = document.getElementById('campaign');
+        select.innerHTML = '<option value="">Select restaurant</option>' + qualityRestaurants
+          .map((restaurant) => `<option value="${escapeHtml(restaurant.restaurantId)}">${escapeHtml(restaurant.brandName)}</option>`)
+          .join('');
+        select.disabled = false;
+        qualityRestaurantsAvailable = true;
+        renderRecords();
+      } catch (error) {
+        console.warn('Client Profiles restaurants could not be loaded.', error);
+        qualityRestaurants = [];
+        qualityRestaurantsAvailable = false;
+        setRestaurantSelectState('Restaurants unavailable', true);
+        warning.textContent = 'Client Profiles restaurants could not be loaded. Existing evaluations remain available, but a new evaluation cannot be saved until restaurants are available.';
+        warning.classList.add('show');
+        renderRecords();
+      }
     }
 
     function getQualityRecords() {
@@ -1284,6 +1348,9 @@
       const recordingFile = form.querySelector('#call-recording').files[0];
       const auditorSelect = form.querySelector('#auditor-name');
       const agentSelect = form.querySelector('#agent-name');
+      const restaurantSelect = form.querySelector('#campaign');
+      const selectedRestaurant = findRestaurantById(formData.get('restaurantId') || '');
+      const restaurantName = selectedRestaurant?.brandName || restaurantSelect.selectedOptions[0]?.textContent.trim() || '';
       const scores = {};
       SCORE_FIELDS.forEach((field) => {
         scores[field] = Number(formData.get(field) || 0);
@@ -1298,7 +1365,10 @@
         auditorNameSnapshot: auditorSelect.selectedOptions[0]?.textContent.trim() || '',
         agentEmployeeId: formData.get('agentEmployeeId') || '',
         agentNameSnapshot: agentSelect.selectedOptions[0]?.textContent.trim() || '',
-        campaign: formData.get('campaign') || '',
+        restaurantId: selectedRestaurant?.restaurantId || '',
+        restaurantNameSnapshot: restaurantName,
+        campaign: restaurantName,
+        restaurant: restaurantName,
         phoneNumber: (formData.get('phoneNumber') || '').trim(),
         notes: (formData.get('notes') || '').trim(),
         recording: recordingFile ? {
@@ -1327,26 +1397,47 @@
     }
 
     function populateFilterOptions(records) {
-      const filters = [
-        { element: document.getElementById('restaurant-filter'), values: records.map((record) => record.campaign) },
-        { element: document.getElementById('agent-filter'), values: records.map(getAgentName) }
-      ];
+      const restaurantFilter = document.getElementById('restaurant-filter');
+      const currentRestaurantValue = restaurantFilter.value;
+      const restaurantOptions = new Map();
 
-      filters.forEach(({ element, values }) => {
-        const currentValue = element.value;
-        const firstOption = element.options[0].outerHTML;
-        const uniqueValues = [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b));
-        element.innerHTML = firstOption + uniqueValues
-          .map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`)
-          .join('');
-        element.value = uniqueValues.includes(currentValue) ? currentValue : '';
+      qualityRestaurants.forEach((restaurant) => {
+        restaurantOptions.set(`id:${restaurant.restaurantId}`, restaurant.brandName);
       });
+      records.forEach((record) => {
+        const restaurantName = getRecordRestaurantName(record);
+        if (!restaurantName) return;
+        if (record.restaurantId) {
+          restaurantOptions.set(`id:${record.restaurantId}`, restaurantName);
+        } else {
+          restaurantOptions.set(`name:${restaurantName}`, restaurantName);
+        }
+      });
+      const sortedRestaurantOptions = Array.from(restaurantOptions, ([value, label]) => ({ value, label }))
+        .sort((a, b) => a.label.localeCompare(b.label));
+      restaurantFilter.innerHTML = '<option value="">All restaurants</option>' + sortedRestaurantOptions
+        .map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`)
+        .join('');
+      restaurantFilter.value = sortedRestaurantOptions.some((option) => option.value === currentRestaurantValue)
+        ? currentRestaurantValue
+        : '';
+
+      const agentFilter = document.getElementById('agent-filter');
+      const currentAgentValue = agentFilter.value;
+      const agentValues = [...new Set(records.map(getAgentName).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b));
+      agentFilter.innerHTML = '<option value="">All agents</option>' + agentValues
+        .map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`)
+        .join('');
+      agentFilter.value = agentValues.includes(currentAgentValue) ? currentAgentValue : '';
     }
 
     function getFilteredRecords(records) {
       const search = document.getElementById('record-search').value.trim().toLowerCase();
       const date = document.getElementById('date-filter').value;
-      const restaurant = document.getElementById('restaurant-filter').value;
+      const restaurantFilter = document.getElementById('restaurant-filter');
+      const restaurant = restaurantFilter.value;
+      const restaurantLabel = restaurantFilter.options[restaurantFilter.selectedIndex]?.text || '';
       const agent = document.getElementById('agent-filter').value;
 
       return records
@@ -1357,11 +1448,17 @@
             String(record.callDateTime || '').toLowerCase().includes(search) ||
             auditorName.toLowerCase().includes(search) ||
             agentName.toLowerCase().includes(search) ||
-            String(record.campaign || '').toLowerCase().includes(search) ||
+            getRecordRestaurantName(record).toLowerCase().includes(search) ||
             String(record.phoneNumber || '').toLowerCase().includes(search) ||
             String(record.notes || '').toLowerCase().includes(search);
           const matchesDate = !date || String(record.callDateTime || '').slice(0, 10) === date;
-          const matchesRestaurant = !restaurant || record.campaign === restaurant;
+          const recordRestaurantName = getRecordRestaurantName(record);
+          const matchesRestaurant = !restaurant ||
+            (restaurant.startsWith('id:') && (
+              record.restaurantId === restaurant.slice(3) ||
+              recordRestaurantName === restaurantLabel
+            )) ||
+            (restaurant.startsWith('name:') && recordRestaurantName === restaurant.slice(5));
           const matchesAgent = !agent || agentName === agent;
           return matchesSearch && matchesDate && matchesRestaurant && matchesAgent;
         })
@@ -1398,7 +1495,7 @@
             <td>${escapeHtml(record.callDateTime || '-')}</td>
             <td>${escapeHtml(getAuditorName(record) || '-')}</td>
             <td>${escapeHtml(getAgentName(record) || '-')}</td>
-            <td>${escapeHtml(record.campaign || '-')}</td>
+            <td>${escapeHtml(getRecordRestaurantName(record) || '-')}</td>
             <td>${escapeHtml(record.phoneNumber || '-')}</td>
             <td class="score-cell">${Number(record.totalScore) || 0}%</td>
             <td class="${record.recording ? 'recording-state' : ''}">${record.recording ? 'Available' : '-'}</td>
@@ -1441,7 +1538,7 @@
             <div class="detail-item"><span>Date &amp; Time</span><strong>${escapeHtml(record.callDateTime || '-')}</strong></div>
             <div class="detail-item"><span>Auditor</span><strong>${escapeHtml(getAuditorName(record) || '-')}</strong></div>
             <div class="detail-item"><span>Agent</span><strong>${escapeHtml(getAgentName(record) || '-')}</strong></div>
-            <div class="detail-item"><span>Restaurant</span><strong>${escapeHtml(record.campaign || '-')}</strong></div>
+            <div class="detail-item"><span>Restaurant</span><strong>${escapeHtml(getRecordRestaurantName(record) || '-')}</strong></div>
             <div class="detail-item"><span>Phone Number</span><strong>${escapeHtml(record.phoneNumber || '-')}</strong></div>
             <div class="detail-item"><span>Recording</span><strong>${recordingDetails}</strong></div>
             <div class="detail-item full"><span>Notes</span><strong>${escapeHtml(record.notes || '-')}</strong></div>
@@ -1489,6 +1586,7 @@
     calculateFormTotal();
     renderRecords();
     loadActiveEmployees();
+    loadActiveRestaurants();
 
     document.getElementById('score-grid').addEventListener('change', calculateFormTotal);
     document.getElementById('quality-form').addEventListener('submit', (event) => {
@@ -1498,6 +1596,12 @@
       if (form.querySelector('#auditor-name').disabled || form.querySelector('#agent-name').disabled) {
         const warning = document.getElementById('employee-load-warning');
         warning.textContent = 'Employee Profiles must be available before a new evaluation can be saved.';
+        warning.classList.add('show');
+        return;
+      }
+      if (form.querySelector('#campaign').disabled || !qualityRestaurantsAvailable) {
+        const warning = document.getElementById('restaurant-load-warning');
+        warning.textContent = 'Client Profiles restaurants must be available before a new evaluation can be saved.';
         warning.classList.add('show');
         return;
       }
