@@ -139,6 +139,15 @@
     .detail-item span{display:block;color:var(--muted);font-size:11px;font-weight:900;text-transform:uppercase}
     .detail-item strong{display:block;margin-top:5px;color:var(--deep);font-size:14px;overflow-wrap:anywhere}
     .profile-brand{display:grid;grid-template-columns:100px minmax(0,1fr);gap:16px;align-items:center}
+    .metrics-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:16px}
+    .metric-card{min-height:86px;padding:13px;border:1px solid #dceff3;border-radius:13px;background:#fff}
+    .metric-card span{display:block;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase}
+    .metric-card strong{display:block;margin-top:8px;color:var(--navy);font-size:22px;line-height:1.15;font-weight:950;overflow-wrap:anywhere}
+    .profile-table-wrap{width:100%;overflow-x:auto;border:1px solid #e3f1f4;border-radius:13px;background:#fff}
+    .profile-table{width:100%;min-width:680px;border-collapse:collapse}
+    .profile-table th,.profile-table td{padding:11px 12px;border-bottom:1px solid #e8f4f6;text-align:left;vertical-align:top;font-size:12px}
+    .profile-table th{color:var(--deep);background:rgba(167,235,242,.16);font-size:10px;font-weight:950;text-transform:uppercase;white-space:nowrap}
+    .profile-table tbody tr:last-child td{border-bottom:0}
     .future-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
     .future-card{min-height:94px;padding:13px;border:1px dashed #b8dce4;border-radius:13px;background:#f4fafc;color:var(--muted)}
     .future-card strong{display:block;color:#47677a;font-size:13px}
@@ -152,13 +161,13 @@
     }
     @media (max-width:850px){
       .stats-grid,.client-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .future-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .metrics-grid,.future-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
     @media (max-width:620px){
       .main-area{padding:20px 16px 34px}
       .topbar,.hero,.card-header{flex-direction:column;align-items:stretch}
       .user-tools{justify-content:flex-start;flex-wrap:wrap}
-      .sidebar-nav,.stats-grid,.client-grid,.filters,.form-grid,.detail-grid,.future-grid,.profile-brand{grid-template-columns:1fr}
+      .sidebar-nav,.stats-grid,.client-grid,.filters,.form-grid,.detail-grid,.metrics-grid,.future-grid,.profile-brand{grid-template-columns:1fr}
       .field.full,.detail-item.full{grid-column:auto}
       .client-card-head{grid-template-columns:62px minmax(0,1fr)}
       .client-card-head .status-badge{grid-column:1/-1;justify-self:start}
@@ -331,6 +340,7 @@
 
   <script>
     const RESTAURANTS_ENDPOINT = '/.netlify/functions/restaurants';
+    const TRAINING_ENDPOINT = '/.netlify/functions/training';
     const MAX_LOGO_BYTES = 750 * 1024;
     const currentRole = (localStorage.getItem('cc_role') || '').toLowerCase();
     const canManageClients = ['admin', 'manager'].includes(currentRole);
@@ -589,9 +599,76 @@
       return data.restaurant;
     }
 
+    async function getRestaurantTraining(restaurantId) {
+      const data = await apiRequest(
+        `${TRAINING_ENDPOINT}?restaurantId=${encodeURIComponent(restaurantId)}`
+      );
+      return Array.isArray(data.training) ? data.training : [];
+    }
+
+    function renderTrainingSection(trainingRecords, trainingError) {
+      if (trainingError) {
+        return `<div class="empty-state">Training records could not be loaded. ${escapeHtml(trainingError)}</div>`;
+      }
+      if (!trainingRecords.length) {
+        return '<div class="empty-state">No assigned agents yet.</div>';
+      }
+
+      const countByTrainingStatus = (status) => trainingRecords.filter(
+        (record) => record.trainingStatus === status
+      ).length;
+      const assignedRecords = trainingRecords.filter(
+        (record) => record.assignmentStatus === 'Assigned'
+      );
+      const latestAssignedRows = [...assignedRecords]
+        .sort((a, b) => {
+          const aTime = Date.parse(String(a.trainingDate || a.updatedAt || a.createdAt || '').replace(' ', 'T')) || 0;
+          const bTime = Date.parse(String(b.trainingDate || b.updatedAt || b.createdAt || '').replace(' ', 'T')) || 0;
+          return bTime - aTime;
+        })
+        .slice(0, 6)
+        .map((record) => `
+          <tr>
+            <td>${escapeHtml(record.employeeNameSnapshot || '-')}</td>
+            <td>${escapeHtml(record.assignmentStatus || '-')}</td>
+            <td>${escapeHtml(record.trainingStatus || '-')}</td>
+            <td>${escapeHtml(record.trainingDate || '-')}</td>
+          </tr>
+        `).join('');
+      const latestAssignedSection = latestAssignedRows
+        ? `
+          <div class="profile-table-wrap">
+            <table class="profile-table">
+              <thead><tr><th>Employee</th><th>Assignment Status</th><th>Training Status</th><th>Training Date</th></tr></thead>
+              <tbody>${latestAssignedRows}</tbody>
+            </table>
+          </div>
+        `
+        : '<div class="empty-state">No assigned agents yet.</div>';
+
+      return `
+        <div class="metrics-grid">
+          <div class="metric-card"><span>Assigned Agents</span><strong>${assignedRecords.length}</strong></div>
+          <div class="metric-card"><span>Trained</span><strong>${countByTrainingStatus('Trained')}</strong></div>
+          <div class="metric-card"><span>Coaching Needed</span><strong>${countByTrainingStatus('Coaching Needed')}</strong></div>
+          <div class="metric-card"><span>Not Trained</span><strong>${countByTrainingStatus('Not Trained')}</strong></div>
+          <div class="metric-card"><span>No Training Needed</span><strong>${countByTrainingStatus('No training or assignment needed')}</strong></div>
+        </div>
+        ${latestAssignedSection}
+      `;
+    }
+
     async function viewRestaurant(restaurantId) {
       try {
         const restaurant = await getRestaurantProfile(restaurantId);
+        let trainingRecords = [];
+        let trainingError = '';
+        try {
+          trainingRecords = await getRestaurantTraining(restaurant.restaurantId);
+        } catch (error) {
+          trainingError = error.message || 'Training records could not be loaded.';
+        }
+        const trainingSection = renderTrainingSection(trainingRecords, trainingError);
         const futureModules = [
           'Complaints',
           'Free Orders',
@@ -636,8 +713,8 @@
             </div>
           </section>
           <section class="detail-section">
-            <h4>Assigned Agents</h4>
-            <div class="empty-state">Will be connected through Agent Training.</div>
+            <h4>Assigned Agents &amp; Training</h4>
+            ${trainingSection}
           </section>
           <section class="detail-section">
             <h4>Quality Performance</h4>

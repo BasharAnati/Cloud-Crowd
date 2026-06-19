@@ -87,7 +87,13 @@ function normalizeTrainingBody(body) {
       "employeeNameSnapshot",
       200
     ),
-    restaurantName: requiredText(body?.restaurantName, "restaurantName", 200),
+    restaurantId: cleanText(body?.restaurantId, 100),
+    restaurantNameSnapshot: cleanText(body?.restaurantNameSnapshot, 200),
+    restaurantName: requiredText(
+      body?.restaurantNameSnapshot || body?.restaurantName,
+      "restaurantName",
+      200
+    ),
     assignmentStatus,
     trainingStatus,
     trainingDate: cleanText(body?.trainingDate, 60),
@@ -102,6 +108,8 @@ async function ensureTrainingTable() {
       training_id UUID PRIMARY KEY,
       employee_id UUID NOT NULL REFERENCES employees(employee_id),
       employee_name_snapshot TEXT NOT NULL,
+      restaurant_id UUID,
+      restaurant_name_snapshot TEXT,
       restaurant_name TEXT NOT NULL,
       assignment_status TEXT NOT NULL
         CHECK (assignment_status IN ('Assigned', 'Unassigned')),
@@ -118,8 +126,19 @@ async function ensureTrainingTable() {
       deleted_by TEXT
     );
 
+    ALTER TABLE agent_training
+      ADD COLUMN IF NOT EXISTS restaurant_id UUID;
+    ALTER TABLE agent_training
+      ADD COLUMN IF NOT EXISTS restaurant_name_snapshot TEXT;
+
     CREATE INDEX IF NOT EXISTS idx_agent_training_employee_id
       ON agent_training(employee_id)
+      WHERE deleted_at IS NULL;
+    CREATE INDEX IF NOT EXISTS idx_agent_training_restaurant_id
+      ON agent_training(restaurant_id)
+      WHERE deleted_at IS NULL;
+    CREATE INDEX IF NOT EXISTS idx_agent_training_restaurant_name_snapshot
+      ON agent_training(restaurant_name_snapshot)
       WHERE deleted_at IS NULL;
     CREATE INDEX IF NOT EXISTS idx_agent_training_restaurant
       ON agent_training(restaurant_name)
@@ -138,7 +157,10 @@ function mapTraining(row) {
     trainingId: row.training_id,
     employeeId: row.employee_id,
     employeeNameSnapshot: row.employee_name_snapshot,
-    restaurantName: row.restaurant_name,
+    restaurantId: row.restaurant_id || "",
+    restaurantNameSnapshot: row.restaurant_name_snapshot || "",
+    restaurantName:
+      row.restaurant_name_snapshot || row.restaurant_name || "",
     assignmentStatus: row.assignment_status,
     trainingStatus: row.training_status,
     trainingDate: row.training_date || "",
@@ -172,12 +194,19 @@ async function listTraining(query = {}) {
   }
 
   const employeeId = cleanText(query.employeeId, 100);
+  const restaurantId = cleanText(query.restaurantId, 100);
   const restaurant = cleanText(query.restaurant, 200);
   const assignmentStatus = cleanText(query.assignmentStatus, 80);
   const trainingStatus = cleanText(query.trainingStatus, 120);
 
   if (employeeId) addCondition("employee_id = ?::uuid", employeeId);
-  if (restaurant) addCondition("restaurant_name = ?", restaurant);
+  if (restaurantId) addCondition("restaurant_id = ?::uuid", restaurantId);
+  if (restaurant) {
+    addCondition(
+      "COALESCE(NULLIF(restaurant_name_snapshot, ''), restaurant_name) = ?",
+      restaurant
+    );
+  }
   if (assignmentStatus) {
     if (!ASSIGNMENT_STATUSES.has(assignmentStatus)) {
       const error = new Error("Invalid assignmentStatus");
@@ -247,6 +276,8 @@ exports.handler = async (event) => {
            training_id,
            employee_id,
            employee_name_snapshot,
+           restaurant_id,
+           restaurant_name_snapshot,
            restaurant_name,
            assignment_status,
            training_status,
@@ -256,12 +287,14 @@ exports.handler = async (event) => {
            created_by,
            updated_by
          ) VALUES (
-           $1, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $10
+           $1, $2::uuid, $3, $4::uuid, $5, $6, $7, $8, $9, $10, $11, $12, $12
          )`,
         [
           trainingId,
           training.employeeId,
           training.employeeNameSnapshot,
+          training.restaurantId || null,
+          training.restaurantNameSnapshot || training.restaurantName,
           training.restaurantName,
           training.assignmentStatus,
           training.trainingStatus,
@@ -290,14 +323,16 @@ exports.handler = async (event) => {
         `UPDATE agent_training
             SET employee_id = $2::uuid,
                 employee_name_snapshot = $3,
-                restaurant_name = $4,
-                assignment_status = $5,
-                training_status = $6,
-                training_date = $7,
-                updated_by_name = $8,
-                notes = $9,
+                restaurant_id = $4::uuid,
+                restaurant_name_snapshot = $5,
+                restaurant_name = $6,
+                assignment_status = $7,
+                training_status = $8,
+                training_date = $9,
+                updated_by_name = $10,
+                notes = $11,
                 updated_at = now(),
-                updated_by = $10
+                updated_by = $12
           WHERE training_id = $1::uuid
             AND deleted_at IS NULL
           RETURNING training_id`,
@@ -305,6 +340,8 @@ exports.handler = async (event) => {
           trainingId,
           training.employeeId,
           training.employeeNameSnapshot,
+          training.restaurantId || null,
+          training.restaurantNameSnapshot || training.restaurantName,
           training.restaurantName,
           training.assignmentStatus,
           training.trainingStatus,
