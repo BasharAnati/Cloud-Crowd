@@ -107,7 +107,7 @@
   <script src="js/tickets-render.js" defer></script>
   <script src="main.js" defer></script>
 </head>
-<body>
+<body class="cctv-page">
   <header class="navbar" role="banner">
     <div class="brand" aria-hidden="false">
       <div class="logo" title="Cloud Crowd" onclick="window.location.href='dashboard.html'" style="cursor:pointer;">CC</div>
@@ -119,12 +119,75 @@
     <img src="assets/images/logo.png" alt="Company Logo" class="nav-center-logo" onclick="window.location.href='dashboard.html'">
   </header>
 
-  <div class="container" id="main-content">
-    <div class="ticket-list" id="ticket-list">
-      <div class="buttons-container">
+  <div class="container cctv-workspace" id="main-content">
+    <section class="cctv-hero" aria-labelledby="cctv-page-title">
+      <div class="cctv-hero-copy">
+        <h2 id="cctv-page-title">CCTV Operator Observations</h2>
+        <p>Track observation cases, involved staff, camera areas, policy violations, and resolution progress.</p>
+      </div>
+      <div class="buttons-container cctv-actions">
         <button class="back-btn" onclick="goBack()">Back</button>
         <button class="add-ticket-btn" onclick="openModal('cctv')">Add New Ticket</button>
       </div>
+    </section>
+
+    <section class="cctv-stats" aria-label="CCTV case summary">
+      <article class="cctv-stat-card">
+        <span class="cctv-stat-label">Total Cases</span>
+        <strong id="cctv-stat-total">0</strong>
+      </article>
+      <article class="cctv-stat-card">
+        <span class="cctv-stat-label">Under Review</span>
+        <strong id="cctv-stat-under-review">0</strong>
+      </article>
+      <article class="cctv-stat-card">
+        <span class="cctv-stat-label">Escalated</span>
+        <strong id="cctv-stat-escalated">0</strong>
+      </article>
+      <article class="cctv-stat-card">
+        <span class="cctv-stat-label">Closed</span>
+        <strong id="cctv-stat-closed">0</strong>
+      </article>
+    </section>
+
+    <section class="cctv-filters" aria-label="CCTV filters">
+      <div class="cctv-filter-field cctv-filter-search">
+        <label for="cctv-search">Search</label>
+        <input id="cctv-search" type="search" placeholder="Case, branch, staff, camera, section, or notes">
+      </div>
+      <div class="cctv-filter-field">
+        <label for="cctv-status-filter">Status</label>
+        <select id="cctv-status-filter">
+          <option value="">All statuses</option>
+        </select>
+      </div>
+      <div class="cctv-filter-field">
+        <label for="cctv-branch-filter">Branch</label>
+        <select id="cctv-branch-filter">
+          <option value="">All branches</option>
+        </select>
+      </div>
+      <div class="cctv-filter-field">
+        <label for="cctv-review-filter">Review Type</label>
+        <select id="cctv-review-filter">
+          <option value="">All review types</option>
+        </select>
+      </div>
+      <div class="cctv-filter-field">
+        <label for="cctv-policy-filter">Violated Policy</label>
+        <select id="cctv-policy-filter">
+          <option value="">All policies</option>
+        </select>
+      </div>
+      <div class="cctv-filter-field">
+        <label for="cctv-staff-filter">Staff</label>
+        <select id="cctv-staff-filter">
+          <option value="">All staff</option>
+        </select>
+      </div>
+    </section>
+
+    <div class="ticket-list cctv-board" id="ticket-list">
       <div id="tickets"></div>
     </div>
   </div>

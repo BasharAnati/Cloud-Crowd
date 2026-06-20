@@ -325,6 +325,143 @@ function createComplaintsEmptyState(kind){
   return empty;
 }
 
+function arrayText(value){
+  return Array.isArray(value) ? value.join(', ') : String(value || '');
+}
+
+function uniqueTicketValues(sectionTickets, field){
+  const values = new Set();
+  sectionTickets.forEach(ticket => {
+    const raw = ticket[field];
+    if (Array.isArray(raw)) {
+      raw.filter(Boolean).forEach(value => values.add(value));
+    } else if (raw) {
+      values.add(raw);
+    }
+  });
+  return [...values].sort();
+}
+
+function getCctvFilterState(){
+  const search = document.getElementById('cctv-search');
+  const status = document.getElementById('cctv-status-filter');
+  const branch = document.getElementById('cctv-branch-filter');
+  const reviewType = document.getElementById('cctv-review-filter');
+  const policy = document.getElementById('cctv-policy-filter');
+  const staff = document.getElementById('cctv-staff-filter');
+
+  return {
+    query: normalizeFilterText(search?.value),
+    status: status?.value || '',
+    branch: branch?.value || '',
+    reviewType: reviewType?.value || '',
+    policy: policy?.value || '',
+    staff: staff?.value || ''
+  };
+}
+
+function bindCctvFilters(){
+  if (window.__cctvFiltersBound) return;
+  const controls = [
+    document.getElementById('cctv-search'),
+    document.getElementById('cctv-status-filter'),
+    document.getElementById('cctv-branch-filter'),
+    document.getElementById('cctv-review-filter'),
+    document.getElementById('cctv-policy-filter'),
+    document.getElementById('cctv-staff-filter')
+  ].filter(Boolean);
+
+  controls.forEach(control => {
+    const eventName = control.tagName === 'INPUT' ? 'input' : 'change';
+    control.addEventListener(eventName, () => renderTickets());
+  });
+  window.__cctvFiltersBound = true;
+}
+
+function updateCctvStatsAndFilters(sectionTickets){
+  const setText = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(value);
+  };
+
+  setText('cctv-stat-total', sectionTickets.length);
+  setText('cctv-stat-under-review', sectionTickets.filter(t => t.status === 'Under Review').length);
+  setText('cctv-stat-escalated', sectionTickets.filter(t => t.status === 'Escalated').length);
+  setText('cctv-stat-closed', sectionTickets.filter(t => t.status === 'Closed').length);
+
+  updateSelectOptions(document.getElementById('cctv-status-filter'), STATUS_COLUMNS.cctv || [], 'All statuses');
+  updateSelectOptions(document.getElementById('cctv-branch-filter'), uniqueTicketValues(sectionTickets, 'branch'), 'All branches');
+  updateSelectOptions(document.getElementById('cctv-review-filter'), uniqueTicketValues(sectionTickets, 'reviewType'), 'All review types');
+  updateSelectOptions(document.getElementById('cctv-policy-filter'), uniqueTicketValues(sectionTickets, 'violations'), 'All policies');
+  updateSelectOptions(document.getElementById('cctv-staff-filter'), uniqueTicketValues(sectionTickets, 'staff'), 'All staff');
+  bindCctvFilters();
+}
+
+function cctvTicketMatchesFilters(ticket, filters){
+  if (filters.status && ticket.status !== filters.status) return false;
+  if (filters.branch && ticket.branch !== filters.branch) return false;
+  if (filters.reviewType && ticket.reviewType !== filters.reviewType) return false;
+  if (filters.policy && !arrayText(ticket.violations).split(/\s*,\s*/).includes(filters.policy)) return false;
+  if (filters.staff && !arrayText(ticket.staff).split(/\s*,\s*/).includes(filters.staff)) return false;
+
+  if (!filters.query) return true;
+  const haystack = [
+    ticket.caseNumber,
+    ticket.branch,
+    arrayText(ticket.staff),
+    arrayText(ticket.cameras),
+    arrayText(ticket.sections),
+    arrayText(ticket.violations),
+    ticket.notes
+  ].map(normalizeFilterText).join(' ');
+
+  return haystack.includes(filters.query);
+}
+
+function getCctvCardContent(ticket){
+  const status = ticket.status || 'Uncategorized';
+  const dateText = formatTicketDate(ticket);
+  const timeText = ticket.time ? String(ticket.time) : '';
+  const dateTimeText = [dateText, timeText].filter(Boolean).join(' ');
+  const field = (label, value) => {
+    const text = arrayText(value);
+    return text ? `<span><strong>${label}</strong>${escapeHtml(text)}</span>` : '';
+  };
+
+  return `
+    <div class="cctv-ticket-top">
+      <span class="cctv-status-pill ${bandClassForStatus(status)}">${displayStatusName(status)}</span>
+      ${dateTimeText ? `<span class="cctv-ticket-date">${escapeHtml(dateTimeText)}</span>` : ''}
+    </div>
+    <div class="cctv-ticket-case">${escapeHtml(getCaseDisplay(ticket))}</div>
+    <div class="cctv-ticket-branch">${escapeHtml(ticket.branch || 'Branch not specified')}</div>
+    <div class="cctv-ticket-grid">
+      ${field('Review Type', ticket.reviewType)}
+      ${field('Cameras', ticket.cameras)}
+      ${field('Sections', ticket.sections)}
+      ${field('Staff', ticket.staff)}
+      ${field('Policies', ticket.violations)}
+    </div>
+  `;
+}
+
+function createCctvEmptyState(kind){
+  const empty = document.createElement('div');
+  empty.className = 'cctv-empty-state';
+  if (kind === 'filter') {
+    empty.innerHTML = `
+      <strong>No matching CCTV cases</strong>
+      <span>Adjust the search or filters to bring observations back into view.</span>
+    `;
+  } else {
+    empty.innerHTML = `
+      <strong>No CCTV cases yet</strong>
+      <span>New observation cases will appear here as soon as they are created or synced.</span>
+    `;
+  }
+  return empty;
+}
+
 function renderTickets(){
   const wrap = document.getElementById('tickets');
   if (!wrap) return;
@@ -332,14 +469,18 @@ function renderTickets(){
 
   const isCe = window.currentSection === 'ce';
   const isComplaints = window.currentSection === 'complaints';
+  const isCctv = window.currentSection === 'cctv';
   const sectionTickets = tickets[window.currentSection] || [];
   if (isCe) updateCeStatsAndFilters(sectionTickets);
   if (isComplaints) updateComplaintsStatsAndFilters(sectionTickets);
+  if (isCctv) updateCctvStatsAndFilters(sectionTickets);
   const visibleTickets = isCe
     ? sectionTickets.filter(ticket => ceTicketMatchesFilters(ticket, getCeFilterState()))
     : isComplaints
       ? sectionTickets.filter(ticket => complaintTicketMatchesFilters(ticket, getComplaintsFilterState()))
-      : sectionTickets;
+      : isCctv
+        ? sectionTickets.filter(ticket => cctvTicketMatchesFilters(ticket, getCctvFilterState()))
+        : sectionTickets;
 
   if (isCe && !sectionTickets.length) {
     wrap.appendChild(createCeEmptyState('board'));
@@ -349,6 +490,10 @@ function renderTickets(){
     wrap.appendChild(createComplaintsEmptyState('board'));
   } else if (isComplaints && !visibleTickets.length) {
     wrap.appendChild(createComplaintsEmptyState('filter'));
+  } else if (isCctv && !sectionTickets.length) {
+    wrap.appendChild(createCctvEmptyState('board'));
+  } else if (isCctv && !visibleTickets.length) {
+    wrap.appendChild(createCctvEmptyState('filter'));
   }
 
   // group by status (using display name)
@@ -371,7 +516,7 @@ function renderTickets(){
 
   columns.forEach(status=>{
     const col = document.createElement('section');
-    col.className = `group ${isCe ? 'ce-column' : ''} ${isComplaints ? 'complaints-column' : ''}`;
+    col.className = `group ${isCe ? 'ce-column' : ''} ${isComplaints ? 'complaints-column' : ''} ${isCctv ? 'cctv-column' : ''}`;
 
     const count = (grouped[status]||[]).length;
 
@@ -379,8 +524,8 @@ function renderTickets(){
     header.className = 'col-header';
     header.innerHTML = `
       <div class="col-header-inner">
-        <div class="col-title">${escapeHtml(status)}${(isCe || isComplaints) ? '' : ` (${count})`}</div>
-        ${(isCe || isComplaints) ? `<span class="col-count">${count}</span>` : ''}
+        <div class="col-title">${escapeHtml(status)}${(isCe || isComplaints || isCctv) ? '' : ` (${count})`}</div>
+        ${(isCe || isComplaints || isCctv) ? `<span class="col-count">${count}</span>` : ''}
       </div>
     `;
     col.appendChild(header);
@@ -394,7 +539,7 @@ function renderTickets(){
     if (!statusTickets.length) {
       const empty = document.createElement('div');
       empty.className = 'kanban-empty-state';
-      empty.textContent = (isCe || isComplaints) ? 'No cases in this status' : 'No tickets in this status';
+      empty.textContent = (isCe || isComplaints || isCctv) ? 'No cases in this status' : 'No tickets in this status';
       col.appendChild(empty);
     }
 
@@ -404,7 +549,9 @@ function renderTickets(){
         ? 'ticket-card ce-ticket-card'
         : isComplaints
           ? 'ticket-card complaints-ticket-card'
-          : 'ticket-card';
+          : isCctv
+            ? 'ticket-card cctv-ticket-card'
+            : 'ticket-card';
 
       let timeStr = '';
       const baseDT = ticket.dateTime || ticket.creationDate || ticket.orderDate;
@@ -444,7 +591,9 @@ function renderTickets(){
         ? getCeCardContent(ticket)
         : isComplaints
           ? getComplaintCardContent(ticket)
-          : head + main;
+          : isCctv
+            ? getCctvCardContent(ticket)
+            : head + main;
       card.addEventListener('click', ()=> openTicketDrawerByCase(getCaseDisplay(ticket)));
       col.appendChild(card);
     });
