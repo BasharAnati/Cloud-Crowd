@@ -209,22 +209,146 @@ function createCeEmptyState(kind){
   return empty;
 }
 
+function getComplaintsFilterState(){
+  const search = document.getElementById('complaints-search');
+  const status = document.getElementById('complaints-status-filter');
+  const branch = document.getElementById('complaints-branch-filter');
+  const restaurant = document.getElementById('complaints-restaurant-filter');
+  const issue = document.getElementById('complaints-issue-filter');
+
+  return {
+    query: normalizeFilterText(search?.value),
+    status: status?.value || '',
+    branch: branch?.value || '',
+    restaurant: restaurant?.value || '',
+    issueCategory: issue?.value || ''
+  };
+}
+
+function bindComplaintsFilters(){
+  if (window.__complaintsFiltersBound) return;
+  const controls = [
+    document.getElementById('complaints-search'),
+    document.getElementById('complaints-status-filter'),
+    document.getElementById('complaints-branch-filter'),
+    document.getElementById('complaints-restaurant-filter'),
+    document.getElementById('complaints-issue-filter')
+  ].filter(Boolean);
+
+  controls.forEach(control => {
+    const eventName = control.tagName === 'INPUT' ? 'input' : 'change';
+    control.addEventListener(eventName, () => renderTickets());
+  });
+  window.__complaintsFiltersBound = true;
+}
+
+function updateComplaintsStatsAndFilters(sectionTickets){
+  const setText = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(value);
+  };
+
+  setText('complaints-stat-total', sectionTickets.length);
+  setText('complaints-stat-under-review', sectionTickets.filter(t => t.status === 'Under Review').length);
+  setText('complaints-stat-pending', sectionTickets.filter(t => t.status === 'Pending (Customer Call Required)').length);
+  setText('complaints-stat-escalated', sectionTickets.filter(t => t.status === 'Escalated').length);
+  setText('complaints-stat-closed', sectionTickets.filter(t => t.status === 'Closed').length);
+
+  const statusValues = STATUS_COLUMNS.complaints || [];
+  const branchValues = [...new Set(sectionTickets.map(t => t.branch).filter(Boolean))].sort();
+  const restaurantValues = [...new Set(sectionTickets.map(t => t.restaurant).filter(Boolean))].sort();
+  const issueValues = [...new Set(sectionTickets.map(t => t.issueCategory).filter(Boolean))].sort();
+
+  updateSelectOptions(document.getElementById('complaints-status-filter'), statusValues, 'All statuses');
+  updateSelectOptions(document.getElementById('complaints-branch-filter'), branchValues, 'All branches');
+  updateSelectOptions(document.getElementById('complaints-restaurant-filter'), restaurantValues, 'All restaurants');
+  updateSelectOptions(document.getElementById('complaints-issue-filter'), issueValues, 'All issues');
+  bindComplaintsFilters();
+}
+
+function complaintTicketMatchesFilters(ticket, filters){
+  if (filters.status && ticket.status !== filters.status) return false;
+  if (filters.branch && ticket.branch !== filters.branch) return false;
+  if (filters.restaurant && ticket.restaurant !== filters.restaurant) return false;
+  if (filters.issueCategory && ticket.issueCategory !== filters.issueCategory) return false;
+
+  if (!filters.query) return true;
+  const haystack = [
+    ticket.orderNumber,
+    ticket.caseNumber,
+    ticket.customerName,
+    ticket.phone
+  ].map(normalizeFilterText).join(' ');
+
+  return haystack.includes(filters.query);
+}
+
+function getComplaintCardContent(ticket){
+  const caseNumber = getCaseDisplay(ticket);
+  const status = ticket.status || 'Uncategorized';
+  const dateText = formatTicketDate(ticket);
+  const field = (label, value) => value
+    ? `<span><strong>${label}</strong>${escapeHtml(value)}</span>`
+    : '';
+
+  return `
+    <div class="complaints-ticket-top">
+      <span class="complaints-status-pill ${bandClassForStatus(status)}">${displayStatusName(status)}</span>
+      ${dateText ? `<span class="complaints-ticket-date">${escapeHtml(dateText)}</span>` : ''}
+    </div>
+    <div class="complaints-ticket-case">${escapeHtml(caseNumber)}</div>
+    <div class="complaints-ticket-customer">${escapeHtml(ticket.customerName || 'Customer not specified')}</div>
+    <div class="complaints-ticket-grid">
+      ${field('Branch', ticket.branch)}
+      ${field('Restaurant', ticket.restaurant)}
+      ${field('Issue', ticket.issueCategory)}
+      ${field('Department', ticket.department)}
+      ${field('Phone', ticket.phone)}
+    </div>
+  `;
+}
+
+function createComplaintsEmptyState(kind){
+  const empty = document.createElement('div');
+  empty.className = 'complaints-empty-state';
+  if (kind === 'filter') {
+    empty.innerHTML = `
+      <strong>No matching complaints</strong>
+      <span>Adjust the search or filters to bring complaints back into view.</span>
+    `;
+  } else {
+    empty.innerHTML = `
+      <strong>No Daily Complaints yet</strong>
+      <span>New complaints will appear here as soon as they are created or synced.</span>
+    `;
+  }
+  return empty;
+}
+
 function renderTickets(){
   const wrap = document.getElementById('tickets');
   if (!wrap) return;
   wrap.innerHTML = '';
 
   const isCe = window.currentSection === 'ce';
+  const isComplaints = window.currentSection === 'complaints';
   const sectionTickets = tickets[window.currentSection] || [];
   if (isCe) updateCeStatsAndFilters(sectionTickets);
+  if (isComplaints) updateComplaintsStatsAndFilters(sectionTickets);
   const visibleTickets = isCe
     ? sectionTickets.filter(ticket => ceTicketMatchesFilters(ticket, getCeFilterState()))
-    : sectionTickets;
+    : isComplaints
+      ? sectionTickets.filter(ticket => complaintTicketMatchesFilters(ticket, getComplaintsFilterState()))
+      : sectionTickets;
 
   if (isCe && !sectionTickets.length) {
     wrap.appendChild(createCeEmptyState('board'));
   } else if (isCe && !visibleTickets.length) {
     wrap.appendChild(createCeEmptyState('filter'));
+  } else if (isComplaints && !sectionTickets.length) {
+    wrap.appendChild(createComplaintsEmptyState('board'));
+  } else if (isComplaints && !visibleTickets.length) {
+    wrap.appendChild(createComplaintsEmptyState('filter'));
   }
 
   // group by status (using display name)
@@ -247,7 +371,7 @@ function renderTickets(){
 
   columns.forEach(status=>{
     const col = document.createElement('section');
-    col.className = `group ${isCe ? 'ce-column' : ''}`;
+    col.className = `group ${isCe ? 'ce-column' : ''} ${isComplaints ? 'complaints-column' : ''}`;
 
     const count = (grouped[status]||[]).length;
 
@@ -255,8 +379,8 @@ function renderTickets(){
     header.className = 'col-header';
     header.innerHTML = `
       <div class="col-header-inner">
-        <div class="col-title">${escapeHtml(status)}${isCe ? '' : ` (${count})`}</div>
-        ${isCe ? `<span class="col-count">${count}</span>` : ''}
+        <div class="col-title">${escapeHtml(status)}${(isCe || isComplaints) ? '' : ` (${count})`}</div>
+        ${(isCe || isComplaints) ? `<span class="col-count">${count}</span>` : ''}
       </div>
     `;
     col.appendChild(header);
@@ -270,13 +394,17 @@ function renderTickets(){
     if (!statusTickets.length) {
       const empty = document.createElement('div');
       empty.className = 'kanban-empty-state';
-      empty.textContent = isCe ? 'No cases in this status' : 'No tickets in this status';
+      empty.textContent = (isCe || isComplaints) ? 'No cases in this status' : 'No tickets in this status';
       col.appendChild(empty);
     }
 
     statusTickets.forEach(ticket=>{
       const card = document.createElement('div');
-      card.className = isCe ? 'ticket-card ce-ticket-card' : 'ticket-card';
+      card.className = isCe
+        ? 'ticket-card ce-ticket-card'
+        : isComplaints
+          ? 'ticket-card complaints-ticket-card'
+          : 'ticket-card';
 
       let timeStr = '';
       const baseDT = ticket.dateTime || ticket.creationDate || ticket.orderDate;
@@ -312,7 +440,11 @@ function renderTickets(){
         </div>
       `;
 
-      card.innerHTML = isCe ? getCeCardContent(ticket) : head + main;
+      card.innerHTML = isCe
+        ? getCeCardContent(ticket)
+        : isComplaints
+          ? getComplaintCardContent(ticket)
+          : head + main;
       card.addEventListener('click', ()=> openTicketDrawerByCase(getCaseDisplay(ticket)));
       col.appendChild(card);
     });
