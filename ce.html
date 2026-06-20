@@ -62,7 +62,7 @@
   <script src="js/tickets-render.js" defer></script>
   <script src="main.js" defer></script>
 </head>
-<body>
+<body class="ce-page">
   <header class="navbar" role="banner">
     <div class="brand" aria-hidden="false">
       <div class="logo" title="Cloud Crowd" onclick="window.location.href='dashboard.html'" style="cursor:pointer;">CC</div>
@@ -74,12 +74,63 @@
     <img src="assets/images/logo.png" alt="Company Logo" class="nav-center-logo" onclick="window.location.href='dashboard.html'">
   </header>
 
-  <div class="container" id="main-content">
-    <div class="ticket-list" id="ticket-list">
-      <div class="buttons-container">
+  <div class="container ce-workspace" id="main-content">
+    <section class="ce-hero" aria-labelledby="ce-page-title">
+      <div class="ce-hero-copy">
+        <h2 id="ce-page-title">Customer Experience</h2>
+        <p>Track customer feedback, order issues, callbacks, and resolution progress.</p>
+      </div>
+      <div class="buttons-container ce-actions">
         <button class="back-btn" onclick="goBack()">Back</button>
         <button class="add-ticket-btn" onclick="openModal('ce')">Add New Ticket</button>
       </div>
+    </section>
+
+    <section class="ce-stats" aria-label="Customer Experience case summary">
+      <article class="ce-stat-card">
+        <span class="ce-stat-label">Total Cases</span>
+        <strong id="ce-stat-total">0</strong>
+      </article>
+      <article class="ce-stat-card">
+        <span class="ce-stat-label">Under Review</span>
+        <strong id="ce-stat-under-review">0</strong>
+      </article>
+      <article class="ce-stat-card">
+        <span class="ce-stat-label">Pending Call Back</span>
+        <strong id="ce-stat-pending">0</strong>
+      </article>
+      <article class="ce-stat-card">
+        <span class="ce-stat-label">Closed</span>
+        <strong id="ce-stat-closed">0</strong>
+      </article>
+    </section>
+
+    <section class="ce-filters" aria-label="Customer Experience filters">
+      <div class="ce-filter-field ce-filter-search">
+        <label for="ce-search">Search</label>
+        <input id="ce-search" type="search" placeholder="Order, customer, or phone">
+      </div>
+      <div class="ce-filter-field">
+        <label for="ce-status-filter">Status</label>
+        <select id="ce-status-filter">
+          <option value="">All statuses</option>
+        </select>
+      </div>
+      <div class="ce-filter-field">
+        <label for="ce-branch-filter">Branch</label>
+        <select id="ce-branch-filter">
+          <option value="">All branches</option>
+        </select>
+      </div>
+      <div class="ce-filter-field">
+        <label for="ce-restaurant-filter">Restaurant</label>
+        <select id="ce-restaurant-filter">
+          <option value="">All restaurants</option>
+        </select>
+      </div>
+    </section>
+
+    <div class="ticket-list ce-board" id="ticket-list">
       <div id="tickets"></div>
     </div>
   </div>

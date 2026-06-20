@@ -77,16 +77,159 @@ function drawerCaseLabel(){
   return window.currentSection === 'ce' ? 'Order Number' : 'Case Number';
 }
 
+function normalizeFilterText(value){
+  return String(value || '').trim().toLowerCase();
+}
+
+function getCeFilterState(){
+  const search = document.getElementById('ce-search');
+  const status = document.getElementById('ce-status-filter');
+  const branch = document.getElementById('ce-branch-filter');
+  const restaurant = document.getElementById('ce-restaurant-filter');
+
+  return {
+    query: normalizeFilterText(search?.value),
+    status: status?.value || '',
+    branch: branch?.value || '',
+    restaurant: restaurant?.value || ''
+  };
+}
+
+function updateSelectOptions(select, values, placeholder){
+  if (!select) return;
+  const current = select.value;
+  select.innerHTML = `<option value="">${placeholder}</option>`;
+  values.forEach(value => {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = displayStatusName(value);
+    select.appendChild(option);
+  });
+  select.value = values.includes(current) ? current : '';
+}
+
+function bindCeFilters(){
+  if (window.__ceFiltersBound) return;
+  const controls = [
+    document.getElementById('ce-search'),
+    document.getElementById('ce-status-filter'),
+    document.getElementById('ce-branch-filter'),
+    document.getElementById('ce-restaurant-filter')
+  ].filter(Boolean);
+
+  controls.forEach(control => {
+    const eventName = control.tagName === 'INPUT' ? 'input' : 'change';
+    control.addEventListener(eventName, () => renderTickets());
+  });
+  window.__ceFiltersBound = true;
+}
+
+function updateCeStatsAndFilters(sectionTickets){
+  const setText = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(value);
+  };
+
+  setText('ce-stat-total', sectionTickets.length);
+  setText('ce-stat-under-review', sectionTickets.filter(t => t.status === 'Under Review').length);
+  setText('ce-stat-pending', sectionTickets.filter(t => t.status === 'Pending (Customer Call Required)').length);
+  setText('ce-stat-closed', sectionTickets.filter(t => t.status === 'Closed').length);
+
+  const statusValues = STATUS_COLUMNS.ce || [];
+  const branchValues = [...new Set(sectionTickets.map(t => t.branch).filter(Boolean))].sort();
+  const restaurantValues = [...new Set(sectionTickets.map(t => t.restaurant).filter(Boolean))].sort();
+
+  updateSelectOptions(document.getElementById('ce-status-filter'), statusValues, 'All statuses');
+  updateSelectOptions(document.getElementById('ce-branch-filter'), branchValues, 'All branches');
+  updateSelectOptions(document.getElementById('ce-restaurant-filter'), restaurantValues, 'All restaurants');
+  bindCeFilters();
+}
+
+function ceTicketMatchesFilters(ticket, filters){
+  if (filters.status && ticket.status !== filters.status) return false;
+  if (filters.branch && ticket.branch !== filters.branch) return false;
+  if (filters.restaurant && ticket.restaurant !== filters.restaurant) return false;
+
+  if (!filters.query) return true;
+  const haystack = [
+    ticket.orderNumber,
+    ticket.caseNumber,
+    ticket.customerName,
+    ticket.phone
+  ].map(normalizeFilterText).join(' ');
+
+  return haystack.includes(filters.query);
+}
+
+function formatTicketDate(ticket){
+  const baseDT = ticket.feedbackDate || ticket.creationDate || ticket.dateTime || ticket.orderDate;
+  if (!baseDT) return '';
+  const d = new Date(baseDT);
+  return isNaN(d) ? String(baseDT) : d.toLocaleDateString('en-US');
+}
+
+function getCeCardContent(ticket){
+  const orderNumber = getCaseDisplay(ticket);
+  const status = ticket.status || 'Uncategorized';
+  const dateText = formatTicketDate(ticket);
+  const field = (label, value) => value
+    ? `<span><strong>${label}</strong>${escapeHtml(value)}</span>`
+    : '';
+
+  return `
+    <div class="ce-ticket-top">
+      <span class="ce-status-pill ${bandClassForStatus(status)}">${displayStatusName(status)}</span>
+      ${dateText ? `<span class="ce-ticket-date">${escapeHtml(dateText)}</span>` : ''}
+    </div>
+    <div class="ce-ticket-order">${escapeHtml(orderNumber)}</div>
+    <div class="ce-ticket-customer">${escapeHtml(ticket.customerName || 'Customer not specified')}</div>
+    <div class="ce-ticket-grid">
+      ${field('Branch', ticket.branch)}
+      ${field('Restaurant', ticket.restaurant)}
+      ${field('Issue', ticket.issueCategory)}
+      ${field('Phone', ticket.phone)}
+    </div>
+  `;
+}
+
+function createCeEmptyState(kind){
+  const empty = document.createElement('div');
+  empty.className = 'ce-empty-state';
+  if (kind === 'filter') {
+    empty.innerHTML = `
+      <strong>No matching cases</strong>
+      <span>Adjust the search or filters to bring tickets back into view.</span>
+    `;
+  } else {
+    empty.innerHTML = `
+      <strong>No Customer Experience cases yet</strong>
+      <span>New tickets will appear here as soon as they are created or synced.</span>
+    `;
+  }
+  return empty;
+}
+
 function renderTickets(){
   const wrap = document.getElementById('tickets');
   if (!wrap) return;
   wrap.innerHTML = '';
 
+  const isCe = window.currentSection === 'ce';
   const sectionTickets = tickets[window.currentSection] || [];
+  if (isCe) updateCeStatsAndFilters(sectionTickets);
+  const visibleTickets = isCe
+    ? sectionTickets.filter(ticket => ceTicketMatchesFilters(ticket, getCeFilterState()))
+    : sectionTickets;
+
+  if (isCe && !sectionTickets.length) {
+    wrap.appendChild(createCeEmptyState('board'));
+  } else if (isCe && !visibleTickets.length) {
+    wrap.appendChild(createCeEmptyState('filter'));
+  }
 
   // group by status (using display name)
   const grouped = {};
-  sectionTickets.forEach(t=>{
+  visibleTickets.forEach(t=>{
     const st = t.status || 'Uncategorized';
     const key = displayStatusName(st);
     (grouped[key] ||= []).push(t);
@@ -104,7 +247,7 @@ function renderTickets(){
 
   columns.forEach(status=>{
     const col = document.createElement('section');
-    col.className = 'group';
+    col.className = `group ${isCe ? 'ce-column' : ''}`;
 
     const count = (grouped[status]||[]).length;
 
@@ -112,7 +255,8 @@ function renderTickets(){
     header.className = 'col-header';
     header.innerHTML = `
       <div class="col-header-inner">
-        <div class="col-title">${escapeHtml(status)} (${count})</div>
+        <div class="col-title">${escapeHtml(status)}${isCe ? '' : ` (${count})`}</div>
+        ${isCe ? `<span class="col-count">${count}</span>` : ''}
       </div>
     `;
     col.appendChild(header);
@@ -126,13 +270,13 @@ function renderTickets(){
     if (!statusTickets.length) {
       const empty = document.createElement('div');
       empty.className = 'kanban-empty-state';
-      empty.textContent = 'No tickets in this status';
+      empty.textContent = isCe ? 'No cases in this status' : 'No tickets in this status';
       col.appendChild(empty);
     }
 
     statusTickets.forEach(ticket=>{
       const card = document.createElement('div');
-      card.className = 'ticket-card';
+      card.className = isCe ? 'ticket-card ce-ticket-card' : 'ticket-card';
 
       let timeStr = '';
       const baseDT = ticket.dateTime || ticket.creationDate || ticket.orderDate;
@@ -168,7 +312,7 @@ function renderTickets(){
         </div>
       `;
 
-      card.innerHTML = head + main;
+      card.innerHTML = isCe ? getCeCardContent(ticket) : head + main;
       card.addEventListener('click', ()=> openTicketDrawerByCase(getCaseDisplay(ticket)));
       col.appendChild(card);
     });
