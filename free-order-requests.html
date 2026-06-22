@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+  <title>Cloud Crowd - Free Order Requests</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    :root {
+      --ice: #A7EBF2;
+      --aqua: #54ACBF;
+      --steel: #26658C;
+      --deep: #023859;
+      --navy: #011C40;
+      --page: #f4fbfd;
+      --surface: #ffffff;
+      --text: #0f2437;
+      --muted: #617386;
+      --line: rgba(38, 101, 140, .18);
+      --shadow: 0 18px 48px rgba(1, 28, 64, .12);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(167, 235, 242, .55), transparent 30%),
+        radial-gradient(circle at 85% 18%, rgba(84, 172, 191, .22), transparent 28%),
+        linear-gradient(180deg, #f8fdff 0%, var(--page) 46%, #eef8fb 100%);
+    }
+
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+    [hidden] { display: none !important; }
+
+    .for-shell {
+      width: min(1440px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 24px 0 42px;
+    }
+
+    .for-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .for-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .for-logo {
+      width: 46px;
+      height: 46px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      color: #fff;
+      font-weight: 950;
+      background: linear-gradient(135deg, var(--deep), var(--aqua));
+      box-shadow: 0 12px 28px rgba(2, 56, 89, .24);
+    }
+
+    .for-brand h1 {
+      margin: 0;
+      color: var(--navy);
+      font-size: clamp(24px, 3vw, 34px);
+      line-height: 1.05;
+      font-weight: 950;
+      letter-spacing: 0;
+    }
+
+    .for-brand p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .secondary-btn,
+    .primary-btn,
+    .small-btn,
+    .danger-btn {
+      min-height: 40px;
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 850;
+      transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+
+    .primary-btn {
+      color: #fff;
+      background: linear-gradient(135deg, var(--deep), var(--aqua));
+      box-shadow: 0 14px 30px rgba(2, 56, 89, .2);
+    }
+
+    .secondary-btn {
+      color: var(--deep);
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .small-btn {
+      min-height: 34px;
+      padding: 8px 11px;
+      color: var(--deep);
+      background: rgba(167, 235, 242, .5);
+      border: 1px solid rgba(84, 172, 191, .26);
+    }
+
+    .danger-btn {
+      min-height: 34px;
+      padding: 8px 11px;
+      color: #9f1239;
+      background: #fff1f2;
+      border: 1px solid rgba(225, 29, 72, .22);
+    }
+
+    .primary-btn:hover,
+    .secondary-btn:hover,
+    .small-btn:hover,
+    .danger-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 26px rgba(1, 28, 64, .12);
+    }
+
+    .hero-panel {
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 18px;
+      padding: 24px;
+      border-radius: 8px;
+      border: 1px solid rgba(84, 172, 191, .22);
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, .96), rgba(255, 255, 255, .74)),
+        radial-gradient(circle at 88% 10%, rgba(84, 172, 191, .18), transparent 34%);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-panel h2 {
+      margin: 0;
+      color: var(--navy);
+      font-size: clamp(30px, 4vw, 52px);
+      line-height: 1;
+      font-weight: 950;
+      letter-spacing: 0;
+    }
+
+    .hero-panel p {
+      max-width: 720px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    .message {
+      min-height: 0;
+      margin-bottom: 14px;
+      color: var(--deep);
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .message.error { color: #b91c1c; }
+    .message.success { color: #047857; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .88);
+      box-shadow: 0 10px 26px rgba(1, 28, 64, .07);
+    }
+
+    .stat-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .stat-card strong {
+      display: block;
+      margin-top: 8px;
+      color: var(--navy);
+      font-size: 30px;
+      line-height: 1;
+      font-weight: 950;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) 220px;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, .82);
+      box-shadow: 0 10px 26px rgba(1, 28, 64, .06);
+    }
+
+    .control {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid rgba(38, 101, 140, .22);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      background: #fff;
+      outline: none;
+      font-size: 14px;
+    }
+
+    textarea.control {
+      min-height: 104px;
+      resize: vertical;
+    }
+
+    .control:focus {
+      border-color: var(--aqua);
+      box-shadow: 0 0 0 3px rgba(84, 172, 191, .18);
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
+
+    .stage-column {
+      min-width: 0;
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .72);
+      box-shadow: 0 12px 32px rgba(1, 28, 64, .07);
+    }
+
+    .stage-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(38, 101, 140, .14);
+    }
+
+    .stage-head h3 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 16px;
+      font-weight: 950;
+    }
+
+    .count-pill,
+    .stage-badge,
+    .response-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .count-pill {
+      min-width: 28px;
+      height: 28px;
+      padding: 0 9px;
+      color: var(--deep);
+      background: rgba(167, 235, 242, .62);
+      border: 1px solid rgba(84, 172, 191, .28);
+    }
+
+    .request-card {
+      display: grid;
+      gap: 12px;
+      padding: 15px;
+      border: 1px solid rgba(38, 101, 140, .16);
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 12px 26px rgba(1, 28, 64, .08);
+    }
+
+    .request-card.needs-response {
+      border-color: rgba(245, 158, 11, .58);
+      box-shadow: 0 12px 30px rgba(245, 158, 11, .15);
+    }
+
+    .card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .card-head h4 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 17px;
+      line-height: 1.25;
+      font-weight: 950;
+      overflow-wrap: anywhere;
+    }
+
+    .card-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .stage-badge {
+      min-height: 24px;
+      padding: 7px 9px;
+      color: #064e3b;
+      background: #d1fae5;
+      border: 1px solid rgba(16, 185, 129, .2);
+    }
+
+    .response-badge {
+      min-height: 24px;
+      padding: 7px 9px;
+      color: #92400e;
+      background: #fef3c7;
+      border: 1px solid rgba(245, 158, 11, .25);
+    }
+
+    .field-list {
+      display: grid;
+      gap: 7px;
+    }
+
+    .field-line {
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr);
+      gap: 8px;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .field-line span {
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .field-line strong {
+      color: var(--text);
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-top: 2px;
+    }
+
+    .empty-state {
+      display: grid;
+      place-items: center;
+      min-height: 120px;
+      padding: 18px;
+      border: 1px dashed rgba(38, 101, 140, .25);
+      border-radius: 8px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 14px;
+      background: rgba(255, 255, 255, .5);
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      background: rgba(1, 28, 64, .5);
+    }
+
+    .modal.open { display: flex; }
+
+    .modal-panel {
+      width: min(760px, 100%);
+      max-height: min(90vh, 860px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 26px 80px rgba(1, 28, 64, .3);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 20px 22px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(135deg, rgba(167, 235, 242, .32), rgba(255, 255, 255, .92));
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 22px;
+      line-height: 1.15;
+      font-weight: 950;
+    }
+
+    .modal-header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--deep);
+      background: #fff;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .modal-body {
+      overflow: auto;
+      padding: 22px;
+    }
+
+    .form-grid,
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .form-group {
+      display: grid;
+      gap: 7px;
+    }
+
+    .form-group.full,
+    .detail-item.full {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label {
+      color: var(--deep);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .detail-item {
+      min-width: 0;
+      padding: 13px;
+      border: 1px solid rgba(38, 101, 140, .14);
+      border-radius: 8px;
+      background: #f8fdff;
+    }
+
+    .detail-item span {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .detail-item strong {
+      display: block;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.45;
+      font-weight: 800;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 1040px) {
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .board { grid-template-columns: 1fr; }
+      .stage-column { min-height: 0; }
+    }
+
+    @media (max-width: 680px) {
+      .for-shell {
+        width: min(100% - 24px, 1440px);
+        padding-top: 16px;
+      }
+      .for-topbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+      .top-actions { justify-content: flex-start; }
+      .toolbar,
+      .stats-grid,
+      .form-grid,
+      .details-grid {
+        grid-template-columns: 1fr;
+      }
+      .field-line {
+        grid-template-columns: 1fr;
+        gap: 2px;
+      }
+      .form-actions {
+        flex-direction: column-reverse;
+      }
+      .form-actions button,
+      .top-actions button {
+        width: 100%;
+      }
+    }
+  </style>
+  <script>
+    if (localStorage.getItem('cc_auth') !== '1' || !localStorage.getItem('cc_token') || !localStorage.getItem('cc_role')) {
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html';
+    }
+  </script>
+</head>
+<body>
+  <main class="for-shell">
+    <header class="for-topbar">
+      <div class="for-brand">
+        <button class="for-logo" type="button" onclick="window.location.href='dashboard.html'" aria-label="Back to dashboard">CC</button>
+        <div>
+          <h1>Free Order Requests</h1>
+          <p>Manage immediate free order compensation requests from entry to sharing readiness.</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="secondary-btn" type="button" onclick="window.location.href='dashboard.html'">Back</button>
+        <button class="primary-btn" type="button" id="new-request-btn">+ New Request</button>
+      </div>
+    </header>
+
+    <section class="hero-panel" aria-labelledby="page-title">
+      <h2 id="page-title">Free Order Requests</h2>
+      <p>Track immediate compensation orders through Pending Details, Ready to Share, and Done without touching the existing Complimentary Orders workflow.</p>
+    </section>
+
+    <div class="message" id="message" role="status" aria-live="polite"></div>
+
+    <section class="stats-grid" aria-label="Free order request statistics">
+      <article class="stat-card"><span>Total Requests</span><strong id="stat-total">0</strong></article>
+      <article class="stat-card"><span>Pending Details</span><strong id="stat-pending">0</strong></article>
+      <article class="stat-card"><span>Ready to Share</span><strong id="stat-ready">0</strong></article>
+      <article class="stat-card"><span>Done</span><strong id="stat-done">0</strong></article>
+    </section>
+
+    <section class="toolbar" aria-label="Filters">
+      <input class="control" id="search-filter" type="search" placeholder="Search by order number, customer name, or phone">
+      <select class="control" id="stage-filter" aria-label="Filter by stage">
+        <option value="">All stages</option>
+        <option value="pending_details">Pending Details</option>
+        <option value="ready_to_share">Ready to Share</option>
+        <option value="done">Done</option>
+      </select>
+    </section>
+
+    <section class="board" id="requests-board" aria-label="Free order request board"></section>
+  </main>
+
+  <div class="modal" id="request-modal" role="dialog" aria-modal="true" aria-labelledby="request-modal-title">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div>
+          <h3 id="request-modal-title">New Request</h3>
+          <p id="request-modal-subtitle">Create the entry. It will move directly to Pending Details.</p>
+        </div>
+        <button class="icon-btn" type="button" data-close-modal="request-modal" aria-label="Close form">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="request-form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="order-number">Order Number</label>
+              <input class="control" id="order-number" name="orderNumber" type="text" maxlength="120" required>
+            </div>
+            <div class="form-group">
+              <label for="customer-name">Customer Name</label>
+              <input class="control" id="customer-name" name="customerName" type="text" maxlength="200" required>
+            </div>
+            <div class="form-group">
+              <label for="phone-number">Phone Number</label>
+              <input class="control" id="phone-number" name="phoneNumber" type="text" maxlength="80">
+            </div>
+            <div class="form-group">
+              <label for="creation-time">Creation Time</label>
+              <input class="control" id="creation-time" name="creationTime" type="text" maxlength="120" placeholder="2026-06-07 14:08:27" required>
+            </div>
+            <div class="form-group">
+              <label for="discount-amount">Discount Amount</label>
+              <input class="control" id="discount-amount" name="discountAmount" type="number" min="0" step="0.01" required>
+            </div>
+            <div class="form-group full">
+              <label for="reason-for-discount">Reason for Discount</label>
+              <textarea class="control" id="reason-for-discount" name="reasonForDiscount" maxlength="5000" required></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="secondary-btn" type="button" data-close-modal="request-modal">Cancel</button>
+            <button class="primary-btn" type="submit" id="save-request-btn">Save Request</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="details-modal" role="dialog" aria-modal="true" aria-labelledby="details-modal-title">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div>
+          <h3 id="details-modal-title">Complete Details</h3>
+          <p>Complete internal details before this request is ready to share.</p>
+        </div>
+        <button class="icon-btn" type="button" data-close-modal="details-modal" aria-label="Close form">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="details-form">
+          <input id="details-request-id" type="hidden">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="decision-maker">Decision Maker</label>
+              <input class="control" id="decision-maker" name="decisionMaker" type="text" maxlength="200" required>
+            </div>
+            <div class="form-group">
+              <label for="attached">Attached</label>
+              <input class="control" id="attached" name="attached" type="text" maxlength="5000" placeholder="Paste link, image reference, or attachment note">
+            </div>
+            <div class="form-group">
+              <label for="deduction-from">Deduction From</label>
+              <input class="control" id="deduction-from" name="deductionFrom" type="text" maxlength="200" required>
+            </div>
+            <div class="form-group full">
+              <label for="case-description">Case Description</label>
+              <textarea class="control" id="case-description" name="caseDescription" maxlength="5000" required></textarea>
+            </div>
+            <div class="form-group full">
+              <label for="notes">Notes</label>
+              <textarea class="control" id="notes" name="notes" maxlength="5000"></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="secondary-btn" type="button" data-close-modal="details-modal">Cancel</button>
+            <button class="primary-btn" type="submit" id="save-details-btn">Save Details</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="view-modal" role="dialog" aria-modal="true" aria-labelledby="view-modal-title">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div>
+          <h3 id="view-modal-title">Request Details</h3>
+          <p id="view-modal-subtitle"></p>
+        </div>
+        <button class="icon-btn" type="button" data-close-modal="view-modal" aria-label="Close details">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="details-grid" id="details-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_ENDPOINT = '/.netlify/functions/free-order-requests';
+    const STAGE_COLUMNS = [
+      { key: 'pending_details', label: 'Pending Details' },
+      { key: 'ready_to_share', label: 'Ready to Share' },
+      { key: 'done', label: 'Done' }
+    ];
+
+    let requests = [];
+    const currentRole = String(localStorage.getItem('cc_role') || '').toLowerCase();
+    const canDeleteRequests = currentRole === 'admin' || currentRole === 'manager';
+
+    function getAuthHeaders(extraHeaders = {}) {
+      const token = localStorage.getItem('cc_token') || '';
+      return {
+        ...extraHeaders,
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      };
+    }
+
+    function handleAuthFailure(response) {
+      if (response.status !== 401) return false;
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html?expired=1';
+      return true;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function stageLabel(stage) {
+      return STAGE_COLUMNS.find((item) => item.key === stage)?.label || stage || '-';
+    }
+
+    function valueOrDash(value) {
+      const text = String(value ?? '').trim();
+      return text || '-';
+    }
+
+    function formatAmount(value) {
+      if (value === null || value === undefined || value === '') return '-';
+      const amount = Number(value);
+      if (!Number.isFinite(amount)) return String(value);
+      return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatDateTime(value) {
+      if (!value) return '-';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return date.toLocaleString('en-US');
+    }
+
+    function setMessage(message, type = '') {
+      const el = document.getElementById('message');
+      el.textContent = message || '';
+      el.className = `message ${type}`.trim();
+    }
+
+    function openModal(id) {
+      document.getElementById(id)?.classList.add('open');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id)?.classList.remove('open');
+    }
+
+    function getFilteredRequests() {
+      const search = document.getElementById('search-filter').value.trim().toLowerCase();
+      const stage = document.getElementById('stage-filter').value;
+      return requests.filter((request) => {
+        const matchesStage = !stage || request.internalStage === stage;
+        const haystack = [
+          request.orderNumber,
+          request.customerName,
+          request.phoneNumber
+        ].join(' ').toLowerCase();
+        const matchesSearch = !search || haystack.includes(search);
+        return matchesStage && matchesSearch;
+      });
+    }
+
+    function updateStats() {
+      document.getElementById('stat-total').textContent = requests.length;
+      document.getElementById('stat-pending').textContent = requests.filter((item) => item.internalStage === 'pending_details').length;
+      document.getElementById('stat-ready').textContent = requests.filter((item) => item.internalStage === 'ready_to_share').length;
+      document.getElementById('stat-done').textContent = requests.filter((item) => item.internalStage === 'done').length;
+    }
+
+    function cardFields(request) {
+      const fields = [
+        ['Phone', request.phoneNumber],
+        ['Discount', formatAmount(request.discountAmount)],
+        ['Reason', request.reasonForDiscount],
+        ['Created By', request.createdBy],
+        ['Creation Time', request.creationTime],
+        ['Current Stage', stageLabel(request.internalStage)]
+      ];
+
+      if (request.internalStage === 'ready_to_share' || request.internalStage === 'done') {
+        fields.push(['Decision Maker', request.decisionMaker]);
+        fields.push(['Deduction From', request.deductionFrom]);
+      }
+
+      return fields.map(([label, value]) => `
+        <div class="field-line">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(valueOrDash(value))}</strong>
+        </div>
+      `).join('');
+    }
+
+    function renderCard(request) {
+      const needsResponse = request.shareStage === 'needs_response';
+      const readyBadge = request.internalStage === 'ready_to_share'
+        ? '<span class="stage-badge">Ready for Free Order Share</span>'
+        : '';
+      const responseBadge = needsResponse
+        ? '<span class="response-badge">Needs Response</span>'
+        : '';
+      const completeButton = request.internalStage === 'pending_details'
+        ? `<button class="small-btn" type="button" data-complete-id="${escapeHtml(request.requestId)}">Complete Details</button>`
+        : '';
+      const deleteButton = canDeleteRequests
+        ? `<button class="danger-btn" type="button" data-delete-id="${escapeHtml(request.requestId)}">Archive</button>`
+        : '';
+
+      return `
+        <article class="request-card ${needsResponse ? 'needs-response' : ''}">
+          <div class="card-head">
+            <div>
+              <h4>${escapeHtml(request.orderNumber)}</h4>
+              <p>${escapeHtml(request.customerName)}</p>
+            </div>
+            <div>${readyBadge}${responseBadge}</div>
+          </div>
+          <div class="field-list">${cardFields(request)}</div>
+          <div class="card-actions">
+            <button class="small-btn" type="button" data-view-id="${escapeHtml(request.requestId)}">View Details</button>
+            ${completeButton}
+            ${deleteButton}
+          </div>
+        </article>
+      `;
+    }
+
+    function renderBoard() {
+      updateStats();
+      const filtered = getFilteredRequests();
+      const board = document.getElementById('requests-board');
+      board.innerHTML = STAGE_COLUMNS.map((column) => {
+        const items = filtered.filter((request) => request.internalStage === column.key);
+        const body = items.length
+          ? items.map(renderCard).join('')
+          : '<div class="empty-state">No requests in this stage.</div>';
+
+        return `
+          <section class="stage-column" aria-label="${escapeHtml(column.label)}">
+            <div class="stage-head">
+              <h3>${escapeHtml(column.label)}</h3>
+              <span class="count-pill">${items.length}</span>
+            </div>
+            ${body}
+          </section>
+        `;
+      }).join('');
+    }
+
+    async function loadRequests() {
+      setMessage('Loading requests...');
+      try {
+        const response = await fetch(API_ENDPOINT, {
+          headers: getAuthHeaders(),
+          cache: 'no-store'
+        });
+        if (handleAuthFailure(response)) return;
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.ok === false) throw new Error(data.error || 'Requests could not be loaded.');
+        requests = Array.isArray(data.requests) ? data.requests : [];
+        renderBoard();
+        setMessage('');
+      } catch (error) {
+        renderBoard();
+        setMessage(error.message || 'Requests could not be loaded.', 'error');
+      }
+    }
+
+    function requestById(id) {
+      return requests.find((request) => request.requestId === id);
+    }
+
+    function openNewRequest() {
+      document.getElementById('request-form').reset();
+      openModal('request-modal');
+    }
+
+    async function saveRequest(event) {
+      event.preventDefault();
+      const button = document.getElementById('save-request-btn');
+      const payload = {
+        orderNumber: document.getElementById('order-number').value.trim(),
+        customerName: document.getElementById('customer-name').value.trim(),
+        phoneNumber: document.getElementById('phone-number').value.trim(),
+        creationTime: document.getElementById('creation-time').value.trim(),
+        discountAmount: document.getElementById('discount-amount').value,
+        reasonForDiscount: document.getElementById('reason-for-discount').value.trim()
+      };
+
+      button.disabled = true;
+      try {
+        const response = await fetch(API_ENDPOINT, {
+          method: 'POST',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify(payload)
+        });
+        if (handleAuthFailure(response)) return;
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.ok === false) throw new Error(data.error || 'Request could not be saved.');
+        closeModal('request-modal');
+        setMessage('Request created in Pending Details.', 'success');
+        await loadRequests();
+      } catch (error) {
+        setMessage(error.message || 'Request could not be saved.', 'error');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function openCompleteDetails(id) {
+      const request = requestById(id);
+      if (!request) return;
+      document.getElementById('details-form').reset();
+      document.getElementById('details-request-id').value = request.requestId;
+      document.getElementById('decision-maker').value = request.decisionMaker || '';
+      document.getElementById('attached').value = request.attached || '';
+      document.getElementById('deduction-from').value = request.deductionFrom || '';
+      document.getElementById('case-description').value = request.caseDescription || '';
+      document.getElementById('notes').value = request.notes || '';
+      document.getElementById('details-modal-title').textContent = `Complete Details: ${request.orderNumber}`;
+      openModal('details-modal');
+    }
+
+    async function saveDetails(event) {
+      event.preventDefault();
+      const requestId = document.getElementById('details-request-id').value;
+      if (!requestId) return;
+
+      const button = document.getElementById('save-details-btn');
+      const payload = {
+        decisionMaker: document.getElementById('decision-maker').value.trim(),
+        attached: document.getElementById('attached').value.trim(),
+        deductionFrom: document.getElementById('deduction-from').value.trim(),
+        caseDescription: document.getElementById('case-description').value.trim(),
+        notes: document.getElementById('notes').value.trim()
+      };
+
+      button.disabled = true;
+      try {
+        const response = await fetch(`${API_ENDPOINT}?id=${encodeURIComponent(requestId)}&action=complete-details`, {
+          method: 'PUT',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify(payload)
+        });
+        if (handleAuthFailure(response)) return;
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.ok === false) throw new Error(data.error || 'Details could not be saved.');
+        closeModal('details-modal');
+        setMessage('Details completed. Request is ready to share.', 'success');
+        await loadRequests();
+      } catch (error) {
+        setMessage(error.message || 'Details could not be saved.', 'error');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function detailItem(label, value, full = false) {
+      return `
+        <div class="detail-item ${full ? 'full' : ''}">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(valueOrDash(value))}</strong>
+        </div>
+      `;
+    }
+
+    function openViewDetails(id) {
+      const request = requestById(id);
+      if (!request) return;
+
+      document.getElementById('view-modal-title').textContent = `Request ${request.orderNumber}`;
+      document.getElementById('view-modal-subtitle').textContent = `${request.customerName} - ${stageLabel(request.internalStage)}`;
+      document.getElementById('details-grid').innerHTML = [
+        detailItem('Order Number', request.orderNumber),
+        detailItem('Customer Name', request.customerName),
+        detailItem('Phone Number', request.phoneNumber),
+        detailItem('Creation Time', request.creationTime),
+        detailItem('Discount Amount', formatAmount(request.discountAmount)),
+        detailItem('Reason for Discount', request.reasonForDiscount, true),
+        detailItem('Decision Maker', request.decisionMaker),
+        detailItem('Attached', request.attached),
+        detailItem('Deduction From', request.deductionFrom),
+        detailItem('Case Description', request.caseDescription, true),
+        detailItem('Notes', request.notes, true),
+        detailItem('Internal Stage', stageLabel(request.internalStage)),
+        detailItem('Share Stage', request.shareStage),
+        detailItem('Share Note', request.shareNote, true),
+        detailItem('Share Note By', request.shareNoteBy),
+        detailItem('Share Note At', formatDateTime(request.shareNoteAt)),
+        detailItem('Completed By', request.completedBy),
+        detailItem('Completed At', formatDateTime(request.completedAt)),
+        detailItem('Created By', request.createdBy),
+        detailItem('Created At', formatDateTime(request.createdAt)),
+        detailItem('Updated By', request.updatedBy),
+        detailItem('Updated At', formatDateTime(request.updatedAt))
+      ].join('');
+      openModal('view-modal');
+    }
+
+    async function archiveRequest(id) {
+      const request = requestById(id);
+      if (!request) return;
+      if (!window.confirm(`Archive request ${request.orderNumber}?`)) return;
+
+      try {
+        const response = await fetch(`${API_ENDPOINT}?id=${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        });
+        if (handleAuthFailure(response)) return;
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.ok === false) throw new Error(data.error || 'Request could not be archived.');
+        setMessage('Request archived.', 'success');
+        await loadRequests();
+      } catch (error) {
+        setMessage(error.message || 'Request could not be archived.', 'error');
+      }
+    }
+
+    document.getElementById('new-request-btn').addEventListener('click', openNewRequest);
+    document.getElementById('request-form').addEventListener('submit', saveRequest);
+    document.getElementById('details-form').addEventListener('submit', saveDetails);
+    document.getElementById('search-filter').addEventListener('input', renderBoard);
+    document.getElementById('stage-filter').addEventListener('change', renderBoard);
+
+    document.addEventListener('click', (event) => {
+      const closeTarget = event.target.closest('[data-close-modal]');
+      if (closeTarget) {
+        closeModal(closeTarget.dataset.closeModal);
+        return;
+      }
+
+      const viewTarget = event.target.closest('[data-view-id]');
+      if (viewTarget) {
+        openViewDetails(viewTarget.dataset.viewId);
+        return;
+      }
+
+      const completeTarget = event.target.closest('[data-complete-id]');
+      if (completeTarget) {
+        openCompleteDetails(completeTarget.dataset.completeId);
+        return;
+      }
+
+      const deleteTarget = event.target.closest('[data-delete-id]');
+      if (deleteTarget) {
+        archiveRequest(deleteTarget.dataset.deleteId);
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      document.querySelectorAll('.modal.open').forEach((modal) => modal.classList.remove('open'));
+    });
+
+    renderBoard();
+    loadRequests();
+  </script>
+  <script src="idle-logout.js"></script>
+</body>
+</html>
