@@ -252,7 +252,7 @@
 
     .board {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 14px;
       align-items: start;
     }
@@ -606,6 +606,7 @@
       <article class="stat-card"><span>Total Requests</span><strong id="stat-total">0</strong></article>
       <article class="stat-card"><span>Pending Details</span><strong id="stat-pending">0</strong></article>
       <article class="stat-card"><span>Ready to Share</span><strong id="stat-ready">0</strong></article>
+      <article class="stat-card"><span>Needs Response</span><strong id="stat-needs-response">0</strong></article>
       <article class="stat-card"><span>Done</span><strong id="stat-done">0</strong></article>
     </section>
 
@@ -615,6 +616,7 @@
         <option value="">All stages</option>
         <option value="pending_details">Pending Details</option>
         <option value="ready_to_share">Ready to Share</option>
+        <option value="needs_response">Needs Response</option>
         <option value="done">Done</option>
       </select>
     </section>
@@ -731,6 +733,7 @@
     const STAGE_COLUMNS = [
       { key: 'pending_details', label: 'Pending Details' },
       { key: 'ready_to_share', label: 'Ready to Share' },
+      { key: 'needs_response', label: 'Needs Response' },
       { key: 'done', label: 'Done' }
     ];
 
@@ -767,6 +770,11 @@
 
     function stageLabel(stage) {
       return STAGE_COLUMNS.find((item) => item.key === stage)?.label || stage || '-';
+    }
+
+    function requestDisplayStage(request) {
+      if (request.shareStage === 'needs_response') return 'needs_response';
+      return request.internalStage || '';
     }
 
     function valueOrDash(value) {
@@ -806,7 +814,7 @@
       const search = document.getElementById('search-filter').value.trim().toLowerCase();
       const stage = document.getElementById('stage-filter').value;
       return requests.filter((request) => {
-        const matchesStage = !stage || request.internalStage === stage;
+        const matchesStage = !stage || requestDisplayStage(request) === stage;
         const haystack = [
           request.orderNumber,
           request.customerName,
@@ -820,19 +828,30 @@
     function updateStats() {
       document.getElementById('stat-total').textContent = requests.length;
       document.getElementById('stat-pending').textContent = requests.filter((item) => item.internalStage === 'pending_details').length;
-      document.getElementById('stat-ready').textContent = requests.filter((item) => item.internalStage === 'ready_to_share').length;
+      document.getElementById('stat-ready').textContent = requests.filter((item) => item.internalStage === 'ready_to_share' && item.shareStage !== 'needs_response').length;
+      document.getElementById('stat-needs-response').textContent = requests.filter((item) => item.shareStage === 'needs_response').length;
       document.getElementById('stat-done').textContent = requests.filter((item) => item.internalStage === 'done').length;
     }
 
     function cardFields(request) {
-      const fields = [
-        ['Phone', request.phoneNumber],
-        ['Discount', formatAmount(request.discountAmount)],
-        ['Reason', request.reasonForDiscount],
-        ['Created By', request.createdBy],
-        ['Creation Time', request.creationTime],
-        ['Current Stage', stageLabel(request.internalStage)]
-      ];
+      const needsResponse = request.shareStage === 'needs_response';
+      const fields = needsResponse
+        ? [
+            ['Phone', request.phoneNumber],
+            ['Discount', formatAmount(request.discountAmount)],
+            ['Reason', request.reasonForDiscount],
+            ['Share Note', request.shareNote],
+            ['Share Note By', request.shareNoteBy],
+            ['Share Note At', formatDateTime(request.shareNoteAt)]
+          ]
+        : [
+            ['Phone', request.phoneNumber],
+            ['Discount', formatAmount(request.discountAmount)],
+            ['Reason', request.reasonForDiscount],
+            ['Created By', request.createdBy],
+            ['Creation Time', request.creationTime],
+            ['Current Stage', stageLabel(requestDisplayStage(request))]
+          ];
 
       if (request.internalStage === 'ready_to_share' || request.internalStage === 'done') {
         fields.push(['Decision Maker', request.decisionMaker]);
@@ -849,7 +868,7 @@
 
     function renderCard(request) {
       const needsResponse = request.shareStage === 'needs_response';
-      const readyBadge = request.internalStage === 'ready_to_share'
+      const readyBadge = request.internalStage === 'ready_to_share' && !needsResponse
         ? '<span class="stage-badge">Ready for Free Order Share</span>'
         : '';
       const responseBadge = needsResponse
@@ -886,7 +905,7 @@
       const filtered = getFilteredRequests();
       const board = document.getElementById('requests-board');
       board.innerHTML = STAGE_COLUMNS.map((column) => {
-        const items = filtered.filter((request) => request.internalStage === column.key);
+        const items = filtered.filter((request) => requestDisplayStage(request) === column.key);
         const body = items.length
           ? items.map(renderCard).join('')
           : '<div class="empty-state">No requests in this stage.</div>';
