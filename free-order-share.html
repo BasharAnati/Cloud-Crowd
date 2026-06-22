@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+  <title>Cloud Crowd - Free Order Share</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    :root {
+      --ice: #A7EBF2;
+      --aqua: #54ACBF;
+      --steel: #26658C;
+      --deep: #023859;
+      --navy: #011C40;
+      --page: #f4fbfd;
+      --text: #0f2437;
+      --muted: #617386;
+      --line: rgba(38, 101, 140, .18);
+      --shadow: 0 18px 48px rgba(1, 28, 64, .12);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(167, 235, 242, .55), transparent 30%),
+        radial-gradient(circle at 86% 18%, rgba(84, 172, 191, .22), transparent 28%),
+        linear-gradient(180deg, #f8fdff 0%, var(--page) 46%, #eef8fb 100%);
+    }
+
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .share-shell {
+      width: min(1440px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 24px 0 42px;
+    }
+
+    .share-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .share-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .share-logo {
+      width: 46px;
+      height: 46px;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 12px;
+      color: #fff;
+      font-weight: 950;
+      background: linear-gradient(135deg, var(--deep), var(--aqua));
+      box-shadow: 0 12px 28px rgba(2, 56, 89, .24);
+    }
+
+    .share-brand h1 {
+      margin: 0;
+      color: var(--navy);
+      font-size: clamp(24px, 3vw, 34px);
+      line-height: 1.05;
+      font-weight: 950;
+      letter-spacing: 0;
+    }
+
+    .share-brand p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .primary-btn,
+    .secondary-btn,
+    .small-btn,
+    .done-btn,
+    .warn-btn {
+      min-height: 40px;
+      border-radius: 8px;
+      padding: 10px 14px;
+      border: 0;
+      font-size: 13px;
+      font-weight: 850;
+      transition: transform .18s ease, box-shadow .18s ease;
+    }
+
+    .primary-btn,
+    .done-btn {
+      color: #fff;
+      background: linear-gradient(135deg, var(--deep), var(--aqua));
+      box-shadow: 0 14px 30px rgba(2, 56, 89, .2);
+    }
+
+    .secondary-btn,
+    .small-btn {
+      color: var(--deep);
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .small-btn,
+    .done-btn,
+    .warn-btn {
+      min-height: 34px;
+      padding: 8px 11px;
+    }
+
+    .warn-btn {
+      color: #92400e;
+      background: #fef3c7;
+      border: 1px solid rgba(245, 158, 11, .3);
+    }
+
+    .primary-btn:hover,
+    .secondary-btn:hover,
+    .small-btn:hover,
+    .done-btn:hover,
+    .warn-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 26px rgba(1, 28, 64, .12);
+    }
+
+    .hero-panel {
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 18px;
+      padding: 24px;
+      border: 1px solid rgba(84, 172, 191, .22);
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, .96), rgba(255, 255, 255, .74)),
+        radial-gradient(circle at 88% 10%, rgba(84, 172, 191, .18), transparent 34%);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-panel h2 {
+      margin: 0;
+      color: var(--navy);
+      font-size: clamp(30px, 4vw, 52px);
+      line-height: 1;
+      font-weight: 950;
+      letter-spacing: 0;
+    }
+
+    .hero-panel p {
+      max-width: 760px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    .message {
+      min-height: 0;
+      margin-bottom: 14px;
+      color: var(--deep);
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .message.error { color: #b91c1c; }
+    .message.success { color: #047857; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .88);
+      box-shadow: 0 10px 26px rgba(1, 28, 64, .07);
+    }
+
+    .stat-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .stat-card strong {
+      display: block;
+      margin-top: 8px;
+      color: var(--navy);
+      font-size: 30px;
+      line-height: 1;
+      font-weight: 950;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) 220px;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .82);
+      box-shadow: 0 10px 26px rgba(1, 28, 64, .06);
+    }
+
+    .control {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid rgba(38, 101, 140, .22);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      background: #fff;
+      outline: none;
+      font-size: 14px;
+    }
+
+    textarea.control {
+      min-height: 112px;
+      resize: vertical;
+    }
+
+    .control:focus {
+      border-color: var(--aqua);
+      box-shadow: 0 0 0 3px rgba(84, 172, 191, .18);
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
+
+    .share-column {
+      min-width: 0;
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .72);
+      box-shadow: 0 12px 32px rgba(1, 28, 64, .07);
+    }
+
+    .column-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(38, 101, 140, .14);
+    }
+
+    .column-head h3 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 16px;
+      font-weight: 950;
+    }
+
+    .count-pill,
+    .status-badge,
+    .response-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .count-pill {
+      min-width: 28px;
+      height: 28px;
+      padding: 0 9px;
+      color: var(--deep);
+      background: rgba(167, 235, 242, .62);
+      border: 1px solid rgba(84, 172, 191, .28);
+    }
+
+    .status-badge {
+      min-height: 24px;
+      padding: 7px 9px;
+      color: #064e3b;
+      background: #d1fae5;
+      border: 1px solid rgba(16, 185, 129, .2);
+    }
+
+    .response-badge {
+      min-height: 24px;
+      padding: 7px 9px;
+      color: #92400e;
+      background: #fef3c7;
+      border: 1px solid rgba(245, 158, 11, .25);
+    }
+
+    .share-card {
+      display: grid;
+      gap: 12px;
+      padding: 15px;
+      border: 1px solid rgba(38, 101, 140, .16);
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 12px 26px rgba(1, 28, 64, .08);
+    }
+
+    .share-card.needs-response {
+      border-color: rgba(245, 158, 11, .58);
+      box-shadow: 0 12px 30px rgba(245, 158, 11, .15);
+    }
+
+    .share-card.done {
+      border-color: rgba(16, 185, 129, .32);
+    }
+
+    .card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .card-head h4 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 17px;
+      line-height: 1.25;
+      font-weight: 950;
+      overflow-wrap: anywhere;
+    }
+
+    .card-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .field-list {
+      display: grid;
+      gap: 7px;
+    }
+
+    .field-line {
+      display: grid;
+      grid-template-columns: 116px minmax(0, 1fr);
+      gap: 8px;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .field-line span {
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .field-line strong {
+      color: var(--text);
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .share-note {
+      padding: 10px;
+      border-radius: 8px;
+      color: #78350f;
+      background: #fffbeb;
+      border: 1px solid rgba(245, 158, 11, .24);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .share-note strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #92400e;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-top: 2px;
+    }
+
+    .empty-state {
+      display: grid;
+      place-items: center;
+      min-height: 120px;
+      padding: 18px;
+      border: 1px dashed rgba(38, 101, 140, .25);
+      border-radius: 8px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 14px;
+      background: rgba(255, 255, 255, .5);
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      background: rgba(1, 28, 64, .5);
+    }
+
+    .modal.open { display: flex; }
+
+    .modal-panel {
+      width: min(760px, 100%);
+      max-height: min(90vh, 860px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 26px 80px rgba(1, 28, 64, .3);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 20px 22px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(135deg, rgba(167, 235, 242, .32), rgba(255, 255, 255, .92));
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 22px;
+      line-height: 1.15;
+      font-weight: 950;
+    }
+
+    .modal-header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--deep);
+      background: #fff;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .modal-body {
+      overflow: auto;
+      padding: 22px;
+    }
+
+    .form-grid,
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .form-group,
+    .note-form {
+      display: grid;
+      gap: 7px;
+    }
+
+    .form-group.full,
+    .detail-item.full {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label,
+    .note-form label {
+      color: var(--deep);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .detail-item {
+      min-width: 0;
+      padding: 13px;
+      border: 1px solid rgba(38, 101, 140, .14);
+      border-radius: 8px;
+      background: #f8fdff;
+    }
+
+    .detail-item span {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .detail-item strong {
+      display: block;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.45;
+      font-weight: 800;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 1040px) {
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .board { grid-template-columns: 1fr; }
+      .share-column { min-height: 0; }
+    }
+
+    @media (max-width: 680px) {
+      .share-shell {
+        width: min(100% - 24px, 1440px);
+        padding-top: 16px;
+      }
+      .share-topbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+      .top-actions { justify-content: flex-start; }
+      .toolbar,
+      .stats-grid,
+      .form-grid,
+      .details-grid {
+        grid-template-columns: 1fr;
+      }
+      .field-line {
+        grid-template-columns: 1fr;
+        gap: 2px;
+      }
+      .form-actions {
+        flex-direction: column-reverse;
+      }
+      .form-actions button,
+      .top-actions button {
+        width: 100%;
+      }
+    }
+  </style>
+  <script>
+    if (localStorage.getItem('cc_auth') !== '1' || !localStorage.getItem('cc_token') || !localStorage.getItem('cc_role')) {
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html';
+    }
+  </script>
+</head>
+<body>
+  <main class="share-shell">
+    <header class="share-topbar">
+      <div class="share-brand">
+        <button class="share-logo" type="button" onclick="window.location.href='dashboard.html'" aria-label="Back to dashboard">CC</button>
+        <div>
+          <h1>Free Order Share</h1>
+          <p>Review ready free order requests, request clarifications, and mark completed shares.</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="secondary-btn" type="button" onclick="window.location.href='dashboard.html'">Back</button>
+        <button class="primary-btn" type="button" onclick="window.location.href='free-order-requests.html'">Requests</button>
+      </div>
+    </header>
+
+    <section class="hero-panel" aria-labelledby="page-title">
+      <h2 id="page-title">Free Order Share</h2>
+      <p>Work from the same Free Order Requests records. Items completed here immediately become Done in the requests workflow.</p>
+    </section>
+
+    <div class="message" id="message" role="status" aria-live="polite"></div>
+
+    <section class="stats-grid" aria-label="Free order share statistics">
+      <article class="stat-card"><span>Received</span><strong id="stat-received">0</strong></article>
+      <article class="stat-card"><span>Needs Response</span><strong id="stat-needs-response">0</strong></article>
+      <article class="stat-card"><span>Done</span><strong id="stat-done">0</strong></article>
+      <article class="stat-card"><span>Total Share Items</span><strong id="stat-total">0</strong></article>
+    </section>
+
+    <section class="toolbar" aria-label="Filters">
+      <input class="control" id="search-filter" type="search" placeholder="Search by order number, customer name, or phone">
+      <select class="control" id="stage-filter" aria-label="Filter by share stage">
+        <option value="">All stages</option>
+        <option value="received">Received</option>
+        <option value="needs_response">Needs Response</option>
+        <option value="done">Done</option>
+      </select>
+    </section>
+
+    <section class="board" id="share-board" aria-label="Free order share board"></section>
+  </main>
+
+  <div class="modal" id="response-modal" role="dialog" aria-modal="true" aria-labelledby="response-modal-title">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div>
+          <h3 id="response-modal-title">Needs Response</h3>
+          <p>Add the question or clarification needed before this share can be completed.</p>
+        </div>
+        <button class="icon-btn" type="button" data-close-modal="response-modal" aria-label="Close form">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="response-form">
+          <input id="response-request-id" type="hidden">
+          <div class="note-form">
+            <label for="share-note">Response / Question Note</label>
+            <textarea class="control" id="share-note" name="shareNote" maxlength="5000" required></textarea>
+          </div>
+          <div class="form-actions">
+            <button class="secondary-btn" type="button" data-close-modal="response-modal">Cancel</button>
+            <button class="primary-btn" type="submit" id="save-response-btn">Save Note</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="view-modal" role="dialog" aria-modal="true" aria-labelledby="view-modal-title">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div>
+          <h3 id="view-modal-title">Share Details</h3>
+          <p id="view-modal-subtitle"></p>
+        </div>
+        <button class="icon-btn" type="button" data-close-modal="view-modal" aria-label="Close details">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="details-grid" id="details-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_ENDPOINT = '/.netlify/functions/free-order-requests';
+    const SHARE_COLUMNS = [
+      { key: 'received', label: 'Received' },
+      { key: 'needs_response', label: 'Needs Response' },
+      { key: 'done', label: 'Done' }
+    ];
+
+    let shareItems = [];
+
+    function getAuthHeaders(extraHeaders = {}) {
+      const token = localStorage.getItem('cc_token') || '';
+      return {
+        ...extraHeaders,
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      };
+    }
+
+    function handleAuthFailure(response) {
+      if (response.status !== 401) return false;
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html?expired=1';
+      return true;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function valueOrDash(value) {
+      const text = String(value ?? '').trim();
+      return text || '-';
+    }
+
+    function formatAmount(value) {
+      if (value === null || value === undefined || value === '') return '-';
+      const amount = Number(value);
+      if (!Number.isFinite(amount)) return String(value);
+      return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatDateTime(value) {
+      if (!value) return '-';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return date.toLocaleString('en-US');
+    }
+
+    function shareStage(item) {
+      if (item.shareStage) return item.shareStage;
+      if (item.internalStage === 'done') return 'done';
+      return 'received';
+    }
+
+    function stageLabel(stage) {
+      return SHARE_COLUMNS.find((item) => item.key === stage)?.label || stage || '-';
+    }
+
+    function setMessage(message, type = '') {
+      const el = document.getElementById('message');
+      el.textContent = message || '';
+      el.className = `message ${type}`.trim();
+    }
+
+    function openModal(id) {
+      document.getElementById(id)?.classList.add('open');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id)?.classList.remove('open');
+    }
+
+    function itemById(id) {
+      return shareItems.find((item) => item.requestId === id);
+    }
+
+    function getFilteredItems() {
+      const search = document.getElementById('search-filter').value.trim().toLowerCase();
+      const stage = document.getElementById('stage-filter').value;
+      return shareItems.filter((item) => {
+        const matchesStage = !stage || shareStage(item) === stage;
+        const haystack = [
+          item.orderNumber,
+          item.customerName,
+          item.phoneNumber
+        ].join(' ').toLowerCase();
+        const matchesSearch = !search || haystack.includes(search);
+        return matchesStage && matchesSearch;
+      });
+    }
+
+    function updateStats() {
+      document.getElementById('stat-received').textContent = shareItems.filter((item) => shareStage(item) === 'received').length;
+      document.getElementById('stat-needs-response').textContent = shareItems.filter((item) => shareStage(item) === 'needs_response').length;
+      document.getElementById('stat-done').textContent = shareItems.filter((item) => shareStage(item) === 'done').length;
+      document.getElementById('stat-total').textContent = shareItems.length;
+    }
+
+    function cardFields(item) {
+      return [
+        ['Phone', item.phoneNumber],
+        ['Discount', formatAmount(item.discountAmount)],
+        ['Reason', item.reasonForDiscount],
+        ['Decision Maker', item.decisionMaker],
+        ['Deduction From', item.deductionFrom],
+        ['Created By', item.createdBy],
+        ['Creation Time', item.creationTime]
+      ].map(([label, value]) => `
+        <div class="field-line">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(valueOrDash(value))}</strong>
+        </div>
+      `).join('');
+    }
+
+    function shareNoteMarkup(item) {
+      if (shareStage(item) !== 'needs_response') return '';
+      return `
+        <div class="share-note">
+          <strong>Share Note</strong>
+          ${escapeHtml(valueOrDash(item.shareNote))}
+          <div>${escapeHtml(valueOrDash(item.shareNoteBy))} - ${escapeHtml(formatDateTime(item.shareNoteAt))}</div>
+        </div>
+      `;
+    }
+
+    function renderCard(item) {
+      const stage = shareStage(item);
+      const needsResponse = stage === 'needs_response';
+      const done = stage === 'done';
+      const responseButton = stage === 'received'
+        ? `<button class="warn-btn" type="button" data-response-id="${escapeHtml(item.requestId)}">Needs Response</button>`
+        : '';
+      const doneButton = stage !== 'done'
+        ? `<button class="done-btn" type="button" data-done-id="${escapeHtml(item.requestId)}">Mark Done</button>`
+        : '';
+      const badge = needsResponse
+        ? '<span class="response-badge">Needs Response</span>'
+        : `<span class="status-badge">${escapeHtml(stageLabel(stage))}</span>`;
+
+      return `
+        <article class="share-card ${needsResponse ? 'needs-response' : ''} ${done ? 'done' : ''}">
+          <div class="card-head">
+            <div>
+              <h4>${escapeHtml(item.orderNumber)}</h4>
+              <p>${escapeHtml(item.customerName)}</p>
+            </div>
+            <div>${badge}</div>
+          </div>
+          <div class="field-list">${cardFields(item)}</div>
+          ${shareNoteMarkup(item)}
+          <div class="card-actions">
+            ${responseButton}
+            ${doneButton}
+            <button class="small-btn" type="button" data-view-id="${escapeHtml(item.requestId)}">View Details</button>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderBoard() {
+      updateStats();
+      const filtered = getFilteredItems();
+      const board = document.getElementById('share-board');
+      board.innerHTML = SHARE_COLUMNS.map((column) => {
+        const items = filtered.filter((item) => shareStage(item) === column.key);
+        const body = items.length
+          ? items.map(renderCard).join('')
+          : '<div class="empty-state">No share items in this stage.</div>';
+
+        return `
+          <section class="share-column" aria-label="${escapeHtml(column.label)}">
+            <div class="column-head">
+              <h3>${escapeHtml(column.label)}</h3>
+              <span class="count-pill">${items.length}</span>
+            </div>
+            ${body}
+          </section>
+        `;
+      }).join('');
+    }
+
+    async function loadShareItems() {
+      setMessage('Loading share items...');
+      try {
+        const response = await fetch(`${API_ENDPOINT}?view=share`, {
+          headers: getAuthHeaders(),
+          cache: 'no-store'
+        });
+        if (handleAuthFailure(response)) return;
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.ok === false) throw new Error(data.error || 'Share items could not be loaded.');
+        shareItems = Array.isArray(data.requests) ? data.requests : [];
+        renderBoard();
+        setMessage('');
+      } catch (error) {
+        renderBoard();
+        setMessage(error.message || 'Share items could not be loaded.', 'error');
+      }
+    }
+
+    function openResponseModal(id) {
+      const item = itemById(id);
+      if (!item) return;
+      document.getElementById('response-form').reset();
+      document.getElementById('response-request-id').value = item.requestId;
+      document.getElementById('share-note').value = item.shareNote || '';
+      document.getElementById('response-modal-title').textContent = `Needs Response: ${item.orderNumber}`;
+      openModal('response-modal');
+    }
+
+    async function saveResponse(event) {
+      event.preventDefault();
+      const requestId = document.getElementById('response-request-id').value;
+      if (!requestId) return;
+
+      const button = document.getElementById('save-response-btn');
+      const payload = {
+        shareNote: document.getElementById('share-note').value.trim()
+      };
+
+      button.disabled = true;
+      try {
+        const response = await fetch(`${API_ENDPOINT}?id=${encodeURIComponent(requestId)}&action=needs-response`, {
+          method: 'PUT',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify(payload)
+        });
+        if (handleAuthFailure(response)) return;
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.ok === false) throw new Error(data.error || 'Response note could not be saved.');
+        closeModal('response-modal');
+        setMessage('Request marked as Needs Response.', 'success');
+        await loadShareItems();
+      } catch (error) {
+        setMessage(error.message || 'Response note could not be saved.', 'error');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function markDone(id) {
+      const item = itemById(id);
+      if (!item) return;
+      if (!window.confirm(`Mark request ${item.orderNumber} as done?`)) return;
+
+      try {
+        const response = await fetch(`${API_ENDPOINT}?id=${encodeURIComponent(id)}&action=share-done`, {
+          method: 'PUT',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({})
+        });
+        if (handleAuthFailure(response)) return;
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.ok === false) throw new Error(data.error || 'Request could not be marked done.');
+        setMessage('Request marked done.', 'success');
+        await loadShareItems();
+      } catch (error) {
+        setMessage(error.message || 'Request could not be marked done.', 'error');
+      }
+    }
+
+    function detailItem(label, value, full = false) {
+      return `
+        <div class="detail-item ${full ? 'full' : ''}">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(valueOrDash(value))}</strong>
+        </div>
+      `;
+    }
+
+    function openViewDetails(id) {
+      const item = itemById(id);
+      if (!item) return;
+
+      document.getElementById('view-modal-title').textContent = `Share ${item.orderNumber}`;
+      document.getElementById('view-modal-subtitle').textContent = `${item.customerName} - ${stageLabel(shareStage(item))}`;
+      document.getElementById('details-grid').innerHTML = [
+        detailItem('Order Number', item.orderNumber),
+        detailItem('Customer Name', item.customerName),
+        detailItem('Phone Number', item.phoneNumber),
+        detailItem('Creation Time', item.creationTime),
+        detailItem('Discount Amount', formatAmount(item.discountAmount)),
+        detailItem('Reason for Discount', item.reasonForDiscount, true),
+        detailItem('Decision Maker', item.decisionMaker),
+        detailItem('Attached', item.attached),
+        detailItem('Deduction From', item.deductionFrom),
+        detailItem('Case Description', item.caseDescription, true),
+        detailItem('Notes', item.notes, true),
+        detailItem('Internal Stage', item.internalStage),
+        detailItem('Share Stage', stageLabel(shareStage(item))),
+        detailItem('Share Note', item.shareNote, true),
+        detailItem('Share Note By', item.shareNoteBy),
+        detailItem('Share Note At', formatDateTime(item.shareNoteAt)),
+        detailItem('Completed By', item.completedBy),
+        detailItem('Completed At', formatDateTime(item.completedAt)),
+        detailItem('Created By', item.createdBy),
+        detailItem('Created At', formatDateTime(item.createdAt)),
+        detailItem('Updated By', item.updatedBy),
+        detailItem('Updated At', formatDateTime(item.updatedAt))
+      ].join('');
+      openModal('view-modal');
+    }
+
+    document.getElementById('response-form').addEventListener('submit', saveResponse);
+    document.getElementById('search-filter').addEventListener('input', renderBoard);
+    document.getElementById('stage-filter').addEventListener('change', renderBoard);
+
+    document.addEventListener('click', (event) => {
+      const closeTarget = event.target.closest('[data-close-modal]');
+      if (closeTarget) {
+        closeModal(closeTarget.dataset.closeModal);
+        return;
+      }
+
+      const responseTarget = event.target.closest('[data-response-id]');
+      if (responseTarget) {
+        openResponseModal(responseTarget.dataset.responseId);
+        return;
+      }
+
+      const doneTarget = event.target.closest('[data-done-id]');
+      if (doneTarget) {
+        markDone(doneTarget.dataset.doneId);
+        return;
+      }
+
+      const viewTarget = event.target.closest('[data-view-id]');
+      if (viewTarget) {
+        openViewDetails(viewTarget.dataset.viewId);
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      document.querySelectorAll('.modal.open').forEach((modal) => modal.classList.remove('open'));
+    });
+
+    renderBoard();
+    loadShareItems();
+  </script>
+  <script src="idle-logout.js"></script>
+</body>
+</html>

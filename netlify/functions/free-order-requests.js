@@ -94,6 +94,12 @@ function normalizeDetailsBody(body) {
   };
 }
 
+function normalizeShareNoteBody(body) {
+  return {
+    shareNote: requiredText(body?.shareNote, "shareNote", 5000),
+  };
+}
+
 function getRequestId(event) {
   return cleanText(event.queryStringParameters?.id, 100);
 }
@@ -211,16 +217,31 @@ async function listRequests(query = {}) {
   }
 
   const stage = cleanText(query.stage, 40);
+  const view = cleanText(query.view, 40);
   const needsResponse = cleanText(query.needsResponse, 10);
   const search = cleanText(query.search, 200);
 
+  if (view && view !== "share") {
+    const error = new Error("Invalid view");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (view === "share") {
+    conditions.push(
+      `(internal_stage IN ('ready_to_share', 'done')
+        OR share_stage IN ('received', 'needs_response', 'done'))`
+    );
+  }
+
   if (stage) {
-    if (!INTERNAL_STAGES.has(stage)) {
+    const allowedStages = view === "share" ? SHARE_STAGES : INTERNAL_STAGES;
+    if (!allowedStages.has(stage)) {
       const error = new Error("Invalid stage");
       error.statusCode = 400;
       throw error;
     }
-    addCondition("internal_stage = ?", stage);
+    addCondition(view === "share" ? "share_stage = ?" : "internal_stage = ?", stage);
   }
 
   if (needsResponse === "1") {
@@ -321,35 +342,81 @@ exports.handler = async (event) => {
       if (!requestId) {
         return json(400, { ok: false, error: "Request id is required" });
       }
-      if (action !== "complete-details") {
+      if (
+        action !== "complete-details" &&
+        action !== "needs-response" &&
+        action !== "share-done"
+      ) {
         return json(400, { ok: false, error: "Unsupported action" });
       }
 
-      const details = normalizeDetailsBody(JSON.parse(event.body || "{}"));
       const username = cleanText(session.username || "unknown", 200);
+
+      if (action === "complete-details") {
+        const details = normalizeDetailsBody(JSON.parse(event.body || "{}"));
+        const result = await pool.query(
+          `UPDATE free_order_requests
+              SET decision_maker = $2,
+                  attached = $3,
+                  deduction_from = $4,
+                  case_description = $5,
+                  notes = $6,
+                  internal_stage = 'ready_to_share',
+                  share_stage = 'received',
+                  updated_at = now(),
+                  updated_by = $7
+            WHERE request_id = $1::uuid
+              AND deleted_at IS NULL
+            RETURNING request_id`,
+          [
+            requestId,
+            details.decisionMaker,
+            details.attached || null,
+            details.deductionFrom,
+            details.caseDescription,
+            details.notes || null,
+            username,
+          ]
+        );
+
+        return result.rows.length
+          ? json(200, { ok: true, request: await getRequest(requestId) })
+          : json(404, { ok: false, error: "Request not found" });
+      }
+
+      if (action === "needs-response") {
+        const note = normalizeShareNoteBody(JSON.parse(event.body || "{}"));
+        const result = await pool.query(
+          `UPDATE free_order_requests
+              SET share_stage = 'needs_response',
+                  share_note = $2,
+                  share_note_by = $3,
+                  share_note_at = now(),
+                  updated_at = now(),
+                  updated_by = $3
+            WHERE request_id = $1::uuid
+              AND deleted_at IS NULL
+            RETURNING request_id`,
+          [requestId, note.shareNote, username]
+        );
+
+        return result.rows.length
+          ? json(200, { ok: true, request: await getRequest(requestId) })
+          : json(404, { ok: false, error: "Request not found" });
+      }
+
       const result = await pool.query(
         `UPDATE free_order_requests
-            SET decision_maker = $2,
-                attached = $3,
-                deduction_from = $4,
-                case_description = $5,
-                notes = $6,
-                internal_stage = 'ready_to_share',
-                share_stage = 'received',
+            SET share_stage = 'done',
+                internal_stage = 'done',
+                completed_by = $2,
+                completed_at = now(),
                 updated_at = now(),
-                updated_by = $7
+                updated_by = $2
           WHERE request_id = $1::uuid
             AND deleted_at IS NULL
           RETURNING request_id`,
-        [
-          requestId,
-          details.decisionMaker,
-          details.attached || null,
-          details.deductionFrom,
-          details.caseDescription,
-          details.notes || null,
-          username,
-        ]
+        [requestId, username]
       );
 
       return result.rows.length
