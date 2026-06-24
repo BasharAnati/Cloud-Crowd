@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+  <title>Restaurant Ratings - Cloud Crowd</title>
+  <style>
+    :root{
+      --ice:#A7EBF2;
+      --aqua:#54ACBF;
+      --steel:#26658C;
+      --deep:#023859;
+      --navy:#011C40;
+      --page:#f5fbfd;
+      --card:#ffffff;
+      --line:#d8eef3;
+      --text:#12324a;
+      --muted:#60798b;
+      --danger:#b91c1c;
+      --success:#166534;
+      --shadow:0 24px 70px rgba(2,56,89,.12);
+    }
+    *{box-sizing:border-box}
+    html,body{width:100%;min-height:100%;overflow-x:hidden}
+    body{
+      min-height:100vh;
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:
+        linear-gradient(135deg,rgba(167,235,242,.55),transparent 30%),
+        linear-gradient(225deg,rgba(84,172,191,.18),transparent 34%),
+        var(--page);
+      line-height:1.5;
+    }
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    button:disabled{cursor:not-allowed;opacity:.58}
+    a{color:inherit;text-decoration:none}
+    .app-shell{min-height:100vh;display:grid;grid-template-columns:280px minmax(0,1fr)}
+    .sidebar{
+      position:sticky;top:0;min-height:100vh;padding:28px 22px;border-right:1px solid var(--line);
+      background:rgba(255,255,255,.82);box-shadow:18px 0 60px rgba(2,56,89,.08);
+      backdrop-filter:blur(16px) saturate(130%);
+    }
+    .sidebar-brand{display:flex;align-items:center;gap:13px;margin-bottom:34px}
+    .sidebar-logo{width:58px;height:58px;object-fit:contain;filter:drop-shadow(0 10px 18px rgba(84,172,191,.2))}
+    .sidebar-brand h1{margin:0;font-size:22px;line-height:1;font-weight:900;color:var(--navy)}
+    .sidebar-brand p{margin:6px 0 0;color:var(--steel);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:900}
+    .sidebar-nav{display:grid;gap:8px}
+    .nav-item{
+      display:flex;align-items:center;gap:12px;min-height:46px;padding:10px 12px;border:1px solid transparent;
+      border-radius:12px;color:#31556d;font-size:14px;font-weight:800;transition:.2s ease;
+    }
+    .nav-item:hover,.nav-item.active{color:var(--deep);border-color:rgba(84,172,191,.28);background:rgba(167,235,242,.24);transform:translateX(2px)}
+    .nav-icon{width:30px;height:30px;display:grid;place-items:center;border:1px solid rgba(84,172,191,.24);border-radius:9px;color:var(--steel);background:#f0fbfd;flex:0 0 auto}
+    .main-area{min-width:0;padding:26px clamp(20px,4vw,54px) 44px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}
+    .breadcrumb{color:var(--steel);font-size:13px;font-weight:900;letter-spacing:.04em;text-transform:uppercase}
+    .user-tools{display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0}
+    .user-pill,.role-pill{
+      min-height:38px;display:inline-flex;align-items:center;justify-content:center;max-width:260px;padding:8px 12px;
+      border:1px solid var(--line);border-radius:999px;color:var(--deep);background:rgba(255,255,255,.82);font-size:12px;font-weight:900;
+    }
+    .logout{min-height:38px;padding:8px 14px;border:0;border-radius:999px;color:#fff;background:linear-gradient(135deg,#ef4444,#b91c1c);font-size:12px;font-weight:900}
+    .hero{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:22px;padding:32px;
+      border:1px solid var(--line);border-radius:24px;background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,255,255,.84));box-shadow:var(--shadow);
+    }
+    .eyebrow{margin:0 0 8px;color:var(--steel);font-size:12px;font-weight:950;letter-spacing:.1em;text-transform:uppercase}
+    .hero h2{margin:0;color:var(--navy);font-size:clamp(34px,5vw,58px);line-height:1;font-weight:950}
+    .hero p:last-child{max-width:760px;margin:16px 0 0;color:var(--muted);font-size:16px;line-height:1.7}
+    .primary-btn,.secondary-btn,.danger-btn,.small-btn{
+      min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 15px;border-radius:11px;font-weight:900;
+    }
+    .primary-btn{border:0;color:#fff;background:linear-gradient(135deg,var(--steel),var(--deep));box-shadow:0 16px 34px rgba(38,101,140,.22)}
+    .secondary-btn,.small-btn{border:1px solid var(--line);color:var(--deep);background:#fff}
+    .danger-btn{border:1px solid #fecaca;color:var(--danger);background:#fff7f7}
+    .small-btn{min-height:32px;padding:6px 9px;font-size:11px}
+    .message{display:none;margin-bottom:18px;padding:13px 16px;border-radius:12px;font-size:13px;font-weight:800}
+    .message.show{display:block}
+    .message.error{color:#991b1b;background:#fee2e2;border:1px solid #fecaca}
+    .message.success{color:#166534;background:#dcfce7;border:1px solid #bbf7d0}
+    .message.warning{color:#92400e;background:#fffbeb;border:1px solid #fde68a}
+    .stats-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px;margin-bottom:22px}
+    .stat-card{min-height:112px;padding:19px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.92);box-shadow:0 14px 38px rgba(2,56,89,.08)}
+    .stat-card span{display:block;min-height:30px;color:var(--muted);font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;line-height:1.35}
+    .stat-card strong{display:block;margin-top:8px;color:var(--navy);font-size:25px;line-height:1.12;font-weight:950;overflow-wrap:anywhere}
+    .stat-card small{display:block;margin-top:5px;color:var(--muted);font-size:11px;font-weight:800}
+    .content-card{border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.94);box-shadow:var(--shadow);overflow:hidden}
+    .card-header{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:24px 28px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,#fff,rgba(167,235,242,.18))}
+    .card-header h3{margin:0;color:var(--navy);font-size:22px;font-weight:950}
+    .card-header p{margin:6px 0 0;color:var(--muted);font-size:14px}
+    .filters{display:grid;grid-template-columns:minmax(210px,1fr) repeat(4,minmax(140px,200px));gap:12px;padding:22px 28px}
+    .control{width:100%;min-height:46px;padding:11px 13px;border:1px solid #cfe8ee;border-radius:12px;background:#fbfeff;color:var(--text);outline:none}
+    .control:focus{border-color:var(--aqua);box-shadow:0 0 0 4px rgba(84,172,191,.16)}
+    .table-wrap{width:100%;overflow-x:auto;padding:0 28px 28px}
+    .records-table{width:100%;min-width:1080px;border-collapse:collapse}
+    .records-table th,.records-table td{padding:12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:12px}
+    .records-table th{color:var(--deep);background:rgba(167,235,242,.18);font-size:10px;font-weight:950;text-transform:uppercase;white-space:nowrap}
+    .records-table tbody tr:hover{background:#f8fcfd}
+    .platform-badge,.rating-badge{display:inline-flex;align-items:center;min-height:26px;padding:5px 9px;border-radius:999px;font-size:10px;font-weight:950;white-space:nowrap}
+    .platform-talabat{color:#0f5132;background:#dcfce7}
+    .platform-careem{color:#075985;background:#e0f2fe}
+    .rating-badge{color:var(--navy);background:#effbfc;border:1px solid #d3eef3}
+    .actions{display:flex;gap:6px;white-space:nowrap}
+    .notes-cell{max-width:260px;white-space:normal}
+    .empty-state{padding:36px 18px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:16px;background:rgba(167,235,242,.08)}
+    .modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(1,28,64,.62);backdrop-filter:blur(8px)}
+    .modal.open{display:flex}
+    .modal-panel{width:min(820px,100%);max-height:92vh;overflow:auto;border:1px solid rgba(167,235,242,.5);border-radius:24px;background:#fff;box-shadow:0 30px 90px rgba(1,28,64,.34)}
+    .modal-header{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 26px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.97)}
+    .modal-header h3{margin:0;color:var(--navy);font-size:24px;font-weight:950}
+    .icon-btn{width:38px;height:38px;border:1px solid var(--line);border-radius:50%;color:var(--deep);background:#fff;font-size:20px;font-weight:950}
+    .modal-body{padding:26px}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    .field{display:grid;gap:8px;min-width:0}
+    .field.full{grid-column:1/-1}
+    .field label{color:var(--deep);font-size:13px;font-weight:900}
+    .field textarea{min-height:105px;resize:vertical}
+    .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+    .detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .detail-item{padding:13px;border:1px solid #e3f1f4;border-radius:12px;background:#fbfeff}
+    .detail-item.full{grid-column:1/-1}
+    .detail-item span{display:block;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase}
+    .detail-item strong{display:block;margin-top:5px;color:var(--deep);font-size:14px;overflow-wrap:anywhere}
+    @media (max-width:1200px){
+      .stats-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .filters{grid-template-columns:repeat(3,minmax(0,1fr))}
+    }
+    @media (max-width:1050px){
+      .app-shell{grid-template-columns:1fr}
+      .sidebar{position:relative;min-height:auto;padding:20px}
+      .sidebar-brand{margin-bottom:16px}
+      .sidebar-nav{grid-template-columns:repeat(3,minmax(0,1fr))}
+    }
+    @media (max-width:850px){
+      .stats-grid,.filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media (max-width:620px){
+      .main-area{padding:20px 16px 34px}
+      .topbar,.hero,.card-header{flex-direction:column;align-items:stretch}
+      .user-tools{justify-content:flex-start;flex-wrap:wrap}
+      .sidebar-nav,.stats-grid,.filters,.form-grid,.detail-grid{grid-template-columns:1fr}
+      .field.full,.detail-item.full{grid-column:auto}
+      .card-header,.filters,.table-wrap{padding-left:20px;padding-right:20px}
+      .modal{padding:10px}
+      .modal-body{padding:20px}
+      .modal-actions{flex-direction:column-reverse}
+      .modal-actions button{width:100%}
+    }
+  </style>
+  <script>
+    if (localStorage.getItem('cc_auth') !== '1' || !localStorage.getItem('cc_token') || !localStorage.getItem('cc_role')) {
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html';
+    }
+  </script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Restaurant Ratings navigation">
+      <a class="sidebar-brand" href="dashboard.html" aria-label="Cloud Crowd dashboard">
+        <img src="assets/images/logo.png" alt="Cloud Crowd logo" class="sidebar-logo">
+        <div><h1>Cloud Crowd</h1><p>Operations Hub</p></div>
+      </a>
+      <nav class="sidebar-nav">
+        <a class="nav-item" href="dashboard.html"><span class="nav-icon" aria-hidden="true">&#8962;</span>Dashboard</a>
+        <a class="nav-item" href="client-profiles.html"><span class="nav-icon" aria-hidden="true">&#9638;</span>Client Profiles</a>
+        <a class="nav-item active" href="restaurant-ratings.html" aria-current="page"><span class="nav-icon" aria-hidden="true">&#9733;</span>Restaurant Ratings</a>
+        <a class="nav-item" href="agent-training.html"><span class="nav-icon" aria-hidden="true">&#9776;</span>Agent Training</a>
+      </nav>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <a class="breadcrumb" href="dashboard.html">&larr; Dashboard</a>
+        <div class="user-tools">
+          <span class="user-pill" id="current-user">Team Member</span>
+          <span class="role-pill" id="current-role">operator</span>
+          <button class="logout" type="button" id="logout-btn">Log out</button>
+        </div>
+      </header>
+
+      <section class="hero" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Client Profiles Module</p>
+          <h2 id="page-title">Restaurant Ratings</h2>
+          <p>Track weekly Talabat and Careem ratings across all active brands.</p>
+        </div>
+        <button class="primary-btn" type="button" id="add-rating-btn">+ Add Rating</button>
+      </section>
+
+      <div class="message" id="page-message" role="status"></div>
+
+      <section class="stats-grid" aria-label="Restaurant ratings summary">
+        <article class="stat-card"><span>Restaurants Tracked</span><strong id="stat-restaurants">0</strong></article>
+        <article class="stat-card"><span>Average Talabat Rating</span><strong id="stat-talabat">-</strong></article>
+        <article class="stat-card"><span>Average Careem Rating</span><strong id="stat-careem">-</strong></article>
+        <article class="stat-card"><span>Best Rated Restaurant</span><strong id="stat-best">-</strong><small id="stat-best-score"></small></article>
+        <article class="stat-card"><span>Lowest Rated Restaurant</span><strong id="stat-lowest">-</strong><small id="stat-lowest-score"></small></article>
+      </section>
+
+      <section class="content-card" aria-labelledby="records-title">
+        <div class="card-header">
+          <div>
+            <h3 id="records-title">Rating Records</h3>
+            <p>Review, filter, and maintain weekly delivery platform ratings.</p>
+          </div>
+          <span class="role-pill" id="record-count">0 records</span>
+        </div>
+        <div class="filters">
+          <select class="control" id="restaurant-filter" aria-label="Filter by restaurant"><option value="">All restaurants</option></select>
+          <select class="control" id="platform-filter" aria-label="Filter by platform">
+            <option value="">All platforms</option>
+            <option>Talabat</option>
+            <option>Careem</option>
+          </select>
+          <select class="control" id="month-filter" aria-label="Filter by month"><option value="">All months</option></select>
+          <select class="control" id="week-filter" aria-label="Filter by week"><option value="">All weeks</option></select>
+          <input class="control" id="record-search" type="search" placeholder="Search restaurant or notes">
+        </div>
+        <div class="table-wrap">
+          <table class="records-table">
+            <thead>
+              <tr>
+                <th>Restaurant</th>
+                <th>Platform</th>
+                <th>Month</th>
+                <th>Week</th>
+                <th>Rating</th>
+                <th>Reviews Count</th>
+                <th>Rating Date</th>
+                <th>Updated By</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="records-body"></tbody>
+          </table>
+          <div class="empty-state" id="records-empty">Loading restaurant ratings...</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal" id="rating-modal" role="dialog" aria-modal="true" aria-labelledby="rating-modal-title">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 id="rating-modal-title">Add Rating</h3>
+        <button class="icon-btn" type="button" data-close-modal="rating-modal" aria-label="Close rating form">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="rating-form">
+          <input id="rating-id" type="hidden">
+          <div class="form-grid">
+            <div class="field">
+              <label for="restaurant-id">Restaurant</label>
+              <select class="control" id="restaurant-id" name="restaurantId" required disabled>
+                <option value="">Loading restaurants...</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="platform">Platform</label>
+              <select class="control" id="platform" name="platform" required>
+                <option value="">Select platform</option>
+                <option>Talabat</option>
+                <option>Careem</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="month-name">Month</label>
+              <select class="control" id="month-name" name="monthName" required></select>
+            </div>
+            <div class="field">
+              <label for="week-name">Week</label>
+              <select class="control" id="week-name" name="weekName" required></select>
+            </div>
+            <div class="field">
+              <label for="rating">Rating</label>
+              <input class="control" id="rating" name="rating" type="number" min="0" max="5" step="0.01" required>
+            </div>
+            <div class="field">
+              <label for="reviews-count">Reviews Count</label>
+              <input class="control" id="reviews-count" name="reviewsCount" type="number" min="0" step="1" value="0" required>
+            </div>
+            <div class="field full">
+              <label for="rating-date">Rating Date</label>
+              <input class="control" id="rating-date" name="ratingDate" type="date" required>
+            </div>
+            <div class="field full">
+              <label for="notes">Notes</label>
+              <textarea class="control" id="notes" name="notes" maxlength="5000"></textarea>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button class="secondary-btn" type="button" data-close-modal="rating-modal">Cancel</button>
+            <button class="primary-btn" type="submit" id="save-rating-btn">Save Rating</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="details-modal" role="dialog" aria-modal="true" aria-labelledby="details-modal-title">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 id="details-modal-title">Rating Details</h3>
+        <button class="icon-btn" type="button" data-close-modal="details-modal" aria-label="Close rating details">&times;</button>
+      </div>
+      <div class="modal-body" id="details-modal-body"></div>
+    </div>
+  </div>
+
+  <script>
+    const RESTAURANTS_ENDPOINT = '/.netlify/functions/restaurants';
+    const RATINGS_ENDPOINT = '/.netlify/functions/restaurant-ratings';
+    const MONTHS = [
+      'January','February','March','April','May','June',
+      'July','August','September','October','November','December'
+    ];
+    const WEEKS = ['Week 1','Week 2','Week 3','Week 4','Week 5'];
+    let restaurants = [];
+    let ratings = [];
+    let restaurantsAvailable = false;
+
+    function authHeaders(extra = {}) {
+      return {
+        ...extra,
+        'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+      };
+    }
+
+    function logout(confirmFirst = true) {
+      if (confirmFirst && !window.confirm('Confirm logout?')) return;
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html';
+    }
+
+    async function apiRequest(url, options = {}) {
+      const response = await fetch(url, {
+        ...options,
+        cache: 'no-store',
+        headers: authHeaders(options.headers || {})
+      });
+      if (response.status === 401) {
+        logout(false);
+        throw new Error('Session expired');
+      }
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || `Request failed (${response.status})`);
+      }
+      return data;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[character]));
+    }
+
+    function showMessage(message, type = 'error', persistent = false) {
+      const element = document.getElementById('page-message');
+      element.textContent = message;
+      element.className = `message show ${type}`;
+      if (!persistent) {
+        window.setTimeout(() => {
+          element.className = 'message';
+        }, 5000);
+      }
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+      if (!document.querySelector('.modal.open')) document.body.style.overflow = '';
+    }
+
+    function formatRating(value) {
+      const rating = Number(value);
+      if (!Number.isFinite(rating)) return '-';
+      return rating.toFixed(2);
+    }
+
+    function platformBadge(platform) {
+      const className = platform === 'Talabat' ? 'platform-talabat' : 'platform-careem';
+      return `<span class="platform-badge ${className}">${escapeHtml(platform || '-')}</span>`;
+    }
+
+    function ratingBadge(value) {
+      return `<span class="rating-badge">${escapeHtml(formatRating(value))}</span>`;
+    }
+
+    function currentDateValue() {
+      const now = new Date();
+      const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0, 10);
+    }
+
+    function populateStaticSelects() {
+      const monthOptions = '<option value="">Select month</option>' + MONTHS
+        .map((month) => `<option>${escapeHtml(month)}</option>`)
+        .join('');
+      const weekOptions = '<option value="">Select week</option>' + WEEKS
+        .map((week) => `<option>${escapeHtml(week)}</option>`)
+        .join('');
+
+      document.getElementById('month-name').innerHTML = monthOptions;
+      document.getElementById('week-name').innerHTML = weekOptions;
+      document.getElementById('month-filter').innerHTML =
+        '<option value="">All months</option>' + MONTHS.map((month) => `<option>${escapeHtml(month)}</option>`).join('');
+      document.getElementById('week-filter').innerHTML =
+        '<option value="">All weeks</option>' + WEEKS.map((week) => `<option>${escapeHtml(week)}</option>`).join('');
+    }
+
+    function populateRestaurantSelect() {
+      const select = document.getElementById('restaurant-id');
+      const currentValue = select.value;
+      select.innerHTML = '<option value="">Select restaurant</option>' + restaurants
+        .map((restaurant) => `<option value="${escapeHtml(restaurant.restaurantId)}">${escapeHtml(restaurant.brandName)}</option>`)
+        .join('');
+      select.disabled = !restaurants.length;
+      if (restaurants.some((restaurant) => restaurant.restaurantId === currentValue)) {
+        select.value = currentValue;
+      }
+    }
+
+    function populateRestaurantFilter() {
+      const select = document.getElementById('restaurant-filter');
+      const currentValue = select.value;
+      const options = new Map();
+
+      restaurants.forEach((restaurant) => {
+        options.set(restaurant.restaurantId, restaurant.brandName);
+      });
+      ratings.forEach((record) => {
+        if (record.restaurantId && record.restaurantNameSnapshot) {
+          options.set(record.restaurantId, record.restaurantNameSnapshot);
+        }
+      });
+
+      const sortedOptions = Array.from(options, ([value, label]) => ({ value, label }))
+        .sort((a, b) => a.label.localeCompare(b.label));
+      select.innerHTML = '<option value="">All restaurants</option>' + sortedOptions
+        .map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`)
+        .join('');
+      select.value = sortedOptions.some((option) => option.value === currentValue) ? currentValue : '';
+    }
+
+    async function loadRestaurants() {
+      try {
+        const data = await apiRequest(RESTAURANTS_ENDPOINT);
+        restaurants = (Array.isArray(data.restaurants) ? data.restaurants : [])
+          .filter((restaurant) => restaurant.status === 'active')
+          .map((restaurant) => ({
+            restaurantId: String(restaurant.restaurantId || ''),
+            brandName: String(restaurant.brandName || '').trim()
+          }))
+          .filter((restaurant) => restaurant.restaurantId && restaurant.brandName)
+          .sort((a, b) => a.brandName.localeCompare(b.brandName));
+        if (!restaurants.length) throw new Error('No active restaurants are available.');
+        restaurantsAvailable = true;
+        populateRestaurantSelect();
+        populateRestaurantFilter();
+      } catch (error) {
+        restaurants = [];
+        restaurantsAvailable = false;
+        document.getElementById('restaurant-id').innerHTML = '<option value="">Restaurants unavailable</option>';
+        document.getElementById('restaurant-id').disabled = true;
+        document.getElementById('add-rating-btn').disabled = true;
+        document.getElementById('save-rating-btn').disabled = true;
+        showMessage(
+          'Client Profiles restaurants could not be loaded. Existing rating records remain available, but new ratings cannot be created.',
+          'warning',
+          true
+        );
+      }
+    }
+
+    async function loadRatings() {
+      try {
+        const data = await apiRequest(RATINGS_ENDPOINT);
+        ratings = Array.isArray(data.ratings) ? data.ratings : [];
+        populateRestaurantFilter();
+        renderRatings();
+        renderStats();
+      } catch (error) {
+        ratings = [];
+        document.getElementById('records-body').innerHTML = '';
+        document.getElementById('records-empty').textContent = error.message;
+        document.getElementById('records-empty').style.display = 'block';
+        renderStats();
+      }
+    }
+
+    function latestRecordsByRestaurantPlatform() {
+      const latest = new Map();
+      ratings.forEach((record) => {
+        const key = `${record.restaurantId}|${record.platform}`;
+        const current = latest.get(key);
+        const recordTime = Date.parse(`${record.ratingDate || ''}T00:00:00`) || Date.parse(record.updatedAt || record.createdAt || '') || 0;
+        const currentTime = current
+          ? Date.parse(`${current.ratingDate || ''}T00:00:00`) || Date.parse(current.updatedAt || current.createdAt || '') || 0
+          : -1;
+        if (!current || recordTime >= currentTime) latest.set(key, record);
+      });
+      return Array.from(latest.values()).filter((record) => Number.isFinite(Number(record.rating)));
+    }
+
+    function average(records) {
+      const values = records.map((record) => Number(record.rating)).filter(Number.isFinite);
+      if (!values.length) return null;
+      return values.reduce((sum, value) => sum + value, 0) / values.length;
+    }
+
+    function restaurantAverages(latestRecords) {
+      const grouped = new Map();
+      latestRecords.forEach((record) => {
+        const current = grouped.get(record.restaurantId) || {
+          restaurantId: record.restaurantId,
+          name: record.restaurantNameSnapshot,
+          total: 0,
+          count: 0,
+          reviews: 0,
+        };
+        current.name = record.restaurantNameSnapshot || current.name;
+        current.total += Number(record.rating);
+        current.count += 1;
+        current.reviews += Number(record.reviewsCount || 0);
+        grouped.set(record.restaurantId, current);
+      });
+      return Array.from(grouped.values())
+        .filter((item) => item.count > 0)
+        .map((item) => ({
+          ...item,
+          average: item.total / item.count,
+        }));
+    }
+
+    function renderStats() {
+      const latest = latestRecordsByRestaurantPlatform();
+      const talabatAverage = average(latest.filter((record) => record.platform === 'Talabat'));
+      const careemAverage = average(latest.filter((record) => record.platform === 'Careem'));
+      const ranked = restaurantAverages(latest)
+        .sort((a, b) => b.average - a.average || b.reviews - a.reviews || a.name.localeCompare(b.name));
+      const lowestRanked = [...ranked].sort((a, b) => a.average - b.average || b.reviews - a.reviews || a.name.localeCompare(b.name));
+      const trackedRestaurants = new Set(ratings.map((record) => record.restaurantId).filter(Boolean)).size;
+      const best = ranked[0];
+      const lowest = lowestRanked[0];
+
+      document.getElementById('stat-restaurants').textContent = trackedRestaurants;
+      document.getElementById('stat-talabat').textContent = talabatAverage === null ? '-' : formatRating(talabatAverage);
+      document.getElementById('stat-careem').textContent = careemAverage === null ? '-' : formatRating(careemAverage);
+      document.getElementById('stat-best').textContent = best?.name || '-';
+      document.getElementById('stat-best-score').textContent = best ? `${formatRating(best.average)} avg` : '';
+      document.getElementById('stat-lowest').textContent = lowest?.name || '-';
+      document.getElementById('stat-lowest-score').textContent = lowest ? `${formatRating(lowest.average)} avg` : '';
+    }
+
+    function getFilteredRatings() {
+      const restaurantId = document.getElementById('restaurant-filter').value;
+      const platform = document.getElementById('platform-filter').value;
+      const monthName = document.getElementById('month-filter').value;
+      const weekName = document.getElementById('week-filter').value;
+      const search = document.getElementById('record-search').value.trim().toLowerCase();
+      return ratings.filter((record) => {
+        const matchesRestaurant = !restaurantId || record.restaurantId === restaurantId;
+        const matchesPlatform = !platform || record.platform === platform;
+        const matchesMonth = !monthName || record.monthName === monthName;
+        const matchesWeek = !weekName || record.weekName === weekName;
+        const matchesSearch = !search ||
+          String(record.restaurantNameSnapshot || '').toLowerCase().includes(search) ||
+          String(record.notes || '').toLowerCase().includes(search);
+        return matchesRestaurant && matchesPlatform && matchesMonth && matchesWeek && matchesSearch;
+      });
+    }
+
+    function renderRatings() {
+      const filtered = getFilteredRatings();
+      const body = document.getElementById('records-body');
+      const empty = document.getElementById('records-empty');
+      body.innerHTML = filtered.map((record) => `
+        <tr>
+          <td>${escapeHtml(record.restaurantNameSnapshot || '-')}</td>
+          <td>${platformBadge(record.platform)}</td>
+          <td>${escapeHtml(record.monthName || '-')}</td>
+          <td>${escapeHtml(record.weekName || '-')}</td>
+          <td>${ratingBadge(record.rating)}</td>
+          <td>${escapeHtml(record.reviewsCount ?? 0)}</td>
+          <td>${escapeHtml(record.ratingDate || '-')}</td>
+          <td>${escapeHtml(record.updatedBy || record.createdBy || '-')}</td>
+          <td><div class="actions">
+            <button class="small-btn" type="button" data-view-id="${escapeHtml(record.ratingId)}">View</button>
+            <button class="small-btn" type="button" data-edit-id="${escapeHtml(record.ratingId)}">Edit</button>
+            <button class="small-btn danger-btn" type="button" data-archive-id="${escapeHtml(record.ratingId)}">Archive</button>
+          </div></td>
+        </tr>
+      `).join('');
+      empty.textContent = 'No rating records match this view.';
+      empty.style.display = filtered.length ? 'none' : 'block';
+      document.getElementById('record-count').textContent =
+        `${filtered.length} ${filtered.length === 1 ? 'record' : 'records'}`;
+    }
+
+    function resetRatingForm() {
+      document.getElementById('rating-form').reset();
+      document.getElementById('rating-id').value = '';
+      populateRestaurantSelect();
+      document.getElementById('rating-date').value = currentDateValue();
+      document.getElementById('reviews-count').value = '0';
+      document.getElementById('rating-modal-title').textContent = 'Add Rating';
+      document.getElementById('save-rating-btn').textContent = 'Save Rating';
+    }
+
+    function openCreateRating() {
+      if (!restaurantsAvailable) return;
+      resetRatingForm();
+      openModal('rating-modal');
+      document.getElementById('restaurant-id').focus();
+    }
+
+    function findRating(id) {
+      return ratings.find((record) => record.ratingId === id);
+    }
+
+    function collectRatingData() {
+      return {
+        restaurantId: document.getElementById('restaurant-id').value,
+        platform: document.getElementById('platform').value,
+        monthName: document.getElementById('month-name').value,
+        weekName: document.getElementById('week-name').value,
+        rating: document.getElementById('rating').value,
+        reviewsCount: document.getElementById('reviews-count').value,
+        ratingDate: document.getElementById('rating-date').value,
+        notes: document.getElementById('notes').value.trim()
+      };
+    }
+
+    async function saveRating(event) {
+      event.preventDefault();
+      if (!restaurantsAvailable || !event.currentTarget.reportValidity()) return;
+      const ratingId = document.getElementById('rating-id').value;
+      const button = document.getElementById('save-rating-btn');
+      button.disabled = true;
+      try {
+        await apiRequest(
+          ratingId ? `${RATINGS_ENDPOINT}?id=${encodeURIComponent(ratingId)}` : RATINGS_ENDPOINT,
+          {
+            method: ratingId ? 'PUT' : 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(collectRatingData())
+          }
+        );
+        closeModal('rating-modal');
+        showMessage(ratingId ? 'Rating updated.' : 'Rating created.', 'success');
+        await loadRatings();
+      } catch (error) {
+        showMessage(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function viewRating(id) {
+      const record = findRating(id);
+      if (!record) return;
+      document.getElementById('details-modal-body').innerHTML = `
+        <div class="detail-grid">
+          <div class="detail-item"><span>Restaurant</span><strong>${escapeHtml(record.restaurantNameSnapshot || '-')}</strong></div>
+          <div class="detail-item"><span>Platform</span><strong>${platformBadge(record.platform)}</strong></div>
+          <div class="detail-item"><span>Month</span><strong>${escapeHtml(record.monthName || '-')}</strong></div>
+          <div class="detail-item"><span>Week</span><strong>${escapeHtml(record.weekName || '-')}</strong></div>
+          <div class="detail-item"><span>Rating</span><strong>${escapeHtml(formatRating(record.rating))}</strong></div>
+          <div class="detail-item"><span>Reviews Count</span><strong>${escapeHtml(record.reviewsCount ?? 0)}</strong></div>
+          <div class="detail-item"><span>Rating Date</span><strong>${escapeHtml(record.ratingDate || '-')}</strong></div>
+          <div class="detail-item"><span>Updated By</span><strong>${escapeHtml(record.updatedBy || record.createdBy || '-')}</strong></div>
+          <div class="detail-item"><span>Created At</span><strong>${escapeHtml(record.createdAt ? new Date(record.createdAt).toLocaleString() : '-')}</strong></div>
+          <div class="detail-item"><span>Updated At</span><strong>${escapeHtml(record.updatedAt ? new Date(record.updatedAt).toLocaleString() : '-')}</strong></div>
+          <div class="detail-item full"><span>Notes</span><strong>${escapeHtml(record.notes || '-')}</strong></div>
+        </div>
+      `;
+      openModal('details-modal');
+    }
+
+    function editRating(id) {
+      if (!restaurantsAvailable) return;
+      const record = findRating(id);
+      if (!record) return;
+      resetRatingForm();
+      document.getElementById('rating-id').value = record.ratingId;
+      document.getElementById('restaurant-id').value = record.restaurantId;
+      document.getElementById('platform').value = record.platform || '';
+      document.getElementById('month-name').value = record.monthName || '';
+      document.getElementById('week-name').value = record.weekName || '';
+      document.getElementById('rating').value = record.rating ?? '';
+      document.getElementById('reviews-count').value = record.reviewsCount ?? 0;
+      document.getElementById('rating-date').value = record.ratingDate || '';
+      document.getElementById('notes').value = record.notes || '';
+      document.getElementById('rating-modal-title').textContent = 'Edit Rating';
+      document.getElementById('save-rating-btn').textContent = 'Update Rating';
+      openModal('rating-modal');
+    }
+
+    async function archiveRating(id) {
+      const record = findRating(id);
+      if (!record || !window.confirm(`Archive the ${record.platform} rating for ${record.restaurantNameSnapshot}?`)) return;
+      try {
+        await apiRequest(`${RATINGS_ENDPOINT}?id=${encodeURIComponent(id)}`, {method: 'DELETE'});
+        showMessage('Rating archived.', 'success');
+        await loadRatings();
+      } catch (error) {
+        showMessage(error.message);
+      }
+    }
+
+    document.getElementById('current-user').textContent = localStorage.getItem('cc_user') || 'Team Member';
+    document.getElementById('current-role').textContent = localStorage.getItem('cc_role') || 'operator';
+    populateStaticSelects();
+    resetRatingForm();
+    document.getElementById('logout-btn').addEventListener('click', () => logout(true));
+    document.getElementById('add-rating-btn').addEventListener('click', openCreateRating);
+    document.getElementById('rating-form').addEventListener('submit', saveRating);
+    ['restaurant-filter','platform-filter','month-filter','week-filter'].forEach((id) => {
+      document.getElementById(id).addEventListener('change', renderRatings);
+    });
+    document.getElementById('record-search').addEventListener('input', renderRatings);
+
+    document.addEventListener('click', (event) => {
+      const closeButton = event.target.closest('[data-close-modal]');
+      const viewButton = event.target.closest('[data-view-id]');
+      const editButton = event.target.closest('[data-edit-id]');
+      const archiveButton = event.target.closest('[data-archive-id]');
+      if (closeButton) closeModal(closeButton.dataset.closeModal);
+      if (viewButton) viewRating(viewButton.dataset.viewId);
+      if (editButton) editRating(editButton.dataset.editId);
+      if (archiveButton) archiveRating(archiveButton.dataset.archiveId);
+    });
+    document.querySelectorAll('.modal').forEach((modal) => {
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) closeModal(modal.id);
+      });
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      const open = document.querySelector('.modal.open');
+      if (open) closeModal(open.id);
+    });
+
+    Promise.allSettled([loadRestaurants(), loadRatings()]);
+  </script>
+  <script src="idle-logout.js"></script>
+</body>
+</html>
