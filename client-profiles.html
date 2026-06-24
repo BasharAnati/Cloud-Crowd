@@ -150,6 +150,7 @@
     .profile-table th,.profile-table td{padding:11px 12px;border-bottom:1px solid #e8f4f6;text-align:left;vertical-align:top;font-size:12px}
     .profile-table th{color:var(--deep);background:rgba(167,235,242,.16);font-size:10px;font-weight:950;text-transform:uppercase;white-space:nowrap}
     .profile-table tbody tr:last-child td{border-bottom:0}
+    .rating-value{display:inline-flex;align-items:center;min-height:28px;padding:5px 10px;border-radius:999px;color:var(--navy);background:#effbfc;border:1px solid #d3eef3;font-size:12px;font-weight:950;white-space:nowrap}
     .status-assigned,.status-trained{background:#e4fbf6;color:#08755c}
     .status-unassigned{background:#f6f0d7;color:#7a5a05}
     .status-not-trained{background:#ffe8e8;color:#9b1c1c}
@@ -354,6 +355,7 @@
   <script>
     const RESTAURANTS_ENDPOINT = '/.netlify/functions/restaurants';
     const TRAINING_ENDPOINT = '/.netlify/functions/training';
+    const RESTAURANT_RATINGS_ENDPOINT = './.netlify/functions/restaurant-ratings';
     const WEEKLY_QUALITY_STORAGE_KEY = 'cc_weekly_quality_records_v1';
     const QUALITY_SCORE_FIELDS = [
       'greetings',
@@ -515,6 +517,27 @@
       if (!Number.isFinite(score)) return '-';
       const rounded = Math.round(score * 10) / 10;
       return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)}${suffix}`;
+    }
+
+    function formatRating(value) {
+      const rating = Number(value);
+      return Number.isFinite(rating) ? rating.toFixed(2) : '-';
+    }
+
+    function ratingSortTime(record) {
+      return Date.parse(`${record.ratingDate || ''}T00:00:00`) ||
+        Date.parse(record.createdAt || record.updatedAt || '') ||
+        0;
+    }
+
+    function latestRatingByPlatform(ratingRecords, platform) {
+      return ratingRecords
+        .filter((record) => record.platform === platform)
+        .sort((a, b) => ratingSortTime(b) - ratingSortTime(a))[0] || null;
+    }
+
+    function ratingValue(value) {
+      return `<span class="rating-value">${escapeHtml(formatRating(value))}</span>`;
     }
 
     function qualitySortTime(record) {
@@ -725,6 +748,13 @@
       return Array.isArray(data.training) ? data.training : [];
     }
 
+    async function getRestaurantRatings(restaurantId) {
+      const data = await apiRequest(
+        `${RESTAURANT_RATINGS_ENDPOINT}?restaurantId=${encodeURIComponent(restaurantId)}`
+      );
+      return Array.isArray(data.ratings) ? data.ratings : [];
+    }
+
     function renderTrainingSection(trainingRecords, trainingError) {
       if (trainingError) {
         return `<div class="empty-state">Training records could not be loaded. ${escapeHtml(trainingError)}</div>`;
@@ -888,26 +918,78 @@
       `;
     }
 
+    function renderDeliveryRatingsSection(ratingRecords, ratingError) {
+      if (ratingError) {
+        return `<div class="empty-state">Delivery platform ratings could not be loaded. ${escapeHtml(ratingError)}</div>`;
+      }
+      if (!ratingRecords.length) {
+        return '<div class="empty-state">No delivery platform ratings yet.</div>';
+      }
+
+      const latestTalabat = latestRatingByPlatform(ratingRecords, 'Talabat');
+      const latestCareem = latestRatingByPlatform(ratingRecords, 'Careem');
+      const latestAvailable = [latestTalabat, latestCareem].filter(Boolean);
+      const averageLatest = latestAvailable.length
+        ? latestAvailable.reduce((sum, record) => sum + Number(record.rating || 0), 0) / latestAvailable.length
+        : null;
+      const lastUpdate = [...ratingRecords].sort((a, b) => ratingSortTime(b) - ratingSortTime(a))[0];
+      const latestRows = [...ratingRecords]
+        .sort((a, b) => ratingSortTime(b) - ratingSortTime(a))
+        .slice(0, 5)
+        .map((record) => `
+          <tr>
+            <td>${escapeHtml(record.platform || '-')}</td>
+            <td>${escapeHtml(record.monthName || '-')}</td>
+            <td>${escapeHtml(record.weekName || '-')}</td>
+            <td>${ratingValue(record.rating)}</td>
+            <td>${escapeHtml(record.reviewsCount ?? 0)}</td>
+            <td>${escapeHtml(record.ratingDate || '-')}</td>
+            <td>${escapeHtml(record.notes || '-')}</td>
+          </tr>
+        `).join('');
+
+      return `
+        <div class="metrics-grid">
+          <div class="metric-card"><span>Latest Talabat Rating</span><strong>${ratingValue(latestTalabat?.rating)}</strong>${latestTalabat ? `<small>${escapeHtml(latestTalabat.monthName)} ${escapeHtml(latestTalabat.weekName)}</small>` : ''}</div>
+          <div class="metric-card"><span>Latest Careem Rating</span><strong>${ratingValue(latestCareem?.rating)}</strong>${latestCareem ? `<small>${escapeHtml(latestCareem.monthName)} ${escapeHtml(latestCareem.weekName)}</small>` : ''}</div>
+          <div class="metric-card"><span>Average Latest Rating</span><strong>${ratingValue(averageLatest)}</strong><small>Latest available platforms</small></div>
+          <div class="metric-card"><span>Last Rating Update</span><strong>${escapeHtml(lastUpdate?.ratingDate || '-')}</strong></div>
+        </div>
+        <div class="profile-table-wrap">
+          <table class="profile-table">
+            <thead><tr><th>Platform</th><th>Month</th><th>Week</th><th>Rating</th><th>Reviews Count</th><th>Rating Date</th><th>Notes</th></tr></thead>
+            <tbody>${latestRows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
     async function viewRestaurant(restaurantId) {
       try {
         const restaurant = await getRestaurantProfile(restaurantId);
         let trainingRecords = [];
         let trainingError = '';
+        let ratingRecords = [];
+        let ratingError = '';
         try {
           trainingRecords = await getRestaurantTraining(restaurant.restaurantId);
         } catch (error) {
           trainingError = error.message || 'Training records could not be loaded.';
         }
+        try {
+          ratingRecords = await getRestaurantRatings(restaurant.restaurantId);
+        } catch (error) {
+          ratingError = error.message || 'Delivery platform ratings could not be loaded.';
+        }
         const trainingSection = renderTrainingSection(trainingRecords, trainingError);
+        const deliveryRatingsSection = renderDeliveryRatingsSection(ratingRecords, ratingError);
         const qualityRecords = getClientQualityRecords(restaurant);
         const qualityPerformanceSection = renderQualityPerformanceSection(qualityRecords);
         const weakAreasSection = renderWeakAreasSection(qualityRecords);
         const futureModules = [
           'Complaints',
           'Free Orders',
-          'Call Queue',
-          'Talabat Rating',
-          'Careem Rating'
+          'Call Queue'
         ].map((label) => `
           <div class="future-card">
             <strong>${escapeHtml(label)}</strong>
@@ -945,6 +1027,10 @@
           <section class="detail-section">
             <h4>Quality Weak Areas</h4>
             ${weakAreasSection}
+          </section>
+          <section class="detail-section">
+            <h4>Delivery Platform Ratings</h4>
+            ${deliveryRatingsSection}
           </section>
           <section class="detail-section">
             <h4>Future Modules</h4>
