@@ -62,7 +62,7 @@
   <script src="js/tickets-render.js" defer></script>
   <script src="main.js" defer></script>
 </head>
-<body>
+<body class="free-orders-page">
   <header class="navbar" role="banner">
     <div class="brand" aria-hidden="false">
       <div class="logo" title="Cloud Crowd" onclick="window.location.href='dashboard.html'" style="cursor:pointer;">CC</div>
@@ -74,12 +74,75 @@
     <img src="assets/images/logo.png" alt="Company Logo" class="nav-center-logo" onclick="window.location.href='dashboard.html'">
   </header>
 
-  <div class="container" id="main-content">
-    <div class="ticket-list" id="ticket-list">
-      <div class="buttons-container">
+  <div class="container free-orders-workspace" id="main-content">
+    <section class="free-orders-hero" aria-labelledby="page-title">
+      <div class="free-orders-hero-copy">
+        <h2 id="page-title">Complimentary Orders</h2>
+        <p>Track next-order compensation, customer discounts, and follow-up usage.</p>
+      </div>
+      <div class="buttons-container free-orders-actions">
         <button class="back-btn" onclick="goBack()">Back</button>
         <button class="add-ticket-btn" onclick="openModal('free-orders')">Add New Ticket</button>
       </div>
+    </section>
+
+    <section class="free-orders-stats" aria-label="Complimentary order stats">
+      <div class="free-orders-stat-card">
+        <span class="free-orders-stat-label">Total Orders</span>
+        <strong id="free-orders-stat-total">0</strong>
+      </div>
+      <div class="free-orders-stat-card">
+        <span class="free-orders-stat-label">New</span>
+        <strong id="free-orders-stat-new">0</strong>
+      </div>
+      <div class="free-orders-stat-card">
+        <span class="free-orders-stat-label">Active</span>
+        <strong id="free-orders-stat-active">0</strong>
+      </div>
+      <div class="free-orders-stat-card">
+        <span class="free-orders-stat-label">Taken</span>
+        <strong id="free-orders-stat-taken">0</strong>
+      </div>
+      <div class="free-orders-stat-card">
+        <span class="free-orders-stat-label">Total Discount Value</span>
+        <strong id="free-orders-stat-discount">0</strong>
+      </div>
+    </section>
+
+    <section class="free-orders-filters" aria-label="Complimentary order filters">
+      <div class="free-orders-filter-field">
+        <label for="free-orders-search">Search</label>
+        <input id="free-orders-search" type="search" placeholder="Order, customer, phone, new order">
+      </div>
+      <div class="free-orders-filter-field">
+        <label for="free-orders-status-filter">Status</label>
+        <select id="free-orders-status-filter">
+          <option value="">All statuses</option>
+        </select>
+      </div>
+      <div class="free-orders-filter-field">
+        <label for="free-orders-channel-filter">Channel</label>
+        <select id="free-orders-channel-filter">
+          <option value="">All channels</option>
+        </select>
+      </div>
+      <div class="free-orders-filter-field">
+        <label for="free-orders-decision-filter">Decision Maker</label>
+        <select id="free-orders-decision-filter">
+          <option value="">All decision makers</option>
+        </select>
+      </div>
+      <div class="free-orders-filter-field">
+        <label for="free-orders-new-order-filter">New Order Number</label>
+        <select id="free-orders-new-order-filter">
+          <option value="">All records</option>
+          <option value="yes">Has new order number</option>
+          <option value="no">Missing new order number</option>
+        </select>
+      </div>
+    </section>
+
+    <div class="ticket-list free-orders-board" id="ticket-list">
       <div id="tickets"></div>
     </div>
   </div>

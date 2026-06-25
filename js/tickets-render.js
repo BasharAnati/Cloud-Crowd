@@ -462,6 +462,138 @@ function createCctvEmptyState(kind){
   return empty;
 }
 
+function parseDiscountAmount(value){
+  const numeric = String(value || '').replace(/[^0-9.-]/g, '');
+  const amount = Number(numeric);
+  return Number.isFinite(amount) ? amount : 0;
+}
+
+function formatDiscountValue(value){
+  const amount = parseDiscountAmount(value);
+  if (!amount) return value ? escapeHtml(value) : 'Not specified';
+  return amount.toLocaleString('en-US', { maximumFractionDigits: 2 });
+}
+
+function getFreeOrdersFilterState(){
+  const search = document.getElementById('free-orders-search');
+  const status = document.getElementById('free-orders-status-filter');
+  const channel = document.getElementById('free-orders-channel-filter');
+  const decision = document.getElementById('free-orders-decision-filter');
+  const newOrder = document.getElementById('free-orders-new-order-filter');
+
+  return {
+    query: normalizeFilterText(search?.value),
+    status: status?.value || '',
+    channel: channel?.value || '',
+    decisionMaker: decision?.value || '',
+    newOrderNumber: newOrder?.value || ''
+  };
+}
+
+function bindFreeOrdersFilters(){
+  if (window.__freeOrdersFiltersBound) return;
+  const controls = [
+    document.getElementById('free-orders-search'),
+    document.getElementById('free-orders-status-filter'),
+    document.getElementById('free-orders-channel-filter'),
+    document.getElementById('free-orders-decision-filter'),
+    document.getElementById('free-orders-new-order-filter')
+  ].filter(Boolean);
+
+  controls.forEach(control => {
+    const eventName = control.tagName === 'INPUT' ? 'input' : 'change';
+    control.addEventListener(eventName, () => renderTickets());
+  });
+  window.__freeOrdersFiltersBound = true;
+}
+
+function updateFreeOrdersStatsAndFilters(sectionTickets){
+  const setText = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(value);
+  };
+
+  const totalDiscount = sectionTickets.reduce((sum, ticket) => {
+    return sum + parseDiscountAmount(ticket.discountAmount);
+  }, 0);
+
+  setText('free-orders-stat-total', sectionTickets.length);
+  setText('free-orders-stat-new', sectionTickets.filter(t => t.status === 'New').length);
+  setText('free-orders-stat-active', sectionTickets.filter(t => t.status === 'Active').length);
+  setText('free-orders-stat-taken', sectionTickets.filter(t => t.status === 'Taken').length);
+  setText('free-orders-stat-discount', totalDiscount.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+
+  updateSelectOptions(document.getElementById('free-orders-status-filter'), STATUS_COLUMNS['free-orders'] || [], 'All statuses');
+  updateSelectOptions(document.getElementById('free-orders-channel-filter'), uniqueTicketValues(sectionTickets, 'channel'), 'All channels');
+  updateSelectOptions(document.getElementById('free-orders-decision-filter'), uniqueTicketValues(sectionTickets, 'decisionMaker'), 'All decision makers');
+  bindFreeOrdersFilters();
+}
+
+function freeOrderTicketMatchesFilters(ticket, filters){
+  if (filters.status && ticket.status !== filters.status) return false;
+  if (filters.channel && ticket.channel !== filters.channel) return false;
+  if (filters.decisionMaker && ticket.decisionMaker !== filters.decisionMaker) return false;
+  if (filters.newOrderNumber === 'yes' && !String(ticket.newOrderNumber || '').trim()) return false;
+  if (filters.newOrderNumber === 'no' && String(ticket.newOrderNumber || '').trim()) return false;
+
+  if (!filters.query) return true;
+  const haystack = [
+    ticket.orderNumber,
+    ticket.caseNumber,
+    ticket.customerName,
+    ticket.phone,
+    ticket.newOrderNumber
+  ].map(normalizeFilterText).join(' ');
+
+  return haystack.includes(filters.query);
+}
+
+function getFreeOrderCardContent(ticket){
+  const status = ticket.status || 'Uncategorized';
+  const dateText = formatTicketDate(ticket);
+  const reason = String(ticket.reasonForDiscount || '').trim();
+  const detail = (label, value) => value
+    ? `<span><strong>${label}</strong>${escapeHtml(value)}</span>`
+    : '';
+
+  return `
+    <div class="free-orders-ticket-top">
+      <span class="free-orders-status-pill ${bandClassForStatus(status)}">${displayStatusName(status)}</span>
+      ${dateText ? `<span class="free-orders-ticket-date">${escapeHtml(dateText)}</span>` : ''}
+    </div>
+    <div class="free-orders-ticket-order">${escapeHtml(getCaseDisplay(ticket))}</div>
+    <div class="free-orders-ticket-customer">${escapeHtml(ticket.customerName || 'Customer not specified')}</div>
+    ${ticket.phone ? `<div class="free-orders-ticket-phone">${escapeHtml(ticket.phone)}</div>` : ''}
+    <div class="free-orders-ticket-discount">
+      <span>Discount Amount</span>
+      <strong>${formatDiscountValue(ticket.discountAmount)}</strong>
+    </div>
+    ${reason ? `<p class="free-orders-ticket-reason">${escapeHtml(reason)}</p>` : ''}
+    <div class="free-orders-ticket-grid">
+      ${detail('Decision Maker', ticket.decisionMaker)}
+      ${detail('New Order Number', ticket.newOrderNumber)}
+      ${detail('Channel', ticket.channel)}
+    </div>
+  `;
+}
+
+function createFreeOrdersEmptyState(kind){
+  const empty = document.createElement('div');
+  empty.className = 'free-orders-empty-state';
+  if (kind === 'filter') {
+    empty.innerHTML = `
+      <strong>No matching complimentary orders</strong>
+      <span>Adjust the search or filters to bring orders back into view.</span>
+    `;
+  } else {
+    empty.innerHTML = `
+      <strong>No complimentary orders yet.</strong>
+      <span>New next-order compensation records will appear here as soon as they are created or synced.</span>
+    `;
+  }
+  return empty;
+}
+
 function renderTickets(){
   const wrap = document.getElementById('tickets');
   if (!wrap) return;
@@ -470,17 +602,21 @@ function renderTickets(){
   const isCe = window.currentSection === 'ce';
   const isComplaints = window.currentSection === 'complaints';
   const isCctv = window.currentSection === 'cctv';
+  const isFreeOrders = window.currentSection === 'free-orders';
   const sectionTickets = tickets[window.currentSection] || [];
   if (isCe) updateCeStatsAndFilters(sectionTickets);
   if (isComplaints) updateComplaintsStatsAndFilters(sectionTickets);
   if (isCctv) updateCctvStatsAndFilters(sectionTickets);
+  if (isFreeOrders) updateFreeOrdersStatsAndFilters(sectionTickets);
   const visibleTickets = isCe
     ? sectionTickets.filter(ticket => ceTicketMatchesFilters(ticket, getCeFilterState()))
     : isComplaints
       ? sectionTickets.filter(ticket => complaintTicketMatchesFilters(ticket, getComplaintsFilterState()))
       : isCctv
         ? sectionTickets.filter(ticket => cctvTicketMatchesFilters(ticket, getCctvFilterState()))
-        : sectionTickets;
+        : isFreeOrders
+          ? sectionTickets.filter(ticket => freeOrderTicketMatchesFilters(ticket, getFreeOrdersFilterState()))
+          : sectionTickets;
 
   if (isCe && !sectionTickets.length) {
     wrap.appendChild(createCeEmptyState('board'));
@@ -494,6 +630,12 @@ function renderTickets(){
     wrap.appendChild(createCctvEmptyState('board'));
   } else if (isCctv && !visibleTickets.length) {
     wrap.appendChild(createCctvEmptyState('filter'));
+  } else if (isFreeOrders && !sectionTickets.length) {
+    wrap.appendChild(createFreeOrdersEmptyState('board'));
+    return;
+  } else if (isFreeOrders && !visibleTickets.length) {
+    wrap.appendChild(createFreeOrdersEmptyState('filter'));
+    return;
   }
 
   // group by status (using display name)
@@ -516,7 +658,7 @@ function renderTickets(){
 
   columns.forEach(status=>{
     const col = document.createElement('section');
-    col.className = `group ${isCe ? 'ce-column' : ''} ${isComplaints ? 'complaints-column' : ''} ${isCctv ? 'cctv-column' : ''}`;
+    col.className = `group ${isCe ? 'ce-column' : ''} ${isComplaints ? 'complaints-column' : ''} ${isCctv ? 'cctv-column' : ''} ${isFreeOrders ? 'free-orders-column' : ''}`;
 
     const count = (grouped[status]||[]).length;
 
@@ -524,8 +666,8 @@ function renderTickets(){
     header.className = 'col-header';
     header.innerHTML = `
       <div class="col-header-inner">
-        <div class="col-title">${escapeHtml(status)}${(isCe || isComplaints || isCctv) ? '' : ` (${count})`}</div>
-        ${(isCe || isComplaints || isCctv) ? `<span class="col-count">${count}</span>` : ''}
+        <div class="col-title">${escapeHtml(status)}${(isCe || isComplaints || isCctv || isFreeOrders) ? '' : ` (${count})`}</div>
+        ${(isCe || isComplaints || isCctv || isFreeOrders) ? `<span class="col-count">${count}</span>` : ''}
       </div>
     `;
     col.appendChild(header);
@@ -539,7 +681,7 @@ function renderTickets(){
     if (!statusTickets.length) {
       const empty = document.createElement('div');
       empty.className = 'kanban-empty-state';
-      empty.textContent = (isCe || isComplaints || isCctv) ? 'No cases in this status' : 'No tickets in this status';
+      empty.textContent = isFreeOrders ? 'No orders in this status' : (isCe || isComplaints || isCctv) ? 'No cases in this status' : 'No tickets in this status';
       col.appendChild(empty);
     }
 
@@ -551,7 +693,9 @@ function renderTickets(){
           ? 'ticket-card complaints-ticket-card'
           : isCctv
             ? 'ticket-card cctv-ticket-card'
-            : 'ticket-card';
+            : isFreeOrders
+              ? 'ticket-card free-orders-ticket-card'
+              : 'ticket-card';
 
       let timeStr = '';
       const baseDT = ticket.dateTime || ticket.creationDate || ticket.orderDate;
@@ -593,7 +737,9 @@ function renderTickets(){
           ? getComplaintCardContent(ticket)
           : isCctv
             ? getCctvCardContent(ticket)
-            : head + main;
+            : isFreeOrders
+              ? getFreeOrderCardContent(ticket)
+              : head + main;
       card.addEventListener('click', ()=> openTicketDrawerByCase(getCaseDisplay(ticket)));
       col.appendChild(card);
     });
