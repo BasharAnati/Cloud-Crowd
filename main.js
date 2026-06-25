@@ -689,7 +689,7 @@ function buildDrawerReadonly(ticket){
       thumbs.push(`
         <div style="display:flex; flex-direction:column; align-items:flex-start; gap:6px;">
           <div style="font-weight:600">${toLabel(key)}</div>
-          <img src="${src}" alt="${toLabel(key)}" class="ticket-thumb">
+          <img src="${src}" alt="${toLabel(key)}" class="ticket-thumb" data-media-src="${src}" data-media-type="image">
           <div class="muted" style="font-size:12px">انقر لتكبير الصورة</div>
         </div>
       `);
@@ -1454,11 +1454,9 @@ async function hydrateFromDB(section) {
 
 // Overlay لعرض الصورة كبيرة
 function showImageOverlay(src) {
-  const ov = document.createElement('div');
-  ov.className = 'img-ov';
-  ov.innerHTML = `<img src="${src}" alt="Attachment">`;
-  ov.addEventListener('click', () => ov.remove());
-  document.body.appendChild(ov);
+  if (window.CloudCrowdMediaViewer) {
+    window.CloudCrowdMediaViewer.open({ src, type: 'image', alt: 'Attachment' });
+  }
 }
 // نربط الحدث عالميًا لأي thumbnail
 document.addEventListener('click', (e) => {
@@ -1482,21 +1480,6 @@ document.addEventListener('click', (e) => {
   transition: transform .08s ease;
 }
 .ticket-thumb:active { transform: scale(0.98); }
-.img-ov{
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.82);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1003;
-}
-.img-ov img{
-  max-width: 92vw;
-  max-height: 92vh;
-  border-radius: 12px;
-  box-shadow: 0 15px 40px rgba(0,0,0,.4);
-}
   `;
   document.head.appendChild(style);
 })();

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
   <title>Cloud Crowd - Weekly Quality Sheet</title>
+  <link rel="stylesheet" href="media-viewer.css">
   <style>
     :root {
       --aqua: #A7EBF2;
@@ -1528,7 +1529,9 @@
           `).join('')}</ul>`
         : '<div class="detail-item full"><strong>No improvement areas detected.</strong></div>';
       const recordingDetails = record.recording?.kind === 'legacy-link' && record.recording.url
-        ? `<a href="${escapeHtml(record.recording.url)}" target="_blank" rel="noopener noreferrer">Open legacy recording link</a>`
+        ? (window.CloudCrowdMediaViewer?.mediaTypeFromSource?.(record.recording.url, '')
+            ? `<button class="details-btn cc-media-viewer-trigger" type="button" data-media-src="${escapeHtml(record.recording.url)}">Open recording media</button>`
+            : `<a href="${escapeHtml(record.recording.url)}" target="_blank" rel="noopener noreferrer">Open legacy recording link</a>`)
         : escapeHtml(recordingSummary(record.recording));
 
       document.getElementById('details-modal-body').innerHTML = `
@@ -1646,6 +1649,7 @@
       if (event.key === 'Escape') closeDetails();
     });
   </script>
+  <script src="js/media-viewer.js"></script>
   <script src="idle-logout.js"></script>
 </body>
 </html>

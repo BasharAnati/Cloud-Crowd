@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
   <title>Client Profiles - Cloud Crowd</title>
+  <link rel="stylesheet" href="media-viewer.css">
   <style>
     :root{
       --ice:#A7EBF2;
@@ -457,7 +458,7 @@
 
     function logoMarkup(restaurant, className = 'client-logo') {
       if (restaurant.logoUrl) {
-        return `<div class="${className}"><img src="${escapeHtml(restaurant.logoUrl)}" alt="${escapeHtml(restaurant.brandName)} logo"></div>`;
+        return `<div class="${className}"><img src="${escapeHtml(restaurant.logoUrl)}" alt="${escapeHtml(restaurant.brandName)} logo" data-media-src="${escapeHtml(restaurant.logoUrl)}" data-media-type="image" class="cc-media-viewer-trigger"></div>`;
       }
       return `<div class="${className} client-logo-placeholder" aria-label="${escapeHtml(restaurant.brandName)} placeholder">${escapeHtml(initials(restaurant.brandName))}</div>`;
     }
@@ -656,7 +657,7 @@
       const logoUrl = document.getElementById('logo-url').value;
       const preview = document.getElementById('logo-preview');
       preview.innerHTML = logoUrl
-        ? `<img src="${escapeHtml(logoUrl)}" alt="Logo preview">`
+        ? `<img src="${escapeHtml(logoUrl)}" alt="Logo preview" data-media-src="${escapeHtml(logoUrl)}" data-media-type="image" class="cc-media-viewer-trigger">`
         : escapeHtml(initials(brandName));
     }
 
@@ -1138,6 +1139,7 @@
 
     loadRestaurants();
   </script>
+  <script src="js/media-viewer.js"></script>
   <script src="idle-logout.js"></script>
 </body>
 </html>

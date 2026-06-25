@@ -6,6 +6,7 @@
   <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
   <title>Cloud Crowd - Free Order Share</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="media-viewer.css">
   <style>
     :root {
       --ice: #A7EBF2;
@@ -958,10 +959,15 @@
     }
 
     function detailItem(label, value, full = false) {
+      const text = valueOrDash(value);
+      const mediaType = window.CloudCrowdMediaViewer?.mediaTypeFromSource?.(text, '') || '';
+      const renderedValue = mediaType
+        ? `<button class="small-btn cc-media-viewer-trigger" type="button" data-media-src="${escapeHtml(text)}" data-media-type="${escapeHtml(mediaType)}">Open ${mediaType}</button>`
+        : escapeHtml(text);
       return `
         <div class="detail-item ${full ? 'full' : ''}">
           <span>${escapeHtml(label)}</span>
-          <strong>${escapeHtml(valueOrDash(value))}</strong>
+          <strong>${renderedValue}</strong>
         </div>
       `;
     }
@@ -1036,6 +1042,7 @@
     renderBoard();
     loadShareItems();
   </script>
+  <script src="js/media-viewer.js"></script>
   <script src="idle-logout.js"></script>
 </body>
 </html>
