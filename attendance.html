@@ -245,6 +245,44 @@
       font-weight:850;
     }
     .employee-warning.show{display:block}
+    .migration-banner{
+      display:none;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom:18px;
+      padding:16px;
+      border:1px solid rgba(84,172,191,.42);
+      border-radius:14px;
+      background:linear-gradient(135deg,rgba(167,235,242,.28),rgba(255,255,255,.92));
+      color:var(--deep);
+      box-shadow:0 14px 34px rgba(2,56,89,.08);
+    }
+    .migration-banner.show{display:flex}
+    .migration-banner strong{
+      display:block;
+      margin-bottom:2px;
+      color:var(--navy);
+      font-size:14px;
+      font-weight:950;
+    }
+    .migration-banner p{
+      margin:0;
+      color:var(--muted);
+      font-size:13px;
+      font-weight:750;
+    }
+    .migration-banner .primary-btn{
+      min-height:40px;
+      padding:9px 14px;
+      font-size:13px;
+    }
+    .migration-status{
+      margin-top:8px;
+      color:var(--steel);
+      font-size:12px;
+      font-weight:850;
+    }
     .records-card{
       margin-top:24px;
     }
@@ -447,6 +485,10 @@
       .attendance-form,
       .shift-times,
       .table-tools{grid-template-columns:1fr}
+      .migration-banner{
+        flex-direction:column;
+        align-items:stretch;
+      }
       .hero{padding:26px 22px}
       .card-header,
       .attendance-form,
@@ -528,6 +570,15 @@
       </section>
 
       <div class="employee-warning" id="employee-load-warning" role="alert"></div>
+      <div class="employee-warning" id="attendance-sync-warning" role="alert"></div>
+      <div class="migration-banner" id="attendance-migration-banner" role="status">
+        <div>
+          <strong>Local attendance records found. Import to database?</strong>
+          <p id="attendance-migration-copy">Existing browser records will be preserved after import.</p>
+          <div class="migration-status" id="attendance-migration-status"></div>
+        </div>
+        <button class="primary-btn" type="button" id="attendance-import-btn">Import Records</button>
+      </div>
 
       <section class="content-card" aria-labelledby="record-form-title">
         <div class="card-header">
@@ -661,8 +712,12 @@
 
   <script>
     const ATTENDANCE_STORAGE_KEY = 'cc_attendance_records_v1';
+    const ATTENDANCE_MIGRATION_FLAG = 'cc_attendance_migration_v1_done';
+    const ATTENDANCE_ENDPOINT = '/.netlify/functions/attendance';
     const EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
     let activeEmployees = [];
+    let attendanceRecords = [];
+    let attendanceSource = 'local';
 
     function hydrateAttendanceHeader() {
       const userName = document.getElementById('attendance-user-name');
@@ -696,12 +751,40 @@
       }
     }
 
-    function saveAttendanceRecords(records) {
-      localStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(records));
+    function getAuthHeaders(extraHeaders = {}) {
+      return {
+        ...extraHeaders,
+        'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+      };
     }
 
     function getRecordEmployeeName(record) {
       return String(record?.employeeNameSnapshot || record?.agent || '').trim();
+    }
+
+    function normalizeRecordForDisplay(record) {
+      const extraTime = record?.extraTime === true
+        ? 'Yes'
+        : record?.extraTime === false
+          ? 'No'
+          : (record?.extraTime || 'No');
+      return {
+        ...record,
+        id: record?.id || record?.legacyId || record?.attendanceId || '',
+        date: record?.date || '',
+        employeeId: String(record?.employeeId || '').trim(),
+        employeeNameSnapshot: getRecordEmployeeName(record),
+        loginStatus: record?.loginStatus || 'On Time',
+        logoutStatus: record?.logoutStatus || 'On Time',
+        extraTime,
+        extraDuration: extraTime === 'Yes' ? String(record?.extraDuration || '').trim() : '',
+        note: record?.note || '',
+        customNote: record?.customNote || '',
+        fromTime: record?.fromTime || '',
+        toTime: record?.toTime || '',
+        filledBy: record?.filledBy || '',
+        createdAt: record?.createdAt || record?.date || ''
+      };
     }
 
     function setEmployeeSelectState(message, disabled) {
@@ -718,11 +801,14 @@
       if (saveButton) saveButton.disabled = disabled;
     }
 
-    function showEmployeeLoadWarning(message) {
+    function showEmployeeLoadWarning(message, isError = false) {
       const warning = document.getElementById('employee-load-warning');
       if (!warning) return;
       warning.textContent = message;
       warning.classList.add('show');
+      warning.style.borderColor = isError ? '#f87171' : '#fbbf24';
+      warning.style.color = isError ? '#991b1b' : '#92400e';
+      warning.style.background = isError ? '#fef2f2' : '#fffbeb';
     }
 
     function clearEmployeeLoadWarning() {
@@ -732,16 +818,85 @@
       warning.classList.remove('show');
     }
 
+    function showAttendanceSyncWarning(message) {
+      const warning = document.getElementById('attendance-sync-warning');
+      if (!warning) return;
+      warning.textContent = message;
+      warning.classList.add('show');
+      warning.style.borderColor = '#f87171';
+      warning.style.color = '#991b1b';
+      warning.style.background = '#fef2f2';
+    }
+
+    function clearAttendanceSyncWarning() {
+      const warning = document.getElementById('attendance-sync-warning');
+      if (!warning) return;
+      warning.textContent = '';
+      warning.classList.remove('show');
+    }
+
+    function updateMigrationBanner() {
+      const banner = document.getElementById('attendance-migration-banner');
+      const copy = document.getElementById('attendance-migration-copy');
+      const importButton = document.getElementById('attendance-import-btn');
+      const localRecords = getAttendanceRecords();
+      const isDone = localStorage.getItem(ATTENDANCE_MIGRATION_FLAG) === 'true';
+      if (!banner || !copy || !importButton) return;
+
+      const shouldShow = localRecords.length > 0 && !isDone;
+      banner.classList.toggle('show', shouldShow);
+      copy.textContent = `${localRecords.length} local ${localRecords.length === 1 ? 'record' : 'records'} found. Existing browser records will be preserved after import.`;
+      importButton.disabled = !shouldShow || attendanceSource !== 'api';
+      importButton.title = attendanceSource === 'api'
+        ? ''
+        : 'Database must be reachable before importing local records.';
+    }
+
+    async function loadAttendanceRecords() {
+      const localRecords = getAttendanceRecords().map(normalizeRecordForDisplay);
+      attendanceRecords = localRecords;
+      attendanceSource = 'local';
+      renderAttendanceRecords();
+
+      try {
+        const response = await fetch(ATTENDANCE_ENDPOINT, {
+          cache: 'no-store',
+          headers: getAuthHeaders()
+        });
+
+        if (response.status === 401) {
+          logout();
+          return;
+        }
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.ok === false) {
+          throw new Error(data.error || `Attendance request failed (${response.status})`);
+        }
+
+        attendanceRecords = (Array.isArray(data.attendance) ? data.attendance : [])
+          .map(normalizeRecordForDisplay);
+        attendanceSource = 'api';
+        clearAttendanceSyncWarning();
+        renderAttendanceRecords();
+      } catch (error) {
+        console.warn('Attendance API could not be loaded; using local records.', error);
+        attendanceRecords = localRecords;
+        attendanceSource = 'local';
+        showAttendanceSyncWarning('Attendance database could not be loaded. Showing local browser records only.');
+        renderAttendanceRecords();
+      } finally {
+        updateMigrationBanner();
+      }
+    }
+
     async function loadActiveEmployees() {
       setEmployeeSelectState('Loading employees...', true);
-      clearEmployeeLoadWarning();
 
       try {
         const response = await fetch(EMPLOYEES_ENDPOINT, {
           cache: 'no-store',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
-          }
+          headers: getAuthHeaders()
         });
 
         if (response.status === 401) {
@@ -823,7 +978,7 @@
     function getFilteredAttendanceRecords() {
       const search = (document.getElementById('agent-search')?.value || '').trim().toLowerCase();
       const date = document.getElementById('date-filter')?.value || '';
-      return getAttendanceRecords()
+      return attendanceRecords
         .filter((record) => {
           const searchableEmployee = [
             getRecordEmployeeName(record),
@@ -887,6 +1042,70 @@
       };
     }
 
+    async function saveAttendanceRecord(record) {
+      const payload = { ...record };
+      delete payload.id;
+      delete payload.legacyId;
+
+      const response = await fetch(ATTENDANCE_ENDPOINT, {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(payload)
+      });
+
+      if (response.status === 401) {
+        logout();
+        return null;
+      }
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || `Attendance save failed (${response.status})`);
+      }
+
+      return normalizeRecordForDisplay(data.attendance || record);
+    }
+
+    async function importLocalAttendanceRecords() {
+      const button = document.getElementById('attendance-import-btn');
+      const status = document.getElementById('attendance-migration-status');
+      const localRecords = getAttendanceRecords();
+      if (!localRecords.length) return;
+
+      if (button) button.disabled = true;
+      if (status) status.textContent = 'Importing local records...';
+
+      try {
+        const response = await fetch(`${ATTENDANCE_ENDPOINT}?action=bulk-import`, {
+          method: 'POST',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ records: localRecords })
+        });
+
+        if (response.status === 401) {
+          logout();
+          return;
+        }
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.ok === false) {
+          throw new Error(data.error || `Import failed (${response.status})`);
+        }
+
+        localStorage.setItem(ATTENDANCE_MIGRATION_FLAG, 'true');
+        if (status) {
+          status.textContent = `Import complete. Inserted ${data.inserted || 0}, skipped ${data.skippedDuplicates || 0}, failed ${data.failed || 0}.`;
+        }
+        await loadAttendanceRecords();
+      } catch (error) {
+        console.warn('Local attendance import failed.', error);
+        if (status) status.textContent = error.message || 'Import failed.';
+        if (button) button.disabled = false;
+      } finally {
+        updateMigrationBanner();
+      }
+    }
+
     function logout() {
       localStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
@@ -898,7 +1117,7 @@
     hydrateAttendanceHeader();
     setTodayDate();
     toggleExtraDuration();
-    renderAttendanceRecords();
+    loadAttendanceRecords();
     loadActiveEmployees();
 
     document.getElementById('extra-time')?.addEventListener('change', toggleExtraDuration);
@@ -906,7 +1125,8 @@
       document.getElementById('record-form-title')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       document.getElementById('agent')?.focus({ preventScroll: true });
     });
-    document.getElementById('attendance-form')?.addEventListener('submit', (event) => {
+    document.getElementById('attendance-import-btn')?.addEventListener('click', importLocalAttendanceRecords);
+    document.getElementById('attendance-form')?.addEventListener('submit', async (event) => {
       event.preventDefault();
       const form = event.currentTarget;
       const employeeId = String(new FormData(form).get('employeeId') || '');
@@ -915,15 +1135,28 @@
       );
       if (!form.reportValidity() || !hasLoadedEmployee) return;
 
-      const records = getAttendanceRecords();
-      records.push(buildAttendanceRecord(form));
-      saveAttendanceRecords(records);
+      const saveButton = document.getElementById('save-record-btn');
+      if (saveButton) saveButton.disabled = true;
 
-      form.reset();
-      setTodayDate();
-      toggleExtraDuration();
-      renderAttendanceRecords();
-      document.getElementById('records-title')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      try {
+        const savedRecord = await saveAttendanceRecord(buildAttendanceRecord(form));
+        if (savedRecord) {
+          attendanceRecords.unshift(savedRecord);
+          attendanceSource = 'api';
+          clearAttendanceSyncWarning();
+          form.reset();
+          setTodayDate();
+          toggleExtraDuration();
+          renderAttendanceRecords();
+          updateMigrationBanner();
+          document.getElementById('records-title')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } catch (error) {
+        console.warn('Attendance record could not be saved.', error);
+        showAttendanceSyncWarning(error.message || 'Attendance record could not be saved to the database.');
+      } finally {
+        if (saveButton) saveButton.disabled = activeEmployees.length === 0;
+      }
     });
     document.getElementById('attendance-form')?.addEventListener('reset', () => {
       setTimeout(() => {

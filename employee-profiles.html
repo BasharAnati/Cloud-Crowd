@@ -429,6 +429,7 @@
     const EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
     const DEDUCTIONS_ENDPOINT = '/.netlify/functions/deductions';
     const TRAINING_ENDPOINT = '/.netlify/functions/training';
+    const ATTENDANCE_ENDPOINT = '/.netlify/functions/attendance';
     const WEEKLY_QUALITY_STORAGE_KEY = 'cc_weekly_quality_records_v1';
     const ATTENDANCE_STORAGE_KEY = 'cc_attendance_records_v1';
     const QUALITY_SCORE_LABELS = {
@@ -778,8 +779,8 @@
       );
     }
 
-    function getAttendanceSummary(employee) {
-      const records = readStoredRecords(ATTENDANCE_STORAGE_KEY, 'Attendance')
+    function getStoredAttendanceRecords(employee) {
+      return readStoredRecords(ATTENDANCE_STORAGE_KEY, 'Attendance')
         .filter((record) => recordMatchesEmployee(
           record,
           employee,
@@ -787,6 +788,13 @@
           'employeeNameSnapshot',
           'agent'
         ))
+        .sort((a, b) => recordTimestamp(b, 'date') - recordTimestamp(a, 'date'));
+    }
+
+    function getAttendanceSummary(employee, attendanceSourceRecords) {
+      const records = (Array.isArray(attendanceSourceRecords)
+        ? attendanceSourceRecords
+        : getStoredAttendanceRecords(employee))
         .sort((a, b) => recordTimestamp(b, 'date') - recordTimestamp(a, 'date'));
       const durationValues = records
         .filter((record) => String(record.extraTime || '').toLowerCase() === 'yes')
@@ -853,11 +861,26 @@
       return Array.isArray(data.training) ? data.training : [];
     }
 
+    async function getEmployeeAttendance(employeeId) {
+      const data = await apiRequest(
+        `${ATTENDANCE_ENDPOINT}?employeeId=${encodeURIComponent(employeeId)}`
+      );
+      return Array.isArray(data.attendance) ? data.attendance : [];
+    }
+
     async function viewEmployee(employeeId) {
       try {
         const employee = await getEmployeeProfile(employeeId);
         const quality = getQualitySummary(employee);
-        const attendance = getAttendanceSummary(employee);
+        let attendanceRecords = [];
+        let attendanceError = '';
+        try {
+          attendanceRecords = await getEmployeeAttendance(employee.employeeId);
+        } catch (error) {
+          attendanceError = error.message || 'Attendance records could not be loaded.';
+          attendanceRecords = getStoredAttendanceRecords(employee);
+        }
+        const attendance = getAttendanceSummary(employee, attendanceRecords);
         let deductionRecords = [];
         let deductionsError = '';
         let trainingRecords = [];
@@ -1022,6 +1045,28 @@
               </div>
             `
             : '<div class="profile-empty">No training records yet.</div>';
+        const attendanceSection = attendance.records.length
+          ? `
+              ${attendanceError ? `<div class="profile-empty">Attendance database could not be loaded. Showing local browser records. ${escapeHtml(attendanceError)}</div>` : ''}
+              <div class="metrics-grid">
+                <div class="metric-card"><span>Total Records</span><strong>${attendance.records.length}</strong></div>
+                <div class="metric-card"><span>On Time Count</span><strong>${attendance.onTime}</strong></div>
+                <div class="metric-card"><span>Left Early Count</span><strong>${attendance.leftEarly}</strong></div>
+                <div class="metric-card"><span>Late Logout Count</span><strong>${attendance.lateLogout}</strong></div>
+                <div class="metric-card"><span>Extra Time Count</span><strong>${attendance.extraTime}</strong></div>
+                <div class="metric-card"><span>Total Extra Time</span><strong>${durationValue}</strong><small>${durationNote}</small></div>
+                <div class="metric-card"><span>Last Attendance</span><strong>${escapeHtml(attendance.lastDate || '-')}</strong></div>
+              </div>
+              <div class="profile-table-wrap">
+                <table class="profile-table">
+                  <thead><tr><th>Date</th><th>Shift Time</th><th>Login Status</th><th>Logout Status</th><th>Extra Time</th><th>Note</th></tr></thead>
+                  <tbody>${attendanceRows}</tbody>
+                </table>
+              </div>
+            `
+          : attendanceError
+            ? `<div class="profile-empty">Attendance database could not be loaded. No local attendance records found. ${escapeHtml(attendanceError)}</div>`
+            : '<div class="profile-empty">No attendance records yet.</div>';
         const futureMetrics = [
           'Call Queue', 'Free Orders'
         ].map((label) => `
@@ -1082,23 +1127,7 @@
               <h4>Attendance Summary</h4>
               <span class="section-source">Attendance</span>
             </div>
-            ${attendance.records.length ? `
-              <div class="metrics-grid">
-                <div class="metric-card"><span>Total Records</span><strong>${attendance.records.length}</strong></div>
-                <div class="metric-card"><span>On Time Count</span><strong>${attendance.onTime}</strong></div>
-                <div class="metric-card"><span>Left Early Count</span><strong>${attendance.leftEarly}</strong></div>
-                <div class="metric-card"><span>Late Logout Count</span><strong>${attendance.lateLogout}</strong></div>
-                <div class="metric-card"><span>Extra Time Count</span><strong>${attendance.extraTime}</strong></div>
-                <div class="metric-card"><span>Total Extra Time</span><strong>${durationValue}</strong><small>${durationNote}</small></div>
-                <div class="metric-card"><span>Last Attendance</span><strong>${escapeHtml(attendance.lastDate || '-')}</strong></div>
-              </div>
-              <div class="profile-table-wrap">
-                <table class="profile-table">
-                  <thead><tr><th>Date</th><th>Shift Time</th><th>Login Status</th><th>Logout Status</th><th>Extra Time</th><th>Note</th></tr></thead>
-                  <tbody>${attendanceRows}</tbody>
-                </table>
-              </div>
-            ` : '<div class="profile-empty">No attendance records yet.</div>'}
+            ${attendanceSection}
           </section>
           <section class="detail-section">
             <div class="profile-section-heading">
