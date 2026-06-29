@@ -729,6 +729,32 @@
 
     .employee-load-warning.show { display: block; }
 
+    .migration-banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+      padding: 16px 18px;
+      border: 1px solid #f6c76f;
+      border-radius: var(--radius-md);
+      background: #fffbeb;
+      color: #854d0e;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .migration-banner.show { display: flex; }
+
+    .migration-banner p { margin: 0; }
+
+    .migration-banner .primary-btn {
+      min-height: 38px;
+      padding: 0 14px;
+      box-shadow: none;
+      white-space: nowrap;
+    }
+
     .empty-state {
       padding: 44px 20px;
       color: var(--muted);
@@ -766,7 +792,8 @@
     @media (max-width: 700px) {
       .topbar,
       .hero,
-      .card-heading {
+      .card-heading,
+      .migration-banner {
         align-items: stretch;
         flex-direction: column;
       }
@@ -912,6 +939,11 @@
         </article>
       </section>
 
+      <section class="migration-banner" id="quality-migration-banner" role="status" aria-live="polite">
+        <p id="quality-migration-message">Local weekly quality records found. Import to database?</p>
+        <button class="primary-btn" id="quality-import-button" type="button">Import</button>
+      </section>
+
       <section class="content-card" aria-labelledby="evaluation-form-title">
         <div class="card-heading">
           <div>
@@ -1000,7 +1032,7 @@
         <div class="card-heading">
           <div>
             <h3 id="records-title">Evaluation Records</h3>
-            <p>Records are stored in this browser and displayed newest first.</p>
+            <p id="records-storage-note">Records load from the database first, with local browser records used only as a fallback.</p>
           </div>
         </div>
         <div class="table-tools">
@@ -1051,6 +1083,8 @@
 
   <script>
     const WEEKLY_QUALITY_STORAGE_KEY = 'cc_weekly_quality_records_v1';
+    const WEEKLY_QUALITY_MIGRATION_DONE_KEY = 'cc_weekly_quality_migration_v1_done';
+    const WEEKLY_QUALITY_API_ENDPOINT = '/.netlify/functions/weekly-quality';
     const WEEKLY_QUALITY_EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
     const WEEKLY_QUALITY_RESTAURANTS_ENDPOINT = '/.netlify/functions/restaurants';
     const SCORE_OPTIONS = [0, 3, 5, 7, 10];
@@ -1080,6 +1114,9 @@
     };
     let qualityRestaurants = [];
     let qualityRestaurantsAvailable = false;
+    let qualityRecords = [];
+    let qualityRecordsSource = 'local';
+    let qualityApiAvailable = false;
 
     function normalizeDateTime(record) {
       if (record.callDateTime) return String(record.callDateTime);
@@ -1119,7 +1156,10 @@
 
       return {
         id: record.id || `weekly-quality-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        qualityId: String(record.qualityId || ''),
+        legacyId: String(record.legacyId || ''),
         createdAt: record.createdAt || new Date().toISOString(),
+        updatedAt: record.updatedAt || '',
         callDateTime: normalizeDateTime(record),
         auditorEmployeeId: String(record.auditorEmployeeId || ''),
         auditorNameSnapshot: String(record.auditorNameSnapshot || ''),
@@ -1217,7 +1257,7 @@
       }
     }
 
-    function getQualityRecords() {
+    function getLocalQualityRecords() {
       try {
         const stored = JSON.parse(localStorage.getItem(WEEKLY_QUALITY_STORAGE_KEY) || '[]');
         return Array.isArray(stored) ? stored.map(normalizeRecord) : [];
@@ -1227,8 +1267,140 @@
       }
     }
 
+    function getQualityRecords() {
+      return qualityRecords;
+    }
+
     function saveQualityRecords(records) {
       localStorage.setItem(WEEKLY_QUALITY_STORAGE_KEY, JSON.stringify(records));
+    }
+
+    function authHeaders() {
+      return {
+        'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+      };
+    }
+
+    async function fetchQualityApi(path = '', options = {}) {
+      const headers = {
+        ...authHeaders(),
+        ...(options.headers || {})
+      };
+      const response = await fetch(`${WEEKLY_QUALITY_API_ENDPOINT}${path}`, {
+        cache: 'no-store',
+        ...options,
+        headers
+      });
+
+      if (response.status === 401) {
+        logout();
+        throw new Error('Session expired.');
+      }
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || `Weekly quality request failed (${response.status})`);
+      }
+      return data;
+    }
+
+    function updateStorageNote() {
+      const note = document.getElementById('records-storage-note');
+      if (!note) return;
+      note.textContent = qualityRecordsSource === 'api'
+        ? 'Records are loaded from the database and displayed newest first.'
+        : 'Database records could not be loaded. Showing local browser records as a fallback.';
+    }
+
+    function updateMigrationBanner(message) {
+      const banner = document.getElementById('quality-migration-banner');
+      const messageEl = document.getElementById('quality-migration-message');
+      const importButton = document.getElementById('quality-import-button');
+      const localRecords = getLocalQualityRecords();
+      const migrationDone = localStorage.getItem(WEEKLY_QUALITY_MIGRATION_DONE_KEY) === 'true';
+      const shouldShow = localRecords.length > 0 && !migrationDone;
+
+      banner.classList.toggle('show', shouldShow);
+      messageEl.textContent = message || 'Local weekly quality records found. Import to database?';
+      importButton.disabled = !shouldShow || !qualityApiAvailable;
+    }
+
+    async function loadQualityRecords() {
+      try {
+        const data = await fetchQualityApi();
+        qualityRecords = Array.isArray(data.records) ? data.records.map(normalizeRecord) : [];
+        qualityRecordsSource = 'api';
+        qualityApiAvailable = true;
+      } catch (error) {
+        console.warn('Weekly quality API could not be loaded.', error);
+        qualityRecords = getLocalQualityRecords();
+        qualityRecordsSource = 'local';
+        qualityApiAvailable = false;
+      }
+
+      updateStorageNote();
+      updateMigrationBanner();
+      renderRecords();
+    }
+
+    function qualityPayload(record) {
+      return {
+        legacyId: record.legacyId || record.id || '',
+        callDateTime: record.callDateTime,
+        auditorEmployeeId: record.auditorEmployeeId,
+        auditorNameSnapshot: record.auditorNameSnapshot,
+        agentEmployeeId: record.agentEmployeeId,
+        agentNameSnapshot: record.agentNameSnapshot,
+        restaurantId: record.restaurantId,
+        restaurantNameSnapshot: record.restaurantNameSnapshot,
+        phoneNumber: record.phoneNumber,
+        notes: record.notes,
+        recording: record.recording,
+        scores: record.scores,
+        totalScore: record.totalScore
+      };
+    }
+
+    async function createQualityRecord(record) {
+      const data = await fetchQualityApi('', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(qualityPayload(record))
+      });
+      return normalizeRecord(data.record || record);
+    }
+
+    async function deleteQualityRecord(id) {
+      const record = getQualityRecords().find((item) => item.id === id);
+      const deleteId = record?.qualityId || id;
+      await fetchQualityApi(`?id=${encodeURIComponent(deleteId)}`, {
+        method: 'DELETE'
+      });
+    }
+
+    async function importLocalQualityRecords() {
+      const importButton = document.getElementById('quality-import-button');
+      const localRecords = getLocalQualityRecords();
+      if (!localRecords.length) return;
+
+      importButton.disabled = true;
+      updateMigrationBanner('Importing local weekly quality records...');
+
+      try {
+        const data = await fetchQualityApi('?action=bulk-import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ records: localRecords })
+        });
+        localStorage.setItem(WEEKLY_QUALITY_MIGRATION_DONE_KEY, 'true');
+        await loadQualityRecords();
+        updateMigrationBanner(`Import complete. Inserted ${data.inserted || 0}, skipped ${data.skippedDuplicates || 0}, failed ${data.failed || 0}.`);
+      } catch (error) {
+        console.warn('Weekly quality import failed.', error);
+        updateMigrationBanner(`Import failed: ${error.message}`);
+      } finally {
+        importButton.disabled = false;
+      }
     }
 
     function escapeHtml(value) {
@@ -1568,11 +1740,20 @@
       document.body.style.overflow = '';
     }
 
-    function deleteRecord(id) {
+    async function deleteRecord(id) {
       if (!confirm('Delete this quality evaluation?')) return;
-      const records = getQualityRecords().filter((record) => record.id !== id);
-      saveQualityRecords(records);
-      renderRecords();
+      try {
+        if (qualityRecordsSource === 'api') {
+          await deleteQualityRecord(id);
+          qualityRecords = getQualityRecords().filter((record) => record.id !== id);
+        } else {
+          qualityRecords = getQualityRecords().filter((record) => record.id !== id);
+          saveQualityRecords(qualityRecords);
+        }
+        renderRecords();
+      } catch (error) {
+        alert(`Delete failed: ${error.message}`);
+      }
     }
 
     function logout() {
@@ -1587,17 +1768,20 @@
     hydrateHeader();
     setCurrentDateTime();
     calculateFormTotal();
-    renderRecords();
+    loadQualityRecords();
     loadActiveEmployees();
     loadActiveRestaurants();
 
     document.getElementById('score-grid').addEventListener('change', calculateFormTotal);
-    document.getElementById('quality-form').addEventListener('submit', (event) => {
+    document.getElementById('quality-import-button').addEventListener('click', importLocalQualityRecords);
+    document.getElementById('quality-form').addEventListener('submit', async (event) => {
       event.preventDefault();
       const form = event.currentTarget;
       const recordingFile = form.querySelector('#call-recording').files[0];
+      const warning = document.getElementById('employee-load-warning');
+      warning.classList.remove('show');
+      warning.textContent = '';
       if (form.querySelector('#auditor-name').disabled || form.querySelector('#agent-name').disabled) {
-        const warning = document.getElementById('employee-load-warning');
         warning.textContent = 'Employee Profiles must be available before a new evaluation can be saved.';
         warning.classList.add('show');
         return;
@@ -1616,14 +1800,20 @@
       }
       if (!form.reportValidity()) return;
 
-      const records = getQualityRecords();
-      records.push(buildRecord(form));
-      saveQualityRecords(records);
-      form.reset();
-      setCurrentDateTime();
-      calculateFormTotal();
-      renderRecords();
-      document.getElementById('records-title').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      try {
+        const savedRecord = await createQualityRecord(buildRecord(form));
+        qualityApiAvailable = true;
+        qualityRecords = [savedRecord, ...getQualityRecords()];
+        qualityRecordsSource = 'api';
+        form.reset();
+        setCurrentDateTime();
+        calculateFormTotal();
+        renderRecords();
+        document.getElementById('records-title').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (error) {
+        warning.textContent = `Weekly Quality save failed: ${error.message}`;
+        warning.classList.add('show');
+      }
     });
     document.getElementById('quality-form').addEventListener('reset', () => {
       setTimeout(() => {

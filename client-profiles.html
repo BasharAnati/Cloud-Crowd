@@ -357,6 +357,7 @@
     const RESTAURANTS_ENDPOINT = '/.netlify/functions/restaurants';
     const TRAINING_ENDPOINT = '/.netlify/functions/training';
     const RESTAURANT_RATINGS_ENDPOINT = './.netlify/functions/restaurant-ratings';
+    const WEEKLY_QUALITY_ENDPOINT = './.netlify/functions/weekly-quality';
     const WEEKLY_QUALITY_STORAGE_KEY = 'cc_weekly_quality_records_v1';
     const QUALITY_SCORE_FIELDS = [
       'greetings',
@@ -563,6 +564,28 @@
         if (recordRestaurantId) return false;
         return restaurantName && normalizeName(getQualityRestaurantName(record)) === restaurantName;
       });
+    }
+
+    async function getClientQualityRecordsFromApi(restaurantId) {
+      const data = await apiRequest(
+        `${WEEKLY_QUALITY_ENDPOINT}?restaurantId=${encodeURIComponent(restaurantId)}`
+      );
+      return Array.isArray(data.records) ? data.records : [];
+    }
+
+    async function loadClientQualityRecords(restaurant) {
+      try {
+        return {
+          records: await getClientQualityRecordsFromApi(String(restaurant.restaurantId || '')),
+          error: ''
+        };
+      } catch (error) {
+        console.warn('Weekly quality API could not be loaded for Client Profiles.', error);
+        return {
+          records: getClientQualityRecords(restaurant),
+          error: error.message || 'Weekly Quality API could not be loaded.'
+        };
+      }
     }
 
     function trainingStatusBadge(status) {
@@ -919,6 +942,11 @@
       `;
     }
 
+    function renderQualityFallbackNotice(qualityError) {
+      if (!qualityError) return '';
+      return `<div class="empty-state">Weekly Quality API could not be loaded. Showing local browser records as a fallback. ${escapeHtml(qualityError)}</div>`;
+    }
+
     function renderDeliveryRatingsSection(ratingRecords, ratingError) {
       if (ratingError) {
         return `<div class="empty-state">Delivery platform ratings could not be loaded. ${escapeHtml(ratingError)}</div>`;
@@ -984,7 +1012,11 @@
         }
         const trainingSection = renderTrainingSection(trainingRecords, trainingError);
         const deliveryRatingsSection = renderDeliveryRatingsSection(ratingRecords, ratingError);
-        const qualityRecords = getClientQualityRecords(restaurant);
+        const {
+          records: qualityRecords,
+          error: qualityError
+        } = await loadClientQualityRecords(restaurant);
+        const qualityFallbackNotice = renderQualityFallbackNotice(qualityError);
         const qualityPerformanceSection = renderQualityPerformanceSection(qualityRecords);
         const weakAreasSection = renderWeakAreasSection(qualityRecords);
         const futureModules = [
@@ -1023,10 +1055,12 @@
           </section>
           <section class="detail-section">
             <h4>Weekly Quality Performance</h4>
+            ${qualityFallbackNotice}
             ${qualityPerformanceSection}
           </section>
           <section class="detail-section">
             <h4>Quality Weak Areas</h4>
+            ${qualityFallbackNotice}
             ${weakAreasSection}
           </section>
           <section class="detail-section">

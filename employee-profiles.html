@@ -430,6 +430,7 @@
     const DEDUCTIONS_ENDPOINT = '/.netlify/functions/deductions';
     const TRAINING_ENDPOINT = '/.netlify/functions/training';
     const ATTENDANCE_ENDPOINT = '/.netlify/functions/attendance';
+    const WEEKLY_QUALITY_ENDPOINT = './.netlify/functions/weekly-quality';
     const WEEKLY_QUALITY_STORAGE_KEY = 'cc_weekly_quality_records_v1';
     const ATTENDANCE_STORAGE_KEY = 'cc_attendance_records_v1';
     const QUALITY_SCORE_LABELS = {
@@ -712,8 +713,8 @@
       return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)}%`;
     }
 
-    function getQualitySummary(employee) {
-      const records = readStoredRecords(WEEKLY_QUALITY_STORAGE_KEY, 'Weekly quality')
+    function getStoredQualityRecords(employee) {
+      return readStoredRecords(WEEKLY_QUALITY_STORAGE_KEY, 'Weekly quality')
         .filter((record) => recordMatchesEmployee(
           record,
           employee,
@@ -721,6 +722,13 @@
           'agentNameSnapshot',
           'agent'
         ))
+        .sort((a, b) => recordTimestamp(b, 'callDateTime') - recordTimestamp(a, 'callDateTime'));
+    }
+
+    function getQualitySummary(employee, qualitySourceRecords) {
+      const records = (Array.isArray(qualitySourceRecords)
+        ? qualitySourceRecords
+        : getStoredQualityRecords(employee))
         .sort((a, b) => recordTimestamp(b, 'callDateTime') - recordTimestamp(a, 'callDateTime'));
       const scores = records.map(getQualityScore);
       const campaignGroups = new Map();
@@ -868,10 +876,25 @@
       return Array.isArray(data.attendance) ? data.attendance : [];
     }
 
+    async function getEmployeeQualityRecords(employeeId) {
+      const data = await apiRequest(
+        `${WEEKLY_QUALITY_ENDPOINT}?agentEmployeeId=${encodeURIComponent(employeeId)}`
+      );
+      return Array.isArray(data.records) ? data.records : [];
+    }
+
     async function viewEmployee(employeeId) {
       try {
         const employee = await getEmployeeProfile(employeeId);
-        const quality = getQualitySummary(employee);
+        let qualityRecords = [];
+        let qualityError = '';
+        try {
+          qualityRecords = await getEmployeeQualityRecords(employee.employeeId);
+        } catch (error) {
+          qualityError = error.message || 'Weekly quality records could not be loaded.';
+          qualityRecords = getStoredQualityRecords(employee);
+        }
+        const quality = getQualitySummary(employee, qualityRecords);
         let attendanceRecords = [];
         let attendanceError = '';
         try {
@@ -1106,6 +1129,7 @@
               <span class="section-source">Weekly Quality</span>
             </div>
             ${quality.records.length ? `
+              ${qualityError ? `<div class="profile-empty">Weekly Quality database could not be loaded. Showing local browser records. ${escapeHtml(qualityError)}</div>` : ''}
               <div class="metrics-grid">
                 <div class="metric-card"><span>Average Score</span><strong>${formatScore(quality.average)}</strong></div>
                 <div class="metric-card"><span>Best Score</span><strong>${formatScore(quality.best)}</strong></div>
@@ -1120,7 +1144,9 @@
                   <tbody>${qualityRows}</tbody>
                 </table>
               </div>
-            ` : '<div class="profile-empty">No weekly quality records yet.</div>'}
+            ` : qualityError
+              ? `<div class="profile-empty">Weekly Quality database could not be loaded. No local weekly quality records found. ${escapeHtml(qualityError)}</div>`
+              : '<div class="profile-empty">No weekly quality records yet.</div>'}
           </section>
           <section class="detail-section">
             <div class="profile-section-heading">
