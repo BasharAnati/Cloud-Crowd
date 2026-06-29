@@ -190,7 +190,7 @@ function requireAnatiAdmin(event) {
   const session = requireValidSession(event);
   const username = cleanText(session.username, 80);
   const role = cleanText(session.role, 40).toLowerCase();
-  if (username !== "Anati" || role !== "admin") {
+  if (username.toLowerCase() !== "anati" || role !== "admin") {
     const error = new Error("Anati admin access required");
     error.statusCode = 403;
     throw error;
@@ -456,7 +456,7 @@ exports.handler = async (event) => {
       if (event.queryStringParameters?.["my-access"] === "1") {
         const username = cleanText(session.username, 80);
         const role = cleanText(session.role, 40).toLowerCase();
-        const isAnatiAdmin = username === "Anati" && role === "admin";
+        const isAnatiAdmin = username.toLowerCase() === "anati" && role === "admin";
         const access = isAnatiAdmin
           ? allModuleAccessFor(username)
           : await listAccessForUser(username);
@@ -720,6 +720,15 @@ exports.handler = async (event) => {
     return json(405, { ok: false, error: "Method Not Allowed" });
   } catch (error) {
     console.error("admin-users function error:", error);
+    if (event.httpMethod === "GET" && event.queryStringParameters?.["my-access"] === "1") {
+      return json(200, {
+        ok: true,
+        modules: MODULES,
+        access: [],
+        hasConfiguredAccess: false,
+        legacyFallback: true,
+      });
+    }
     if (error.code === "22P02") {
       return json(400, { ok: false, error: "Invalid user id" });
     }

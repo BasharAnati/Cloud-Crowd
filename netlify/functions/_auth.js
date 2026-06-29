@@ -98,13 +98,15 @@ function getCurrentUser(event) {
   const session = requireValidSession(event);
   return {
     username: session.username || "",
-    role: session.role || "",
+    role: String(session.role || "").trim().toLowerCase(),
   };
 }
 
 function requireAdminSession(event) {
   const session = requireValidSession(event);
-  if (session.role !== "admin") throw authError(403, "Admin role required");
+  if (String(session.role || "").trim().toLowerCase() !== "admin") {
+    throw authError(403, "Admin role required");
+  }
   return session;
 }
 
@@ -140,7 +142,7 @@ async function requireModuleAccess(event, moduleKey, action = "view") {
   const actionColumn = MODULE_ACTION_COLUMNS[normalizedAction];
 
   if (!actionColumn) throw authError(500, "Invalid module action");
-  if (username === "Anati" && role === "admin") return session;
+  if (username.trim().toLowerCase() === "anati" && role === "admin") return session;
 
   const accessState = await getModuleAccess(username, moduleKey);
 

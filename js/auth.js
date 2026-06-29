@@ -1,10 +1,26 @@
 // Auth/session helpers shared by main.js.
 
 // اسم المستخدم الحالي (من صفحة اللوجين)
-const CURRENT_USER = localStorage.getItem('cc_user') || 'operator';
+function readSessionValue(key) {
+  const sessionValue = sessionStorage.getItem(key);
+  if (sessionValue) return sessionValue;
+
+  const localValue = localStorage.getItem(key) || '';
+  if (localValue) sessionStorage.setItem(key, localValue);
+  return localValue;
+}
+
+function clearStoredSession() {
+  ['cc_auth', 'cc_user', 'cc_role', 'cc_token'].forEach((key) => {
+    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
+  });
+}
+
+const CURRENT_USER = readSessionValue('cc_user') || 'operator';
 
 function getAuthHeaders(extraHeaders = {}) {
-  const token = localStorage.getItem('cc_token') || '';
+  const token = readSessionValue('cc_token') || '';
   return {
     ...extraHeaders,
     ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -14,10 +30,7 @@ function getAuthHeaders(extraHeaders = {}) {
 function handleAuthFailure(response) {
   if (response.status !== 401) return false;
 
-  localStorage.removeItem('cc_auth');
-  localStorage.removeItem('cc_user');
-  localStorage.removeItem('cc_role');
-  localStorage.removeItem('cc_token');
+  clearStoredSession();
   window.location.href = "login.html?expired=1";
   return true;
 }
@@ -29,10 +42,7 @@ function canUserCreate(section) {
 function logout() {
   const confirmLogout = confirm("Confirm logout?");
   if (confirmLogout) {
-    localStorage.removeItem('cc_auth');
-    localStorage.removeItem('cc_user');
-    localStorage.removeItem('cc_role');
-    localStorage.removeItem('cc_token');
+    clearStoredSession();
     window.location.href = "login.html";
   }
 }
@@ -42,3 +52,5 @@ window.getAuthHeaders = getAuthHeaders;
 window.handleAuthFailure = handleAuthFailure;
 window.logout = logout;
 window.canUserCreate = canUserCreate;
+window.readSessionValue = window.readSessionValue || readSessionValue;
+window.clearStoredSession = window.clearStoredSession || clearStoredSession;

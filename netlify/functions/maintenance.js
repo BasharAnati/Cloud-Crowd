@@ -10,7 +10,7 @@ const CONNECTION_STRING =
   process.env.NEON_DATABASE_URL ||
   process.env.DATABASE_URL;
 
-const pool = new Pool({ connectionString: CONNECTION_STRING });
+const pool = CONNECTION_STRING ? new Pool({ connectionString: CONNECTION_STRING }) : null;
 
 const SETTINGS_KEY = "maintenance";
 
@@ -22,15 +22,18 @@ const CORS = {
 const JSON_HEADERS = { "Content-Type": "application/json", ...CORS };
 
 async function ensureSettingsTable() {
+  if (!pool) return false;
   await pool.query(`
     CREATE TABLE IF NOT EXISTS app_settings (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
   `);
+  return true;
 }
 
 async function getMaintenanceState() {
+  if (!pool) return false;
   const result = await pool.query(
     "SELECT value FROM app_settings WHERE key = $1",
     [SETTINGS_KEY]

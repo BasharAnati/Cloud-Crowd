@@ -617,6 +617,10 @@
         localStorage.setItem('cc_user', data.username || username);
         localStorage.setItem('cc_role', data.role || 'agent');
         localStorage.setItem('cc_token', data.sessionToken);
+        sessionStorage.setItem('cc_auth', '1');
+        sessionStorage.setItem('cc_user', data.username || username);
+        sessionStorage.setItem('cc_role', data.role || 'agent');
+        sessionStorage.setItem('cc_token', data.sessionToken);
 
         ok.textContent = 'Success! Redirecting…';
         ok.style.display = 'block';

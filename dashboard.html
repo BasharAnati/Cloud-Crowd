@@ -481,10 +481,26 @@
     const MAINTENANCE_ADMIN = "Anati";
     const MAINTENANCE_ENDPOINT = "/.netlify/functions/maintenance";
 
+    function readSessionValue(key) {
+      const sessionValue = sessionStorage.getItem(key);
+      if (sessionValue) return sessionValue;
+
+      const localValue = localStorage.getItem(key) || "";
+      if (localValue) sessionStorage.setItem(key, localValue);
+      return localValue;
+    }
+
+    function clearStoredSession() {
+      ["cc_auth", "cc_user", "cc_role", "cc_token"].forEach((key) => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+      });
+    }
+
     function isMaintenanceAdmin() {
-      return localStorage.getItem("cc_auth") === "1" &&
-        localStorage.getItem("cc_role") === "admin" &&
-        localStorage.getItem("cc_user") === MAINTENANCE_ADMIN;
+      return readSessionValue("cc_auth") === "1" &&
+        readSessionValue("cc_role").trim().toLowerCase() === "admin" &&
+        readSessionValue("cc_user").trim().toLowerCase() === MAINTENANCE_ADMIN.toLowerCase();
     }
 
     async function fetchMaintenanceStatus() {
@@ -492,7 +508,7 @@
         const response = await fetch(MAINTENANCE_ENDPOINT, {
           cache: "no-store",
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+            'Authorization': `Bearer ${readSessionValue('cc_token') || ''}`
           }
         });
         if (!response.ok) throw new Error(`Maintenance check failed: ${response.status}`);
@@ -509,7 +525,7 @@
 
     async function enforceMaintenanceMode() {
       const status = await fetchMaintenanceStatus();
-      if (status?.maintenance === true && status.admin !== true) {
+      if (status?.maintenance === true && status.admin !== true && !isMaintenanceAdmin()) {
         window.location.href = "system-update.html";
       }
     }
@@ -521,11 +537,8 @@
 <body>
   <!-- حماية الصفحة: رجع المستخدم لـ login إذا مش مسجل -->
   <script>
-    if (localStorage.getItem('cc_auth') !== '1' || !localStorage.getItem('cc_token') || !localStorage.getItem('cc_role')) {
-      localStorage.removeItem('cc_auth');
-      localStorage.removeItem('cc_user');
-      localStorage.removeItem('cc_role');
-      localStorage.removeItem('cc_token');
+    if (readSessionValue('cc_auth') !== '1' || !readSessionValue('cc_token') || !readSessionValue('cc_role')) {
+      clearStoredSession();
       window.location.href = 'login.html';
     }
   </script>
@@ -1013,8 +1026,8 @@
     function hydrateDashboardHeader() {
       const userName = document.getElementById('dashboard-user-name');
       const roleBadge = document.getElementById('dashboard-role-badge');
-      const currentUser = localStorage.getItem('cc_user') || 'Team Member';
-      const currentRole = localStorage.getItem('cc_role') || 'operator';
+      const currentUser = readSessionValue('cc_user') || 'Team Member';
+      const currentRole = readSessionValue('cc_role') || 'operator';
 
       if (userName) userName.textContent = currentUser;
       if (roleBadge) roleBadge.textContent = currentRole;
@@ -1029,13 +1042,13 @@
     }
 
     function applyDashboardLegacyVisibility() {
-      const currentRole = (localStorage.getItem('cc_role') || '').toLowerCase();
+      const currentRole = readSessionValue('cc_role').trim().toLowerCase();
       document.querySelectorAll('[data-role-visible]').forEach((element) => {
         const allowedRoles = element.dataset.roleVisible.split(',').map((role) => role.trim().toLowerCase());
         element.hidden = !allowedRoles.includes(currentRole);
       });
 
-      const isAnatiAdmin = localStorage.getItem('cc_user') === 'Anati' && currentRole === 'admin';
+      const isAnatiAdmin = readSessionValue('cc_user').trim().toLowerCase() === 'anati' && currentRole === 'admin';
       document.querySelectorAll('[data-anati-admin-visible]').forEach((element) => {
         element.hidden = !isAnatiAdmin;
       });
@@ -1044,9 +1057,9 @@
     async function applyDashboardRoleVisibility() {
       applyDashboardLegacyVisibility();
 
-      const currentUser = localStorage.getItem('cc_user') || '';
-      const currentRole = (localStorage.getItem('cc_role') || '').toLowerCase();
-      const isAnatiAdmin = currentUser === 'Anati' && currentRole === 'admin';
+      const currentUser = readSessionValue('cc_user');
+      const currentRole = readSessionValue('cc_role').trim().toLowerCase();
+      const isAnatiAdmin = currentUser.trim().toLowerCase() === 'anati' && currentRole === 'admin';
       if (isAnatiAdmin) {
         document.querySelectorAll('.section-card, .sidebar-nav .nav-item').forEach((element) => {
           element.hidden = false;
@@ -1058,12 +1071,12 @@
         const response = await fetch(DASHBOARD_ACCESS_ENDPOINT, {
           cache: 'no-store',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+            'Authorization': `Bearer ${readSessionValue('cc_token') || ''}`
           }
         });
         if (!response.ok) throw new Error(`Access check failed: ${response.status}`);
         const data = await response.json();
-        if (data.legacyFallback || !data.hasConfiguredAccess) return;
+        if (!data.ok || data.legacyFallback || !data.hasConfiguredAccess || !Array.isArray(data.access)) return;
 
         const allowedModules = new Set(
           (data.access || [])
@@ -1134,7 +1147,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+            'Authorization': `Bearer ${readSessionValue('cc_token') || ''}`
           },
           body: JSON.stringify({ maintenance: !latestMaintenanceState })
         });
@@ -1152,10 +1165,7 @@
     }
 
     function logout() {
-      localStorage.removeItem('cc_auth');
-      localStorage.removeItem('cc_user');
-      localStorage.removeItem('cc_role');
-      localStorage.removeItem('cc_token');
+      clearStoredSession();
       window.location.href = 'login.html';
     }
 

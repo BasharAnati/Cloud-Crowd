@@ -1,11 +1,20 @@
 (function () {
   const ACCESS_ENDPOINT = '/.netlify/functions/admin-users?my-access=1';
 
+  function readSessionValue(key) {
+    const sessionValue = sessionStorage.getItem(key);
+    if (sessionValue) return sessionValue;
+
+    const localValue = localStorage.getItem(key) || '';
+    if (localValue) sessionStorage.setItem(key, localValue);
+    return localValue;
+  }
+
   function currentUser() {
     return {
-      username: localStorage.getItem('cc_user') || '',
-      role: (localStorage.getItem('cc_role') || '').toLowerCase(),
-      token: localStorage.getItem('cc_token') || ''
+      username: readSessionValue('cc_user'),
+      role: readSessionValue('cc_role').trim().toLowerCase(),
+      token: readSessionValue('cc_token')
     };
   }
 
@@ -22,7 +31,7 @@
 
   function isAnatiAdmin() {
     const user = currentUser();
-    return user.username === 'Anati' && user.role === 'admin';
+    return user.username.trim().toLowerCase() === 'anati' && user.role === 'admin';
   }
 
   async function getMyAccess(moduleKey) {
@@ -39,7 +48,7 @@
       if (!response.ok) throw new Error(`Access check failed: ${response.status}`);
 
       const data = await response.json();
-      if (data.legacyFallback || !data.hasConfiguredAccess) {
+      if (!data.ok || data.legacyFallback || !data.hasConfiguredAccess || !Array.isArray(data.access)) {
         return fullAccess(moduleKey, true);
       }
 

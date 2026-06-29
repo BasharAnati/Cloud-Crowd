@@ -427,10 +427,26 @@
     const MAINTENANCE_ADMIN = "Anati";
     const MAINTENANCE_ENDPOINT = "/.netlify/functions/maintenance";
 
+    function readSessionValue(key) {
+      const sessionValue = sessionStorage.getItem(key);
+      if (sessionValue) return sessionValue;
+
+      const localValue = localStorage.getItem(key) || "";
+      if (localValue) sessionStorage.setItem(key, localValue);
+      return localValue;
+    }
+
+    function clearStoredSession() {
+      ["cc_auth", "cc_user", "cc_role", "cc_token"].forEach((key) => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+      });
+    }
+
     function isMaintenanceAdmin() {
-      return localStorage.getItem("cc_auth") === "1" &&
-        localStorage.getItem("cc_role") === "admin" &&
-        localStorage.getItem("cc_user") === MAINTENANCE_ADMIN;
+      return readSessionValue("cc_auth") === "1" &&
+        readSessionValue("cc_role").trim().toLowerCase() === "admin" &&
+        readSessionValue("cc_user").trim().toLowerCase() === MAINTENANCE_ADMIN.toLowerCase();
     }
 
     async function fetchMaintenanceStatus() {
@@ -438,7 +454,7 @@
         const response = await fetch(MAINTENANCE_ENDPOINT, {
           cache: "no-store",
           headers: {
-            "Authorization": `Bearer ${localStorage.getItem("cc_token") || ""}`
+            "Authorization": `Bearer ${readSessionValue("cc_token") || ""}`
           }
         });
         if (!response.ok) throw new Error(`Maintenance check failed: ${response.status}`);
@@ -455,7 +471,7 @@
 
     async function enforceMaintenanceMode() {
       const status = await fetchMaintenanceStatus();
-      if (status?.maintenance === true && status.admin !== true) {
+      if (status?.maintenance === true && status.admin !== true && !isMaintenanceAdmin()) {
         window.location.href = "system-update.html";
       }
     }
@@ -466,11 +482,8 @@
 </head>
 <body>
   <script>
-    if (localStorage.getItem("cc_auth") !== "1" || !localStorage.getItem("cc_token") || !localStorage.getItem("cc_role")) {
-      localStorage.removeItem("cc_auth");
-      localStorage.removeItem("cc_user");
-      localStorage.removeItem("cc_role");
-      localStorage.removeItem("cc_token");
+    if (readSessionValue("cc_auth") !== "1" || !readSessionValue("cc_token") || !readSessionValue("cc_role")) {
+      clearStoredSession();
       window.location.href = "login.html";
     }
 
@@ -672,7 +685,7 @@
     let moduleAccess = [];
 
     function authHeaders(extra = {}) {
-      const token = localStorage.getItem("cc_token") || "";
+      const token = readSessionValue("cc_token") || "";
       return {
         ...extra,
         ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -682,10 +695,7 @@
     function handleAuthFailure(response) {
       if (response.status !== 401 && response.status !== 403) return false;
       if (response.status === 401) {
-        localStorage.removeItem("cc_auth");
-        localStorage.removeItem("cc_user");
-        localStorage.removeItem("cc_role");
-        localStorage.removeItem("cc_token");
+        clearStoredSession();
         window.location.href = "login.html?expired=1";
         return true;
       }
