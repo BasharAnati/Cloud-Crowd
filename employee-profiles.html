@@ -327,7 +327,7 @@
           <p>Central employee records for Cloud Crowd operations.</p>
         </div>
         <div class="hero-actions">
-          <button class="primary-btn write-control" type="button" id="add-employee-btn">+ Add Employee</button>
+          <button class="primary-btn write-control" type="button" id="add-employee-btn" data-permission-create>+ Add Employee</button>
         </div>
       </section>
 
@@ -425,7 +425,9 @@
     </div>
   </div>
 
+  <script src="js/permissions.js"></script>
   <script>
+    window.CCPermissions?.requirePageAccess('employee_profiles');
     const EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
     const DEDUCTIONS_ENDPOINT = '/.netlify/functions/deductions';
     const TRAINING_ENDPOINT = '/.netlify/functions/training';
@@ -559,9 +561,9 @@
           : '<span class="chip">No restaurants assigned</span>';
         const writeActions = canManageEmployees
           ? `
-            <button class="small-btn" type="button" data-edit-id="${escapeHtml(employee.employeeId)}">Edit</button>
+            <button class="small-btn" type="button" data-edit-id="${escapeHtml(employee.employeeId)}" data-permission-edit>Edit</button>
             ${employee.status === 'active'
-              ? `<button class="small-btn danger-btn" type="button" data-archive-id="${escapeHtml(employee.employeeId)}">Archive</button>`
+              ? `<button class="small-btn danger-btn" type="button" data-archive-id="${escapeHtml(employee.employeeId)}" data-permission-delete>Archive</button>`
               : ''}
           `
           : '';

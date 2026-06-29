@@ -941,7 +941,7 @@
 
       <section class="migration-banner" id="quality-migration-banner" role="status" aria-live="polite">
         <p id="quality-migration-message">Local weekly quality records found. Import to database?</p>
-        <button class="primary-btn" id="quality-import-button" type="button">Import</button>
+        <button class="primary-btn" id="quality-import-button" type="button" data-permission-create>Import</button>
       </section>
 
       <section class="content-card" aria-labelledby="evaluation-form-title">
@@ -1023,7 +1023,7 @@
 
           <div class="form-actions">
             <button class="secondary-btn" type="reset">Clear Form</button>
-            <button class="primary-btn" type="submit">Save Evaluation</button>
+            <button class="primary-btn" type="submit" data-permission-create>Save Evaluation</button>
           </div>
         </form>
       </section>
@@ -1081,7 +1081,9 @@
     </div>
   </div>
 
+  <script src="js/permissions.js"></script>
   <script>
+    window.CCPermissions?.requirePageAccess('weekly_quality');
     const WEEKLY_QUALITY_STORAGE_KEY = 'cc_weekly_quality_records_v1';
     const WEEKLY_QUALITY_MIGRATION_DONE_KEY = 'cc_weekly_quality_migration_v1_done';
     const WEEKLY_QUALITY_API_ENDPOINT = '/.netlify/functions/weekly-quality';
@@ -1674,7 +1676,7 @@
             <td class="${record.recording ? 'recording-state' : ''}">${record.recording ? 'Available' : '-'}</td>
             <td class="actions-cell">
               <button class="details-btn" type="button" data-details-id="${escapeHtml(record.id)}">View Details</button>
-              <button class="delete-btn" type="button" data-delete-id="${escapeHtml(record.id)}">Delete</button>
+              <button class="delete-btn" type="button" data-delete-id="${escapeHtml(record.id)}" data-permission-delete>Delete</button>
             </td>
           </tr>
         `;

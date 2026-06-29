@@ -199,7 +199,7 @@
           <h2 id="page-title">Agent Training</h2>
           <p>Manage assignments, training progress, and coaching needs.</p>
         </div>
-        <button class="primary-btn management-control" type="button" id="new-training-btn">+ New Training Assignment</button>
+        <button class="primary-btn management-control" type="button" id="new-training-btn" data-permission-create>+ New Training Assignment</button>
       </section>
 
       <div class="message" id="page-message" role="status"></div>
@@ -333,7 +333,9 @@
     </div>
   </div>
 
+  <script src="js/permissions.js"></script>
   <script>
+    window.CCPermissions?.requirePageAccess('agent_training');
     const EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
     const TRAINING_ENDPOINT = '/.netlify/functions/training';
     const RESTAURANTS_ENDPOINT = '/.netlify/functions/restaurants';
@@ -602,8 +604,8 @@
       const empty = document.getElementById('records-empty');
       body.innerHTML = filtered.map((record) => {
         const managementActions = canManageTraining ? `
-          <button class="small-btn" type="button" data-edit-id="${escapeHtml(record.trainingId)}">Edit</button>
-          <button class="small-btn danger-btn" type="button" data-delete-id="${escapeHtml(record.trainingId)}">Delete</button>
+          <button class="small-btn" type="button" data-edit-id="${escapeHtml(record.trainingId)}" data-permission-edit>Edit</button>
+          <button class="small-btn danger-btn" type="button" data-delete-id="${escapeHtml(record.trainingId)}" data-permission-delete>Delete</button>
         ` : '';
         return `
           <tr>

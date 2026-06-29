@@ -191,7 +191,7 @@
           <h2 id="page-title">Employee Deductions</h2>
           <p>Track employee deductions, personal orders, discounts, and financial adjustments.</p>
         </div>
-        <button class="primary-btn management-control" type="button" id="new-deduction-btn">+ New Deduction</button>
+        <button class="primary-btn management-control" type="button" id="new-deduction-btn" data-permission-create>+ New Deduction</button>
       </section>
 
       <div class="message" id="page-message" role="status"></div>
@@ -318,7 +318,9 @@
     </div>
   </div>
 
+  <script src="js/permissions.js"></script>
   <script>
+    window.CCPermissions?.requirePageAccess('employee_deductions');
     const EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
     const DEDUCTIONS_ENDPOINT = '/.netlify/functions/deductions';
     const DISCOUNT_PERCENTAGE = 10;
@@ -517,8 +519,8 @@
       const empty = document.getElementById('records-empty');
       body.innerHTML = filtered.map((deduction) => {
         const managementActions = canManageDeductions ? `
-          <button class="small-btn" type="button" data-edit-id="${escapeHtml(deduction.deductionId)}">Edit</button>
-          <button class="small-btn danger-btn" type="button" data-delete-id="${escapeHtml(deduction.deductionId)}">Delete</button>
+          <button class="small-btn" type="button" data-edit-id="${escapeHtml(deduction.deductionId)}" data-permission-edit>Edit</button>
+          <button class="small-btn danger-btn" type="button" data-delete-id="${escapeHtml(deduction.deductionId)}" data-permission-delete>Delete</button>
         ` : '';
         return `
           <tr>

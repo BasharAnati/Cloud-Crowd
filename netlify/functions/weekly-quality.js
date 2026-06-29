@@ -1,6 +1,6 @@
 const crypto = require("crypto");
 const { Pool } = require("pg");
-const { requireValidSession } = require("./_auth");
+const { requireValidSession, requireModuleAccess } = require("./_auth");
 
 const CONNECTION_STRING =
   process.env.NETLIFY_DATABASE_URL ||
@@ -457,11 +457,22 @@ exports.handler = async (event) => {
   let session;
   try {
     const action = cleanText(event.queryStringParameters?.action, 80);
+    const moduleAction =
+      event.httpMethod === "GET"
+        ? "view"
+        : event.httpMethod === "POST"
+          ? "create"
+          : event.httpMethod === "PUT"
+            ? "edit"
+            : event.httpMethod === "DELETE"
+              ? "delete"
+              : "view";
     session =
       event.httpMethod === "DELETE" ||
       (event.httpMethod === "POST" && action === "bulk-import")
         ? requireWriteSession(event)
         : requireValidSession(event);
+    await requireModuleAccess(event, "weekly_quality", moduleAction);
   } catch (authError) {
     return json(authError.statusCode || 500, {
       ok: false,

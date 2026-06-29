@@ -565,7 +565,7 @@
           <p>Track employee attendance, shift schedules, and extra hours.</p>
         </div>
         <div class="hero-actions">
-          <button class="primary-btn" type="button" id="add-record-btn">+ Add New Record</button>
+          <button class="primary-btn" type="button" id="add-record-btn" data-permission-create>+ Add New Record</button>
         </div>
       </section>
 
@@ -577,7 +577,7 @@
           <p id="attendance-migration-copy">Existing browser records will be preserved after import.</p>
           <div class="migration-status" id="attendance-migration-status"></div>
         </div>
-        <button class="primary-btn" type="button" id="attendance-import-btn">Import Records</button>
+        <button class="primary-btn" type="button" id="attendance-import-btn" data-permission-create>Import Records</button>
       </div>
 
       <section class="content-card" aria-labelledby="record-form-title">
@@ -710,7 +710,9 @@
     </main>
   </div>
 
+  <script src="js/permissions.js"></script>
   <script>
+    window.CCPermissions?.requirePageAccess('attendance');
     const ATTENDANCE_STORAGE_KEY = 'cc_attendance_records_v1';
     const ATTENDANCE_MIGRATION_FLAG = 'cc_attendance_migration_v1_done';
     const ATTENDANCE_ENDPOINT = '/.netlify/functions/attendance';

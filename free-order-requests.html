@@ -592,7 +592,7 @@
       </div>
       <div class="top-actions">
         <button class="secondary-btn" type="button" onclick="window.location.href='dashboard.html'">Back</button>
-        <button class="primary-btn" type="button" id="new-request-btn">+ New Request</button>
+        <button class="primary-btn" type="button" id="new-request-btn" data-permission-create>+ New Request</button>
       </div>
     </header>
 
@@ -729,7 +729,9 @@
     </div>
   </div>
 
+  <script src="js/permissions.js"></script>
   <script>
+    window.CCPermissions?.requirePageAccess('free_order_requests');
     const API_ENDPOINT = '/.netlify/functions/free-order-requests';
     const STAGE_COLUMNS = [
       { key: 'pending_details', label: 'Pending Details' },
@@ -876,10 +878,10 @@
         ? '<span class="response-badge">Needs Response</span>'
         : '';
       const completeButton = request.internalStage === 'pending_details'
-        ? `<button class="small-btn" type="button" data-complete-id="${escapeHtml(request.requestId)}">Complete Details</button>`
+        ? `<button class="small-btn" type="button" data-complete-id="${escapeHtml(request.requestId)}" data-permission-edit>Complete Details</button>`
         : '';
       const deleteButton = canDeleteRequests
-        ? `<button class="danger-btn" type="button" data-delete-id="${escapeHtml(request.requestId)}">Archive</button>`
+        ? `<button class="danger-btn" type="button" data-delete-id="${escapeHtml(request.requestId)}" data-permission-delete>Archive</button>`
         : '';
 
       return `

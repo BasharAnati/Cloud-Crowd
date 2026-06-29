@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+  <title>Anati Admin Center - Cloud Crowd</title>
+  <style>
+    :root{
+      --navy:#011C40;
+      --deep:#023859;
+      --aqua:#54ACBF;
+      --ice:#A7EBF2;
+      --text:#eefcff;
+      --muted:rgba(238,252,255,.68);
+      --line:rgba(167,235,242,.2);
+      --glass:rgba(2,24,52,.62);
+      --glass-strong:rgba(3,35,70,.74);
+      --ok:#65f2c2;
+      --warn:#f6c76b;
+      --bad:#ff7b8a;
+    }
+    *{box-sizing:border-box}
+    html,body{width:100%;min-height:100%;overflow-x:hidden}
+    body{
+      min-height:100vh;
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 18% 12%,rgba(84,172,191,.18),transparent 28%),
+        radial-gradient(circle at 82% 18%,rgba(167,235,242,.12),transparent 28%),
+        linear-gradient(135deg,#010611 0%,#02152e 44%,#010914 100%);
+      line-height:1.5;
+    }
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:-1;
+      pointer-events:none;
+      background:
+        linear-gradient(rgba(167,235,242,.035) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(167,235,242,.035) 1px,transparent 1px);
+      background-size:72px 72px;
+      mask-image:radial-gradient(circle at 62% 22%,#000 0%,transparent 58%);
+    }
+    button,input,select{font:inherit}
+    button{cursor:pointer}
+    a{color:inherit;text-decoration:none}
+    [hidden]{display:none !important}
+    .shell{
+      min-height:100vh;
+      display:grid;
+      grid-template-columns:280px minmax(0,1fr);
+    }
+    .sidebar{
+      position:sticky;
+      top:0;
+      min-height:100vh;
+      padding:28px 22px;
+      border-right:1px solid rgba(167,235,242,.16);
+      background:
+        linear-gradient(180deg,rgba(1,28,64,.82),rgba(1,10,24,.66)),
+        rgba(1,12,26,.72);
+      box-shadow:18px 0 70px rgba(0,0,0,.26);
+      backdrop-filter:blur(18px) saturate(132%);
+      -webkit-backdrop-filter:blur(18px) saturate(132%);
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:13px;
+      margin-bottom:34px;
+    }
+    .brand img{
+      width:58px;
+      height:58px;
+      object-fit:contain;
+      filter:drop-shadow(0 0 12px rgba(167,235,242,.55)) drop-shadow(0 0 28px rgba(84,172,191,.28));
+    }
+    .brand h1{margin:0;font-size:22px;line-height:1;font-weight:900}
+    .brand p{margin:6px 0 0;color:var(--ice);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+    .nav{display:grid;gap:8px}
+    .nav a{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-height:46px;
+      padding:10px 12px;
+      border:1px solid transparent;
+      border-radius:10px;
+      color:rgba(238,252,255,.76);
+      font-size:14px;
+      font-weight:800;
+    }
+    .nav a:hover,.nav a.active{
+      color:var(--text);
+      border-color:rgba(167,235,242,.22);
+      background:rgba(84,172,191,.11);
+    }
+    .nav-icon{
+      width:30px;
+      height:30px;
+      display:grid;
+      place-items:center;
+      border:1px solid rgba(167,235,242,.2);
+      border-radius:8px;
+      color:var(--ice);
+      background:rgba(84,172,191,.12);
+      font-size:12px;
+      font-weight:900;
+    }
+    .main{
+      min-width:0;
+      padding:26px clamp(18px,4vw,46px) 38px;
+    }
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:16px;
+      margin-bottom:24px;
+    }
+    .crumb{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      color:var(--ice);
+      font-size:13px;
+      font-weight:900;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+    .user-tools{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:10px;
+      min-width:0;
+    }
+    .user-pill,.role-pill{
+      min-height:38px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      max-width:260px;
+      padding:8px 12px;
+      border:1px solid rgba(167,235,242,.22);
+      border-radius:999px;
+      color:var(--ice);
+      background:rgba(84,172,191,.12);
+      font-size:12px;
+      font-weight:900;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .logout{
+      min-height:38px;
+      padding:8px 14px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:999px;
+      color:#fff;
+      background:linear-gradient(135deg,rgba(239,68,68,.95),rgba(185,28,28,.95));
+      box-shadow:0 12px 28px rgba(185,28,28,.22);
+      font-size:12px;
+      font-weight:900;
+    }
+    .hero,.panel,.stat,.placeholder{
+      border:1px solid rgba(167,235,242,.18);
+      background:
+        linear-gradient(145deg,rgba(255,255,255,.1),rgba(255,255,255,.035) 46%,rgba(84,172,191,.055)),
+        var(--glass-strong);
+      box-shadow:0 22px 70px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.12);
+      backdrop-filter:blur(16px) saturate(126%);
+      -webkit-backdrop-filter:blur(16px) saturate(126%);
+    }
+    .hero{
+      position:relative;
+      overflow:hidden;
+      margin-bottom:22px;
+      padding:30px;
+      border-radius:22px;
+    }
+    .hero h2{
+      margin:0;
+      font-size:clamp(34px,5vw,58px);
+      line-height:.95;
+      font-weight:950;
+    }
+    .hero p{
+      max-width:760px;
+      margin:16px 0 0;
+      color:var(--muted);
+      font-size:16px;
+      line-height:1.7;
+    }
+    .notice{
+      margin-top:18px;
+      padding:12px 14px;
+      border:1px solid rgba(246,199,107,.32);
+      border-radius:12px;
+      color:#ffe6a9;
+      background:rgba(246,199,107,.08);
+      font-size:13px;
+      font-weight:800;
+    }
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:14px;
+      margin-bottom:18px;
+    }
+    .stat{
+      min-height:112px;
+      padding:18px;
+      border-radius:16px;
+    }
+    .stat span{
+      display:block;
+      color:rgba(238,252,255,.58);
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .stat strong{
+      display:block;
+      margin-top:8px;
+      color:var(--text);
+      font-size:34px;
+      line-height:1;
+      font-weight:950;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:minmax(0,1.15fr) minmax(360px,.85fr);
+      gap:18px;
+      align-items:start;
+    }
+    .panel{
+      border-radius:18px;
+      padding:20px;
+    }
+    .panel-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:14px;
+      margin-bottom:16px;
+    }
+    .panel h3{
+      margin:0;
+      font-size:22px;
+      line-height:1.15;
+    }
+    .panel p{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .table-wrap{
+      overflow:auto;
+      border:1px solid rgba(167,235,242,.14);
+      border-radius:14px;
+      background:rgba(1,16,34,.42);
+    }
+    table{
+      width:100%;
+      min-width:760px;
+      border-collapse:collapse;
+    }
+    th,td{
+      padding:12px;
+      border-bottom:1px solid rgba(167,235,242,.12);
+      text-align:left;
+      vertical-align:middle;
+      font-size:13px;
+    }
+    th{
+      color:rgba(238,252,255,.58);
+      font-size:11px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    tr:last-child td{border-bottom:0}
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      min-height:24px;
+      padding:4px 8px;
+      border-radius:999px;
+      color:rgba(238,252,255,.78);
+      background:rgba(255,255,255,.07);
+      font-size:11px;
+      font-weight:900;
+      text-transform:capitalize;
+    }
+    .chip.active{color:#062016;background:rgba(101,242,194,.86)}
+    .chip.disabled{color:#25030a;background:rgba(255,123,138,.86)}
+    .form-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+    }
+    label{
+      display:block;
+      color:rgba(238,252,255,.72);
+      font-size:12px;
+      font-weight:900;
+      text-transform:uppercase;
+    }
+    input,select{
+      width:100%;
+      min-height:42px;
+      margin-top:6px;
+      padding:10px 12px;
+      border:1px solid rgba(167,235,242,.22);
+      border-radius:12px;
+      outline:0;
+      color:var(--text);
+      background:rgba(1,12,26,.72);
+    }
+    select option{color:#011328;background:#eefcff}
+    input:focus,select:focus{
+      border-color:var(--ice);
+      box-shadow:0 0 0 4px rgba(84,172,191,.13);
+    }
+    .check-row{
+      display:flex;
+      align-items:center;
+      gap:9px;
+      min-height:42px;
+      margin-top:18px;
+      color:var(--muted);
+      font-size:13px;
+      font-weight:800;
+    }
+    .check-row input,.access-cell input{
+      width:18px;
+      height:18px;
+      min-height:auto;
+      margin:0;
+      accent-color:var(--aqua);
+    }
+    .actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:14px;
+    }
+    .btn{
+      min-height:40px;
+      padding:9px 13px;
+      border:0;
+      border-radius:12px;
+      color:#011328;
+      background:linear-gradient(135deg,var(--ice),var(--aqua));
+      box-shadow:0 14px 34px rgba(84,172,191,.2);
+      font-size:12px;
+      font-weight:900;
+    }
+    .btn.secondary{
+      color:var(--text);
+      background:rgba(84,172,191,.13);
+      border:1px solid rgba(167,235,242,.22);
+      box-shadow:none;
+    }
+    .btn.danger{
+      color:#25030a;
+      background:linear-gradient(135deg,#ffc5cc,var(--bad));
+    }
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .message{
+      min-height:22px;
+      margin-top:12px;
+      color:var(--ice);
+      font-size:13px;
+      font-weight:800;
+    }
+    .message.error{color:var(--bad)}
+    .module-tools{
+      display:grid;
+      grid-template-columns:minmax(260px,420px) 1fr;
+      gap:16px;
+      align-items:end;
+      margin-bottom:14px;
+    }
+    .access-table th:not(:first-child),
+    .access-table td:not(:first-child){
+      text-align:center;
+    }
+    .placeholder-grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:14px;
+      margin-top:18px;
+    }
+    .placeholder{
+      min-height:120px;
+      padding:18px;
+      border-radius:16px;
+    }
+    .placeholder h3{margin:0;font-size:18px}
+    .placeholder p{margin:8px 0 0;color:var(--muted);font-size:13px}
+    @media (max-width:1120px){
+      .shell{grid-template-columns:1fr}
+      .sidebar{position:relative;min-height:auto;padding:18px 20px;border-right:0;border-bottom:1px solid rgba(167,235,242,.16)}
+      .brand{margin-bottom:16px}
+      .nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .grid,.module-tools{grid-template-columns:1fr}
+      .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media (max-width:680px){
+      .main{padding:18px 14px 28px}
+      .topbar{align-items:flex-start;flex-direction:column}
+      .user-tools{width:100%;justify-content:stretch;flex-wrap:wrap}
+      .user-pill,.role-pill,.logout{flex:1 1 auto}
+      .nav{grid-template-columns:1fr}
+      .hero{padding:24px 18px}
+      .stats,.form-grid,.placeholder-grid{grid-template-columns:1fr}
+      .panel{padding:16px}
+    }
+  </style>
+  <script>
+    const MAINTENANCE_ADMIN = "Anati";
+    const MAINTENANCE_ENDPOINT = "/.netlify/functions/maintenance";
+
+    function isMaintenanceAdmin() {
+      return localStorage.getItem("cc_auth") === "1" &&
+        localStorage.getItem("cc_role") === "admin" &&
+        localStorage.getItem("cc_user") === MAINTENANCE_ADMIN;
+    }
+
+    async function fetchMaintenanceStatus() {
+      try {
+        const response = await fetch(MAINTENANCE_ENDPOINT, {
+          cache: "no-store",
+          headers: {
+            "Authorization": `Bearer ${localStorage.getItem("cc_token") || ""}`
+          }
+        });
+        if (!response.ok) throw new Error(`Maintenance check failed: ${response.status}`);
+        const data = await response.json();
+        return {
+          maintenance: data.maintenance === true,
+          admin: data.admin === true
+        };
+      } catch (err) {
+        console.warn("Maintenance check failed.", err);
+        return null;
+      }
+    }
+
+    async function enforceMaintenanceMode() {
+      const status = await fetchMaintenanceStatus();
+      if (status?.maintenance === true && status.admin !== true) {
+        window.location.href = "system-update.html";
+      }
+    }
+
+    enforceMaintenanceMode();
+    setInterval(enforceMaintenanceMode, 3000);
+  </script>
+</head>
+<body>
+  <script>
+    if (localStorage.getItem("cc_auth") !== "1" || !localStorage.getItem("cc_token") || !localStorage.getItem("cc_role")) {
+      localStorage.removeItem("cc_auth");
+      localStorage.removeItem("cc_user");
+      localStorage.removeItem("cc_role");
+      localStorage.removeItem("cc_token");
+      window.location.href = "login.html";
+    }
+
+    if (localStorage.getItem("cc_user") !== "Anati" || localStorage.getItem("cc_role") !== "admin") {
+      window.location.href = "dashboard.html";
+    }
+  </script>
+
+  <div class="shell">
+    <aside class="sidebar" aria-label="Anati Admin Center navigation">
+      <a class="brand" href="dashboard.html" aria-label="Cloud Crowd dashboard">
+        <img src="assets/images/logo.png" alt="Cloud Crowd logo">
+        <div>
+          <h1>Cloud Crowd</h1>
+          <p>Admin Center</p>
+        </div>
+      </a>
+      <nav class="nav">
+        <a href="dashboard.html">
+          <span class="nav-icon" aria-hidden="true">D</span>
+          Dashboard
+        </a>
+        <a class="active" href="anati-admin.html" aria-current="page">
+          <span class="nav-icon" aria-hidden="true">A</span>
+          Anati Admin Center
+        </a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <a class="crumb" href="dashboard.html">&larr; Dashboard</a>
+        <div class="user-tools">
+          <span class="user-pill" id="current-user">Anati</span>
+          <span class="role-pill" id="current-role">admin</span>
+          <button class="logout" type="button" onclick="logout()">Log out</button>
+        </div>
+      </header>
+
+      <section class="hero">
+        <h2>Anati Admin Center</h2>
+        <p>Manage users, roles, module access, and future workflow permissions.</p>
+        <div class="notice">Phase 2 supports database-backed login with legacy fallback. Temporary passwords can be set here, but forced password change screens come in a later phase.</div>
+      </section>
+
+      <section class="stats" aria-label="Admin Center stats">
+        <div class="stat"><span>Total Users</span><strong id="stat-total">0</strong></div>
+        <div class="stat"><span>Active Users</span><strong id="stat-active">0</strong></div>
+        <div class="stat"><span>Disabled Users</span><strong id="stat-disabled">0</strong></div>
+        <div class="stat"><span>Admins / Managers</span><strong id="stat-leaders">0</strong></div>
+      </section>
+
+      <section class="grid" aria-label="User management">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3>User Management</h3>
+              <p>Create and maintain user profiles. Temporary passwords are hashed before storage and are never returned by the API.</p>
+            </div>
+            <button class="btn secondary" type="button" id="refresh-users-btn">Refresh</button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>Display Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-body">
+                <tr><td colspan="6">Loading users...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3 id="form-title">Create User Profile</h3>
+              <p id="form-subtitle">Set a temporary password only when creating or resetting login access.</p>
+            </div>
+          </div>
+
+          <form id="user-form">
+            <input type="hidden" id="user-id">
+            <div class="form-grid">
+              <label>
+                Username
+                <input id="username" autocomplete="off" required>
+              </label>
+              <label>
+                Display Name
+                <input id="display-name" autocomplete="off">
+              </label>
+              <label>
+                Email
+                <input id="email" type="email" autocomplete="off">
+              </label>
+              <label>
+                Role
+                <select id="role">
+                  <option value="agent">Agent</option>
+                  <option value="manager">Manager</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </label>
+              <label>
+                Status
+                <select id="status">
+                  <option value="active">Active</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+              </label>
+              <label>
+                Temporary Password
+                <input id="temporary-password" type="password" autocomplete="new-password" placeholder="Leave blank to keep current password">
+              </label>
+              <label class="check-row">
+                <input id="must-reset-password" type="checkbox">
+                Must reset password later
+              </label>
+            </div>
+            <div class="actions">
+              <button class="btn" type="submit" id="save-user-btn">Create User Profile</button>
+              <button class="btn secondary" type="button" id="reset-form-btn">Clear</button>
+            </div>
+            <div class="message" id="user-message"></div>
+          </form>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top:18px" aria-label="Module access">
+        <div class="panel-head">
+          <div>
+            <h3>Module Access</h3>
+            <p>Store future access rules for each user. These permissions are not enforced on dashboard/pages yet.</p>
+          </div>
+        </div>
+
+        <div class="module-tools">
+          <label>
+            Select User
+            <select id="access-user"></select>
+          </label>
+          <div class="actions">
+            <button class="btn" type="button" id="save-access-btn">Save Access</button>
+            <button class="btn secondary" type="button" id="clear-access-btn">Clear Checks</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="access-table">
+            <thead>
+              <tr>
+                <th>Module</th>
+                <th>View</th>
+                <th>Create</th>
+                <th>Edit</th>
+                <th>Delete</th>
+              </tr>
+            </thead>
+            <tbody id="modules-body">
+              <tr><td colspan="5">Loading modules...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="message" id="access-message"></div>
+      </section>
+
+      <section class="placeholder-grid" aria-label="Future admin sections">
+        <div class="placeholder">
+          <h3>Workflow Permissions</h3>
+          <p>Future controls for workflow-specific approvals, transitions, and ownership rules.</p>
+        </div>
+        <div class="placeholder">
+          <h3>Maintenance Control</h3>
+          <p>Future centralized controls for maintenance mode and operational access windows.</p>
+        </div>
+        <div class="placeholder">
+          <h3>Audit Logs</h3>
+          <p>Future searchable review surface for admin actions and access changes.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/permissions.js"></script>
+  <script>
+    window.CCPermissions?.requirePageAccess('anati_admin');
+    const ADMIN_USERS_ENDPOINT = "/.netlify/functions/admin-users";
+    let adminUsers = [];
+    let moduleRegistry = [];
+    let moduleAccess = [];
+
+    function authHeaders(extra = {}) {
+      const token = localStorage.getItem("cc_token") || "";
+      return {
+        ...extra,
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      };
+    }
+
+    function handleAuthFailure(response) {
+      if (response.status !== 401 && response.status !== 403) return false;
+      if (response.status === 401) {
+        localStorage.removeItem("cc_auth");
+        localStorage.removeItem("cc_user");
+        localStorage.removeItem("cc_role");
+        localStorage.removeItem("cc_token");
+        window.location.href = "login.html?expired=1";
+        return true;
+      }
+      showMessage("user-message", "Anati admin access is required.", true);
+      return true;
+    }
+
+    function showMessage(id, message, isError = false) {
+      const element = document.getElementById(id);
+      element.textContent = message;
+      element.classList.toggle("error", isError);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    async function apiRequest(path = "", options = {}) {
+      const response = await fetch(`${ADMIN_USERS_ENDPOINT}${path}`, {
+        ...options,
+        headers: authHeaders({
+          ...(options.body ? { "Content-Type": "application/json" } : {}),
+          ...(options.headers || {})
+        })
+      });
+
+      if (handleAuthFailure(response)) {
+        throw new Error("Access denied");
+      }
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || `Request failed: ${response.status}`);
+      }
+      return data;
+    }
+
+    function renderStats() {
+      const total = adminUsers.length;
+      const active = adminUsers.filter((user) => user.status === "active").length;
+      const disabled = adminUsers.filter((user) => user.status === "disabled").length;
+      const leaders = adminUsers.filter((user) => user.role === "admin" || user.role === "manager").length;
+      document.getElementById("stat-total").textContent = total;
+      document.getElementById("stat-active").textContent = active;
+      document.getElementById("stat-disabled").textContent = disabled;
+      document.getElementById("stat-leaders").textContent = leaders;
+    }
+
+    function renderUsers() {
+      const body = document.getElementById("users-body");
+      if (!adminUsers.length) {
+        body.innerHTML = '<tr><td colspan="6">No user profiles found.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = adminUsers.map((user) => `
+        <tr>
+          <td><strong>${escapeHtml(user.username)}</strong></td>
+          <td>${escapeHtml(user.displayName || "-")}</td>
+          <td>${escapeHtml(user.email || "-")}</td>
+          <td><span class="chip">${escapeHtml(user.role)}</span></td>
+          <td><span class="chip ${user.status === "active" ? "active" : "disabled"}">${escapeHtml(user.status)}</span></td>
+          <td>
+            <div class="actions" style="margin-top:0">
+              <button class="btn secondary" type="button" data-edit-user="${escapeHtml(user.userId)}">Edit</button>
+              <button class="btn danger" type="button" data-disable-user="${escapeHtml(user.userId)}" ${user.status === "disabled" ? "disabled" : ""}>Disable</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+
+      body.querySelectorAll("[data-edit-user]").forEach((button) => {
+        button.addEventListener("click", () => editUser(button.dataset.editUser));
+      });
+      body.querySelectorAll("[data-disable-user]").forEach((button) => {
+        button.addEventListener("click", () => disableUser(button.dataset.disableUser));
+      });
+    }
+
+    function renderAccessUsers() {
+      const select = document.getElementById("access-user");
+      select.innerHTML = adminUsers.map((user) => `
+        <option value="${escapeHtml(user.username)}">${escapeHtml(user.username)} (${escapeHtml(user.role)})</option>
+      `).join("");
+    }
+
+    function accessFor(username, moduleKey) {
+      return moduleAccess.find((record) => record.username === username && record.moduleKey === moduleKey) || {};
+    }
+
+    function renderModules() {
+      const body = document.getElementById("modules-body");
+      const username = document.getElementById("access-user").value;
+      if (!moduleRegistry.length) {
+        body.innerHTML = '<tr><td colspan="5">No modules found.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = moduleRegistry.map((module) => {
+        const access = accessFor(username, module.moduleKey);
+        return `
+          <tr data-module-key="${escapeHtml(module.moduleKey)}">
+            <td><strong>${escapeHtml(module.moduleName || module.label)}</strong></td>
+            <td class="access-cell"><input type="checkbox" data-access-field="canView" ${access.canView ? "checked" : ""}></td>
+            <td class="access-cell"><input type="checkbox" data-access-field="canCreate" ${access.canCreate ? "checked" : ""}></td>
+            <td class="access-cell"><input type="checkbox" data-access-field="canEdit" ${access.canEdit ? "checked" : ""}></td>
+            <td class="access-cell"><input type="checkbox" data-access-field="canDelete" ${access.canDelete ? "checked" : ""}></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function editUser(userId) {
+      const user = adminUsers.find((entry) => entry.userId === userId);
+      if (!user) return;
+      document.getElementById("form-title").textContent = "Edit User";
+      document.getElementById("save-user-btn").textContent = "Save User";
+      document.getElementById("user-id").value = user.userId;
+      document.getElementById("username").value = user.username;
+      document.getElementById("username").disabled = true;
+      document.getElementById("display-name").value = user.displayName || "";
+      document.getElementById("email").value = user.email || "";
+      document.getElementById("role").value = user.role || "agent";
+      document.getElementById("status").value = user.status || "active";
+      document.getElementById("must-reset-password").checked = user.mustResetPassword === true;
+      document.getElementById("temporary-password").value = "";
+      showMessage("user-message", "");
+    }
+
+    function resetUserForm() {
+      document.getElementById("form-title").textContent = "Create User Profile";
+      document.getElementById("save-user-btn").textContent = "Create User Profile";
+      document.getElementById("user-id").value = "";
+      document.getElementById("username").value = "";
+      document.getElementById("username").disabled = false;
+      document.getElementById("display-name").value = "";
+      document.getElementById("email").value = "";
+      document.getElementById("role").value = "agent";
+      document.getElementById("status").value = "active";
+      document.getElementById("must-reset-password").checked = false;
+      document.getElementById("temporary-password").value = "";
+      showMessage("user-message", "");
+    }
+
+    async function saveUser(event) {
+      event.preventDefault();
+      const userId = document.getElementById("user-id").value;
+      const payload = {
+        username: document.getElementById("username").value.trim(),
+        displayName: document.getElementById("display-name").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        role: document.getElementById("role").value,
+        status: document.getElementById("status").value,
+        mustResetPassword: document.getElementById("must-reset-password").checked
+      };
+      const temporaryPassword = document.getElementById("temporary-password").value;
+      if (temporaryPassword) {
+        payload.temporaryPassword = temporaryPassword;
+        payload.mustResetPassword = true;
+      }
+
+      try {
+        if (userId) {
+          await apiRequest(`?id=${encodeURIComponent(userId)}`, {
+            method: "PUT",
+            body: JSON.stringify(payload)
+          });
+          showMessage("user-message", "User profile updated.");
+        } else {
+          await apiRequest("", {
+            method: "POST",
+            body: JSON.stringify(payload)
+          });
+          showMessage("user-message", "User profile created.");
+        }
+        resetUserForm();
+        await loadAdminCenter();
+      } catch (error) {
+        showMessage("user-message", error.message, true);
+      }
+    }
+
+    async function disableUser(userId) {
+      const user = adminUsers.find((entry) => entry.userId === userId);
+      if (!user || !confirm(`Disable ${user.username}?`)) return;
+
+      try {
+        await apiRequest(`?id=${encodeURIComponent(userId)}`, { method: "DELETE" });
+        showMessage("user-message", "User disabled.");
+        await loadAdminCenter();
+      } catch (error) {
+        showMessage("user-message", error.message, true);
+      }
+    }
+
+    function collectAccessPayload() {
+      const username = document.getElementById("access-user").value;
+      const access = Array.from(document.querySelectorAll("#modules-body tr[data-module-key]")).map((row) => {
+        const record = {
+          moduleKey: row.dataset.moduleKey,
+          canView: false,
+          canCreate: false,
+          canEdit: false,
+          canDelete: false
+        };
+        row.querySelectorAll("[data-access-field]").forEach((checkbox) => {
+          record[checkbox.dataset.accessField] = checkbox.checked;
+        });
+        return record;
+      });
+      return { username, access };
+    }
+
+    async function saveAccess() {
+      const payload = collectAccessPayload();
+      if (!payload.username) {
+        showMessage("access-message", "Select a user first.", true);
+        return;
+      }
+
+      try {
+        const data = await apiRequest("?action=module-access", {
+          method: "PUT",
+          body: JSON.stringify(payload)
+        });
+        moduleAccess = data.access || [];
+        renderModules();
+        showMessage("access-message", "Module access saved.");
+      } catch (error) {
+        showMessage("access-message", error.message, true);
+      }
+    }
+
+    function clearAccessChecks() {
+      document.querySelectorAll("#modules-body input[type='checkbox']").forEach((checkbox) => {
+        checkbox.checked = false;
+      });
+      showMessage("access-message", "");
+    }
+
+    async function loadAdminCenter() {
+      try {
+        showMessage("user-message", "Loading...");
+        const usersData = await apiRequest("");
+        const modulesData = await apiRequest("?modules=1");
+        adminUsers = usersData.users || [];
+        moduleRegistry = modulesData.modules || [];
+        moduleAccess = modulesData.access || usersData.access || [];
+        renderStats();
+        renderUsers();
+        renderAccessUsers();
+        renderModules();
+        showMessage("user-message", usersData.seeded ? "Current known users seeded." : "");
+      } catch (error) {
+        showMessage("user-message", error.message, true);
+        showMessage("access-message", error.message, true);
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem("cc_auth");
+      localStorage.removeItem("cc_user");
+      localStorage.removeItem("cc_role");
+      localStorage.removeItem("cc_token");
+      window.location.href = "login.html";
+    }
+
+    document.getElementById("current-user").textContent = localStorage.getItem("cc_user") || "Anati";
+    document.getElementById("current-role").textContent = localStorage.getItem("cc_role") || "admin";
+    document.getElementById("user-form").addEventListener("submit", saveUser);
+    document.getElementById("reset-form-btn").addEventListener("click", resetUserForm);
+    document.getElementById("refresh-users-btn").addEventListener("click", loadAdminCenter);
+    document.getElementById("access-user").addEventListener("change", renderModules);
+    document.getElementById("save-access-btn").addEventListener("click", saveAccess);
+    document.getElementById("clear-access-btn").addEventListener("click", clearAccessChecks);
+    loadAdminCenter();
+  </script>
+  <script src="idle-logout.js"></script>
+</body>
+</html>

@@ -549,6 +549,15 @@
           </span>
           Dashboard
         </a>
+        <a class="nav-item" href="anati-admin.html" data-anati-admin-visible hidden>
+          <span class="nav-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3 5.5 5.8v5.6c0 4.1 2.7 7.8 6.5 9.6 3.8-1.8 6.5-5.5 6.5-9.6V5.8L12 3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+              <path d="M9 12.5 11 14.5 15.5 9.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          Anati Admin Center
+        </a>
         <a class="nav-item" href="employee-profiles.html">
           <span class="nav-icon" aria-hidden="true">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
@@ -699,6 +708,24 @@
 
       <div class="container">
         <div class="sections" id="sections">
+          <div class="section-card" data-section="anati-admin-center" data-anati-admin-visible hidden onclick="window.location.href='anati-admin.html'" role="link" tabindex="0" aria-label="Open Anati Admin Center">
+            <span class="card-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M12 3 5.5 5.8v5.6c0 4.1 2.7 7.8 6.5 9.6 3.8-1.8 6.5-5.5 6.5-9.6V5.8L12 3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                <path d="M9 12.5 11 14.5 15.5 9.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <h2>Anati Admin Center</h2>
+            <p>Manage user profiles, roles, module access planning, and future workflow permissions.</p>
+            <span class="card-action">Open Section <span aria-hidden="true">&rarr;</span></span>
+            <span class="ghost-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M12 3 5.5 5.8v5.6c0 4.1 2.7 7.8 6.5 9.6 3.8-1.8 6.5-5.5 6.5-9.6V5.8L12 3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                <path d="M9 12.5 11 14.5 15.5 9.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </div>
+
           <div class="section-card" data-section="employee-profiles" onclick="window.location.href='employee-profiles.html'" role="link" tabindex="0" aria-label="Open Employee Profiles">
             <span class="card-icon" aria-hidden="true">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -949,6 +976,39 @@
   <!-- سكربت اللوج آوت -->
   <script>
     let latestMaintenanceState = false;
+    const DASHBOARD_ACCESS_ENDPOINT = '/.netlify/functions/admin-users?my-access=1';
+    const DASHBOARD_MODULE_KEYS = {
+      'anati-admin-center': 'anati_admin',
+      'anati-admin.html': 'anati_admin',
+      'employee-profiles': 'employee_profiles',
+      'employee-profiles.html': 'employee_profiles',
+      'client-profiles': 'client_profiles',
+      'client-profiles.html': 'client_profiles',
+      'restaurant-ratings': 'restaurant_ratings',
+      'restaurant-ratings.html': 'restaurant_ratings',
+      'agent-training': 'agent_training',
+      'agent-training.html': 'agent_training',
+      'employee-deductions': 'employee_deductions',
+      'employee-deductions.html': 'employee_deductions',
+      'call-queue': 'call_queue',
+      'call-queue.html': 'call_queue',
+      'cctv': 'cctv',
+      'cctv.html': 'cctv',
+      'ce': 'customer_experience',
+      'ce.html': 'customer_experience',
+      'free-orders': 'complimentary_orders',
+      'free-orders.html': 'complimentary_orders',
+      'free-order-requests': 'free_order_requests',
+      'free-order-requests.html': 'free_order_requests',
+      'free-order-share': 'free_order_share',
+      'free-order-share.html': 'free_order_share',
+      'complaints': 'daily_complaints',
+      'complaints.html': 'daily_complaints',
+      'attendance': 'attendance',
+      'attendance.html': 'attendance',
+      'weekly-quality': 'weekly_quality',
+      'weekly-quality.html': 'weekly_quality'
+    };
 
     function hydrateDashboardHeader() {
       const userName = document.getElementById('dashboard-user-name');
@@ -960,12 +1020,70 @@
       if (roleBadge) roleBadge.textContent = currentRole;
     }
 
-    function applyDashboardRoleVisibility() {
+    function getDashboardElementModuleKey(element) {
+      const section = element.dataset?.section;
+      if (section && DASHBOARD_MODULE_KEYS[section]) return DASHBOARD_MODULE_KEYS[section];
+      const href = element.getAttribute?.('href') || '';
+      const route = href.split('/').pop();
+      return DASHBOARD_MODULE_KEYS[route] || '';
+    }
+
+    function applyDashboardLegacyVisibility() {
       const currentRole = (localStorage.getItem('cc_role') || '').toLowerCase();
       document.querySelectorAll('[data-role-visible]').forEach((element) => {
         const allowedRoles = element.dataset.roleVisible.split(',').map((role) => role.trim().toLowerCase());
         element.hidden = !allowedRoles.includes(currentRole);
       });
+
+      const isAnatiAdmin = localStorage.getItem('cc_user') === 'Anati' && currentRole === 'admin';
+      document.querySelectorAll('[data-anati-admin-visible]').forEach((element) => {
+        element.hidden = !isAnatiAdmin;
+      });
+    }
+
+    async function applyDashboardRoleVisibility() {
+      applyDashboardLegacyVisibility();
+
+      const currentUser = localStorage.getItem('cc_user') || '';
+      const currentRole = (localStorage.getItem('cc_role') || '').toLowerCase();
+      const isAnatiAdmin = currentUser === 'Anati' && currentRole === 'admin';
+      if (isAnatiAdmin) {
+        document.querySelectorAll('.section-card, .sidebar-nav .nav-item').forEach((element) => {
+          element.hidden = false;
+        });
+        return;
+      }
+
+      try {
+        const response = await fetch(DASHBOARD_ACCESS_ENDPOINT, {
+          cache: 'no-store',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+          }
+        });
+        if (!response.ok) throw new Error(`Access check failed: ${response.status}`);
+        const data = await response.json();
+        if (data.legacyFallback || !data.hasConfiguredAccess) return;
+
+        const allowedModules = new Set(
+          (data.access || [])
+            .filter((record) => record.canView === true)
+            .map((record) => record.moduleKey)
+        );
+
+        document.querySelectorAll('.section-card, .sidebar-nav .nav-item').forEach((element) => {
+          const moduleKey = getDashboardElementModuleKey(element);
+          if (!moduleKey) return;
+          if (moduleKey === 'anati_admin') {
+            element.hidden = true;
+            return;
+          }
+          element.hidden = !allowedModules.has(moduleKey);
+        });
+      } catch (error) {
+        console.warn('Dashboard permission access failed; using legacy role visibility.', error);
+        applyDashboardLegacyVisibility();
+      }
     }
 
     function enableDashboardCardKeyboardNavigation() {

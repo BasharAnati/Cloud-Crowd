@@ -235,7 +235,7 @@
           <p>Manage restaurants, brands, ownership information and operational details.</p>
         </div>
         <div class="hero-actions">
-          <button class="primary-btn management-control" type="button" id="add-client-btn">+ Add Client</button>
+          <button class="primary-btn management-control" type="button" id="add-client-btn" data-permission-create>+ Add Client</button>
         </div>
       </section>
 
@@ -353,7 +353,9 @@
     </div>
   </div>
 
+  <script src="js/permissions.js"></script>
   <script>
+    window.CCPermissions?.requirePageAccess('client_profiles');
     const RESTAURANTS_ENDPOINT = '/.netlify/functions/restaurants';
     const TRAINING_ENDPOINT = '/.netlify/functions/training';
     const RESTAURANT_RATINGS_ENDPOINT = './.netlify/functions/restaurant-ratings';
@@ -646,8 +648,8 @@
       } else {
         grid.innerHTML = filtered.map((restaurant) => {
           const managementActions = canManageClients ? `
-            <button class="small-btn" type="button" data-edit-id="${escapeHtml(restaurant.restaurantId)}">Edit</button>
-            <button class="small-btn danger-btn" type="button" data-archive-id="${escapeHtml(restaurant.restaurantId)}">Archive</button>
+            <button class="small-btn" type="button" data-edit-id="${escapeHtml(restaurant.restaurantId)}" data-permission-edit>Edit</button>
+            <button class="small-btn danger-btn" type="button" data-archive-id="${escapeHtml(restaurant.restaurantId)}" data-permission-delete>Archive</button>
           ` : '';
           return `
             <article class="client-card">

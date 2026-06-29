@@ -192,7 +192,7 @@
           <h2 id="page-title">Restaurant Ratings</h2>
           <p>Track weekly Talabat and Careem ratings across all active brands.</p>
         </div>
-        <button class="primary-btn" type="button" id="add-rating-btn">+ Add Rating</button>
+        <button class="primary-btn" type="button" id="add-rating-btn" data-permission-create>+ Add Rating</button>
       </section>
 
       <div class="message" id="page-message" role="status"></div>
@@ -315,7 +315,9 @@
     </div>
   </div>
 
+  <script src="js/permissions.js"></script>
   <script>
+    window.CCPermissions?.requirePageAccess('restaurant_ratings');
     const RESTAURANTS_ENDPOINT = '/.netlify/functions/restaurants';
     const RATINGS_ENDPOINT = '/.netlify/functions/restaurant-ratings';
     const MONTHS = [
@@ -606,8 +608,8 @@
           <td>${escapeHtml(record.updatedBy || record.createdBy || '-')}</td>
           <td><div class="actions">
             <button class="small-btn" type="button" data-view-id="${escapeHtml(record.ratingId)}">View</button>
-            <button class="small-btn" type="button" data-edit-id="${escapeHtml(record.ratingId)}">Edit</button>
-            <button class="small-btn danger-btn" type="button" data-archive-id="${escapeHtml(record.ratingId)}">Archive</button>
+            <button class="small-btn" type="button" data-edit-id="${escapeHtml(record.ratingId)}" data-permission-edit>Edit</button>
+            <button class="small-btn danger-btn" type="button" data-archive-id="${escapeHtml(record.ratingId)}" data-permission-delete>Archive</button>
           </div></td>
         </tr>
       `).join('');

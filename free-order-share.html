@@ -688,7 +688,9 @@
     </div>
   </div>
 
+  <script src="js/permissions.js"></script>
   <script>
+    window.CCPermissions?.requirePageAccess('free_order_share');
     const API_ENDPOINT = '/.netlify/functions/free-order-requests';
     const SHARE_COLUMNS = [
       { key: 'received', label: 'Received' },
@@ -827,10 +829,10 @@
       const needsResponse = stage === 'needs_response';
       const done = stage === 'done';
       const responseButton = stage === 'received'
-        ? `<button class="warn-btn" type="button" data-response-id="${escapeHtml(item.requestId)}">Needs Response</button>`
+        ? `<button class="warn-btn" type="button" data-response-id="${escapeHtml(item.requestId)}" data-permission-edit>Needs Response</button>`
         : '';
       const doneButton = stage !== 'done'
-        ? `<button class="done-btn" type="button" data-done-id="${escapeHtml(item.requestId)}">Mark Done</button>`
+        ? `<button class="done-btn" type="button" data-done-id="${escapeHtml(item.requestId)}" data-permission-edit>Mark Done</button>`
         : '';
       const badge = needsResponse
         ? '<span class="response-badge">Needs Response</span>'
