@@ -299,6 +299,10 @@
     }
     .chip.active{color:#062016;background:rgba(101,242,194,.86)}
     .chip.disabled{color:#25030a;background:rgba(255,123,138,.86)}
+    .chip.warning{color:#2b1700;background:rgba(246,199,107,.92)}
+    .chip.system{color:#03152d;background:rgba(167,235,242,.9)}
+    .chip.external{color:#03152d;background:rgba(84,172,191,.86)}
+    .chip.linked{color:#062016;background:rgba(101,242,194,.82)}
     .form-grid{
       display:grid;
       grid-template-columns:repeat(2,minmax(0,1fr));
@@ -553,13 +557,16 @@
                   <th>Username</th>
                   <th>Display Name</th>
                   <th>Email</th>
+                  <th>Account Type</th>
+                  <th>Link Status</th>
+                  <th>Linked Employee</th>
                   <th>Role</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="users-body">
-                <tr><td colspan="6">Loading users...</td></tr>
+                <tr><td colspan="9">Loading users...</td></tr>
               </tbody>
             </table>
           </div>
@@ -589,6 +596,19 @@
                 <input id="email" type="email" autocomplete="off">
               </label>
               <label>
+                Account Type
+                <select id="account-type">
+                  <option value="employee">Employee</option>
+                  <option value="external">External</option>
+                  <option value="system">System Admin</option>
+                  <option value="client" disabled>Client - coming later</option>
+                </select>
+              </label>
+              <label id="employee-link-field">
+                Linked Employee
+                <select id="employee-id"></select>
+              </label>
+              <label>
                 Role
                 <select id="role">
                   <option value="agent">Agent</option>
@@ -610,6 +630,10 @@
               <label class="check-row">
                 <input id="must-reset-password" type="checkbox">
                 Must reset password later
+              </label>
+              <label class="check-row" id="system-account-row" hidden>
+                <input id="is-system-account" type="checkbox">
+                Confirm system/admin account
               </label>
             </div>
             <div class="actions">
@@ -680,7 +704,9 @@
   <script>
     window.CCPermissions?.requirePageAccess('anati_admin');
     const ADMIN_USERS_ENDPOINT = "/.netlify/functions/admin-users";
+    const EMPLOYEES_ENDPOINT = "./.netlify/functions/employees";
     let adminUsers = [];
+    let activeEmployees = [];
     let moduleRegistry = [];
     let moduleAccess = [];
 
@@ -739,6 +765,64 @@
       return data;
     }
 
+    async function dataRequest(url) {
+      const response = await fetch(url, {
+        cache: "no-store",
+        headers: authHeaders()
+      });
+
+      if (handleAuthFailure(response)) {
+        throw new Error("Access denied");
+      }
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || `Request failed: ${response.status}`);
+      }
+      return data;
+    }
+
+    function employeeName(employeeId) {
+      return activeEmployees.find((employee) => employee.employeeId === employeeId)?.fullName || "";
+    }
+
+    function renderEmployeeOptions(selectedId = "") {
+      const select = document.getElementById("employee-id");
+      const selectedUser = adminUsers.find((user) => user.employeeId === selectedId);
+      const hasSelectedEmployee = activeEmployees.some((employee) => employee.employeeId === selectedId);
+      const selectedFallback = selectedId && !hasSelectedEmployee
+        ? `<option value="${escapeHtml(selectedId)}" selected>${escapeHtml(selectedUser?.employeeNameSnapshot || "Previously linked employee")}</option>`
+        : "";
+      select.innerHTML = [
+        '<option value="">Select active employee</option>',
+        selectedFallback,
+        ...activeEmployees.map((employee) => `
+          <option value="${escapeHtml(employee.employeeId)}" ${employee.employeeId === selectedId ? "selected" : ""}>
+            ${escapeHtml(employee.fullName)}
+          </option>
+        `)
+      ].join("");
+    }
+
+    function updateAccountFields() {
+      const accountType = document.getElementById("account-type").value;
+      const isEmployee = accountType === "employee";
+      const isSystem = accountType === "system";
+      const userId = document.getElementById("user-id").value;
+      const employeeSelect = document.getElementById("employee-id");
+      const systemCheckbox = document.getElementById("is-system-account");
+
+      document.getElementById("employee-link-field").hidden = !isEmployee;
+      document.getElementById("system-account-row").hidden = !isSystem;
+      employeeSelect.required = isEmployee;
+      systemCheckbox.required = isSystem;
+      if (!isEmployee) employeeSelect.value = "";
+      if (!isSystem) systemCheckbox.checked = false;
+      if (isSystem) {
+        document.getElementById("role").value = "admin";
+      }
+    }
+
     function renderStats() {
       const total = adminUsers.length;
       const active = adminUsers.filter((user) => user.status === "active").length;
@@ -753,25 +837,44 @@
     function renderUsers() {
       const body = document.getElementById("users-body");
       if (!adminUsers.length) {
-        body.innerHTML = '<tr><td colspan="6">No user profiles found.</td></tr>';
+        body.innerHTML = '<tr><td colspan="9">No user profiles found.</td></tr>';
         return;
       }
 
-      body.innerHTML = adminUsers.map((user) => `
+      body.innerHTML = adminUsers.map((user) => {
+        const accountType = user.accountType || "external";
+        const linkStatus = user.linkStatus || (accountType === "external" ? "external" : "unlinked");
+        const linkClass = linkStatus === "linked"
+          ? "linked"
+          : linkStatus === "system"
+            ? "system"
+            : linkStatus === "external"
+              ? "external"
+              : "warning";
+        const linkedLabel = accountType === "external"
+          ? '<span class="chip external">External</span>'
+          : accountType === "system"
+            ? '<span class="chip system">System</span>'
+            : escapeHtml(user.employeeNameSnapshot || user.restaurantNameSnapshot || "-");
+        return `
         <tr>
-          <td><strong>${escapeHtml(user.username)}</strong></td>
+          <td><strong>${escapeHtml(user.username)}</strong> ${user.isSystemAccount ? '<span class="chip system">System</span>' : ""}</td>
           <td>${escapeHtml(user.displayName || "-")}</td>
           <td>${escapeHtml(user.email || "-")}</td>
+          <td><span class="chip ${accountType === "system" ? "system" : accountType === "external" ? "external" : ""}">${escapeHtml(accountType)}</span></td>
+          <td><span class="chip ${linkClass}">${escapeHtml(linkStatus)}</span></td>
+          <td>${linkedLabel}</td>
           <td><span class="chip">${escapeHtml(user.role)}</span></td>
           <td><span class="chip ${user.status === "active" ? "active" : "disabled"}">${escapeHtml(user.status)}</span></td>
           <td>
             <div class="actions" style="margin-top:0">
               <button class="btn secondary" type="button" data-edit-user="${escapeHtml(user.userId)}">Edit</button>
-              <button class="btn danger" type="button" data-disable-user="${escapeHtml(user.userId)}" ${user.status === "disabled" ? "disabled" : ""}>Disable</button>
+              <button class="btn danger" type="button" data-disable-user="${escapeHtml(user.userId)}" ${user.status === "disabled" || user.username.toLowerCase() === "anati" ? "disabled" : ""}>Disable</button>
             </div>
           </td>
         </tr>
-      `).join("");
+      `;
+      }).join("");
 
       body.querySelectorAll("[data-edit-user]").forEach((button) => {
         button.addEventListener("click", () => editUser(button.dataset.editUser));
@@ -824,10 +927,14 @@
       document.getElementById("username").disabled = true;
       document.getElementById("display-name").value = user.displayName || "";
       document.getElementById("email").value = user.email || "";
+      document.getElementById("account-type").value = user.accountType || "external";
+      renderEmployeeOptions(user.employeeId || "");
+      document.getElementById("is-system-account").checked = user.isSystemAccount === true;
       document.getElementById("role").value = user.role || "agent";
       document.getElementById("status").value = user.status || "active";
       document.getElementById("must-reset-password").checked = user.mustResetPassword === true;
       document.getElementById("temporary-password").value = "";
+      updateAccountFields();
       showMessage("user-message", "");
     }
 
@@ -839,10 +946,14 @@
       document.getElementById("username").disabled = false;
       document.getElementById("display-name").value = "";
       document.getElementById("email").value = "";
+      document.getElementById("account-type").value = "employee";
+      renderEmployeeOptions();
+      document.getElementById("is-system-account").checked = false;
       document.getElementById("role").value = "agent";
       document.getElementById("status").value = "active";
       document.getElementById("must-reset-password").checked = false;
       document.getElementById("temporary-password").value = "";
+      updateAccountFields();
       showMessage("user-message", "");
     }
 
@@ -855,8 +966,14 @@
         email: document.getElementById("email").value.trim(),
         role: document.getElementById("role").value,
         status: document.getElementById("status").value,
+        accountType: document.getElementById("account-type").value,
+        employeeId: document.getElementById("employee-id").value,
+        isSystemAccount: document.getElementById("is-system-account").checked,
         mustResetPassword: document.getElementById("must-reset-password").checked
       };
+      if (payload.accountType === "employee" && payload.employeeId && !payload.displayName) {
+        payload.displayName = employeeName(payload.employeeId);
+      }
       const temporaryPassword = document.getElementById("temporary-password").value;
       if (temporaryPassword) {
         payload.temporaryPassword = temporaryPassword;
@@ -945,16 +1062,22 @@
     async function loadAdminCenter() {
       try {
         showMessage("user-message", "Loading...");
-        const usersData = await apiRequest("");
-        const modulesData = await apiRequest("?modules=1");
+        const [usersData, modulesData, employeesData] = await Promise.all([
+          apiRequest(""),
+          apiRequest("?modules=1"),
+          dataRequest(`${EMPLOYEES_ENDPOINT}?status=active`)
+        ]);
         adminUsers = usersData.users || [];
+        activeEmployees = employeesData.employees || [];
         moduleRegistry = modulesData.modules || [];
         moduleAccess = modulesData.access || usersData.access || [];
+        renderEmployeeOptions(document.getElementById("employee-id").value);
+        updateAccountFields();
         renderStats();
         renderUsers();
         renderAccessUsers();
         renderModules();
-        showMessage("user-message", usersData.seeded ? "Current known users seeded." : "");
+        showMessage("user-message", usersData.seeded ? "Anati system admin profile ensured." : "");
       } catch (error) {
         showMessage("user-message", error.message, true);
         showMessage("access-message", error.message, true);
@@ -972,6 +1095,7 @@
     document.getElementById("current-user").textContent = localStorage.getItem("cc_user") || "Anati";
     document.getElementById("current-role").textContent = localStorage.getItem("cc_role") || "admin";
     document.getElementById("user-form").addEventListener("submit", saveUser);
+    document.getElementById("account-type").addEventListener("change", updateAccountFields);
     document.getElementById("reset-form-btn").addEventListener("click", resetUserForm);
     document.getElementById("refresh-users-btn").addEventListener("click", loadAdminCenter);
     document.getElementById("access-user").addEventListener("change", renderModules);

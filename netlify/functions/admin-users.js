@@ -19,6 +19,7 @@ const JSON_HEADERS = { "Content-Type": "application/json", ...CORS };
 
 const ROLES = new Set(["admin", "manager", "agent"]);
 const STATUSES = new Set(["active", "disabled"]);
+const ACCOUNT_TYPES = new Set(["employee", "external", "client", "system"]);
 const MODULES = [
   { moduleKey: "dashboard", moduleName: "Dashboard", route: "dashboard.html" },
   { moduleKey: "cctv", moduleName: "CCTV", route: "cctv.html" },
@@ -53,13 +54,7 @@ const MODULE_KEY_ALIASES = {
   "restaurant-ratings": "restaurant_ratings",
   "anati-admin-center": "anati_admin",
 };
-const SEED_USERS = [
-  { username: "Anati", displayName: "Anati", role: "admin" },
-  { username: "Mai", displayName: "Mai", role: "manager" },
-  { username: "Tuleen", displayName: "Tuleen", role: "agent" },
-  { username: "Aser", displayName: "Aser", role: "agent" },
-  { username: "Tala", displayName: "Tala", role: "agent" },
-];
+const ANATI_SYSTEM_USER = { username: "Anati", displayName: "Anati", role: "admin" };
 const MIN_TEMP_PASSWORD_LENGTH = 6;
 
 function json(statusCode, body) {
@@ -102,6 +97,16 @@ function normalizeStatus(value) {
     throw error;
   }
   return status;
+}
+
+function normalizeAccountType(value) {
+  const accountType = cleanText(value || "external", 40).toLowerCase();
+  if (!ACCOUNT_TYPES.has(accountType)) {
+    const error = new Error("Invalid accountType");
+    error.statusCode = 400;
+    throw error;
+  }
+  return accountType;
 }
 
 function normalizeBoolean(value) {
@@ -147,6 +152,10 @@ function normalizeUserBody(body, options = {}) {
     email: cleanText(body?.email, 320),
     role: normalizeRole(body?.role),
     status: normalizeStatus(body?.status),
+    accountType: normalizeAccountType(body?.accountType ?? body?.account_type),
+    employeeId: cleanText(body?.employeeId ?? body?.employee_id, 100),
+    restaurantId: cleanText(body?.restaurantId ?? body?.restaurant_id, 100),
+    isSystemAccount: normalizeBoolean(body?.isSystemAccount ?? body?.is_system_account),
     mustResetPassword: temporaryPassword ? true : normalizeBoolean(body?.mustResetPassword),
     temporaryPassword,
   };
@@ -240,7 +249,82 @@ async function ensureTables() {
     );
 
     ALTER TABLE admin_users
-      ADD COLUMN IF NOT EXISTS password_hash TEXT;
+      ADD COLUMN IF NOT EXISTS password_hash TEXT,
+      ADD COLUMN IF NOT EXISTS account_type TEXT DEFAULT 'external',
+      ADD COLUMN IF NOT EXISTS employee_id UUID,
+      ADD COLUMN IF NOT EXISTS restaurant_id UUID,
+      ADD COLUMN IF NOT EXISTS is_system_account BOOLEAN NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS linked_at TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS linked_by TEXT;
+
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+          FROM pg_constraint
+         WHERE conname = 'admin_users_account_type_check'
+           AND conrelid = 'admin_users'::regclass
+           AND pg_get_constraintdef(oid) LIKE '%external%'
+      ) THEN
+        ALTER TABLE admin_users
+          DROP CONSTRAINT IF EXISTS admin_users_account_type_check;
+
+        ALTER TABLE admin_users
+          ADD CONSTRAINT admin_users_account_type_check
+          CHECK (account_type IN ('employee', 'external', 'client', 'system')) NOT VALID;
+      END IF;
+
+      IF to_regclass('public.employees') IS NOT NULL
+         AND NOT EXISTS (
+           SELECT 1
+             FROM pg_constraint
+            WHERE conname = 'admin_users_employee_id_fkey'
+              AND conrelid = 'admin_users'::regclass
+         ) THEN
+        ALTER TABLE admin_users
+          ADD CONSTRAINT admin_users_employee_id_fkey
+          FOREIGN KEY (employee_id) REFERENCES employees(employee_id) NOT VALID;
+      END IF;
+
+      IF to_regclass('public.restaurants') IS NOT NULL
+         AND NOT EXISTS (
+           SELECT 1
+             FROM pg_constraint
+            WHERE conname = 'admin_users_restaurant_id_fkey'
+              AND conrelid = 'admin_users'::regclass
+         ) THEN
+        ALTER TABLE admin_users
+          ADD CONSTRAINT admin_users_restaurant_id_fkey
+          FOREIGN KEY (restaurant_id) REFERENCES restaurants(restaurant_id) NOT VALID;
+      END IF;
+    END $$;
+
+    UPDATE admin_users
+       SET account_type = 'system',
+           employee_id = NULL,
+           restaurant_id = NULL,
+           is_system_account = true,
+           linked_at = COALESCE(linked_at, now())
+     WHERE lower(username) = 'anati';
+
+    UPDATE admin_users
+       SET account_type = 'external',
+           employee_id = NULL,
+           restaurant_id = NULL,
+           is_system_account = false,
+           linked_at = NULL,
+           linked_by = NULL
+     WHERE lower(username) <> 'anati'
+       AND COALESCE(account_type, 'external') = 'employee'
+       AND employee_id IS NULL;
+
+    UPDATE admin_users
+       SET account_type = 'external'
+     WHERE account_type IS NULL;
+
+    ALTER TABLE admin_users
+      ALTER COLUMN account_type SET DEFAULT 'external',
+      ALTER COLUMN account_type SET NOT NULL;
 
     CREATE UNIQUE INDEX IF NOT EXISTS idx_admin_module_access_username_module
       ON admin_module_access(username, module_key);
@@ -251,12 +335,41 @@ async function ensureTables() {
     CREATE INDEX IF NOT EXISTS idx_admin_users_status
       ON admin_users(status);
 
+    CREATE INDEX IF NOT EXISTS idx_admin_users_account_type
+      ON admin_users(account_type);
+
+    CREATE INDEX IF NOT EXISTS idx_admin_users_employee_id
+      ON admin_users(employee_id);
+
+    CREATE INDEX IF NOT EXISTS idx_admin_users_restaurant_id
+      ON admin_users(restaurant_id);
+
     CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_created_at
       ON admin_audit_logs(created_at DESC);
   `);
 }
 
+async function tableExists(tableName) {
+  const result = await pool.query("SELECT to_regclass($1) AS table_name", [`public.${tableName}`]);
+  return Boolean(result.rows[0]?.table_name);
+}
+
 function mapUser(row) {
+  const isSystemAccount = row.is_system_account === true || cleanText(row.username, 80).toLowerCase() === "anati";
+  const rawAccountType = cleanText(row.account_type, 40).toLowerCase();
+  const accountType = isSystemAccount
+    ? "system"
+    : rawAccountType || "external";
+  const hasEmployeeLink = Boolean(row.employee_id && row.employee_name_snapshot);
+  const hasRestaurantLink = Boolean(row.restaurant_id && row.restaurant_name_snapshot);
+  const linkStatus = accountType === "system" || isSystemAccount
+    ? "system"
+    : accountType === "external"
+      ? "external"
+      : hasEmployeeLink || hasRestaurantLink
+      ? "linked"
+      : "unlinked";
+
   return {
     userId: row.user_id,
     username: row.username,
@@ -264,6 +377,13 @@ function mapUser(row) {
     email: row.email || "",
     role: row.role || "agent",
     status: row.status || "active",
+    accountType,
+    employeeId: row.employee_id || "",
+    employeeNameSnapshot: row.employee_name_snapshot || "",
+    restaurantId: row.restaurant_id || "",
+    restaurantNameSnapshot: row.restaurant_name_snapshot || "",
+    isSystemAccount,
+    linkStatus,
     mustResetPassword: row.must_reset_password === true,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -310,14 +430,16 @@ async function writeAudit(client, actor, action, targetType, targetId, beforeDat
   );
 }
 
-async function seedUsersIfEmpty(actor) {
-  const count = await pool.query("SELECT COUNT(*)::int AS count FROM admin_users");
-  if (Number(count.rows[0]?.count || 0) > 0) return false;
-
+async function ensureAnatiSystemUser(actor) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    for (const user of SEED_USERS) {
+    const existing = await client.query(
+      "SELECT * FROM admin_users WHERE lower(username) = 'anati' LIMIT 1"
+    );
+
+    let seeded = false;
+    if (!existing.rows.length) {
       const userId = crypto.randomUUID();
       await client.query(
         `INSERT INTO admin_users (
@@ -326,19 +448,43 @@ async function seedUsersIfEmpty(actor) {
            display_name,
            role,
            status,
+           account_type,
+           is_system_account,
+           linked_at,
+           linked_by,
            created_by,
            updated_by
-         ) VALUES ($1, $2, $3, $4, 'active', $5, $5)`,
-        [userId, user.username, user.displayName, user.role, actor]
+         ) VALUES ($1, $2, $3, $4, 'active', 'system', true, now(), $5, $5, $5)`,
+        [userId, ANATI_SYSTEM_USER.username, ANATI_SYSTEM_USER.displayName, ANATI_SYSTEM_USER.role, actor]
       );
-      await writeAudit(client, actor, "seed_user", "admin_user", userId, null, {
-        username: user.username,
-        role: user.role,
+      await writeAudit(client, actor, "seed_system_user", "admin_user", userId, null, {
+        username: ANATI_SYSTEM_USER.username,
+        role: ANATI_SYSTEM_USER.role,
         status: "active",
+        accountType: "system",
       });
+      seeded = true;
+    } else {
+      await client.query(
+        `UPDATE admin_users
+            SET role = 'admin',
+                status = 'active',
+                account_type = 'system',
+                employee_id = NULL,
+                restaurant_id = NULL,
+                is_system_account = true,
+                linked_at = COALESCE(linked_at, now()),
+                linked_by = COALESCE(linked_by, $1),
+                disabled_at = NULL,
+                updated_at = now(),
+                updated_by = $1
+          WHERE lower(username) = 'anati'`,
+        [actor]
+      );
     }
+
     await client.query("COMMIT");
-    return true;
+    return seeded;
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -348,13 +494,29 @@ async function seedUsersIfEmpty(actor) {
 }
 
 async function listUsers() {
+  const hasEmployees = await tableExists("employees");
+  const hasRestaurants = await tableExists("restaurants");
+  const employeeJoin = hasEmployees
+    ? "LEFT JOIN employees e ON e.employee_id = u.employee_id"
+    : "";
+  const restaurantJoin = hasRestaurants
+    ? "LEFT JOIN restaurants r ON r.restaurant_id = u.restaurant_id"
+    : "";
+  const employeeName = hasEmployees ? "e.full_name" : "NULL::text";
+  const restaurantName = hasRestaurants ? "r.brand_name" : "NULL::text";
+
   const result = await pool.query(
-    `SELECT *
-       FROM admin_users
+    `SELECT
+        u.*,
+        ${employeeName} AS employee_name_snapshot,
+        ${restaurantName} AS restaurant_name_snapshot
+       FROM admin_users u
+       ${employeeJoin}
+       ${restaurantJoin}
       ORDER BY
-        CASE status WHEN 'active' THEN 0 ELSE 1 END,
-        CASE role WHEN 'admin' THEN 0 WHEN 'manager' THEN 1 ELSE 2 END,
-        username ASC`
+        CASE u.status WHEN 'active' THEN 0 ELSE 1 END,
+        CASE u.role WHEN 'admin' THEN 0 WHEN 'manager' THEN 1 ELSE 2 END,
+        u.username ASC`
   );
   return result.rows.map(mapUser);
 }
@@ -380,13 +542,138 @@ async function listAccessForUser(username) {
 }
 
 async function getUser(userId, client = pool) {
+  const hasEmployees = await tableExists("employees");
+  const hasRestaurants = await tableExists("restaurants");
+  const employeeJoin = hasEmployees
+    ? "LEFT JOIN employees e ON e.employee_id = u.employee_id"
+    : "";
+  const restaurantJoin = hasRestaurants
+    ? "LEFT JOIN restaurants r ON r.restaurant_id = u.restaurant_id"
+    : "";
+  const employeeName = hasEmployees ? "e.full_name" : "NULL::text";
+  const restaurantName = hasRestaurants ? "r.brand_name" : "NULL::text";
+
   const result = await client.query(
-    `SELECT *
-       FROM admin_users
-      WHERE user_id = $1::uuid`,
+    `SELECT
+        u.*,
+        ${employeeName} AS employee_name_snapshot,
+        ${restaurantName} AS restaurant_name_snapshot
+       FROM admin_users u
+       ${employeeJoin}
+       ${restaurantJoin}
+      WHERE u.user_id = $1::uuid`,
     [userId]
   );
   return result.rows.length ? mapUser(result.rows[0]) : null;
+}
+
+async function validateEmployeeLink(employeeId) {
+  if (!employeeId) return null;
+  if (!(await tableExists("employees"))) {
+    const error = new Error("Employee profiles are not initialized");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const result = await pool.query(
+    `SELECT employee_id, full_name
+       FROM employees
+      WHERE employee_id = $1::uuid
+        AND status = 'active'
+      LIMIT 1`,
+    [employeeId]
+  );
+  if (!result.rows.length) {
+    const error = new Error("Active employee is required");
+    error.statusCode = 400;
+    throw error;
+  }
+  return result.rows[0];
+}
+
+async function validateRestaurantLink(restaurantId) {
+  if (!restaurantId) return null;
+  if (!(await tableExists("restaurants"))) {
+    const error = new Error("Client profiles are not initialized");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const result = await pool.query(
+    `SELECT restaurant_id, brand_name
+       FROM restaurants
+      WHERE restaurant_id = $1::uuid
+        AND status = 'active'
+      LIMIT 1`,
+    [restaurantId]
+  );
+  if (!result.rows.length) {
+    const error = new Error("Active client profile is required");
+    error.statusCode = 400;
+    throw error;
+  }
+  return result.rows[0];
+}
+
+async function prepareUserLink(body, options = {}) {
+  if (body.accountType === "system") {
+    if (!body.isSystemAccount) {
+      const error = new Error("System accounts require explicit confirmation");
+      error.statusCode = 400;
+      throw error;
+    }
+    return {
+      accountType: "system",
+      employeeId: null,
+      restaurantId: null,
+      isSystemAccount: true,
+      linkedAtExpression: "COALESCE(linked_at, now())",
+      displayNameFallback: "",
+    };
+  }
+
+  if (body.accountType === "client") {
+    if (options.requireLink && !body.restaurantId) {
+      const error = new Error("Client accounts require a linked client profile");
+      error.statusCode = 400;
+      throw error;
+    }
+    const restaurant = body.restaurantId ? await validateRestaurantLink(body.restaurantId) : null;
+    return {
+      accountType: "client",
+      employeeId: null,
+      restaurantId: restaurant?.restaurant_id || null,
+      isSystemAccount: false,
+      linkedAtExpression: restaurant ? "now()" : "NULL",
+      displayNameFallback: restaurant?.brand_name || "",
+    };
+  }
+
+  if (body.accountType === "external") {
+    return {
+      accountType: "external",
+      employeeId: null,
+      restaurantId: null,
+      isSystemAccount: false,
+      linkedAtExpression: "NULL",
+      displayNameFallback: "",
+    };
+  }
+
+  if (!body.employeeId) {
+    const error = new Error("Employee accounts require a linked active employee");
+    error.statusCode = 400;
+    throw error;
+  }
+  const employee = body.employeeId ? await validateEmployeeLink(body.employeeId) : null;
+  return {
+    accountType: "employee",
+    employeeId: employee?.employee_id || null,
+    restaurantId: null,
+    isSystemAccount: false,
+    linkedAtExpression: employee ? "now()" : "NULL",
+    displayNameFallback: employee?.full_name || "",
+  };
 }
 
 function allModuleAccessFor(username) {
@@ -478,7 +765,7 @@ exports.handler = async (event) => {
         });
       }
 
-      const seeded = await seedUsersIfEmpty(actor);
+      const seeded = await ensureAnatiSystemUser(actor);
       const users = await listUsers();
       return json(200, {
         ok: true,
@@ -491,6 +778,7 @@ exports.handler = async (event) => {
 
     if (event.httpMethod === "POST") {
       const body = normalizeUserBody(JSON.parse(event.body || "{}"));
+      const link = await prepareUserLink(body, { requireLink: true });
       const userId = crypto.randomUUID();
 
       await pool.query(
@@ -501,21 +789,34 @@ exports.handler = async (event) => {
            email,
            role,
            status,
+           account_type,
+           employee_id,
+           restaurant_id,
+           is_system_account,
+           linked_at,
+           linked_by,
            must_reset_password,
            password_hash,
            created_by,
            updated_by
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)`,
+         ) VALUES (
+           $1, $2, $3, $4, $5, $6, $7, $8::uuid, $9::uuid, $10,
+           ${link.linkedAtExpression}, $11, $12, $13, $11, $11
+         )`,
         [
           userId,
           body.username,
-          body.displayName || null,
+          body.displayName || link.displayNameFallback || null,
           body.email || null,
           body.role,
           body.status,
+          link.accountType,
+          link.employeeId,
+          link.restaurantId,
+          link.isSystemAccount,
+          actor,
           body.mustResetPassword,
           body.temporaryPassword ? hashPassword(body.temporaryPassword) : null,
-          actor,
         ]
       );
 
@@ -633,16 +934,40 @@ exports.handler = async (event) => {
           return json(404, { ok: false, error: "User not found" });
         }
 
+        const isAnati = before.username.toLowerCase() === "anati";
+        const link = isAnati
+          ? {
+              accountType: "system",
+              employeeId: null,
+              restaurantId: null,
+              isSystemAccount: true,
+              linkedAtExpression: "COALESCE(linked_at, now())",
+              displayNameFallback: "Anati",
+            }
+          : await prepareUserLink(body, { requireLink: false });
+        const nextRole = isAnati ? "admin" : body.role;
+        const nextStatus = isAnati ? "active" : body.status;
+        const nextDisplayName = body.displayName || link.displayNameFallback || null;
+
         const result = await client.query(
           `UPDATE admin_users
               SET display_name = $2,
                   email = $3,
                   role = $4,
                   status = $5,
-                  must_reset_password = $6,
+                  account_type = $6,
+                  employee_id = $7::uuid,
+                  restaurant_id = $8::uuid,
+                  is_system_account = $9,
+                  linked_at = ${link.linkedAtExpression},
+                  linked_by = CASE
+                    WHEN $7::uuid IS NOT NULL OR $8::uuid IS NOT NULL OR $9 = true THEN $10
+                    ELSE NULL
+                  END,
+                  must_reset_password = $11,
                   password_hash = CASE
-                    WHEN $8::text IS NULL THEN password_hash
-                    ELSE $8::text
+                    WHEN $12::text IS NULL THEN password_hash
+                    ELSE $12::text
                   END,
                   disabled_at = CASE
                     WHEN $5 = 'disabled' AND disabled_at IS NULL THEN now()
@@ -650,17 +975,21 @@ exports.handler = async (event) => {
                     ELSE disabled_at
                   END,
                   updated_at = now(),
-                  updated_by = $7
+                  updated_by = $10
             WHERE user_id = $1::uuid
             RETURNING user_id`,
           [
             userId,
-            body.displayName || null,
+            nextDisplayName,
             body.email || null,
-            body.role,
-            body.status,
-            body.mustResetPassword,
+            nextRole,
+            nextStatus,
+            link.accountType,
+            link.employeeId,
+            link.restaurantId,
+            link.isSystemAccount,
             actor,
+            body.mustResetPassword,
             body.temporaryPassword ? hashPassword(body.temporaryPassword) : null,
           ]
         );
@@ -693,6 +1022,10 @@ exports.handler = async (event) => {
         if (!before) {
           await client.query("ROLLBACK");
           return json(404, { ok: false, error: "User not found" });
+        }
+        if (before.username.toLowerCase() === "anati") {
+          await client.query("ROLLBACK");
+          return json(400, { ok: false, error: "Anati cannot be disabled" });
         }
 
         await client.query(
