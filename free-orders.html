@@ -69,28 +69,86 @@
   <script src="main.js" defer></script>
 </head>
 <body class="free-orders-page">
-  <header class="navbar" role="banner">
-    <div class="brand" aria-hidden="false">
-      <div class="logo" title="Cloud Crowd" onclick="window.location.href='dashboard.html'" style="cursor:pointer;">CC</div>
-      <div>
-        <h1>Cloud Crowd</h1>
-        <p>Complimentary</p>
-      </div>
-    </div>
-    <img src="assets/images/logo.png" alt="Company Logo" class="nav-center-logo" onclick="window.location.href='dashboard.html'">
-  </header>
+  <div class="free-orders-module-shell">
+    <aside class="free-orders-sidebar" aria-label="Complimentary Orders navigation">
+      <a class="free-orders-sidebar-brand" href="dashboard.html" aria-label="Cloud Crowd dashboard">
+        <img src="assets/images/logo.png" alt="Cloud Crowd logo" class="free-orders-sidebar-logo">
+        <div>
+          <h1>Cloud Crowd</h1>
+          <p>Operations Hub</p>
+        </div>
+      </a>
 
-  <div class="container free-orders-workspace" id="main-content">
-    <section class="free-orders-hero" aria-labelledby="page-title">
-      <div class="free-orders-hero-copy">
-        <h2 id="page-title">Complimentary Orders</h2>
-        <p>Track next-order compensation, customer discounts, and follow-up usage.</p>
-      </div>
-      <div class="buttons-container free-orders-actions">
-        <button class="back-btn" onclick="goBack()">Back</button>
-        <button class="add-ticket-btn" onclick="openModal('free-orders')">Add New Ticket</button>
-      </div>
-    </section>
+      <nav class="free-orders-sidebar-nav">
+        <a class="free-orders-nav-item" href="dashboard.html">
+          <span class="free-orders-nav-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M4 13h7V4H4v9Zm9 7h7V4h-7v16ZM4 20h7v-5H4v5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          Dashboard
+        </a>
+        <a class="free-orders-nav-item" href="cctv.html">
+          <span class="free-orders-nav-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M4 7h11a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H4V7Z" stroke="currentColor" stroke-width="1.7"/>
+              <path d="m18 11 3-2v6l-3-2" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          CCTV Operator Observations
+        </a>
+        <a class="free-orders-nav-item" href="ce.html">
+          <span class="free-orders-nav-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M12 14c3.3 0 6-2.2 6-5s-2.7-5-6-5-6 2.2-6 5 2.7 5 6 5Z" stroke="currentColor" stroke-width="1.7"/>
+              <path d="M8.5 13.3 6 18l5-3.1" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          Customer Experience
+        </a>
+        <a class="free-orders-nav-item active" href="free-orders.html" aria-current="page">
+          <span class="free-orders-nav-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M6 8h12l-1 12H7L6 8Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+              <path d="M9 8a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.7"/>
+            </svg>
+          </span>
+          Complimentary Orders
+        </a>
+        <a class="free-orders-nav-item" href="complaints.html">
+          <span class="free-orders-nav-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <path d="M6 4h12v16H6V4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+              <path d="M9 8h6M9 12h6M9 16h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            </svg>
+          </span>
+          Daily Complaints
+        </a>
+      </nav>
+    </aside>
+
+    <main class="free-orders-workspace free-orders-main-area" id="main-content">
+      <header class="free-orders-topbar" role="banner">
+        <a class="free-orders-breadcrumb" href="dashboard.html">
+          <span aria-hidden="true">&larr;</span>
+          Dashboard
+        </a>
+        <div class="free-orders-user-tools">
+          <span class="free-orders-user-pill" id="free-orders-current-user">Team Member</span>
+          <span class="free-orders-role-pill" id="free-orders-current-role">operator</span>
+          <button class="free-orders-logout" type="button" onclick="logout()">Log out</button>
+        </div>
+      </header>
+
+      <section class="free-orders-hero" aria-labelledby="page-title">
+        <div class="free-orders-hero-copy">
+          <h2 id="page-title">Complimentary Orders</h2>
+          <p>Track next-order compensation, customer discounts, and follow-up usage.</p>
+        </div>
+        <div class="free-orders-actions">
+          <button class="add-ticket-btn" type="button" onclick="openModal('free-orders')" data-permission-create>Add New Ticket</button>
+        </div>
+      </section>
 
     <section class="free-orders-stats" aria-label="Complimentary order stats">
       <div class="free-orders-stat-card">
@@ -151,6 +209,7 @@
     <div class="ticket-list free-orders-board" id="ticket-list">
       <div id="tickets"></div>
     </div>
+    </main>
   </div>
 
   <div class="modal" id="modal">
@@ -184,7 +243,17 @@
   </div>
 
   <script>
+    function logout() {
+      localStorage.removeItem('cc_auth');
+      localStorage.removeItem('cc_user');
+      localStorage.removeItem('cc_role');
+      localStorage.removeItem('cc_token');
+      window.location.href = 'login.html';
+    }
+
     window.addEventListener('load', () => {
+      document.getElementById('free-orders-current-user').textContent = localStorage.getItem('cc_user') || 'Team Member';
+      document.getElementById('free-orders-current-role').textContent = localStorage.getItem('cc_role') || 'operator';
       currentSection = 'free-orders';
       renderTickets();
     });
