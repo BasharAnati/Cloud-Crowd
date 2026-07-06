@@ -36,16 +36,6 @@ function findLegacyUser(username, password) {
   return LEGACY_USERS.find((user) => user.username === username && user.password === password) || null;
 }
 
-function legacyProfile(username) {
-  const legacy = LEGACY_USERS.find((user) => user.username === username);
-  if (!legacy) return null;
-  return {
-    username: legacy.username,
-    role: legacy.role || getRole(legacy.username),
-    displayName: legacy.username,
-  };
-}
-
 function createSessionToken(payload) {
   const secret = process.env.SESSION_SECRET;
   if (!secret) {
@@ -111,7 +101,13 @@ async function ensureAdminUsersTable() {
     );
 
     ALTER TABLE admin_users
-      ADD COLUMN IF NOT EXISTS password_hash TEXT;
+      ADD COLUMN IF NOT EXISTS password_hash TEXT,
+      ADD COLUMN IF NOT EXISTS account_type TEXT DEFAULT 'external',
+      ADD COLUMN IF NOT EXISTS employee_id UUID,
+      ADD COLUMN IF NOT EXISTS restaurant_id UUID,
+      ADD COLUMN IF NOT EXISTS is_system_account BOOLEAN NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS linked_at TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS linked_by TEXT;
   `);
   return true;
 }
@@ -129,11 +125,9 @@ async function getAdminUser(username) {
   return result.rows[0] || null;
 }
 
-async function seedLegacyProfileIfMissing(username) {
+async function ensureAnatiSystemProfile(username) {
   if (!pool) return;
-
-  const profile = legacyProfile(username);
-  if (!profile) return;
+  if (String(username || "").trim().toLowerCase() !== "anati") return;
 
   await pool.query(
     `INSERT INTO admin_users (
@@ -142,11 +136,27 @@ async function seedLegacyProfileIfMissing(username) {
        display_name,
        role,
        status,
+       account_type,
+       is_system_account,
+       linked_at,
+       linked_by,
        created_by,
        updated_by
-     ) VALUES ($1, $2, $3, $4, 'active', 'legacy-login', 'legacy-login')
-     ON CONFLICT (username) DO NOTHING`,
-    [crypto.randomUUID(), profile.username, profile.displayName, profile.role]
+     ) VALUES ($1, 'Anati', 'Anati', 'admin', 'active', 'system', true, now(), 'legacy-login', 'legacy-login', 'legacy-login')
+     ON CONFLICT (username)
+     DO UPDATE SET
+       role = 'admin',
+       status = 'active',
+       account_type = 'system',
+       employee_id = NULL,
+       restaurant_id = NULL,
+       is_system_account = true,
+       linked_at = COALESCE(admin_users.linked_at, now()),
+       linked_by = COALESCE(admin_users.linked_by, 'legacy-login'),
+       disabled_at = NULL,
+       updated_at = now(),
+       updated_by = 'legacy-login'`,
+    [crypto.randomUUID()]
   );
 }
 
@@ -212,9 +222,11 @@ exports.handler = async (event) => {
     try {
       const dbResult = await tryDatabaseLogin(username, password);
       if (dbResult.handled) {
-        return dbResult.ok
-          ? loginSuccess(dbResult.username, dbResult.role)
-          : invalidCredentials();
+        if (!dbResult.ok) return invalidCredentials();
+        if (String(dbResult.username || "").toLowerCase() === "anati") {
+          await ensureAnatiSystemProfile(dbResult.username);
+        }
+        return loginSuccess(dbResult.username, dbResult.role);
       }
     } catch (dbError) {
       dbAvailable = false;
@@ -226,9 +238,9 @@ exports.handler = async (event) => {
 
     if (dbAvailable) {
       try {
-        await seedLegacyProfileIfMissing(legacy.username);
+        await ensureAnatiSystemProfile(legacy.username);
       } catch {
-        console.warn("Legacy profile seed failed after successful legacy login.");
+        console.warn("Legacy system profile sync failed after successful legacy login.");
       }
     }
 
