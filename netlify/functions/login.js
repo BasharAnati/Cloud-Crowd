@@ -10,13 +10,6 @@ const CONNECTION_STRING =
   process.env.DATABASE_URL;
 
 const pool = CONNECTION_STRING ? new Pool({ connectionString: CONNECTION_STRING }) : null;
-const LEGACY_USERS = [
-  { username: "Mai", password: "M#123", role: "manager" },
-  { username: "Tuleen", password: "000000**", role: "agent" },
-  { username: "Anati", password: "A@1995", role: "admin" },
-  { username: "Aser", password: "000000**", role: "agent" },
-  { username: "Tala", password: "000000**", role: "agent" },
-];
 
 function base64UrlEncode(value) {
   return Buffer.from(value).toString("base64url");
@@ -24,16 +17,6 @@ function base64UrlEncode(value) {
 
 function cleanText(value, maxLength) {
   return String(value ?? "").trim().slice(0, maxLength);
-}
-
-function getRole(username) {
-  if (username === "Anati") return "admin";
-  if (username === "Mai") return "manager";
-  return "agent";
-}
-
-function findLegacyUser(username, password) {
-  return LEGACY_USERS.find((user) => user.username === username && user.password === password) || null;
 }
 
 function createSessionToken(payload) {
@@ -186,26 +169,25 @@ function invalidCredentials() {
 }
 
 async function tryDatabaseLogin(username, password) {
-  if (!pool) return { handled: false };
+  if (!pool) throw new Error("Database is not configured");
 
   await ensureAdminUsersTable();
   const dbUser = await getAdminUser(username);
-  if (!dbUser) return { handled: false };
+  if (!dbUser) return { ok: false };
 
   if (String(dbUser.status || "active").toLowerCase() !== "active") {
-    return { handled: true, ok: false };
+    return { ok: false };
   }
 
   if (dbUser.password_hash) {
     return {
-      handled: true,
       ok: verifyPassword(password, dbUser.password_hash),
       username: dbUser.username,
-      role: cleanText(dbUser.role, 40).toLowerCase() || getRole(dbUser.username),
+      role: cleanText(dbUser.role, 40).toLowerCase() || "agent",
     };
   }
 
-  return { handled: false, existingUserWithoutPassword: true };
+  return { ok: false };
 }
 
 exports.handler = async (event) => {
@@ -218,33 +200,17 @@ exports.handler = async (event) => {
     const username = cleanText(rawUsername, 80);
     if (!username || !password) return invalidCredentials();
 
-    let dbAvailable = Boolean(pool);
     try {
       const dbResult = await tryDatabaseLogin(username, password);
-      if (dbResult.handled) {
-        if (!dbResult.ok) return invalidCredentials();
-        if (String(dbResult.username || "").toLowerCase() === "anati") {
-          await ensureAnatiSystemProfile(dbResult.username);
-        }
-        return loginSuccess(dbResult.username, dbResult.role);
+      if (!dbResult.ok) return invalidCredentials();
+      if (String(dbResult.username || "").toLowerCase() === "anati") {
+        await ensureAnatiSystemProfile(dbResult.username);
       }
+      return loginSuccess(dbResult.username, dbResult.role);
     } catch (dbError) {
-      dbAvailable = false;
-      console.warn("Database login unavailable; falling back to legacy login.");
+      console.warn("Database login unavailable.");
+      throw dbError;
     }
-
-    const legacy = findLegacyUser(username, password);
-    if (!legacy) return invalidCredentials();
-
-    if (dbAvailable) {
-      try {
-        await ensureAnatiSystemProfile(legacy.username);
-      } catch {
-        console.warn("Legacy system profile sync failed after successful legacy login.");
-      }
-    }
-
-    return loginSuccess(legacy.username, legacy.role || getRole(legacy.username));
   } catch (error) {
     console.error("login function error:", error);
     return {
