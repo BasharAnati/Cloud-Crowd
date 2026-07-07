@@ -138,17 +138,14 @@ async function requireModuleAccess(event, moduleKey, action = "view") {
   const session = requireValidSession(event);
   const username = String(session.username || "");
   const role = String(session.role || "").toLowerCase();
+  const normalizedModuleKey = normalizeModuleKey(moduleKey);
   const normalizedAction = String(action || "view").toLowerCase();
   const actionColumn = MODULE_ACTION_COLUMNS[normalizedAction];
 
   if (!actionColumn) throw authError(500, "Invalid module action");
   if (username.trim().toLowerCase() === "anati" && role === "admin") return session;
 
-  const accessState = await getModuleAccess(username, moduleKey);
-
-  // Transitional fallback: if permissions cannot be read yet, or this user has
-  // no configured rows, preserve existing legacy role/function behavior.
-  if (accessState.dbUnavailable || !accessState.configured) return session;
+  const accessState = await getModuleAccess(username, normalizedModuleKey);
 
   if (accessState.access?.[actionColumn] === true) return session;
   throw authError(403, "Module access denied");
