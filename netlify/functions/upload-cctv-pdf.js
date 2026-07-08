@@ -1,5 +1,5 @@
 const { google } = require("googleapis");
-const { requireValidSession } = require("./_auth");
+const { requireModuleAccess } = require("./_auth");
 
 const RANGE_READ = process.env.GOOGLE_SHEET_RANGE_CCTV || process.env.GOOGLE_SHEET_RANGE || "";
 const CASE_COL_INDEX_1BASED = 11; // K column
@@ -30,7 +30,7 @@ exports.handler = async (event) => {
     }
 
     try {
-      requireValidSession(event);
+      await requireModuleAccess(event, "cctv", "edit");
     } catch (authErr) {
       if (!authErr.statusCode) throw authErr;
       return json(authErr.statusCode, { ok: false, error: authErr.message });

@@ -3,6 +3,7 @@ const { google } = require('googleapis');
 const {
   requireValidSession,
   requireAdminSession,
+  requireModuleAccess,
 } = require('./_auth');
 
 /* ------------------------ helpers: http ------------------------ */
@@ -78,6 +79,12 @@ const SHEET_RANGES = {
   'free-orders': process.env.GOOGLE_SHEET_RANGE_COMPLIMENTARY,
 };
 const KNOWN_SECTIONS = new Set(Object.keys(SHEET_RANGES));
+const SECTION_MODULES = {
+  cctv: 'cctv',
+  ce: 'customer_experience',
+  complaints: 'daily_complaints',
+  'free-orders': 'complimentary_orders',
+};
 
 // fallback لو لسه عندك GOOGLE_SHEET_ID قديم
 const DEFAULT_SHEET_ID =
@@ -129,6 +136,28 @@ const SECTION_COLS = {
 };
 function getCols(section = 'cctv') { return SECTION_COLS[section] || SECTION_COLS.cctv; }
 
+function cleanSection(value) {
+  return String(value || '').trim();
+}
+
+function moduleForSection(section) {
+  return SECTION_MODULES[section] || '';
+}
+
+function requireKnownSection(value) {
+  const section = cleanSection(value);
+  if (!section || !moduleForSection(section)) {
+    const error = new Error('Invalid section');
+    error.statusCode = 400;
+    throw error;
+  }
+  return section;
+}
+
+async function requireSectionAccess(event, section, action) {
+  return requireModuleAccess(event, moduleForSection(requireKnownSection(section)), action);
+}
+
 /* ------------------------------ handler ------------------------------ */
 exports.handler = async (event) => {
   try {
@@ -157,17 +186,19 @@ exports.handler = async (event) => {
       if (clientSecret !== appSecret) return err(401, 'Unauthorized');
     }
 
-    const sheets = await getSheetsClient();
-
     /* ------------------------------- GET ------------------------------- */
     if (event.httpMethod === 'GET') {
       const qs = event.queryStringParameters || {};
-      let range = pickRange(qs.section);
-      if (!range) return err(500, missingRangeError(qs.section));
+      const section = requireKnownSection(qs.section);
+      await requireSectionAccess(event, section, 'view');
+
+      let range = pickRange(section);
+      if (!range) return err(500, missingRangeError(section));
       range = normalizeRange(range); // <-- مهم
-      const spreadsheetId = pickSpreadsheetId({ section: qs.section, range });
+      const spreadsheetId = pickSpreadsheetId({ section, range });
       if (!spreadsheetId) return err(500, 'No Spreadsheet ID configured');
 
+      const sheets = await getSheetsClient();
       const res = await sheets.spreadsheets.values.get({ spreadsheetId, range });
       return ok(res.data);
     }
@@ -178,7 +209,8 @@ exports.handler = async (event) => {
       try { body = JSON.parse(event.body || '{}'); }
       catch { return err(400, 'Invalid JSON body'); }
 
-      const section = body.section || undefined;
+      const section = requireKnownSection(body.section);
+      await requireSectionAccess(event, section, 'create');
       let range = pickRange(section);
       if (!range) return err(500, missingRangeError(section));
       range = stripQuotes(range);
@@ -193,6 +225,7 @@ exports.handler = async (event) => {
         return err(400, 'Body must include non-empty "values" array');
       }
 
+      const sheets = await getSheetsClient();
       const appendRes = await sheets.spreadsheets.values.append({
         spreadsheetId,
         range, // اسم التاب
@@ -208,7 +241,8 @@ exports.handler = async (event) => {
       try { body = JSON.parse(event.body || '{}'); }
       catch { return err(400, 'Invalid JSON body'); }
 
-      const section = String(body.section || 'cctv');
+      const section = requireKnownSection(body.section);
+      await requireSectionAccess(event, section, 'edit');
       const configuredRange = pickRange(section);
       let tab = tabFromRange(configuredRange);
       if (!tab) return err(500, missingRangeError(section));
@@ -223,6 +257,7 @@ exports.handler = async (event) => {
       if (!caseNumber) return err(400, 'caseNumber is required');
 
       const { key: COL_CASE, status: COL_STATUS, action: COL_ACTION } = getCols(section);
+      const sheets = await getSheetsClient();
 
       // ابحث عن الصف عبر عمود المفتاح
       const colRange = `${tab}!${COL_CASE}:${COL_CASE}`;
@@ -271,7 +306,8 @@ exports.handler = async (event) => {
       try { body = JSON.parse(event.body || '{}'); }
       catch { return err(400, 'Invalid JSON body'); }
 
-      const section = String(body.section || 'cctv');
+      const section = requireKnownSection(body.section);
+      await requireSectionAccess(event, section, 'delete');
       const configuredRange = pickRange(section);
       let tab = tabFromRange(configuredRange);
       if (!tab) return err(500, missingRangeError(section));
@@ -283,6 +319,7 @@ exports.handler = async (event) => {
       if (!caseNumber) return err(400, 'caseNumber is required');
 
       const { key: COL_CASE } = getCols(section);
+      const sheets = await getSheetsClient();
 
       const colRange = `${tab}!${COL_CASE}:${COL_CASE}`;
       const read = await sheets.spreadsheets.values.get({ spreadsheetId, range: colRange });
@@ -314,6 +351,8 @@ exports.handler = async (event) => {
 
     return err(405, 'Method not allowed');
   } catch (e) {
-    return err(500, e.message || 'Server error');
+    if (e.statusCode) return err(e.statusCode, e.message);
+    console.error('sheets function error:', e);
+    return err(500, 'Server error');
   }
 };

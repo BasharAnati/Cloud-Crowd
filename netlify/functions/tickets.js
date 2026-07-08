@@ -6,6 +6,7 @@ const { Pool } = require("pg");
 const {
   requireValidSession,
   requireAdminSession,
+  requireModuleAccess,
 } = require("./_auth");
 
 // pick connection string (uses pooled URL if set)
@@ -23,6 +24,63 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 const JSON_HEADERS = { "Content-Type": "application/json", ...CORS };
+const SECTION_MODULES = {
+  cctv: "cctv",
+  ce: "customer_experience",
+  complaints: "daily_complaints",
+  "free-orders": "complimentary_orders",
+};
+
+function json(statusCode, body) {
+  return {
+    statusCode,
+    headers: JSON_HEADERS,
+    body: JSON.stringify(body),
+  };
+}
+
+function cleanSection(value) {
+  return String(value || "").trim();
+}
+
+function getModuleForSection(section) {
+  return SECTION_MODULES[section] || "";
+}
+
+function requireKnownSection(section) {
+  const clean = cleanSection(section);
+  if (!clean || !getModuleForSection(clean)) {
+    const error = new Error("Invalid section");
+    error.statusCode = 400;
+    throw error;
+  }
+  return clean;
+}
+
+async function requireSectionAccess(event, section, action) {
+  return requireModuleAccess(event, getModuleForSection(requireKnownSection(section)), action);
+}
+
+async function getTicketSection(ticketId) {
+  const ticketResult = await pool.query(
+    `SELECT section
+       FROM tickets
+      WHERE id = $1::bigint
+      LIMIT 1`,
+    [ticketId]
+  );
+  if (ticketResult.rows.length) return ticketResult.rows[0].section;
+
+  const historyResult = await pool.query(
+    `SELECT section
+       FROM ticket_history
+      WHERE ticket_id = $1::bigint
+      ORDER BY changed_at DESC
+      LIMIT 1`,
+    [ticketId]
+  );
+  return historyResult.rows[0]?.section || "";
+}
 
 // --- bootstrap: ensure tickets table exists ---
 async function ensureTicketsTable() {
@@ -133,11 +191,7 @@ exports.handler = async (event) => {
       }
     } catch (authErr) {
       if (!authErr.statusCode) throw authErr;
-      return {
-        statusCode: authErr.statusCode,
-        headers: JSON_HEADERS,
-        body: JSON.stringify({ ok: false, error: authErr.message }),
-      };
+      return json(authErr.statusCode, { ok: false, error: authErr.message });
     }
 
     await ensureTicketsTable();
@@ -161,22 +215,27 @@ exports.handler = async (event) => {
       const idParam = url.searchParams.get("id");
 
       if (historyFlag === "1" && idParam) {
+        const ticketId = Number(idParam);
+        if (!ticketId) return json(400, { ok: false, error: "id is required" });
+
+        const section = await getTicketSection(ticketId);
+        if (!section) return json(404, { ok: false, error: "Ticket not found" });
+        await requireSectionAccess(event, section, "view");
+
         const { rows } = await pool.query(
           `SELECT id, ticket_id, section, changed_by, prev_status, new_status,
                   prev_action, new_action, changed_at
              FROM ticket_history
             WHERE ticket_id = $1::bigint
             ORDER BY changed_at DESC`,
-          [Number(idParam)]
+          [ticketId]
         );
-        return {
-          statusCode: 200,
-          headers: JSON_HEADERS,
-          body: JSON.stringify({ ok: true, history: rows }),
-        };
+        return json(200, { ok: true, history: rows });
       }
 
-      const section = url.searchParams.get("section") || "cctv";
+      const section = requireKnownSection(url.searchParams.get("section"));
+      await requireSectionAccess(event, section, "view");
+
       const { rows } = await pool.query(
         `SELECT id, section, status, payload, created_at, updated_at
            FROM tickets
@@ -185,17 +244,15 @@ exports.handler = async (event) => {
         [section]
       );
 
-      return {
-        statusCode: 200,
-        headers: JSON_HEADERS,
-        body: JSON.stringify({ ok: true, count: rows.length, tickets: rows }),
-      };
+      return json(200, { ok: true, count: rows.length, tickets: rows });
     }
 
     // ===== POST  { section, status, payload, changedBy? } =====
     if (event.httpMethod === "POST") {
       const body = JSON.parse(event.body || "{}");
-      const section = String(body.section || "cctv");
+      const section = requireKnownSection(body.section);
+      await requireSectionAccess(event, section, "create");
+
       const status = String(body.status || "Under Review");
       const payload = body.payload || {};
       const changedBy = body.changedBy ? String(body.changedBy) : null;
@@ -216,11 +273,7 @@ exports.handler = async (event) => {
           [section, status, JSON.stringify(payload)]
         );
         await client.query("COMMIT");
-        return {
-          statusCode: 200,
-          headers: JSON_HEADERS,
-          body: JSON.stringify({ ok: true, ticket: rows[0] }),
-        };
+        return json(200, { ok: true, ticket: rows[0] });
       } catch (err) {
         await client.query("ROLLBACK");
         throw err;
@@ -245,12 +298,12 @@ exports.handler = async (event) => {
       const changedBy = body.changedBy ? String(body.changedBy) : null;
 
       if (!id) {
-        return {
-          statusCode: 400,
-          headers: JSON_HEADERS,
-          body: JSON.stringify({ ok: false, error: "id is required" }),
-        };
+        return json(400, { ok: false, error: "id is required" });
       }
+
+      const ticketSection = await getTicketSection(id);
+      if (!ticketSection) return json(404, { ok: false, error: "Ticket not found" });
+      await requireSectionAccess(event, ticketSection, "edit");
 
       const client = await pool.connect();
       try {
@@ -286,18 +339,10 @@ exports.handler = async (event) => {
         await client.query("COMMIT");
 
         if (rows.length === 0) {
-          return {
-            statusCode: 404,
-            headers: JSON_HEADERS,
-            body: JSON.stringify({ ok: false, error: "Ticket not found" }),
-          };
+          return json(404, { ok: false, error: "Ticket not found" });
         }
 
-        return {
-          statusCode: 200,
-          headers: JSON_HEADERS,
-          body: JSON.stringify({ ok: true, ticket: rows[0] }),
-        };
+        return json(200, { ok: true, ticket: rows[0] });
       } catch (err) {
         await client.query("ROLLBACK");
         throw err;
@@ -313,12 +358,12 @@ if (event.httpMethod === "DELETE") {
   const id = Number(body.id);
   const byRaw = String(session?.username || "admin");
   if (!id) {
-    return {
-      statusCode: 400,
-      headers: JSON_HEADERS,
-      body: JSON.stringify({ ok: false, error: "id is required" }),
-    };
+    return json(400, { ok: false, error: "id is required" });
   }
+
+  const ticketSection = await getTicketSection(id);
+  if (!ticketSection) return json(404, { ok: false, error: "Ticket not found" });
+  await requireSectionAccess(event, ticketSection, "delete");
 
   const client = await pool.connect();
   try {
@@ -333,11 +378,7 @@ if (event.httpMethod === "DELETE") {
     );
     if (curRows.length === 0) {
       await client.query("ROLLBACK");
-      return {
-        statusCode: 404,
-        headers: JSON_HEADERS,
-        body: JSON.stringify({ ok: false, error: "Ticket not found" }),
-      };
+      return json(404, { ok: false, error: "Ticket not found" });
     }
     const cur = curRows[0];
     const prevAction = (cur.payload && cur.payload.actionTaken) || null;
@@ -354,11 +395,11 @@ if (event.httpMethod === "DELETE") {
     await client.query(`DELETE FROM tickets WHERE id=$1::bigint`, [id]);
 
     await client.query("COMMIT");
-    return { statusCode: 200, headers: JSON_HEADERS, body: JSON.stringify({ ok: true }) };
+    return json(200, { ok: true });
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("DELETE error:", err);
-    return { statusCode: 500, headers: JSON_HEADERS, body: JSON.stringify({ ok: false, error: err.message }) };
+    return json(500, { ok: false, error: "Internal Server Error" });
   } finally {
     client.release();
   }
@@ -373,10 +414,7 @@ if (event.httpMethod === "DELETE") {
     };
   } catch (err) {
     console.error("tickets function error:", err);
-    return {
-      statusCode: 500,
-      headers: JSON_HEADERS,
-      body: JSON.stringify({ ok: false, error: err.message }),
-    };
+    if (err.statusCode) return json(err.statusCode, { ok: false, error: err.message });
+    return json(500, { ok: false, error: "Internal Server Error" });
   }
 };
