@@ -194,11 +194,15 @@
     }
   </style>
   <script>
-    if (localStorage.getItem('cc_auth') !== '1' || !localStorage.getItem('cc_token') || !localStorage.getItem('cc_role')) {
+    if ((sessionStorage.getItem('cc_auth') || localStorage.getItem('cc_auth')) !== '1' || !(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || !(sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role'))) {
       localStorage.removeItem('cc_auth');
+      sessionStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
+      sessionStorage.removeItem('cc_user');
       localStorage.removeItem('cc_role');
+      sessionStorage.removeItem('cc_role');
       localStorage.removeItem('cc_token');
+      sessionStorage.removeItem('cc_token');
       window.location.href = 'login.html';
     }
   </script>
@@ -386,14 +390,14 @@
       aat: 'AAT'
     };
     const MAX_LOGO_BYTES = 750 * 1024;
-    const currentRole = (localStorage.getItem('cc_role') || '').toLowerCase();
+    const currentRole = ((sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role')) || '').toLowerCase();
     const canManageClients = ['admin', 'manager'].includes(currentRole);
     let restaurants = [];
 
     function authHeaders(extra = {}) {
       return {
         ...extra,
-        'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+        'Authorization': `Bearer ${(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || ''}`
       };
     }
 
@@ -410,9 +414,13 @@
     function logout(confirmFirst = true) {
       if (confirmFirst && !window.confirm('Confirm logout?')) return;
       localStorage.removeItem('cc_auth');
+      sessionStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
+      sessionStorage.removeItem('cc_user');
       localStorage.removeItem('cc_role');
+      sessionStorage.removeItem('cc_role');
       localStorage.removeItem('cc_token');
+      sessionStorage.removeItem('cc_token');
       window.location.href = 'login.html';
     }
 
@@ -1123,7 +1131,7 @@
       }
     }
 
-    document.getElementById('current-user').textContent = localStorage.getItem('cc_user') || 'Team Member';
+    document.getElementById('current-user').textContent = (sessionStorage.getItem('cc_user') || localStorage.getItem('cc_user')) || 'Team Member';
     document.getElementById('current-role').textContent = currentRole || 'operator';
     document.querySelectorAll('.management-control').forEach((element) => {
       element.hidden = !canManageClients;

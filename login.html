@@ -613,10 +613,9 @@
       const data = await res.json().catch(() => ({}));
 
       if (res.ok && data?.success && data?.sessionToken) {
-        localStorage.setItem('cc_auth', '1');
-        localStorage.setItem('cc_user', data.username || username);
-        localStorage.setItem('cc_role', data.role || 'agent');
-        localStorage.setItem('cc_token', data.sessionToken);
+        ['cc_auth', 'cc_user', 'cc_role', 'cc_token'].forEach((key) => {
+          localStorage.removeItem(key);
+        });
         sessionStorage.setItem('cc_auth', '1');
         sessionStorage.setItem('cc_user', data.username || username);
         sessionStorage.setItem('cc_role', data.role || 'agent');

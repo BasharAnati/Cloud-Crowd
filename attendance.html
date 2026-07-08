@@ -504,11 +504,15 @@
     }
   </style>
   <script>
-    if (localStorage.getItem('cc_auth') !== '1' || !localStorage.getItem('cc_token') || !localStorage.getItem('cc_role')) {
+    if ((sessionStorage.getItem('cc_auth') || localStorage.getItem('cc_auth')) !== '1' || !(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || !(sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role'))) {
       localStorage.removeItem('cc_auth');
+      sessionStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
+      sessionStorage.removeItem('cc_user');
       localStorage.removeItem('cc_role');
+      sessionStorage.removeItem('cc_role');
       localStorage.removeItem('cc_token');
+      sessionStorage.removeItem('cc_token');
       window.location.href = 'login.html';
     }
   </script>
@@ -724,8 +728,8 @@
     function hydrateAttendanceHeader() {
       const userName = document.getElementById('attendance-user-name');
       const roleBadge = document.getElementById('attendance-role-badge');
-      if (userName) userName.textContent = localStorage.getItem('cc_user') || 'Team Member';
-      if (roleBadge) roleBadge.textContent = localStorage.getItem('cc_role') || 'Operator';
+      if (userName) userName.textContent = (sessionStorage.getItem('cc_user') || localStorage.getItem('cc_user')) || 'Team Member';
+      if (roleBadge) roleBadge.textContent = (sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role')) || 'Operator';
     }
 
     function setTodayDate() {
@@ -756,7 +760,7 @@
     function getAuthHeaders(extraHeaders = {}) {
       return {
         ...extraHeaders,
-        'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+        'Authorization': `Bearer ${(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || ''}`
       };
     }
 
@@ -1040,7 +1044,7 @@
         customNote: (formData.get('customNote') || '').trim(),
         fromTime: formData.get('fromTime') || '',
         toTime: formData.get('toTime') || '',
-        filledBy: localStorage.getItem('cc_user') || 'Team Member'
+        filledBy: (sessionStorage.getItem('cc_user') || localStorage.getItem('cc_user')) || 'Team Member'
       };
     }
 
@@ -1110,9 +1114,13 @@
 
     function logout() {
       localStorage.removeItem('cc_auth');
+      sessionStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
+      sessionStorage.removeItem('cc_user');
       localStorage.removeItem('cc_role');
+      sessionStorage.removeItem('cc_role');
       localStorage.removeItem('cc_token');
+      sessionStorage.removeItem('cc_token');
       window.location.href = 'login.html';
     }
 

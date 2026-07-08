@@ -7,10 +7,10 @@ function resetIdle() {
 }
 
 function clearAuthSession() {
-  localStorage.removeItem('cc_auth');
-  localStorage.removeItem('cc_user');
-  localStorage.removeItem('cc_role');
-  localStorage.removeItem('cc_token');
+  ['cc_auth', 'cc_user', 'cc_role', 'cc_token'].forEach((key) => {
+    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
+  });
 }
 
 // Reset timer on any user activity
@@ -22,7 +22,7 @@ function clearAuthSession() {
 setInterval(() => {
   idleTime += 1000;
   if (idleTime >= MAX_IDLE) {
-    // Clear login from localStorage
+    // Clear login from browser storage.
     clearAuthSession();
 
     // Redirect to login page

@@ -571,11 +571,15 @@
     }
   </style>
   <script>
-    if (localStorage.getItem('cc_auth') !== '1' || !localStorage.getItem('cc_token') || !localStorage.getItem('cc_role')) {
+    if ((sessionStorage.getItem('cc_auth') || localStorage.getItem('cc_auth')) !== '1' || !(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || !(sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role'))) {
       localStorage.removeItem('cc_auth');
+      sessionStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
+      sessionStorage.removeItem('cc_user');
       localStorage.removeItem('cc_role');
+      sessionStorage.removeItem('cc_role');
       localStorage.removeItem('cc_token');
+      sessionStorage.removeItem('cc_token');
       window.location.href = 'login.html';
     }
   </script>
@@ -741,11 +745,11 @@
     ];
 
     let requests = [];
-    const currentRole = String(localStorage.getItem('cc_role') || '').toLowerCase();
+    const currentRole = String((sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role')) || '').toLowerCase();
     const canDeleteRequests = currentRole === 'admin' || currentRole === 'manager';
 
     function getAuthHeaders(extraHeaders = {}) {
-      const token = localStorage.getItem('cc_token') || '';
+      const token = (sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || '';
       return {
         ...extraHeaders,
         ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -755,9 +759,13 @@
     function handleAuthFailure(response) {
       if (response.status !== 401) return false;
       localStorage.removeItem('cc_auth');
+      sessionStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
+      sessionStorage.removeItem('cc_user');
       localStorage.removeItem('cc_role');
+      sessionStorage.removeItem('cc_role');
       localStorage.removeItem('cc_token');
+      sessionStorage.removeItem('cc_token');
       window.location.href = 'login.html?expired=1';
       return true;
     }

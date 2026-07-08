@@ -436,7 +436,6 @@
       if (sessionValue) return sessionValue;
 
       const localValue = localStorage.getItem(key) || "";
-      if (localValue) sessionStorage.setItem(key, localValue);
       return localValue;
     }
 
@@ -491,7 +490,7 @@
       window.location.href = "login.html";
     }
 
-    if (localStorage.getItem("cc_user") !== "Anati" || localStorage.getItem("cc_role") !== "admin") {
+    if ((sessionStorage.getItem("cc_user") || localStorage.getItem("cc_user")) !== "Anati" || (sessionStorage.getItem("cc_role") || localStorage.getItem("cc_role")) !== "admin") {
       window.location.href = "dashboard.html";
     }
   </script>
@@ -1086,14 +1085,18 @@
 
     function logout() {
       localStorage.removeItem("cc_auth");
+      sessionStorage.removeItem("cc_auth");
       localStorage.removeItem("cc_user");
+      sessionStorage.removeItem("cc_user");
       localStorage.removeItem("cc_role");
+      sessionStorage.removeItem("cc_role");
       localStorage.removeItem("cc_token");
+      sessionStorage.removeItem("cc_token");
       window.location.href = "login.html";
     }
 
-    document.getElementById("current-user").textContent = localStorage.getItem("cc_user") || "Anati";
-    document.getElementById("current-role").textContent = localStorage.getItem("cc_role") || "admin";
+    document.getElementById("current-user").textContent = (sessionStorage.getItem("cc_user") || localStorage.getItem("cc_user")) || "Anati";
+    document.getElementById("current-role").textContent = (sessionStorage.getItem("cc_role") || localStorage.getItem("cc_role")) || "admin";
     document.getElementById("user-form").addEventListener("submit", saveUser);
     document.getElementById("account-type").addEventListener("change", updateAccountFields);
     document.getElementById("reset-form-btn").addEventListener("click", resetUserForm);

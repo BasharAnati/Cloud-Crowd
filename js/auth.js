@@ -6,7 +6,6 @@ function readSessionValue(key) {
   if (sessionValue) return sessionValue;
 
   const localValue = localStorage.getItem(key) || '';
-  if (localValue) sessionStorage.setItem(key, localValue);
   return localValue;
 }
 

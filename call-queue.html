@@ -447,9 +447,9 @@
     const MAINTENANCE_ENDPOINT = "/.netlify/functions/maintenance";
 
     function isMaintenanceAdmin() {
-      return localStorage.getItem("cc_auth") === "1" &&
-        localStorage.getItem("cc_role") === "admin" &&
-        localStorage.getItem("cc_user") === MAINTENANCE_ADMIN;
+      return (sessionStorage.getItem("cc_auth") || localStorage.getItem("cc_auth")) === "1" &&
+        (sessionStorage.getItem("cc_role") || localStorage.getItem("cc_role")) === "admin" &&
+        (sessionStorage.getItem("cc_user") || localStorage.getItem("cc_user")) === MAINTENANCE_ADMIN;
     }
 
     async function fetchMaintenanceStatus() {
@@ -457,7 +457,7 @@
         const response = await fetch(MAINTENANCE_ENDPOINT, {
           cache: "no-store",
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+            'Authorization': `Bearer ${(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || ''}`
           }
         });
         if (!response.ok) throw new Error(`Maintenance check failed: ${response.status}`);
@@ -485,16 +485,20 @@
 </head>
 <body>
   <script>
-    if (localStorage.getItem('cc_auth') !== '1' || !localStorage.getItem('cc_token') || !localStorage.getItem('cc_role')) {
+    if ((sessionStorage.getItem('cc_auth') || localStorage.getItem('cc_auth')) !== '1' || !(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || !(sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role'))) {
       localStorage.removeItem('cc_auth');
+      sessionStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
+      sessionStorage.removeItem('cc_user');
       localStorage.removeItem('cc_role');
+      sessionStorage.removeItem('cc_role');
       localStorage.removeItem('cc_token');
+      sessionStorage.removeItem('cc_token');
       window.location.href = 'login.html';
     }
 
     const allowedCallQueueRoles = ['admin', 'manager'];
-    const currentCallQueueRole = (localStorage.getItem('cc_role') || '').toLowerCase();
+    const currentCallQueueRole = ((sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role')) || '').toLowerCase();
     if (!allowedCallQueueRoles.includes(currentCallQueueRole)) {
       window.location.href = 'dashboard.html';
     }
@@ -652,7 +656,7 @@
     }
 
     function getCurrentUser() {
-      return localStorage.getItem('cc_user') || 'Team Member';
+      return (sessionStorage.getItem('cc_user') || localStorage.getItem('cc_user')) || 'Team Member';
     }
 
     function findTicket() {
@@ -847,14 +851,18 @@
 
     function logout() {
       localStorage.removeItem('cc_auth');
+      sessionStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
+      sessionStorage.removeItem('cc_user');
       localStorage.removeItem('cc_role');
+      sessionStorage.removeItem('cc_role');
       localStorage.removeItem('cc_token');
+      sessionStorage.removeItem('cc_token');
       window.location.href = 'login.html';
     }
 
     document.getElementById('current-user').textContent = getCurrentUser();
-    document.getElementById('current-role').textContent = localStorage.getItem('cc_role') || 'operator';
+    document.getElementById('current-role').textContent = (sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role')) || 'operator';
     render();
   </script>
   <script src="idle-logout.js"></script>

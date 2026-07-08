@@ -12,9 +12,9 @@
     const MAINTENANCE_ENDPOINT = "/.netlify/functions/maintenance";
 
     function isMaintenanceAdmin() {
-      return localStorage.getItem("cc_auth") === "1" &&
-        localStorage.getItem("cc_role") === "admin" &&
-        localStorage.getItem("cc_user") === MAINTENANCE_ADMIN;
+      return (sessionStorage.getItem("cc_auth") || localStorage.getItem("cc_auth")) === "1" &&
+        (sessionStorage.getItem("cc_role") || localStorage.getItem("cc_role")) === "admin" &&
+        (sessionStorage.getItem("cc_user") || localStorage.getItem("cc_user")) === MAINTENANCE_ADMIN;
     }
 
     async function fetchMaintenanceStatus() {
@@ -22,7 +22,7 @@
         const response = await fetch(MAINTENANCE_ENDPOINT, {
           cache: "no-store",
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('cc_token') || ''}`
+            'Authorization': `Bearer ${(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || ''}`
           }
         });
         if (!response.ok) throw new Error(`Maintenance check failed: ${response.status}`);
@@ -48,11 +48,15 @@
     setInterval(enforceMaintenanceMode, 3000);
   </script>
   <script>
-    if (localStorage.getItem('cc_auth') !== '1' || !localStorage.getItem('cc_token') || !localStorage.getItem('cc_role')) {
+    if ((sessionStorage.getItem('cc_auth') || localStorage.getItem('cc_auth')) !== '1' || !(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || !(sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role'))) {
       localStorage.removeItem('cc_auth');
+      sessionStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
+      sessionStorage.removeItem('cc_user');
       localStorage.removeItem('cc_role');
+      sessionStorage.removeItem('cc_role');
       localStorage.removeItem('cc_token');
+      sessionStorage.removeItem('cc_token');
       window.location.href = 'login.html';
     }
   </script>
@@ -233,15 +237,19 @@
   <script>
     function logout() {
       localStorage.removeItem('cc_auth');
+      sessionStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
+      sessionStorage.removeItem('cc_user');
       localStorage.removeItem('cc_role');
+      sessionStorage.removeItem('cc_role');
       localStorage.removeItem('cc_token');
+      sessionStorage.removeItem('cc_token');
       window.location.href = 'login.html';
     }
 
     window.addEventListener('load', () => {
-      document.getElementById('ce-current-user').textContent = localStorage.getItem('cc_user') || 'Team Member';
-      document.getElementById('ce-current-role').textContent = localStorage.getItem('cc_role') || 'operator';
+      document.getElementById('ce-current-user').textContent = (sessionStorage.getItem('cc_user') || localStorage.getItem('cc_user')) || 'Team Member';
+      document.getElementById('ce-current-role').textContent = (sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role')) || 'operator';
       currentSection = 'ce';
       renderTickets();
     });
