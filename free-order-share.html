@@ -596,7 +596,7 @@
     }
   </style>
   <script>
-    if ((sessionStorage.getItem('cc_auth') || localStorage.getItem('cc_auth')) !== '1' || !(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || !(sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role'))) {
+    if (sessionStorage.getItem('cc_auth') !== '1' || !sessionStorage.getItem('cc_token') || !sessionStorage.getItem('cc_role')) {
       localStorage.removeItem('cc_auth');
       sessionStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
@@ -705,7 +705,7 @@
     let shareItems = [];
 
     function getAuthHeaders(extraHeaders = {}) {
-      const token = (sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || '';
+      const token = sessionStorage.getItem('cc_token') || '';
       return {
         ...extraHeaders,
         ...(token ? { Authorization: `Bearer ${token}` } : {})

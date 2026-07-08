@@ -836,7 +836,7 @@
         const response = await fetch(WEEKLY_QUALITY_MAINTENANCE_ENDPOINT, {
           cache: "no-store",
           headers: {
-            "Authorization": `Bearer ${(sessionStorage.getItem("cc_token") || localStorage.getItem("cc_token")) || ""}`
+            "Authorization": `Bearer ${sessionStorage.getItem("cc_token") || ""}`
           }
         });
         if (!response.ok) return;
@@ -853,7 +853,7 @@
     setInterval(enforceWeeklyQualityMaintenanceMode, 3000);
   </script>
   <script>
-    if ((sessionStorage.getItem('cc_auth') || localStorage.getItem('cc_auth')) !== '1' || !(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || !(sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role'))) {
+    if (sessionStorage.getItem('cc_auth') !== '1' || !sessionStorage.getItem('cc_token') || !sessionStorage.getItem('cc_role')) {
       localStorage.removeItem('cc_auth');
       sessionStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
@@ -1218,7 +1218,7 @@
         const response = await fetch(WEEKLY_QUALITY_RESTAURANTS_ENDPOINT, {
           cache: 'no-store',
           headers: {
-            'Authorization': `Bearer ${(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || ''}`
+            'Authorization': `Bearer ${sessionStorage.getItem('cc_token') || ''}`
           }
         });
 
@@ -1283,7 +1283,7 @@
 
     function authHeaders() {
       return {
-        'Authorization': `Bearer ${(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || ''}`
+        'Authorization': `Bearer ${sessionStorage.getItem('cc_token') || ''}`
       };
     }
 
@@ -1450,8 +1450,8 @@
     }
 
     function hydrateHeader() {
-      document.getElementById('quality-user-name').textContent = (sessionStorage.getItem('cc_user') || localStorage.getItem('cc_user')) || 'Team Member';
-      document.getElementById('quality-role-badge').textContent = (sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role')) || 'Operator';
+      document.getElementById('quality-user-name').textContent = sessionStorage.getItem('cc_user') || 'Team Member';
+      document.getElementById('quality-role-badge').textContent = sessionStorage.getItem('cc_role') || 'Operator';
     }
 
     function setEmployeeSelectState(message, disabled) {
@@ -1474,7 +1474,7 @@
         const response = await fetch(WEEKLY_QUALITY_EMPLOYEES_ENDPOINT, {
           cache: 'no-store',
           headers: {
-            'Authorization': `Bearer ${(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || ''}`
+            'Authorization': `Bearer ${sessionStorage.getItem('cc_token') || ''}`
           }
         });
 

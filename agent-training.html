@@ -159,7 +159,7 @@
     }
   </style>
   <script>
-    if ((sessionStorage.getItem('cc_auth') || localStorage.getItem('cc_auth')) !== '1' || !(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || !(sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role'))) {
+    if (sessionStorage.getItem('cc_auth') !== '1' || !sessionStorage.getItem('cc_token') || !sessionStorage.getItem('cc_role')) {
       localStorage.removeItem('cc_auth');
       sessionStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
@@ -343,7 +343,7 @@
     const EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
     const TRAINING_ENDPOINT = '/.netlify/functions/training';
     const RESTAURANTS_ENDPOINT = '/.netlify/functions/restaurants';
-    const currentRole = ((sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role')) || '').toLowerCase();
+    const currentRole = (sessionStorage.getItem('cc_role') || '').toLowerCase();
     const canManageTraining = ['admin', 'manager'].includes(currentRole);
     let employees = [];
     let restaurants = [];
@@ -354,7 +354,7 @@
     function authHeaders(extra = {}) {
       return {
         ...extra,
-        'Authorization': `Bearer ${(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || ''}`
+        'Authorization': `Bearer ${sessionStorage.getItem('cc_token') || ''}`
       };
     }
 
@@ -641,7 +641,7 @@
       document.getElementById('training-form').reset();
       document.getElementById('training-id').value = '';
       populateRestaurantSelect();
-      document.getElementById('updated-by-name').value = (sessionStorage.getItem('cc_user') || localStorage.getItem('cc_user')) || '';
+      document.getElementById('updated-by-name').value = sessionStorage.getItem('cc_user') || '';
       document.getElementById('form-title').textContent = 'New Training Assignment';
       document.getElementById('save-training-btn').textContent = 'Save Assignment';
     }
@@ -740,7 +740,7 @@
       document.getElementById('assignment-status').value = record.assignmentStatus || '';
       document.getElementById('training-status').value = record.trainingStatus || '';
       document.getElementById('training-date').value = record.trainingDate || '';
-      document.getElementById('updated-by-name').value = record.updatedByName || (sessionStorage.getItem('cc_user') || localStorage.getItem('cc_user')) || '';
+      document.getElementById('updated-by-name').value = record.updatedByName || sessionStorage.getItem('cc_user') || '';
       document.getElementById('notes').value = record.notes || '';
       document.getElementById('form-title').textContent = 'Edit Training Assignment';
       document.getElementById('save-training-btn').textContent = 'Update Assignment';
@@ -760,7 +760,7 @@
       }
     }
 
-    document.getElementById('current-user').textContent = (sessionStorage.getItem('cc_user') || localStorage.getItem('cc_user')) || 'Team Member';
+    document.getElementById('current-user').textContent = sessionStorage.getItem('cc_user') || 'Team Member';
     document.getElementById('current-role').textContent = currentRole || 'operator';
     document.querySelectorAll('.management-control').forEach((element) => {
       element.hidden = !canManageTraining;

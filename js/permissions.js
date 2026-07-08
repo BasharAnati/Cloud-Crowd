@@ -2,11 +2,7 @@
   const ACCESS_ENDPOINT = '/.netlify/functions/admin-users?my-access=1';
 
   function readSessionValue(key) {
-    const sessionValue = sessionStorage.getItem(key);
-    if (sessionValue) return sessionValue;
-
-    const localValue = localStorage.getItem(key) || '';
-    return localValue;
+    return sessionStorage.getItem(key) || '';
   }
 
   function currentUser() {

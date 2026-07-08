@@ -279,7 +279,7 @@
     }
   </style>
   <script>
-    if ((sessionStorage.getItem('cc_auth') || localStorage.getItem('cc_auth')) !== '1' || !(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || !(sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role'))) {
+    if (sessionStorage.getItem('cc_auth') !== '1' || !sessionStorage.getItem('cc_token') || !sessionStorage.getItem('cc_role')) {
       localStorage.removeItem('cc_auth');
       sessionStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
@@ -451,14 +451,14 @@
       equipment: 'Equipment',
       aat: 'AAT'
     };
-    const currentRole = ((sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role')) || '').toLowerCase();
+    const currentRole = (sessionStorage.getItem('cc_role') || '').toLowerCase();
     const canManageEmployees = ['admin', 'manager'].includes(currentRole);
     let employees = [];
 
     function authHeaders(extra = {}) {
       return {
         ...extra,
-        'Authorization': `Bearer ${(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || ''}`
+        'Authorization': `Bearer ${sessionStorage.getItem('cc_token') || ''}`
       };
     }
 
@@ -1271,7 +1271,7 @@
       });
     }
 
-    document.getElementById('current-user').textContent = (sessionStorage.getItem('cc_user') || localStorage.getItem('cc_user')) || 'Team Member';
+    document.getElementById('current-user').textContent = sessionStorage.getItem('cc_user') || 'Team Member';
     document.getElementById('current-role').textContent = currentRole || 'operator';
     document.querySelectorAll('.write-control').forEach((element) => {
       element.hidden = !canManageEmployees;

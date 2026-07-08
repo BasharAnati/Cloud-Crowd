@@ -152,7 +152,7 @@
     }
   </style>
   <script>
-    if ((sessionStorage.getItem('cc_auth') || localStorage.getItem('cc_auth')) !== '1' || !(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || !(sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role'))) {
+    if (sessionStorage.getItem('cc_auth') !== '1' || !sessionStorage.getItem('cc_token') || !sessionStorage.getItem('cc_role')) {
       localStorage.removeItem('cc_auth');
       sessionStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
@@ -336,7 +336,7 @@
     function authHeaders(extra = {}) {
       return {
         ...extra,
-        'Authorization': `Bearer ${(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || ''}`
+        'Authorization': `Bearer ${sessionStorage.getItem('cc_token') || ''}`
       };
     }
 
@@ -738,8 +738,8 @@
       }
     }
 
-    document.getElementById('current-user').textContent = (sessionStorage.getItem('cc_user') || localStorage.getItem('cc_user')) || 'Team Member';
-    document.getElementById('current-role').textContent = (sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role')) || 'operator';
+    document.getElementById('current-user').textContent = sessionStorage.getItem('cc_user') || 'Team Member';
+    document.getElementById('current-role').textContent = sessionStorage.getItem('cc_role') || 'operator';
     populateStaticSelects();
     resetRatingForm();
     document.getElementById('logout-btn').addEventListener('click', () => logout(true));

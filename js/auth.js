@@ -2,11 +2,7 @@
 
 // اسم المستخدم الحالي (من صفحة اللوجين)
 function readSessionValue(key) {
-  const sessionValue = sessionStorage.getItem(key);
-  if (sessionValue) return sessionValue;
-
-  const localValue = localStorage.getItem(key) || '';
-  return localValue;
+  return sessionStorage.getItem(key) || '';
 }
 
 function clearStoredSession() {

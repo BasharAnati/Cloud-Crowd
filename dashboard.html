@@ -482,11 +482,7 @@
     const MAINTENANCE_ENDPOINT = "/.netlify/functions/maintenance";
 
     function readSessionValue(key) {
-      const sessionValue = sessionStorage.getItem(key);
-      if (sessionValue) return sessionValue;
-
-      const localValue = localStorage.getItem(key) || "";
-      return localValue;
+      return sessionStorage.getItem(key) || "";
     }
 
     function clearStoredSession() {
@@ -1185,4 +1181,3 @@
 
 </body>
 </html>
-

@@ -14,9 +14,9 @@
     const MAINTENANCE_ENDPOINT = "/.netlify/functions/maintenance";
 
     function isMaintenanceAdmin() {
-      return (sessionStorage.getItem("cc_auth") || localStorage.getItem("cc_auth")) === "1" &&
-        (sessionStorage.getItem("cc_role") || localStorage.getItem("cc_role")) === "admin" &&
-        (sessionStorage.getItem("cc_user") || localStorage.getItem("cc_user")) === MAINTENANCE_ADMIN;
+      return sessionStorage.getItem("cc_auth") === "1" &&
+        sessionStorage.getItem("cc_role") === "admin" &&
+        sessionStorage.getItem("cc_user") === MAINTENANCE_ADMIN;
     }
 
     async function fetchMaintenanceStatus() {
@@ -24,7 +24,7 @@
         const response = await fetch(MAINTENANCE_ENDPOINT, {
           cache: "no-store",
           headers: {
-            'Authorization': `Bearer ${(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || ''}`
+            'Authorization': `Bearer ${sessionStorage.getItem('cc_token') || ''}`
           }
         });
         if (!response.ok) throw new Error(`Maintenance check failed: ${response.status}`);
@@ -55,7 +55,7 @@
 
   <!-- حماية الصفحة -->
   <script>
-    if ((sessionStorage.getItem('cc_auth') || localStorage.getItem('cc_auth')) !== '1' || !(sessionStorage.getItem('cc_token') || localStorage.getItem('cc_token')) || !(sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role'))) {
+    if (sessionStorage.getItem('cc_auth') !== '1' || !sessionStorage.getItem('cc_token') || !sessionStorage.getItem('cc_role')) {
       localStorage.removeItem('cc_auth');
       sessionStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
@@ -315,8 +315,8 @@
     }
 
     window.addEventListener('load', () => {
-      document.getElementById('cctv-current-user').textContent = (sessionStorage.getItem('cc_user') || localStorage.getItem('cc_user')) || 'Team Member';
-      document.getElementById('cctv-current-role').textContent = (sessionStorage.getItem('cc_role') || localStorage.getItem('cc_role')) || 'operator';
+      document.getElementById('cctv-current-user').textContent = sessionStorage.getItem('cc_user') || 'Team Member';
+      document.getElementById('cctv-current-role').textContent = sessionStorage.getItem('cc_role') || 'operator';
     });
   </script>
 
