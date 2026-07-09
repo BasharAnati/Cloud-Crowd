@@ -83,7 +83,7 @@
 
       <section class="ce-hero" aria-labelledby="ce-page-title">
         <div class="ce-hero-copy">
-          <h2 id="ce-page-title">Customer Experience</h2>
+          <h2 id="ce-page-title">Customer Experience Operations Center</h2>
           <p>Track customer feedback, order issues, callbacks, and resolution progress.</p>
         </div>
         <div class="ce-actions">
@@ -93,18 +93,22 @@
 
     <section class="ce-stats" aria-label="Customer Experience case summary">
       <article class="ce-stat-card ce-stat-total">
+        <span class="ce-stat-icon" aria-hidden="true"></span>
         <span class="ce-stat-label">Total Cases</span>
         <strong id="ce-stat-total">0</strong>
       </article>
       <article class="ce-stat-card ce-stat-review">
+        <span class="ce-stat-icon" aria-hidden="true"></span>
         <span class="ce-stat-label">Under Review</span>
         <strong id="ce-stat-under-review">0</strong>
       </article>
       <article class="ce-stat-card ce-stat-pending">
+        <span class="ce-stat-icon" aria-hidden="true"></span>
         <span class="ce-stat-label">Pending Call Back</span>
         <strong id="ce-stat-pending">0</strong>
       </article>
       <article class="ce-stat-card ce-stat-closed">
+        <span class="ce-stat-icon" aria-hidden="true"></span>
         <span class="ce-stat-label">Closed</span>
         <strong id="ce-stat-closed">0</strong>
       </article>
@@ -187,6 +191,8 @@
     window.addEventListener('load', () => {
       CloudCrowdAppShell.buildSidebar(document.getElementById('ce-app-sidebar'));
       CloudCrowdAppShell.buildTopbar(document.getElementById('ce-app-topbar'), {
+        eyebrow: 'Operations Hub',
+        title: 'Customer Experience',
         userId: 'ce-current-user',
         roleId: 'ce-current-role',
         onLogout: logout
