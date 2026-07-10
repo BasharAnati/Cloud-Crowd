@@ -603,7 +603,155 @@ function openTicketDrawerByCase(caseNumber){
   if (idx>=0) openTicketDrawer(idx);
 }
 
+function normalizeCctvDetailValue(value){
+  if (Array.isArray(value)) {
+    return value.map(item => String(item || '').trim()).filter(Boolean).join(', ');
+  }
+  return String(value || '').trim();
+}
+
+function formatCctvDateTime(ticket){
+  const dateText = normalizeCctvDetailValue(ticket.date);
+  const timeText = normalizeCctvDetailValue(ticket.time);
+  if (dateText || timeText) return [dateText, timeText].filter(Boolean).join(' ');
+
+  const rawDateTime = normalizeCctvDetailValue(ticket.dateTime);
+  if (!rawDateTime) return '';
+
+  const parsed = new Date(rawDateTime);
+  if (isNaN(parsed)) return rawDateTime;
+
+  const datePart = parsed.toLocaleDateString('en-US');
+  const timePart = parsed.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+  return `${datePart} ${timePart}`;
+}
+
+function cctvDetailRow(field, label, value, options = {}){
+  const text = normalizeCctvDetailValue(value);
+  if (!text && !options.html) return '';
+
+  const valueHtml = options.html || escapeHtml(text);
+  return `
+    <div class="kv cctv-detail-row" data-field="${escapeHtml(field)}">
+      <span class="cctv-detail-icon" aria-hidden="true"></span>
+      <div class="cctv-detail-copy">
+        <div class="k">${escapeHtml(label)}</div>
+        <div class="v">${valueHtml}</div>
+      </div>
+    </div>
+  `;
+}
+
+function mediaTypeFromCctvAttachment(src, explicitType){
+  const type = String(explicitType || '').toLowerCase();
+  if (type.startsWith('image')) return 'image';
+  if (type.startsWith('video')) return 'video';
+  if (/^data:image\//i.test(src)) return 'image';
+  if (/^data:video\//i.test(src)) return 'video';
+  if (/\.(png|jpe?g|gif|webp|bmp|avif|svg)(\?.*)?$/i.test(src)) return 'image';
+  if (/\.(mp4|webm|ogg|ogv|mov|m4v)(\?.*)?$/i.test(src)) return 'video';
+  return '';
+}
+
+function getCctvAttachmentSource(value){
+  if (!value) return null;
+  if (typeof value === 'object') {
+    const src = String(value.dataUrl || value.url || value.src || '').trim();
+    if (!src) return null;
+    return {
+      src,
+      type: mediaTypeFromCctvAttachment(src, value.type),
+      name: value.name || ''
+    };
+  }
+
+  const src = String(value || '').trim();
+  if (!src) return null;
+  return {
+    src,
+    type: mediaTypeFromCctvAttachment(src, ''),
+    name: ''
+  };
+}
+
+function buildCctvAttachmentsRow(ticket){
+  const internalKeys = new Set([
+    '_id','id','payload','section','status','branch','date','time','dateTime',
+    'cameras','sections','staff','reviewType','violations','notes','note',
+    'customerNotes','complaintDetails','caseDescription','actionTaken',
+    'caseNumber','orderNumber','createdAt','createdBy','lastModified',
+    '_fromSheet','fromSheet','pdfUrl','pdfName','cctvPdf'
+  ]);
+  const seen = new Set();
+  const items = [];
+
+  Object.keys(ticket || {}).forEach(key => {
+    if (internalKeys.has(key)) return;
+    const media = getCctvAttachmentSource(ticket[key]);
+    if (!media?.src || !media.type || seen.has(media.src)) return;
+
+    seen.add(media.src);
+    const safeSrc = escapeHtml(media.src);
+    const safeLabel = escapeHtml(media.name || toLabel(key));
+
+    if (media.type === 'image') {
+      items.push(`
+        <div class="cctv-attachment-item">
+          <img src="${safeSrc}" alt="${safeLabel}" class="ticket-thumb" data-media-src="${safeSrc}" data-media-type="image" data-media-alt="${safeLabel}">
+          <span>${safeLabel}</span>
+        </div>
+      `);
+    } else {
+      items.push(`
+        <button class="cctv-attachment-item cctv-attachment-trigger cc-media-viewer-trigger" type="button" data-media-src="${safeSrc}" data-media-type="video" data-media-alt="${safeLabel}">
+          <span class="cctv-attachment-video" aria-hidden="true"></span>
+          <span>${safeLabel}</span>
+        </button>
+      `);
+    }
+  });
+
+  const pdfUrl = normalizeCctvDetailValue(ticket.pdfUrl);
+  if (pdfUrl) {
+    const pdfName = normalizeCctvDetailValue(ticket.pdfName) || 'CCTV PDF';
+    items.push(`
+      <a class="cctv-attachment-item cctv-pdf-link" href="${escapeHtml(pdfUrl)}" target="_blank" rel="noopener noreferrer">
+        <span class="cctv-pdf-icon" aria-hidden="true"></span>
+        <span>${escapeHtml(pdfName)}</span>
+      </a>
+    `);
+  }
+
+  if (!items.length) return '';
+  return cctvDetailRow('attachments', 'Attachments', '', {
+    html: `<div class="cctv-attachments-list">${items.join('')}</div>`
+  });
+}
+
+function buildCctvDrawerReadonly(ticket){
+  const html = [
+    cctvDetailRow('branch', 'Branch', ticket.branch),
+    cctvDetailRow('date-time', 'Date & Time', formatCctvDateTime(ticket)),
+    cctvDetailRow('camera', 'Camera', ticket.cameras),
+    cctvDetailRow('section', 'Section', ticket.sections),
+    cctvDetailRow('staff', 'Staff', ticket.staff),
+    cctvDetailRow('review-type', 'Review Type', ticket.reviewType),
+    cctvDetailRow('violated-policy', 'Violated Policy', ticket.violations),
+    cctvDetailRow('details', 'Details', ticket.notes || ticket.note || ticket.caseDescription),
+    cctvDetailRow('action-taken', 'Action Taken', ticket.actionTaken),
+    buildCctvAttachmentsRow(ticket)
+  ].filter(Boolean).join('');
+
+  return html || '<div class="no-tickets full-span">No details.</div>';
+}
+
 function buildDrawerReadonly(ticket){
+  if (_currentSection === 'cctv') return buildCctvDrawerReadonly(ticket);
+
   const NOTE_KEYS = ['note','notes','customerNotes','complaintDetails','caseDescription'];
 
   let notesText = '';

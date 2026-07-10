@@ -1752,6 +1752,40 @@
   background: rgba(8, 19, 32, 0.96);
 }
 
+.cctv-ops-center .drawer-meta {
+  display: flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.cctv-ops-center .drawer-meta::before,
+.cctv-ops-center .drawer-meta .history-link {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border: 1px solid rgba(127, 182, 255, 0.22);
+  border-radius: 7px;
+  background: rgba(56, 189, 248, 0.1);
+  color: #e8f3ff;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.cctv-ops-center .drawer-meta::before {
+  content: "Details";
+  border-color: rgba(56, 189, 248, 0.42);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.12);
+}
+
+.cctv-ops-center .drawer-meta .meta-badge {
+  margin-left: auto;
+}
+
 .cctv-ops-center .drawer-case,
 .cctv-ops-center .kv .k {
   color: #8da9c4;
@@ -1762,16 +1796,236 @@
   color: #e8f3ff;
 }
 
-.cctv-ops-center .note-box,
-.cctv-ops-center .action-taken-box {
-  border-color: rgba(127, 182, 255, 0.18);
-  background: rgba(4, 12, 22, 0.72);
-  color: #dcecff;
+.cctv-ops-center .drawer-body {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  padding: 10px 18px 18px !important;
 }
 
-.cctv-ops-center .note-text,
-.cctv-ops-center .action-taken-text {
+.cctv-ops-center .drawer-body .cctv-detail-row {
+  position: relative;
+  display: grid !important;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 11px;
+  align-items: start;
+  width: 100%;
+  min-height: 52px;
+  padding: 13px 0 13px !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(127, 182, 255, 0.13) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.cctv-ops-center .cctv-detail-icon {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  margin-top: 1px;
+  border: 1px solid rgba(127, 182, 255, 0.3);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(139, 92, 246, 0.14)),
+    rgba(4, 12, 22, 0.9);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.cctv-ops-center .cctv-detail-icon::before,
+.cctv-ops-center .cctv-detail-icon::after {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 7px;
+  width: 12px;
+  height: 12px;
+  color: #8edcff;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+  opacity: 0.95;
+}
+
+.cctv-ops-center .cctv-detail-icon::after {
+  display: none;
+}
+
+.cctv-ops-center [data-field="branch"] .cctv-detail-icon::before {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  box-shadow: 6px 8px 0 -4px currentColor;
+}
+
+.cctv-ops-center [data-field="date-time"] .cctv-detail-icon::before {
+  width: 12px;
+  height: 10px;
+  border-radius: 2px;
+  box-shadow: inset 0 4px 0 rgba(142, 220, 255, 0.25);
+}
+
+.cctv-ops-center [data-field="camera"] .cctv-detail-icon::before {
+  width: 13px;
+  height: 9px;
+  border-radius: 3px;
+}
+
+.cctv-ops-center [data-field="camera"] .cctv-detail-icon::after {
+  display: block;
+  left: 18px;
+  top: 10px;
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid currentColor;
+  border-right: 0;
+  border-radius: 0;
+}
+
+.cctv-ops-center [data-field="section"] .cctv-detail-icon::before {
+  width: 13px;
+  height: 10px;
+  border-radius: 2px;
+  transform: skew(-5deg);
+}
+
+.cctv-ops-center [data-field="staff"] .cctv-detail-icon::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 7px 2px 0 -2px currentColor, 3px 9px 0 3px transparent;
+}
+
+.cctv-ops-center [data-field="review-type"] .cctv-detail-icon::before {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.cctv-ops-center [data-field="violated-policy"] .cctv-detail-icon::before {
+  width: 11px;
+  height: 13px;
+  border-radius: 6px 6px 3px 3px;
+}
+
+.cctv-ops-center [data-field="details"] .cctv-detail-icon::before {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  box-shadow: inset 0 -4px 0 rgba(142, 220, 255, 0.22);
+}
+
+.cctv-ops-center [data-field="action-taken"] .cctv-detail-icon::before {
+  width: 12px;
+  height: 7px;
+  border-top: 0;
+  border-right: 0;
+  border-radius: 0;
+  transform: rotate(-45deg);
+}
+
+.cctv-ops-center [data-field="attachments"] .cctv-detail-icon::before {
+  width: 12px;
+  height: 10px;
+  border-radius: 2px;
+  box-shadow: 4px 5px 0 -2px currentColor;
+}
+
+.cctv-ops-center .cctv-detail-copy {
+  min-width: 0;
+}
+
+.cctv-ops-center .cctv-detail-row .k {
+  margin: 0;
+  padding-top: 1px;
+  color: #8da9c4;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cctv-ops-center .cctv-detail-row .v {
+  margin-top: 4px;
+  color: #eef7ff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.cctv-ops-center [data-field="details"] .v,
+.cctv-ops-center [data-field="action-taken"] .v {
+  line-height: 1.55;
+}
+
+.cctv-ops-center .cctv-attachments-list {
+  display: grid;
+  gap: 10px;
+}
+
+.cctv-ops-center .cctv-attachment-item {
+  width: fit-content;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(127, 182, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(4, 12, 22, 0.66);
   color: #dcecff;
+  padding: 7px 9px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.cctv-ops-center .cctv-attachment-item .ticket-thumb,
+.cctv-ops-center .cctv-attachment-item.ticket-thumb {
+  max-width: 112px;
+  max-height: 112px;
+  border: 1px solid rgba(127, 182, 255, 0.2);
+  border-radius: 8px;
+  padding: 0;
+}
+
+.cctv-ops-center .cctv-attachment-trigger {
+  cursor: zoom-in;
+}
+
+.cctv-ops-center .cctv-attachment-video,
+.cctv-ops-center .cctv-pdf-icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  position: relative;
+  border: 1px solid rgba(127, 182, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.1);
+}
+
+.cctv-ops-center .cctv-attachment-video::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 5px;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 7px solid #8edcff;
+}
+
+.cctv-ops-center .cctv-pdf-icon::before {
+  content: "PDF";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #8edcff;
+  font-size: 7px;
+  font-weight: 900;
 }
 
 .cctv-ops-center .drawer-close {
