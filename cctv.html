@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
-  <title>Cloud Crowd - CCTV Operator Observations</title>
+  <title>Cloud Crowd - CCTV Operations Center</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="app-shell.css">
   <link rel="stylesheet" href="media-viewer.css">
 
-  <!-- سكشن هذه الصفحة -->
   <script>
     const MAINTENANCE_ADMIN = "Anati";
     const MAINTENANCE_ENDPOINT = "/.netlify/functions/maintenance";
@@ -53,7 +53,6 @@
     window.currentSection = 'cctv';
   </script>
 
-  <!-- حماية الصفحة -->
   <script>
     if (sessionStorage.getItem('cc_auth') !== '1' || !sessionStorage.getItem('cc_token') || !sessionStorage.getItem('cc_role')) {
       localStorage.removeItem('cc_auth');
@@ -68,47 +67,11 @@
     }
   </script>
 
-  <!-- ستايل بسيط لبوبوفر التاريخ (بدون تعديل styles.css) -->
-  <style>
-    .history-popover {
-      position: absolute;
-      top: 64px;
-      right: 16px;
-      max-width: 380px;
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      box-shadow: 0 10px 20px rgba(0,0,0,0.12);
-      padding: 8px 0;
-      display: none;
-      z-index: 1002;
-    }
-    .history-popover.open { display: block; }
-    .hist-item {
-      padding: 8px 12px;
-      border-bottom: 1px solid #f1f1f1;
-      font-size: 13px;
-      line-height: 1.35;
-    }
-    .hist-item:last-child { border-bottom: 0; }
-    .hist-meta { color:#666; font-size:12px; margin-top:2px; }
-    .hist-diff { margin-top:4px; }
-    .hist-k { color:#555; font-weight:600; }
-    /* الزر الصغير (لو ما أضفته في styles.css) */
-    .history-link {
-      font-size: 12px;
-      color: #007bff;
-      cursor: pointer;
-      text-decoration: underline;
-      margin-left: 8px;
-    }
-    .history-link:hover { color: #0056b3; }
-  </style>
-
   <script src="js/permissions.js"></script>
   <script>
     window.CCPermissions?.requirePageAccess('cctv');
   </script>
+  <script src="js/app-shell.js" defer></script>
   <script src="js/config.js" defer></script>
   <script src="js/utils.js" defer></script>
   <script src="js/auth.js" defer></script>
@@ -117,151 +80,89 @@
   <script src="js/media-viewer.js" defer></script>
   <script src="main.js" defer></script>
 </head>
-<body class="cctv-page">
-  <div class="cctv-module-shell">
-    <aside class="cctv-sidebar" aria-label="CCTV Operator Observations navigation">
-      <a class="cctv-sidebar-brand" href="dashboard.html" aria-label="Cloud Crowd dashboard">
-        <img src="assets/images/logo.png" alt="Cloud Crowd logo" class="cctv-sidebar-logo">
-        <div>
-          <h1>Cloud Crowd</h1>
-          <p>Operations Hub</p>
-        </div>
-      </a>
-
-      <nav class="cctv-sidebar-nav">
-        <a class="cctv-nav-item" href="dashboard.html">
-          <span class="cctv-nav-icon" aria-hidden="true">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-              <path d="M4 13h7V4H4v9Zm9 7h7V4h-7v16ZM4 20h7v-5H4v5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-            </svg>
-          </span>
-          Dashboard
-        </a>
-        <a class="cctv-nav-item active" href="cctv.html" aria-current="page">
-          <span class="cctv-nav-icon" aria-hidden="true">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-              <path d="M4 7h11a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H4V7Z" stroke="currentColor" stroke-width="1.7"/>
-              <path d="m18 11 3-2v6l-3-2" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-            </svg>
-          </span>
-          CCTV Operator Observations
-        </a>
-        <a class="cctv-nav-item" href="ce.html">
-          <span class="cctv-nav-icon" aria-hidden="true">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-              <path d="M12 14c3.3 0 6-2.2 6-5s-2.7-5-6-5-6 2.2-6 5 2.7 5 6 5Z" stroke="currentColor" stroke-width="1.7"/>
-              <path d="M8.5 13.3 6 18l5-3.1" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-            </svg>
-          </span>
-          Customer Experience
-        </a>
-        <a class="cctv-nav-item" href="free-orders.html">
-          <span class="cctv-nav-icon" aria-hidden="true">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-              <path d="M6 8h12l-1 12H7L6 8Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-              <path d="M9 8a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.7"/>
-            </svg>
-          </span>
-          Complimentary Orders
-        </a>
-        <a class="cctv-nav-item" href="complaints.html">
-          <span class="cctv-nav-icon" aria-hidden="true">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-              <path d="M6 4h12v16H6V4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-              <path d="M9 8h6M9 12h6M9 16h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-            </svg>
-          </span>
-          Daily Complaints
-        </a>
-      </nav>
-    </aside>
+<body class="cctv-page cctv-ops-center">
+  <div class="cctv-module-shell cc-shell-layout">
+    <aside id="cctv-app-sidebar" aria-label="CCTV Operations Center navigation"></aside>
 
     <main class="cctv-workspace cctv-main-area" id="main-content">
-      <header class="cctv-topbar" role="banner">
-        <a class="cctv-breadcrumb" href="dashboard.html">
-          <span aria-hidden="true">&larr;</span>
-          Dashboard
-        </a>
-        <div class="cctv-user-tools">
-          <span class="cctv-user-pill" id="cctv-current-user">Team Member</span>
-          <span class="cctv-role-pill" id="cctv-current-role">operator</span>
-          <button class="cctv-logout" type="button" onclick="logout()">Log out</button>
-        </div>
-      </header>
+      <header id="cctv-app-topbar" role="banner"></header>
 
       <section class="cctv-hero" aria-labelledby="cctv-page-title">
         <div class="cctv-hero-copy">
-          <h2 id="cctv-page-title">CCTV Operator Observations</h2>
-          <p>Track observation cases, involved staff, camera areas, policy violations, and resolution progress.</p>
+          <h2 id="cctv-page-title">CCTV Operations Center</h2>
+          <p>Monitor escalations, active reviews, policy observations, and closure progress across camera zones.</p>
         </div>
         <div class="cctv-actions">
           <button class="add-ticket-btn" type="button" onclick="openModal('cctv')" data-permission-create>Add New Ticket</button>
         </div>
       </section>
 
-    <section class="cctv-stats" aria-label="CCTV case summary">
-      <article class="cctv-stat-card">
-        <span class="cctv-stat-label">Total Cases</span>
-        <strong id="cctv-stat-total">0</strong>
-      </article>
-      <article class="cctv-stat-card">
-        <span class="cctv-stat-label">Under Review</span>
-        <strong id="cctv-stat-under-review">0</strong>
-      </article>
-      <article class="cctv-stat-card">
-        <span class="cctv-stat-label">Escalated</span>
-        <strong id="cctv-stat-escalated">0</strong>
-      </article>
-      <article class="cctv-stat-card">
-        <span class="cctv-stat-label">Closed</span>
-        <strong id="cctv-stat-closed">0</strong>
-      </article>
-    </section>
+      <section class="cctv-stats" aria-label="CCTV case summary">
+        <article class="cctv-stat-card cctv-stat-total">
+          <span class="cctv-stat-icon" aria-hidden="true"></span>
+          <span class="cctv-stat-label">Total Cases</span>
+          <strong id="cctv-stat-total">0</strong>
+        </article>
+        <article class="cctv-stat-card cctv-stat-escalated">
+          <span class="cctv-stat-icon" aria-hidden="true"></span>
+          <span class="cctv-stat-label">Escalated</span>
+          <strong id="cctv-stat-escalated">0</strong>
+        </article>
+        <article class="cctv-stat-card cctv-stat-review">
+          <span class="cctv-stat-icon" aria-hidden="true"></span>
+          <span class="cctv-stat-label">Under Review</span>
+          <strong id="cctv-stat-under-review">0</strong>
+        </article>
+        <article class="cctv-stat-card cctv-stat-closed">
+          <span class="cctv-stat-icon" aria-hidden="true"></span>
+          <span class="cctv-stat-label">Closed</span>
+          <strong id="cctv-stat-closed">0</strong>
+        </article>
+      </section>
 
-    <section class="cctv-filters" aria-label="CCTV filters">
-      <div class="cctv-filter-field cctv-filter-search">
-        <label for="cctv-search">Search</label>
-        <input id="cctv-search" type="search" placeholder="Case, branch, staff, camera, section, or notes">
-      </div>
-      <div class="cctv-filter-field">
-        <label for="cctv-status-filter">Status</label>
-        <select id="cctv-status-filter">
-          <option value="">All statuses</option>
-        </select>
-      </div>
-      <div class="cctv-filter-field">
-        <label for="cctv-branch-filter">Branch</label>
-        <select id="cctv-branch-filter">
-          <option value="">All branches</option>
-        </select>
-      </div>
-      <div class="cctv-filter-field">
-        <label for="cctv-review-filter">Review Type</label>
-        <select id="cctv-review-filter">
-          <option value="">All review types</option>
-        </select>
-      </div>
-      <div class="cctv-filter-field">
-        <label for="cctv-policy-filter">Violated Policy</label>
-        <select id="cctv-policy-filter">
-          <option value="">All policies</option>
-        </select>
-      </div>
-      <div class="cctv-filter-field">
-        <label for="cctv-staff-filter">Staff</label>
-        <select id="cctv-staff-filter">
-          <option value="">All staff</option>
-        </select>
-      </div>
-    </section>
+      <section class="cctv-filters" aria-label="CCTV filters">
+        <div class="cctv-filter-field cctv-filter-search">
+          <label for="cctv-search">Search</label>
+          <input id="cctv-search" type="search" placeholder="Case, branch, staff, camera, section, or notes">
+        </div>
+        <div class="cctv-filter-field">
+          <label for="cctv-status-filter">Status</label>
+          <select id="cctv-status-filter">
+            <option value="">All statuses</option>
+          </select>
+        </div>
+        <div class="cctv-filter-field">
+          <label for="cctv-branch-filter">Branch</label>
+          <select id="cctv-branch-filter">
+            <option value="">All branches</option>
+          </select>
+        </div>
+        <div class="cctv-filter-field">
+          <label for="cctv-review-filter">Review Type</label>
+          <select id="cctv-review-filter">
+            <option value="">All review types</option>
+          </select>
+        </div>
+        <div class="cctv-filter-field">
+          <label for="cctv-policy-filter">Violated Policy</label>
+          <select id="cctv-policy-filter">
+            <option value="">All policies</option>
+          </select>
+        </div>
+        <div class="cctv-filter-field">
+          <label for="cctv-staff-filter">Staff</label>
+          <select id="cctv-staff-filter">
+            <option value="">All staff</option>
+          </select>
+        </div>
+      </section>
 
-    <div class="ticket-list cctv-board" id="ticket-list">
-      <div id="tickets"></div>
-    </div>
+      <div class="ticket-list cctv-board" id="ticket-list">
+        <div id="tickets"></div>
+      </div>
     </main>
   </div>
 
-  <!-- Modal: add new -->
   <div class="modal" id="modal">
     <div class="modal-content">
       <h2>Add New Ticket</h2>
@@ -275,27 +176,18 @@
     </div>
   </div>
 
-  <!-- Details Drawer -->
   <div class="drawer" id="ticket-drawer" aria-hidden="true">
     <div class="drawer-backdrop" onclick="closeTicketDrawer()"></div>
     <aside class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
       <div class="drawer-header">
         <div>
           <div class="drawer-case">Case: <span id="drawer-caseNumber"></span></div>
-          <h2 id="drawer-title">
-            Details
-            <!-- زر التاريخ الصغير -->
-            <span class="history-link" id="drawer-history-link" title="View ticket history">History</span>
-          </h2>
+          <h2 id="drawer-title">Details</h2>
         </div>
-        <button class="drawer-close" onclick="closeTicketDrawer()" aria-label="Close">×</button>
+        <button class="drawer-close" onclick="closeTicketDrawer()" aria-label="Close">x</button>
       </div>
 
       <div class="drawer-meta" id="drawer-meta"></div>
-
-      <!-- بوبوفر التاريخ -->
-      <div class="history-popover" id="history-popover" role="dialog" aria-label="Ticket change history"></div>
-
       <div class="drawer-body" id="drawer-body"></div>
       <div class="drawer-actions"><button class="edit-btn" id="drawer-edit-btn">Edit</button></div>
     </aside>
@@ -315,83 +207,25 @@
     }
 
     window.addEventListener('load', () => {
-      document.getElementById('cctv-current-user').textContent = sessionStorage.getItem('cc_user') || 'Team Member';
-      document.getElementById('cctv-current-role').textContent = sessionStorage.getItem('cc_role') || 'operator';
-    });
-  </script>
+      CloudCrowdAppShell.buildSidebar(
+        document.getElementById("cctv-app-sidebar")
+      );
 
-  <!-- سكربت صغير لزر History (بدون تعديل main.js) -->
-  <script>
-    // يبني عنصر HTML لكل حدث تاريخ
-    function renderHistoryItem(h) {
-      const when = new Date(h.changed_at).toLocaleString();
-      const who  = h.changed_by || '—';
-      const prevS = h.prev_status || '—';
-      const newS  = h.new_status  || '—';
-      const prevA = (h.prev_action || '').trim();
-      const newA  = (h.new_action  || '').trim();
-
-      return `
-        <div class="hist-item">
-          <div class="hist-meta">${when} &middot; by <strong>${who}</strong></div>
-          <div class="hist-diff"><span class="hist-k">Status:</span> ${prevS} → <strong>${newS}</strong></div>
-          ${ (prevA || newA) ? `<div class="hist-diff"><span class="hist-k">Action:</span> ${prevA || '—'} → <strong>${newA || '—'}</strong></div>` : '' }
-        </div>
-      `;
-    }
-
-    async function openHistoryPopover() {
-      try {
-        // نجيب التكت الحالي من الذاكرة (tickets + currentSection)
-        const caseNo = document.getElementById('drawer-caseNumber')?.textContent || '';
-        const sec = window.currentSection || 'cctv';
-        const list = (window.tickets?.[sec] || []);
-        const t = list.find(x => (x.caseNumber === caseNo) || (x.orderNumber === caseNo));
-        const id = t && t._id ? Number(t._id) : null;
-        if (!id) {
-          alert('History not available for this ticket.');
-          return;
+      CloudCrowdAppShell.buildTopbar(
+        document.getElementById("cctv-app-topbar"),
+        {
+          eyebrow: "Operations Hub",
+          title: "CCTV Operations Center",
+          userId: "cctv-current-user",
+          roleId: "cctv-current-role",
+          onLogout: logout
         }
+      );
 
-        // استدعاء الواجهة الجاهزة
-        const res = await fetch(`/.netlify/functions/tickets?history=1&id=${id}`);
-        const data = await res.json();
-        if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load history');
-
-        const pop = document.getElementById('history-popover');
-        if (!data.history || data.history.length === 0) {
-          pop.innerHTML = `<div class="hist-item">No changes recorded yet.</div>`;
-        } else {
-          pop.innerHTML = data.history.map(renderHistoryItem).join('');
-        }
-
-        // توغل فتح/إغلاق
-        pop.classList.toggle('open');
-        // إغلاق عند الضغط خارج البوبوفر
-        document.addEventListener('click', function once(e){
-          const header = document.getElementById('drawer-title');
-          if (!pop.contains(e.target) && e.target !== header && e.target.id !== 'drawer-history-link') {
-            pop.classList.remove('open');
-            document.removeEventListener('click', once);
-          }
-        });
-      } catch (err) {
-        console.error('history error:', err);
-        alert('Could not load history.');
-      }
-    }
-
-    // اربط الزر بعد تحميل الصفحة (main.js محمّل بـ defer)
-    window.addEventListener('load', () => {
-      const btn = document.getElementById('drawer-history-link');
-      if (btn) btn.addEventListener('click', openHistoryPopover);
-      // عرض أولي للكروت
+      currentSection = 'cctv';
       if (typeof renderTickets === 'function') renderTickets();
     });
-
   </script>
-      <script src="idle-logout.js"></script>
-
+  <script src="idle-logout.js"></script>
 </body>
 </html>
-
