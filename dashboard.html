@@ -610,7 +610,7 @@
           </span>
           Employee Deductions
         </a>
-        <a class="nav-item" href="call-queue.html" data-role-visible="admin,manager" hidden>
+        <a class="nav-item" href="call-queue.html" data-module-hidden="true" data-role-visible="admin,manager" hidden>
           <span class="nav-icon" aria-hidden="true">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
               <path d="M6.5 5.5h3l1.5 4-2 1.2a10 10 0 0 0 4.3 4.3l1.2-2 4 1.5v3a2 2 0 0 1-2.2 2A15 15 0 0 1 4.5 7.7a2 2 0 0 1 2-2.2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
@@ -822,7 +822,7 @@
             </span>
           </div>
 
-          <div class="section-card call-queue-card" data-section="call-queue" data-role-visible="admin,manager" hidden onclick="window.location.href='call-queue.html'" role="link" tabindex="0" aria-label="Open Call Queue">
+          <div class="section-card call-queue-card" data-section="call-queue" data-module-hidden="true" data-role-visible="admin,manager" hidden onclick="window.location.href='call-queue.html'" role="link" tabindex="0" aria-label="Open Call Queue">
             <span class="card-icon" aria-hidden="true">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
                 <path d="M6.5 5.5h3l1.5 4-2 1.2a10 10 0 0 0 4.3 4.3l1.2-2 4 1.5v3a2 2 0 0 1-2.2 2A15 15 0 0 1 4.5 7.7a2 2 0 0 1 2-2.2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
@@ -1040,7 +1040,7 @@
       const currentRole = readSessionValue('cc_role').trim().toLowerCase();
       document.querySelectorAll('[data-role-visible]').forEach((element) => {
         const allowedRoles = element.dataset.roleVisible.split(',').map((role) => role.trim().toLowerCase());
-        element.hidden = !allowedRoles.includes(currentRole);
+        element.hidden = element.dataset.moduleHidden === 'true' || !allowedRoles.includes(currentRole);
       });
 
       const isAnatiAdmin = readSessionValue('cc_user').trim().toLowerCase() === 'anati' && currentRole === 'admin';
@@ -1057,7 +1057,7 @@
       const isAnatiAdmin = currentUser.trim().toLowerCase() === 'anati' && currentRole === 'admin';
       if (isAnatiAdmin) {
         document.querySelectorAll('.section-card, .sidebar-nav .nav-item').forEach((element) => {
-          element.hidden = false;
+          element.hidden = element.dataset.moduleHidden === 'true';
         });
         return;
       }
@@ -1080,6 +1080,10 @@
         );
 
         document.querySelectorAll('.section-card, .sidebar-nav .nav-item').forEach((element) => {
+          if (element.dataset.moduleHidden === 'true') {
+            element.hidden = true;
+            return;
+          }
           const moduleKey = getDashboardElementModuleKey(element);
           if (!moduleKey) return;
           if (moduleKey === 'anati_admin') {

@@ -95,6 +95,7 @@
       icon: 'phone-call',
       order: 70,
       permissionKey: 'call_queue',
+      hidden: true,
       showInSidebar: true,
       showInDashboard: true
     },
@@ -221,11 +222,11 @@
   }
 
   function getSidebarModules() {
-    return getAllModules().filter((module) => module.showInSidebar);
+    return getAllModules().filter((module) => module.showInSidebar && module.hidden !== true);
   }
 
   function getDashboardModules() {
-    return getAllModules().filter((module) => module.showInDashboard);
+    return getAllModules().filter((module) => module.showInDashboard && module.hidden !== true);
   }
 
   function getModuleById(id) {
@@ -329,7 +330,9 @@
     if (!container) return [];
 
     const activeModule = options.activeModule || getActiveModuleByPath();
-    const baseModules = (options.modules || getSidebarModules()).filter((module) => module.showInSidebar !== false);
+    const baseModules = (options.modules || getSidebarModules()).filter((module) => (
+      module.showInSidebar !== false && module.hidden !== true
+    ));
     const visibleModules = await filterPermittedModules(baseModules);
 
     clearElement(container);
