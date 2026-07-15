@@ -195,7 +195,6 @@
     }
     .modal.open{display:flex}
     .modal-panel{width:min(920px,100%);max-height:92vh;overflow:auto;border:1px solid rgba(167,235,242,.5);border-radius:24px;background:#fff;box-shadow:0 30px 90px rgba(1,28,64,.34)}
-    #profile-modal .modal-panel{width:min(1180px,100%)}
     .modal-header{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 26px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.96)}
     .modal-header h3{margin:0;color:var(--navy);font-size:24px;font-weight:950}
     .icon-btn{width:38px;height:38px;border:1px solid var(--line);border-radius:50%;color:var(--deep);background:#fff;font-weight:950}
@@ -326,37 +325,38 @@
         <article class="stat-card stat-restaurants"><span class="stat-icon" aria-hidden="true">&#9670;</span><div><span>Assigned Restaurants</span><strong id="stat-restaurants">0</strong></div></article>
       </section>
 
-      <section class="content-card" aria-labelledby="directory-title">
-        <div class="card-header">
-          <div>
-            <h3 id="directory-title">Employee Directory</h3>
-            <p>Search employee records and open a complete operational profile.</p>
+      <section class="employee-profiles-workspace-layout" aria-label="Employee directory and workspace">
+        <aside class="employee-directory-pane content-card" aria-labelledby="directory-title">
+          <div class="card-header">
+            <div>
+              <p class="directory-eyebrow">People directory</p>
+              <h3 id="directory-title">Employee Directory</h3>
+            </div>
+            <span class="role-pill" id="record-count">0 records</span>
           </div>
-          <span class="role-pill" id="record-count">0 records</span>
-        </div>
-        <div class="filters">
-          <input class="control" id="employee-search" type="search" placeholder="Search employee or restaurant">
-          <select class="control" id="status-filter" aria-label="Filter employees by status">
-            <option value="all">All employees</option>
-            <option value="active">Active employees</option>
-            <option value="inactive">Archived employees</option>
-          </select>
-        </div>
-        <div class="employee-grid" id="employee-grid">
-          <div class="empty-state">Loading employee profiles...</div>
-        </div>
+          <div class="filters">
+            <input class="control" id="employee-search" type="search" placeholder="Search employee or restaurant">
+            <select class="control" id="status-filter" aria-label="Filter employees by status">
+              <option value="all">All employees</option>
+              <option value="active">Active employees</option>
+              <option value="inactive">Archived employees</option>
+            </select>
+          </div>
+          <div class="employee-grid" id="employee-grid">
+            <div class="empty-state">Loading employee profiles...</div>
+          </div>
+        </aside>
+
+        <section class="employee-workspace-pane" id="employee-workspace" aria-live="polite" aria-label="Employee workspace">
+          <div class="workspace-empty-state">
+            <span class="workspace-empty-icon" aria-hidden="true">&#9783;</span>
+            <p class="workspace-kicker">Employee workspace</p>
+            <h3>Select an employee</h3>
+            <p>Choose a record from the directory to review contact information, assignments, and operational summaries.</p>
+          </div>
+        </section>
       </section>
       </main>
-    </div>
-  </div>
-
-  <div class="modal" id="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
-    <div class="modal-panel">
-      <div class="modal-header">
-        <h3 id="profile-modal-title">Employee Profile</h3>
-        <button class="icon-btn" type="button" data-close-modal="profile-modal" aria-label="Close profile">&times;</button>
-      </div>
-      <div class="modal-body" id="profile-modal-body"></div>
     </div>
   </div>
 
@@ -438,6 +438,8 @@
     const currentRole = (sessionStorage.getItem('cc_role') || '').toLowerCase();
     const canManageEmployees = ['admin', 'manager'].includes(currentRole);
     let employees = [];
+    let selectedEmployeeId = '';
+    let workspaceRequestToken = 0;
 
     function authHeaders(extra = {}) {
       return {
@@ -504,6 +506,16 @@
         employees = Array.isArray(data.employees) ? data.employees : [];
         renderEmployees();
         renderStats();
+        const requestedId = selectedEmployeeId || new URLSearchParams(window.location.search).get('employeeId') || '';
+        if (requestedId && employees.some((employee) => employee.employeeId === requestedId)) {
+          await selectEmployee(requestedId, { updateUrl: false, focusWorkspace: false });
+        } else if (requestedId) {
+          selectedEmployeeId = '';
+          updateWorkspaceUrl('');
+          renderWorkspaceError('The requested employee record could not be found.', false);
+        } else {
+          renderEmptyWorkspace();
+        }
       } catch (error) {
         document.getElementById('employee-grid').innerHTML =
           `<div class="empty-state">${escapeHtml(error.message)}</div>`;
@@ -558,30 +570,17 @@
         const restaurants = (employee.assignedRestaurants || []).length
           ? employee.assignedRestaurants.map((name) => `<span class="chip">${escapeHtml(name)}</span>`).join('')
           : '<span class="chip">No restaurants assigned</span>';
-        const writeActions = canManageEmployees
-          ? `
-            <button class="small-btn" type="button" data-edit-id="${escapeHtml(employee.employeeId)}" data-permission-edit>Edit</button>
-            ${employee.status === 'active'
-              ? `<button class="small-btn danger-btn" type="button" data-archive-id="${escapeHtml(employee.employeeId)}" data-permission-delete>Archive</button>`
-              : ''}
-          `
-          : '';
-
         return `
-          <article class="employee-card">
-            <div class="employee-card-head">
+          <article class="employee-card${employee.employeeId === selectedEmployeeId ? ' is-selected' : ''}" ${employee.employeeId === selectedEmployeeId ? 'aria-current="true"' : ''}>
+            <button class="employee-card-head employee-select" type="button" data-view-id="${escapeHtml(employee.employeeId)}" aria-label="Open ${escapeHtml(employee.fullName)} workspace">
               <span class="employee-avatar" aria-hidden="true">${escapeHtml(initials)}</span>
               <div class="employee-identity">
                 <h4>${escapeHtml(employee.fullName)}</h4>
                 <p>${escapeHtml(employee.primaryPhone || 'No primary phone')}</p>
               </div>
               <span class="status-badge status-${escapeHtml(employee.status)}">${escapeHtml(employee.status)}</span>
-            </div>
+            </button>
             <div class="restaurant-list">${restaurants}</div>
-            <div class="card-actions">
-              <button class="small-btn" type="button" data-view-id="${escapeHtml(employee.employeeId)}">View Profile</button>
-              ${writeActions}
-            </div>
           </article>
         `;
       }).join('');
@@ -885,7 +884,99 @@
       return Array.isArray(data.records) ? data.records : [];
     }
 
-    async function viewEmployee(employeeId) {
+    function getEmployeeInitials(name) {
+      return String(name || '')
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((part) => part.charAt(0))
+        .join('')
+        .toUpperCase() || '?';
+    }
+
+    function formatProfileDate(value) {
+      if (!value) return '-';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return new Intl.DateTimeFormat('en', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      }).format(date);
+    }
+
+    function updateWorkspaceUrl(employeeId) {
+      const url = new URL(window.location.href);
+      if (employeeId) url.searchParams.set('employeeId', employeeId);
+      else url.searchParams.delete('employeeId');
+      window.history.replaceState(
+        { employeeId: employeeId || '' },
+        '',
+        `${url.pathname}${url.search}${url.hash}`
+      );
+    }
+
+    function renderEmptyWorkspace() {
+      document.getElementById('employee-workspace').innerHTML = `
+        <div class="workspace-empty-state">
+          <span class="workspace-empty-icon" aria-hidden="true">&#9783;</span>
+          <p class="workspace-kicker">Employee workspace</p>
+          <h3>Select an employee</h3>
+          <p>Choose a record from the directory to review contact information, assignments, and operational summaries.</p>
+        </div>
+      `;
+    }
+
+    function renderWorkspaceLoading(employeeId) {
+      const employee = employees.find((item) => item.employeeId === employeeId);
+      document.getElementById('employee-workspace').innerHTML = `
+        <div class="workspace-loading" aria-busy="true">
+          <div class="workspace-loading-copy">
+            <span class="workspace-skeleton skeleton-avatar"></span>
+            <div>
+              <span class="workspace-skeleton skeleton-name"></span>
+              <span class="workspace-skeleton skeleton-meta"></span>
+            </div>
+          </div>
+          <p>Loading ${escapeHtml(employee?.fullName || 'employee')} workspace...</p>
+          <div class="workspace-skeleton-grid">
+            <span class="workspace-skeleton skeleton-panel"></span>
+            <span class="workspace-skeleton skeleton-panel"></span>
+            <span class="workspace-skeleton skeleton-panel"></span>
+            <span class="workspace-skeleton skeleton-panel"></span>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderWorkspaceError(message, retry = true) {
+      document.getElementById('employee-workspace').innerHTML = `
+        <div class="workspace-empty-state workspace-error-state">
+          <span class="workspace-empty-icon" aria-hidden="true">!</span>
+          <p class="workspace-kicker">Workspace unavailable</p>
+          <h3>Employee profile could not be loaded</h3>
+          <p>${escapeHtml(message)}</p>
+          ${retry && selectedEmployeeId
+            ? '<button class="small-btn" type="button" data-retry-workspace>Try again</button>'
+            : ''}
+        </div>
+      `;
+    }
+
+    function focusWorkspaceOnSmallScreen() {
+      if (!window.matchMedia('(max-width: 900px)').matches) return;
+      document.getElementById('employee-workspace').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    async function selectEmployee(employeeId, options = {}) {
+      if (!employeeId) return;
+      selectedEmployeeId = employeeId;
+      const requestToken = ++workspaceRequestToken;
+      renderEmployees();
+      renderWorkspaceLoading(employeeId);
+      if (options.updateUrl !== false) updateWorkspaceUrl(employeeId);
+      if (options.focusWorkspace !== false) focusWorkspaceOnSmallScreen();
+
       try {
         const employee = await getEmployeeProfile(employeeId);
         let qualityRecords = [];
@@ -920,22 +1011,16 @@
         } catch (error) {
           trainingError = error.message || 'Training records could not be loaded.';
         }
-        const phones = employee.phoneNumbers.length
-          ? employee.phoneNumbers.map((phone) => `
-              <div class="detail-item">
-                <span>${escapeHtml(phone.label || 'Phone')}</span>
-                <strong>${valueOrDash(phone.phoneNumber)}${phone.isPrimary ? ' (Primary)' : ''}</strong>
-              </div>
-            `).join('')
-          : '<div class="detail-item"><strong>No phone numbers recorded.</strong></div>';
+        if (requestToken !== workspaceRequestToken || employeeId !== selectedEmployeeId) return;
         const contacts = employee.emergencyContacts.length
           ? employee.emergencyContacts.map((contact) => `
-              <div class="detail-item">
+              <div class="workspace-contact-row">
                 <span>${escapeHtml(contact.relationship || 'Emergency Contact')}</span>
-                <strong>${valueOrDash(contact.contactName)} - ${valueOrDash(contact.phoneNumber)}</strong>
+                <strong>${valueOrDash(contact.contactName)}</strong>
+                <small>${valueOrDash(contact.phoneNumber)}</small>
               </div>
             `).join('')
-          : '<div class="detail-item"><strong>No emergency contacts recorded.</strong></div>';
+          : '<p class="workspace-muted">No emergency contacts recorded.</p>';
         const restaurants = employee.assignedRestaurants.length
           ? employee.assignedRestaurants.map((name) => `<span class="chip">${escapeHtml(name)}</span>`).join('')
           : '<span class="chip">No restaurants assigned</span>';
@@ -1101,74 +1186,116 @@
           </div>
         `).join('');
 
-        document.getElementById('profile-modal-title').textContent = employee.fullName;
-        document.getElementById('profile-modal-body').innerHTML = `
-          <section class="detail-section">
-            <div class="profile-section-heading">
-              <h4>Profile Overview</h4>
-              <span class="section-source">Employee Profiles</span>
+        const primaryPhoneIndex = employee.phoneNumbers.findIndex((phone) => phone.isPrimary);
+        const effectivePrimaryIndex = primaryPhoneIndex >= 0 ? primaryPhoneIndex : 0;
+        const primaryPhone = employee.phoneNumbers[effectivePrimaryIndex];
+        const additionalPhones = employee.phoneNumbers
+          .filter((phone, index) => index !== effectivePrimaryIndex)
+          .map((phone) => `
+            <div class="workspace-contact-row">
+              <span>${escapeHtml(phone.label || 'Additional')}</span>
+              <strong>${valueOrDash(phone.phoneNumber)}</strong>
             </div>
-            <div class="detail-grid">
-              <div class="detail-item"><span>Full Name</span><strong>${escapeHtml(employee.fullName)}</strong></div>
-              <div class="detail-item"><span>Status</span><strong>${escapeHtml(employee.status)}</strong></div>
-              <div class="detail-item"><span>Primary Phone</span><strong>${valueOrDash(employee.phoneNumbers.find((phone) => phone.isPrimary)?.phoneNumber || employee.phoneNumbers[0]?.phoneNumber)}</strong></div>
-              <div class="detail-item"><span>Assigned Restaurants</span><div class="restaurant-list">${restaurants}</div></div>
-              <div class="detail-item" style="grid-column:1/-1"><span>Notes</span><strong>${valueOrDash(employee.notes)}</strong></div>
-            </div>
-          </section>
-          <section class="detail-section"><h4>Phone Numbers</h4><div class="detail-grid">${phones}</div></section>
-          <section class="detail-section"><h4>Emergency Contacts</h4><div class="detail-grid">${contacts}</div></section>
-          <section class="detail-section">
-            <div class="profile-section-heading">
-              <h4>Agent Training</h4>
-              <span class="section-source">Agent Training</span>
-            </div>
-            ${trainingSection}
-          </section>
-          <section class="detail-section">
-            <div class="profile-section-heading">
-              <h4>Weekly Quality Performance</h4>
-              <span class="section-source">Weekly Quality</span>
-            </div>
-            ${quality.records.length ? `
-              ${qualityError ? `<div class="profile-empty">Weekly Quality database could not be loaded. Showing local browser records. ${escapeHtml(qualityError)}</div>` : ''}
-              <div class="metrics-grid">
-                <div class="metric-card"><span>Average Score</span><strong>${formatScore(quality.average)}</strong></div>
-                <div class="metric-card"><span>Best Score</span><strong>${formatScore(quality.best)}</strong></div>
-                <div class="metric-card"><span>Worst Score</span><strong>${formatScore(quality.worst)}</strong></div>
-                <div class="metric-card"><span>Total Evaluations</span><strong>${quality.records.length}</strong></div>
-                <div class="metric-card"><span>Last Evaluation</span><strong>${escapeHtml(quality.lastDate || '-')}</strong></div>
-                <div class="metric-card"><span>Top Restaurant / Campaign</span><strong>${escapeHtml(quality.topCampaign?.name || '-')}</strong><small>${quality.topCampaign ? `${formatScore(quality.topCampaign.average)} average` : ''}</small></div>
+          `).join('') || '<p class="workspace-muted">No additional phone numbers.</p>';
+        const workspaceActions = canManageEmployees
+          ? `
+            <button class="small-btn" type="button" data-edit-id="${escapeHtml(employee.employeeId)}" data-permission-edit>Edit</button>
+            ${employee.status === 'active'
+              ? `<button class="small-btn danger-btn" type="button" data-archive-id="${escapeHtml(employee.employeeId)}" data-permission-delete>Archive</button>`
+              : ''}
+          `
+          : '';
+        const qualityValue = quality.records.length ? formatScore(quality.average) : '-';
+        const attendanceState = attendanceError
+          ? attendance.records.length ? 'Browser fallback' : 'Unavailable'
+          : `${attendance.records.length} linked record${attendance.records.length === 1 ? '' : 's'}`;
+        const qualityState = qualityError
+          ? quality.records.length ? 'Browser fallback' : 'Unavailable'
+          : `${quality.records.length} evaluation${quality.records.length === 1 ? '' : 's'}`;
+        const trainingState = trainingError
+          ? 'Unavailable'
+          : `${trainingRecords.length} linked record${trainingRecords.length === 1 ? '' : 's'}`;
+        const deductionsState = deductionsError
+          ? 'Unavailable'
+          : `${deductionRecords.length} linked record${deductionRecords.length === 1 ? '' : 's'}`;
+
+        document.getElementById('employee-workspace').innerHTML = `
+          <button class="workspace-back-btn small-btn" type="button" data-back-to-directory>&larr; Back to directory</button>
+
+          <header class="workspace-profile-header">
+            <div class="workspace-profile-identity">
+              <span class="workspace-avatar" aria-hidden="true">${escapeHtml(getEmployeeInitials(employee.fullName))}</span>
+              <div>
+                <p class="workspace-kicker">Employee record</p>
+                <h3>${escapeHtml(employee.fullName)}</h3>
+                <div class="workspace-profile-meta">
+                  <span class="status-badge status-${escapeHtml(employee.status)}">${escapeHtml(employee.status === 'inactive' ? 'Archived' : 'Active')}</span>
+                  <span>${employee.assignedRestaurants.length} restaurant${employee.assignedRestaurants.length === 1 ? '' : 's'}</span>
+                </div>
               </div>
-              <div class="profile-table-wrap">
-                <table class="profile-table">
-                  <thead><tr><th>Date &amp; Time</th><th>Campaign</th><th>Auditor</th><th>Score</th><th>Details</th></tr></thead>
-                  <tbody>${qualityRows}</tbody>
-                </table>
+            </div>
+            <div class="workspace-quick-actions">${workspaceActions}</div>
+          </header>
+
+          <div class="workspace-section-grid">
+            <section class="workspace-card workspace-overview-card">
+              <div class="workspace-card-heading">
+                <div><p class="workspace-kicker">Record details</p><h4>Overview</h4></div>
+                <span class="section-source">Employee Profiles</span>
               </div>
-            ` : qualityError
-              ? `<div class="profile-empty">Weekly Quality database could not be loaded. No local weekly quality records found. ${escapeHtml(qualityError)}</div>`
-              : '<div class="profile-empty">No weekly quality records yet.</div>'}
-          </section>
-          <section class="detail-section">
-            <div class="profile-section-heading">
-              <h4>Attendance Summary</h4>
-              <span class="section-source">Attendance</span>
+              <div class="workspace-definition-grid">
+                <div><span>Full name</span><strong>${escapeHtml(employee.fullName)}</strong></div>
+                <div><span>Status</span><strong>${escapeHtml(employee.status === 'inactive' ? 'Archived' : 'Active')}</strong></div>
+                <div><span>Created</span><strong>${escapeHtml(formatProfileDate(employee.createdAt))}</strong></div>
+                <div><span>Updated</span><strong>${escapeHtml(formatProfileDate(employee.updatedAt))}</strong></div>
+                <div class="workspace-definition-wide"><span>Notes</span><strong>${valueOrDash(employee.notes)}</strong></div>
+              </div>
+            </section>
+
+            <section class="workspace-card workspace-contact-card">
+              <div class="workspace-card-heading"><div><p class="workspace-kicker">Reachability</p><h4>Contact Information</h4></div></div>
+              <div class="workspace-primary-contact">
+                <span>Primary phone</span>
+                <strong>${valueOrDash(primaryPhone?.phoneNumber)}</strong>
+                <small>${escapeHtml(primaryPhone?.label || 'Primary')}</small>
+              </div>
+              <div class="workspace-contact-list">${additionalPhones}</div>
+              <div class="workspace-subsection">
+                <h5>Emergency contacts</h5>
+                <div class="workspace-contact-list">${contacts}</div>
+              </div>
+            </section>
+
+            <section class="workspace-card workspace-restaurant-card">
+              <div class="workspace-card-heading"><div><p class="workspace-kicker">Operations</p><h4>Restaurant Assignments</h4></div><span class="workspace-count">${employee.assignedRestaurants.length}</span></div>
+              <div class="restaurant-list">${restaurants}</div>
+            </section>
+          </div>
+
+          <section class="workspace-summary-section" aria-label="Employee operational summaries">
+            <div class="workspace-card-heading"><div><p class="workspace-kicker">At a glance</p><h4>Operational Summary</h4></div></div>
+            <div class="workspace-summary-grid">
+              <article><span>Attendance count</span><strong>${attendance.records.length}</strong><small>${escapeHtml(attendanceState)}</small></article>
+              <article><span>Quality score</span><strong>${escapeHtml(qualityValue)}</strong><small>${escapeHtml(qualityState)}</small></article>
+              <article><span>Training count</span><strong>${trainingRecords.length}</strong><small>${escapeHtml(trainingState)}</small></article>
+              <article><span>Deductions count</span><strong>${deductionRecords.length}</strong><small>${escapeHtml(deductionsState)}</small></article>
             </div>
-            ${attendanceSection}
           </section>
-          <section class="detail-section">
-            <div class="profile-section-heading">
-              <h4>Financial Deductions</h4>
-              <span class="section-source">Employee Deductions</span>
+
+          <section class="workspace-modules-section" aria-label="Linked employee modules">
+            <div class="workspace-card-heading"><div><p class="workspace-kicker">Linked modules</p><h4>Detailed Workspaces</h4></div><span class="section-source">Phase 1</span></div>
+            <div class="workspace-module-grid">
+              <article><span class="workspace-module-icon" aria-hidden="true">A</span><div><h5>Attendance</h5><p>${escapeHtml(attendanceState)}</p></div><small>Detailed workspace coming next</small></article>
+              <article><span class="workspace-module-icon" aria-hidden="true">Q</span><div><h5>Weekly Quality</h5><p>${escapeHtml(qualityState)}</p></div><small>Detailed workspace coming next</small></article>
+              <article><span class="workspace-module-icon" aria-hidden="true">T</span><div><h5>Training</h5><p>${escapeHtml(trainingState)}</p></div><small>Detailed workspace coming next</small></article>
+              <article><span class="workspace-module-icon" aria-hidden="true">D</span><div><h5>Deductions</h5><p>${escapeHtml(deductionsState)}</p></div><small>Detailed workspace coming next</small></article>
             </div>
-            ${deductionsSection}
           </section>
-          <section class="detail-section"><h4>Future Linked Modules</h4><div class="future-grid">${futureMetrics}</div></section>
         `;
-        openModal('profile-modal');
+        window.CCPermissions?.applyPermissionVisibility(window.CC_PAGE_ACCESS);
       } catch (error) {
-        showMessage(error.message);
+        if (requestToken !== workspaceRequestToken || employeeId !== selectedEmployeeId) return;
+        renderWorkspaceError(error.message);
       }
     }
 
@@ -1298,11 +1425,18 @@
       const viewButton = event.target.closest('[data-view-id]');
       const editButton = event.target.closest('[data-edit-id]');
       const archiveButton = event.target.closest('[data-archive-id]');
+      const retryButton = event.target.closest('[data-retry-workspace]');
+      const backButton = event.target.closest('[data-back-to-directory]');
       if (closeButton) closeModal(closeButton.dataset.closeModal);
       if (removeButton) removeButton.closest('.dynamic-row').remove();
-      if (viewButton) viewEmployee(viewButton.dataset.viewId);
+      if (viewButton) selectEmployee(viewButton.dataset.viewId);
       if (editButton) editEmployee(editButton.dataset.editId);
       if (archiveButton) archiveEmployee(archiveButton.dataset.archiveId);
+      if (retryButton && selectedEmployeeId) selectEmployee(selectedEmployeeId, { updateUrl: false });
+      if (backButton) {
+        document.querySelector('.employee-directory-pane').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('employee-search').focus({ preventScroll: true });
+      }
     });
 
     document.querySelectorAll('.modal').forEach((modal) => {
