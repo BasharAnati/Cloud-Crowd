@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+  <link rel="stylesheet" href="app-shell.css">
   <title>Employee Profiles - Cloud Crowd</title>
   <style>
     :root{
@@ -292,43 +293,24 @@
     }
   </script>
 </head>
-<body>
-  <div class="profiles-shell">
-    <aside class="sidebar" aria-label="Employee Profiles navigation">
-      <a class="sidebar-brand" href="dashboard.html" aria-label="Cloud Crowd dashboard">
-        <img src="assets/images/logo.png" alt="Cloud Crowd logo" class="sidebar-logo">
-        <div>
-          <h1>Cloud Crowd</h1>
-          <p>Operations Hub</p>
-        </div>
-      </a>
-      <nav class="sidebar-nav">
-        <a class="nav-item" href="dashboard.html">
-          <span class="nav-icon" aria-hidden="true">&#8962;</span>
-          Dashboard
-        </a>
-        <a class="nav-item active" href="employee-profiles.html" aria-current="page">
-          <span class="nav-icon" aria-hidden="true">&#9783;</span>
-          Employee Profiles
-        </a>
-      </nav>
-    </aside>
+<body class="employee-profiles-ops-center">
+  <div class="profiles-shell cc-shell-layout">
+    <aside id="employee-profiles-app-sidebar" aria-label="Employee Profiles navigation"></aside>
 
-    <main class="main-area" id="main-content">
-      <header class="topbar">
-        <a class="breadcrumb" href="dashboard.html">&larr; Dashboard</a>
-        <div class="user-tools">
-          <span class="user-pill" id="current-user">Team Member</span>
-          <span class="role-pill" id="current-role">operator</span>
-          <button class="logout" type="button" id="logout-btn">Log out</button>
-        </div>
+    <div class="profiles-main cc-shell-main">
+      <header id="employee-profiles-app-topbar">
+        <span id="current-user" hidden>Team Member</span>
+        <span id="current-role" hidden>operator</span>
+        <button id="logout-btn" type="button" hidden>Log out</button>
       </header>
+
+      <main class="main-area" id="main-content">
 
       <section class="hero" aria-labelledby="page-title">
         <div class="hero-content">
           <p class="eyebrow">People Operations</p>
           <h2 id="page-title">Employee Profiles</h2>
-          <p>Central employee records for Cloud Crowd operations.</p>
+          <p>Maintain employee records, contact details, restaurant assignments, and operational history.</p>
         </div>
         <div class="hero-actions">
           <button class="primary-btn write-control" type="button" id="add-employee-btn" data-permission-create>+ Add Employee</button>
@@ -338,10 +320,10 @@
       <div class="message" id="page-message" role="status"></div>
 
       <section class="stats-grid" aria-label="Employee summary">
-        <article class="stat-card"><span>Total Employees</span><strong id="stat-total">0</strong></article>
-        <article class="stat-card"><span>Active Employees</span><strong id="stat-active">0</strong></article>
-        <article class="stat-card"><span>Archived Employees</span><strong id="stat-archived">0</strong></article>
-        <article class="stat-card"><span>Assigned Restaurants</span><strong id="stat-restaurants">0</strong></article>
+        <article class="stat-card stat-total"><span class="stat-icon" aria-hidden="true">&#9783;</span><div><span>Total Employees</span><strong id="stat-total">0</strong></div></article>
+        <article class="stat-card stat-active"><span class="stat-icon" aria-hidden="true">&#10003;</span><div><span>Active Employees</span><strong id="stat-active">0</strong></div></article>
+        <article class="stat-card stat-archived"><span class="stat-icon" aria-hidden="true">&#8635;</span><div><span>Archived Employees</span><strong id="stat-archived">0</strong></div></article>
+        <article class="stat-card stat-restaurants"><span class="stat-icon" aria-hidden="true">&#9670;</span><div><span>Assigned Restaurants</span><strong id="stat-restaurants">0</strong></div></article>
       </section>
 
       <section class="content-card" aria-labelledby="directory-title">
@@ -364,7 +346,8 @@
           <div class="empty-state">Loading employee profiles...</div>
         </div>
       </section>
-    </main>
+      </main>
+    </div>
   </div>
 
   <div class="modal" id="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
@@ -430,6 +413,7 @@
   </div>
 
   <script src="js/permissions.js"></script>
+  <script src="js/app-shell.js"></script>
   <script>
     window.CCPermissions?.requirePageAccess('employee_profiles');
     const EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
@@ -564,6 +548,13 @@
       }
 
       grid.innerHTML = filtered.map((employee) => {
+        const initials = String(employee.fullName || '')
+          .trim()
+          .split(/\s+/)
+          .slice(0, 2)
+          .map((part) => part.charAt(0))
+          .join('')
+          .toUpperCase() || '?';
         const restaurants = (employee.assignedRestaurants || []).length
           ? employee.assignedRestaurants.map((name) => `<span class="chip">${escapeHtml(name)}</span>`).join('')
           : '<span class="chip">No restaurants assigned</span>';
@@ -579,7 +570,8 @@
         return `
           <article class="employee-card">
             <div class="employee-card-head">
-              <div>
+              <span class="employee-avatar" aria-hidden="true">${escapeHtml(initials)}</span>
+              <div class="employee-identity">
                 <h4>${escapeHtml(employee.fullName)}</h4>
                 <p>${escapeHtml(employee.primaryPhone || 'No primary phone')}</p>
               </div>
@@ -1271,12 +1263,26 @@
       });
     }
 
-    document.getElementById('current-user').textContent = sessionStorage.getItem('cc_user') || 'Team Member';
-    document.getElementById('current-role').textContent = currentRole || 'operator';
+    const activeModule = window.CloudCrowdAppShell.getModuleById('employee-profiles');
+    window.CloudCrowdAppShell.buildSidebar(
+      document.getElementById('employee-profiles-app-sidebar'),
+      { activeModule }
+    );
+    window.CloudCrowdAppShell.buildTopbar(
+      document.getElementById('employee-profiles-app-topbar'),
+      {
+        activeModule,
+        eyebrow: 'People Operations',
+        title: 'Employee Profiles',
+        userId: 'current-user',
+        roleId: 'current-role',
+        onLogout: () => logout(true)
+      }
+    );
+    document.querySelector('#employee-profiles-app-topbar .cc-shell-logout').id = 'logout-btn';
     document.querySelectorAll('.write-control').forEach((element) => {
       element.hidden = !canManageEmployees;
     });
-    document.getElementById('logout-btn').addEventListener('click', () => logout(true));
     document.getElementById('add-employee-btn').addEventListener('click', openCreateEmployee);
     document.getElementById('employee-search').addEventListener('input', renderEmployees);
     document.getElementById('status-filter').addEventListener('change', renderEmployees);
