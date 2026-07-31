@@ -2,6 +2,10 @@
   "name": "cloud-crowd",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "audit:production": "node tools/audit/production/bin/cloud-crowd-audit.js",
+    "test:audit": "node --test tools/audit/production/test/*.test.js"
+  },
   "dependencies": {
     "pg": "^8.11.5",
     "googleapis": "^144.0.0"
