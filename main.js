@@ -583,6 +583,154 @@ function saveTicketsToStorage(){
 // Drawer (read/edit)
 // ----------------------------
 let drawerIndex = null;
+const MUTATION_PERMISSION_KEYS = {
+  create: 'canCreate',
+  edit: 'canEdit',
+  delete: 'canDelete'
+};
+const activeMutations = new Set();
+const MUTATION_CANCELLED = Symbol('mutation-cancelled');
+
+function getMutationPermission(action) {
+  const permissionKey = MUTATION_PERMISSION_KEYS[action];
+  const access = window.CC_PAGE_ACCESS;
+  const requiredPermissionFields = ['canView', 'canCreate', 'canEdit', 'canDelete'];
+
+  if (!permissionKey) {
+    return { allowed: false, message: 'This action is not available.' };
+  }
+  if (
+    !access ||
+    typeof access !== 'object' ||
+    Array.isArray(access) ||
+    access.legacyFallback === true ||
+    typeof access.moduleKey !== 'string' ||
+    !access.moduleKey.trim() ||
+    !requiredPermissionFields.every(field => typeof access[field] === 'boolean') ||
+    access.canView !== true
+  ) {
+    return { allowed: false, message: 'Permissions are unavailable. Please reload and try again.' };
+  }
+  if (access[permissionKey] !== true) {
+    return { allowed: false, message: `You do not have permission to ${action} tickets.` };
+  }
+  if (action === 'delete' && readSessionValue('cc_role').trim().toLowerCase() !== 'admin') {
+    return { allowed: false, message: 'Administrator access is required to delete tickets.' };
+  }
+  return { allowed: true, message: '' };
+}
+
+function requireMutationPermission(action) {
+  const permission = getMutationPermission(action);
+  if (!permission.allowed) alert(permission.message);
+  return permission.allowed;
+}
+
+function setMutationLoading(control, loading, label) {
+  if (!control) return;
+
+  if (loading) {
+    if (!control.dataset.mutationLabel) {
+      control.dataset.mutationLabel = control.textContent || '';
+    }
+    control.disabled = true;
+    control.setAttribute('aria-busy', 'true');
+    control.textContent = label || 'Saving...';
+    return;
+  }
+
+  control.disabled = false;
+  control.removeAttribute('aria-busy');
+  if (control.dataset.mutationLabel !== undefined) {
+    control.textContent = control.dataset.mutationLabel;
+    delete control.dataset.mutationLabel;
+  }
+}
+
+function notifyMutation(message) {
+  if (message) alert(message);
+}
+
+async function readMutationResponse(response, fallbackMessage) {
+  if (handleAuthFailure(response)) throw MUTATION_CANCELLED;
+
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error(`${fallbackMessage}: Invalid server response`);
+  }
+
+  if (!response.ok || data?.ok === false) {
+    throw new Error(data?.error || fallbackMessage);
+  }
+  if (!data || typeof data !== 'object' || Array.isArray(data) || data.ok !== true) {
+    throw new Error(`${fallbackMessage}: Unverified server response`);
+  }
+  return data;
+}
+
+async function runMutationLifecycle(options) {
+  const {
+    action,
+    key,
+    control,
+    loadingLabel,
+    prepare,
+    request,
+    refresh,
+    successMessage,
+    failureMessage,
+    cleanup
+  } = options;
+
+  if (!requireMutationPermission(action)) return { ok: false, reason: 'permission' };
+
+  const mutationKey = `${action}:${_currentSection}:${key || ''}`;
+  if (activeMutations.has(mutationKey)) {
+    return { ok: false, reason: 'duplicate' };
+  }
+
+  activeMutations.add(mutationKey);
+  setMutationLoading(control, true, loadingLabel);
+
+  let succeeded = false;
+  let cancelled = false;
+  try {
+    const context = await prepare();
+    if (context === MUTATION_CANCELLED) {
+      cancelled = true;
+      return { ok: false, reason: 'cancelled' };
+    }
+
+    const result = await request(context);
+    if (result === MUTATION_CANCELLED) {
+      cancelled = true;
+      return { ok: false, reason: 'cancelled' };
+    }
+
+    if (refresh) await refresh(context, result);
+    succeeded = true;
+    notifyMutation(successMessage);
+    return { ok: true, context, result };
+  } catch (error) {
+    if (error === MUTATION_CANCELLED) {
+      cancelled = true;
+      return { ok: false, reason: 'cancelled' };
+    }
+
+    console.error(`${action} mutation failed:`, error);
+    notifyMutation(`${failureMessage}: ${error?.message || 'Unknown error'}`);
+    return { ok: false, reason: 'error', error };
+  } finally {
+    try {
+      if (cleanup) await cleanup({ succeeded, cancelled });
+    } finally {
+      setMutationLoading(control, false);
+      activeMutations.delete(mutationKey);
+    }
+  }
+}
 
 function ensureDrawerActionsContainer(){
   const drawer = document.getElementById('ticket-drawer');
@@ -934,17 +1082,28 @@ function openTicketDrawer(index){
   // محتوى القراءة
   bodyEl.innerHTML = buildDrawerReadonly(ticket);
 
-  // أزرار الأكشن: Edit دائمًا + Delete لأناتي فقط
   if (actions){
-    actions.innerHTML = `<button id="drawer-edit-btn" class="edit-btn">Edit</button>`;
-    actions.querySelector('#drawer-edit-btn').onclick = ()=> enterDrawerEditMode();
+    actions.innerHTML = '';
 
-    if (CURRENT_USER === DELETER_USERNAME) {
+    if (getMutationPermission('edit').allowed) {
+      const editBtn = document.createElement('button');
+      editBtn.id = 'drawer-edit-btn';
+      editBtn.type = 'button';
+      editBtn.className = 'edit-btn';
+      editBtn.textContent = 'Edit';
+      editBtn.setAttribute('data-permission-edit', '');
+      editBtn.addEventListener('click', ()=> enterDrawerEditMode());
+      actions.appendChild(editBtn);
+    }
+
+    if (getMutationPermission('delete').allowed) {
       const delBtn = document.createElement('button');
+      delBtn.id = 'drawer-delete-btn';
       delBtn.type = 'button';
       delBtn.className = 'danger-btn';
       delBtn.textContent = 'Delete';
-      delBtn.addEventListener('click', ()=> deleteTicket(drawerIndex));
+      delBtn.setAttribute('data-permission-delete', '');
+      delBtn.addEventListener('click', ()=> deleteTicket(drawerIndex, delBtn));
       actions.appendChild(delBtn);
     }
   }
@@ -957,6 +1116,7 @@ function openTicketDrawer(index){
 
 function enterDrawerEditMode(){
   if (drawerIndex==null) return;
+  if (!requireMutationPermission('edit')) return;
   const ticket = tickets[_currentSection][drawerIndex];
   const bodyEl = document.getElementById('drawer-body');
   const actions = ensureDrawerActionsContainer();
@@ -965,10 +1125,11 @@ function enterDrawerEditMode(){
   bodyEl.innerHTML = `<form id="drawer-edit-form">${buildDrawerEditForm(ticket)}</form>`;
   if (actions){
     actions.innerHTML = `
-      <button id="drawer-save-btn" class="submit-btn">Save</button>
+      <button id="drawer-save-btn" class="submit-btn" data-permission-edit>Save</button>
       <button id="drawer-cancel-btn" class="cancel-btn" type="button">Cancel</button>
     `;
-    actions.querySelector('#drawer-save-btn').onclick = (e)=>{ e.preventDefault(); saveDrawerEdits(); };
+    const saveBtn = actions.querySelector('#drawer-save-btn');
+    saveBtn.onclick = (e)=>{ e.preventDefault(); saveDrawerEdits(saveBtn); };
     actions.querySelector('#drawer-cancel-btn').onclick = (e)=>{ e.preventDefault(); openTicketDrawer(drawerIndex); };
   }
 }
@@ -980,207 +1141,194 @@ function enterDrawerEditMode(){
 // ----------------------------
 // Save edits (local first, then server + update Sheets)
 // ----------------------------
-async function saveDrawerEdits() {
+async function saveDrawerEdits(control) {
   if (drawerIndex == null) return;
   const form = document.getElementById('drawer-edit-form');
   if (!form) return;
 
-  const fd = new FormData(form);
-  const t  = tickets[_currentSection][drawerIndex];
+  const section = _currentSection;
+  const index = drawerIndex;
+  const ticket = tickets[section][index];
+  if (!ticket) return;
 
-  // تعديل محلي
-  t.status      = fd.get('status');
-  t.actionTaken = fd.get('actionTaken');
+  const reopenKey = ticket._id
+    ? { id: Number(ticket._id) }
+    : { caseNumber: String(ticket.caseNumber || '') };
 
-  // ✅ CCTV PDF upload (Edit only) + only for Escalated / Under Review
-  if (_currentSection === 'cctv') {
-    const newStatus = String(t.status || '');
-    const allowPdfNow = (newStatus === 'Escalated' || newStatus === 'Under Review');
+  return runMutationLifecycle({
+    action: 'edit',
+    key: ticket._id || ticket.caseNumber || index,
+    control,
+    loadingLabel: 'Saving...',
+    prepare: async () => {
+      const fd = new FormData(form);
+      const nextTicket = {
+        ...ticket,
+        status: String(fd.get('status') || ''),
+        actionTaken: String(fd.get('actionTaken') ?? '')
+      };
+      let pdfUpload = null;
 
-    if (allowPdfNow && t.caseNumber) {
-      const file = fd.get('cctvPdf'); // name من buildDrawerEditForm
+      if (section === 'cctv') {
+        const allowPdf = nextTicket.status === 'Escalated' || nextTicket.status === 'Under Review';
+        const file = fd.get('cctvPdf');
 
-      if (file && file.size) {
-        if (file.type !== 'application/pdf') {
-          alert('PDF only.');
-          return;
-        }
-
-        const MAX = 8 * 1024 * 1024; // 8MB
-        if (file.size > MAX) {
-          alert('PDF too large. Please upload under 8MB.');
-          return;
-        }
-
-        try {
-          const dataUrl = await fileToDataURL(file);
-
-          const up = await fetch('/.netlify/functions/upload-cctv-pdf', {
-            method: 'POST',
-            headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({
-              caseNumber: t.caseNumber,
-              pdfName: file.name,
-              pdfBase64: dataUrl
-            })
-          });
-          if (handleAuthFailure(up)) return;
-
-          const upData = await up.json().catch(() => ({}));
-
-          if (!up.ok || !upData.ok) {
-            const msg = upData?.error || `Upload failed (HTTP ${up.status})`;
-            throw new Error(msg);
+        if (allowPdf && nextTicket.caseNumber && file && file.size) {
+          if (file.type !== 'application/pdf') {
+            throw new Error('PDF only.');
           }
 
-          // خزّن محليًا عشان يظهر فورًا لو بدك
-          t.pdfName = upData.pdfName;
-          t.pdfUrl  = upData.pdfUrl;
+          const maxPdfSize = 8 * 1024 * 1024;
+          if (file.size > maxPdfSize) {
+            throw new Error('PDF too large. Please upload under 8MB.');
+          }
 
-        } catch (e) {
-          console.warn('PDF upload error:', e);
-          alert(`PDF upload failed: ${e.message}`);
-          return;
+          pdfUpload = {
+            caseNumber: nextTicket.caseNumber,
+            pdfName: file.name,
+            pdfBase64: await fileToDataURL(file)
+          };
         }
       }
-    }
-  }
 
-  t.lastModified = new Date().toISOString();
-  saveTicketsToStorage();
-  renderTickets();
+      return { nextTicket, pdfUpload };
+    },
+    request: async ({ nextTicket, pdfUpload }) => {
+      let uploadedPdf = null;
 
-  try {
-    // 1) تحديث الـ DB (لو له id)
-    if (Number.isFinite(Number(t._id))) {
-      const res = await fetch('/.netlify/functions/tickets', {
-        method: 'PUT',
-        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({
-          id: Number(t._id),
-          section: String(_currentSection),
-          status: String(t.status || ''),
-          actionTaken: String(t.actionTaken ?? ''),
-          changedBy: CURRENT_USER
-        })
-      });
-      if (handleAuthFailure(res)) return;
-
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || 'Update failed');
-    } else {
-      console.warn('No DB id → ticket came from Google Sheets, DB PUT skipped.');
-    }
-
-    // 2) تحديث Google Sheets دائمًا
-    if (!t.caseNumber) {
-      console.warn('No caseNumber on ticket → Sheets PUT skipped.');
-    } else {
-      const headers = getAuthHeaders({ 'Content-Type': 'application/json' });
-      if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
-
-      const sheetBody = {
-        section: _currentSection,
-        caseNumber: t.caseNumber,
-        status: t.status,
-        actionTaken: t.actionTaken,
-      };
-
-      const resS = await fetch(SHEETS_ENDPOINT, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(sheetBody)
-      });
-      if (handleAuthFailure(resS)) return;
-
-      const dataS = await resS.json().catch(() => ({}));
-      if (!resS.ok || dataS?.ok === false) {
-        throw new Error(dataS?.error || 'Sheets update failed');
+      if (pdfUpload) {
+        const uploadResponse = await fetch('/.netlify/functions/upload-cctv-pdf', {
+          method: 'POST',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify(pdfUpload)
+        });
+        const uploadData = await readMutationResponse(uploadResponse, 'PDF upload failed');
+        uploadedPdf = {
+          pdfName: uploadData.pdfName,
+          pdfUrl: uploadData.pdfUrl
+        };
       }
+
+      if (Number.isFinite(Number(nextTicket._id))) {
+        const response = await fetch('/.netlify/functions/tickets', {
+          method: 'PUT',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({
+            id: Number(nextTicket._id),
+            section,
+            status: nextTicket.status,
+            actionTaken: nextTicket.actionTaken,
+            changedBy: CURRENT_USER
+          })
+        });
+        await readMutationResponse(response, 'Update failed');
+      } else {
+        console.warn('No DB id → ticket came from Google Sheets, DB PUT skipped.');
+      }
+
+      if (!nextTicket.caseNumber) {
+        console.warn('No caseNumber on ticket → Sheets PUT skipped.');
+      } else {
+        const headers = getAuthHeaders({ 'Content-Type': 'application/json' });
+        if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
+
+        const sheetsResponse = await fetch(SHEETS_ENDPOINT, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({
+            section,
+            caseNumber: nextTicket.caseNumber,
+            status: nextTicket.status,
+            actionTaken: nextTicket.actionTaken
+          })
+        });
+        await readMutationResponse(sheetsResponse, 'Sheets update failed');
+      }
+
+      return { nextTicket, uploadedPdf };
+    },
+    refresh: async (_context, { nextTicket, uploadedPdf }) => {
+      Object.assign(ticket, {
+        status: nextTicket.status,
+        actionTaken: nextTicket.actionTaken,
+        lastModified: new Date().toISOString(),
+        ...(uploadedPdf || {})
+      });
+      saveTicketsToStorage();
+      renderTickets();
+      await hydrateFromDB(section);
+      await hydrateFromSheets(section);
+    },
+    successMessage: 'Ticket updated.',
+    failureMessage: 'Failed to update ticket',
+    cleanup: async ({ succeeded }) => {
+      if (succeeded) reopenTicketDrawerSafe(reopenKey);
     }
-
-    // 3) ريفرش
-    await hydrateFromDB(_currentSection);
-    await hydrateFromSheets(_currentSection);
-
-  } catch (err) {
-    console.warn('Update failed:', err);
-    alert('Failed to save changes to the server.');
-  }
-
-  // حاول افتح نفس التكت بعد الريفريش بطريقة آمنة
-  const key = t._id
-    ? { id: Number(t._id) }
-    : { caseNumber: String(t.caseNumber || '') };
-
-  reopenTicketDrawerSafe(key);
+  });
 }
 
 
 
 
-async function deleteTicket(idx) {
-  const t = tickets[_currentSection][idx];
-  if (!t) return;
+async function deleteTicket(idx, control) {
+  const section = _currentSection;
+  const ticket = tickets[section][idx];
+  if (!ticket) return;
 
-  if (CURRENT_USER !== DELETER_USERNAME) {
-    alert('You do not have permission to delete.');
-    return;
-  }
+  return runMutationLifecycle({
+    action: 'delete',
+    key: ticket._id || ticket.caseNumber || ticket.orderNumber || idx,
+    control,
+    loadingLabel: 'Deleting...',
+    prepare: async () => {
+      const ref = ticket.caseNumber || ticket.orderNumber || '';
+      return confirm(`Delete ticket ${ref}?`) ? { ticket } : MUTATION_CANCELLED;
+    },
+    request: async ({ ticket: currentTicket }) => {
+      if (Number.isFinite(Number(currentTicket._id))) {
+        const response = await fetch('/.netlify/functions/tickets', {
+          method: 'DELETE',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({
+            id: Number(currentTicket._id),
+            section,
+            by: CURRENT_USER
+          })
+        });
+        await readMutationResponse(response, 'DB delete failed');
+      }
 
-  const ref = t.caseNumber || t.orderNumber || '';
-  const ok = confirm(`Delete ticket ${ref}?`);
-  if (!ok) return;
+      if (currentTicket.caseNumber) {
+        const headers = getAuthHeaders({ 'Content-Type': 'application/json' });
+        if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
 
-  try {
-    // 1) حذف من الـDB إذا له id
-    if (Number.isFinite(Number(t._id))) {
-      const res = await fetch('/.netlify/functions/tickets', {
-        method: 'DELETE',
-        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ id: Number(t._id), section: String(_currentSection), by: CURRENT_USER })
-      });
-      if (handleAuthFailure(res)) return;
-      const data = await res.json();
-      if (!res.ok || data?.ok === false) throw new Error(data?.error || 'DB delete failed');
+        const sheetsResponse = await fetch(SHEETS_ENDPOINT, {
+          method: 'DELETE',
+          headers,
+          body: JSON.stringify({
+            section,
+            caseNumber: currentTicket.caseNumber,
+            by: CURRENT_USER
+          })
+        });
+        await readMutationResponse(sheetsResponse, 'Sheets delete failed');
+      }
+
+      return { ticket: currentTicket };
+    },
+    refresh: async () => {
+      const currentIndex = tickets[section].indexOf(ticket);
+      if (currentIndex >= 0) tickets[section].splice(currentIndex, 1);
+      saveTicketsToStorage();
+      renderTickets();
+      await hydrateFromSheets(section);
+    },
+    successMessage: 'Ticket deleted.',
+    failureMessage: 'Failed to delete ticket',
+    cleanup: async ({ succeeded }) => {
+      if (succeeded) closeTicketDrawer();
     }
-
-    // 2) حذف من Google Sheets حسب caseNumber
-    if (t.caseNumber) {
-      const headers = getAuthHeaders({ 'Content-Type': 'application/json' });
-      if (SHEETS_APP_SECRET) headers['X-App-Secret'] = SHEETS_APP_SECRET;
-
-      const resS = await fetch(SHEETS_ENDPOINT, {
-        method: 'DELETE',
-        headers,
-        body: JSON.stringify({
-          section: _currentSection,
-          caseNumber: t.caseNumber,
-          by: CURRENT_USER
-        })
-      });
-      if (handleAuthFailure(resS)) return;
-      const dataS = await resS.json().catch(() => ({}));
-      if (!resS.ok || dataS?.ok === false) throw new Error(dataS?.error || 'Sheets delete failed');
-    }
-
-    // 3) حذف التذكرة محليًا (من المصفوفة)
-    tickets[_currentSection].splice(idx, 1);
-
-    // 4) حفظ التغييرات في localStorage بعد الحذف
-    saveTicketsToStorage();  // تأكد من أن التذاكر يتم تخزينها مرة أخرى في localStorage
-
-    // 5) إعادة عرض التذاكر
-    renderTickets();
-
-    // 6) تحديث البيانات من الشيت مرة أخرى
-    await hydrateFromSheets(_currentSection);  // سحب البيانات مجددًا من الشيت
-
-    alert('Ticket deleted.');
-  } catch (e) {
-    console.error('Delete error:', e);
-    alert('Failed to delete ticket: ' + (e.message || ''));
-  }
+  });
 }
 
 
@@ -1201,10 +1349,7 @@ document.addEventListener('keydown',e=>{ if (e.key==='Escape') closeTicketDrawer
 // Modal (single tidy version)
 // ----------------------------
 function openModal(section){
-  if (!canUserCreate(section)) {
-    alert('You are not allowed to add tickets in this section.');
-    return;
-  }
+  if (!requireMutationPermission('create')) return;
   window.currentSection = section;
   // ... تكملة الدالة كما هي
 
@@ -1358,82 +1503,88 @@ function bindFormHandler(){
   formEl.addEventListener('submit', async (e)=>{
     e.preventDefault();
 
-        // ⬅️ أضف الشرط هون مباشرة
-  if (!canUserCreate(_currentSection)) {
-    alert('You are not allowed to add tickets in this section.');
-    return;
-  }
-    const t = {};
+    const section = _currentSection;
+    const control = e.submitter || formEl.querySelector('[type="submit"]');
 
-    // نبني التذكرة مع دعم await للملفات
-    for (const field of formFields[_currentSection]) {
-      if (field.type === 'multi-select') {
-        const multi = document.querySelector(`.multi-select[data-name="${field.name}"]`);
-        t[field.name] = Array.from(multi.querySelectorAll('input:checked')).map(cb=>cb.value);
-      } else if (field.type === 'file') {
-        // نحفظ كـ DataURL داخل object
-        const input = e.target.elements[field.name];
-        if (input?.dataset?.pasted) {
-          t[field.name] = { name: 'pasted', type: 'image/*', dataUrl: input.dataset.pasted };
-        } else if (input?.files && input.files[0]) {
-          try {
-            const dataUrl = await fileToDataURL(input.files[0]);
-            t[field.name] = { name: input.files[0].name, type: input.files[0].type, dataUrl };
-          } catch {
-            t[field.name] = null;
+    await runMutationLifecycle({
+      action: 'create',
+      key: section,
+      control,
+      loadingLabel: 'Submitting...',
+      prepare: async () => {
+        const ticket = {};
+
+        for (const field of formFields[section]) {
+          if (field.type === 'multi-select') {
+            const multi = formEl.querySelector(`.multi-select[data-name="${field.name}"]`);
+            ticket[field.name] = Array.from(multi.querySelectorAll('input:checked')).map(cb=>cb.value);
+          } else if (field.type === 'file') {
+            const input = formEl.elements[field.name];
+            if (input?.dataset?.pasted) {
+              ticket[field.name] = { name: 'pasted', type: 'image/*', dataUrl: input.dataset.pasted };
+            } else if (input?.files && input.files[0]) {
+              try {
+                const dataUrl = await fileToDataURL(input.files[0]);
+                ticket[field.name] = {
+                  name: input.files[0].name,
+                  type: input.files[0].type,
+                  dataUrl
+                };
+              } catch {
+                ticket[field.name] = null;
+              }
+            } else {
+              ticket[field.name] = null;
+            }
+          } else {
+            const input = formEl.elements[field.name];
+            if (input) ticket[field.name] = input.value;
           }
-        } else {
-          t[field.name] = null;
         }
-      } else {
-        const input = e.target.elements[field.name];
-        if (input) t[field.name] = input.value;
+
+        if (section === 'cctv') {
+          ticket.caseNumber = nextCaseNumber('cctv');
+        } else if (!ticket.caseNumber) {
+          ticket.caseNumber = ticket.orderNumber || '';
+        }
+
+        ticket.createdAt = new Date().toISOString();
+        ticket.createdBy = CURRENT_USER;
+        return { ticket };
+      },
+      request: async ({ ticket }) => {
+        const response = await fetch('/.netlify/functions/tickets', {
+          method: 'POST',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({
+            section,
+            status: ticket.status || 'Under Review',
+            payload: ticket,
+            changedBy: CURRENT_USER
+          })
+        });
+        const data = await readMutationResponse(response, 'Create failed');
+
+        await hydrateFromDB(section);
+
+        try {
+          await pushToSheets(section, ticket);
+          console.log('Sheets append OK');
+        } catch (error) {
+          console.warn('Sheets push failed:', error.message);
+        }
+
+        return { ticket, data };
+      },
+      refresh: async () => {
+        renderTickets();
+      },
+      successMessage: 'Ticket created.',
+      failureMessage: 'Failed to create ticket',
+      cleanup: async ({ succeeded }) => {
+        if (succeeded) closeModal();
       }
-    }
-
-    if (_currentSection==='cctv'){
-      t.caseNumber = nextCaseNumber('cctv');
-    }
-else {
-  if (!t.caseNumber) t.caseNumber = t.orderNumber || '';
-}
-
-    t.createdAt = new Date().toISOString();
-    t.createdBy = CURRENT_USER; // مهم
-
-    // خزن محليًا مباشرة لسرعة الاستجابة
-    tickets[_currentSection].push(t);
-    saveTicketsToStorage();
-    renderTickets();
-
-    // ارفع إلى الداتابيس
-    try {
-      const res = await fetch('/.netlify/functions/tickets', {
-        method: 'POST',
-        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({
-          section: _currentSection,
-          status: t.status || 'Under Review',
-          payload: t ,
-          changedBy: CURRENT_USER   // ✅ إضافة اسم المستخدم
-        })
-      });
-      // اسحب من الداتابيس لضمان التزامن + إعطاء ID رسمي
-      if (handleAuthFailure(res)) return;
-      await hydrateFromDB(_currentSection);
-    } catch (err) {
-      console.error('POST to DB failed:', err);
-    }
-
-    // ✅ NEW: ادفع نفس التذكرة إلى Google Sheets
-    try {
-      await pushToSheets(_currentSection, t);
-      console.log('Sheets append OK');
-    } catch (err) {
-      console.warn('Sheets push failed:', err.message);
-    }
-
-    closeModal();
+    });
   });
 }
 
