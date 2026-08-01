@@ -7,6 +7,7 @@ const EXIT_CODES = Object.freeze({
   CONFIGURATION_ERROR: 3,
   SAFETY_VIOLATION: 4,
   DATABASE_ERROR: 5,
+  SHEETS_ERROR: 6,
 });
 
 const PUBLIC_ERROR_MESSAGES = Object.freeze({
@@ -21,6 +22,17 @@ const PUBLIC_ERROR_MESSAGES = Object.freeze({
   UNEXPECTED_SCHEMA: "Audit database schema was not as expected",
   MALFORMED_DATABASE_RESULT: "Audit database returned an invalid result",
   DATABASE_INPUT_FAILURE: "Invalid audit database operation input",
+  SHEETS_CONFIGURATION_FAILURE: "Invalid audit Sheets configuration",
+  SHEETS_CREDENTIAL_FAILURE: "Invalid audit Sheets credentials",
+  SHEETS_AUTHENTICATION_FAILURE: "Audit Sheets authentication failed",
+  SHEETS_PERMISSION_DENIED: "Audit Sheets access was denied",
+  SHEETS_NOT_FOUND: "Configured audit Sheet was not found",
+  SHEETS_INVALID_RANGE: "Configured audit Sheet range was invalid",
+  SHEETS_RATE_LIMITED: "Audit Sheets request was rate limited",
+  SHEETS_TIMEOUT: "Audit Sheets request timed out",
+  MALFORMED_SHEETS_RESPONSE: "Google Sheets returned an invalid response",
+  UNEXPECTED_SHEET_STRUCTURE: "Google Sheet structure was not as expected",
+  SHEETS_INPUT_FAILURE: "Invalid audit Sheets operation input",
 });
 
 const TRUSTED_ERROR_CLASSIFICATIONS = Object.freeze({
@@ -77,6 +89,61 @@ const TRUSTED_ERROR_CLASSIFICATIONS = Object.freeze({
   DATABASE_INPUT_FAILURE: Object.freeze({
     publicCode: "DATABASE_INPUT_FAILURE",
     publicMessage: PUBLIC_ERROR_MESSAGES.DATABASE_INPUT_FAILURE,
+    exitCode: EXIT_CODES.USAGE_ERROR,
+  }),
+  SHEETS_CONFIGURATION_FAILURE: Object.freeze({
+    publicCode: "SHEETS_CONFIGURATION_FAILURE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.SHEETS_CONFIGURATION_FAILURE,
+    exitCode: EXIT_CODES.CONFIGURATION_ERROR,
+  }),
+  SHEETS_CREDENTIAL_FAILURE: Object.freeze({
+    publicCode: "SHEETS_CREDENTIAL_FAILURE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.SHEETS_CREDENTIAL_FAILURE,
+    exitCode: EXIT_CODES.CONFIGURATION_ERROR,
+  }),
+  SHEETS_AUTHENTICATION_FAILURE: Object.freeze({
+    publicCode: "SHEETS_AUTHENTICATION_FAILURE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.SHEETS_AUTHENTICATION_FAILURE,
+    exitCode: EXIT_CODES.SHEETS_ERROR,
+  }),
+  SHEETS_PERMISSION_DENIED: Object.freeze({
+    publicCode: "SHEETS_PERMISSION_DENIED",
+    publicMessage: PUBLIC_ERROR_MESSAGES.SHEETS_PERMISSION_DENIED,
+    exitCode: EXIT_CODES.SHEETS_ERROR,
+  }),
+  SHEETS_NOT_FOUND: Object.freeze({
+    publicCode: "SHEETS_NOT_FOUND",
+    publicMessage: PUBLIC_ERROR_MESSAGES.SHEETS_NOT_FOUND,
+    exitCode: EXIT_CODES.SHEETS_ERROR,
+  }),
+  SHEETS_INVALID_RANGE: Object.freeze({
+    publicCode: "SHEETS_INVALID_RANGE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.SHEETS_INVALID_RANGE,
+    exitCode: EXIT_CODES.SHEETS_ERROR,
+  }),
+  SHEETS_RATE_LIMITED: Object.freeze({
+    publicCode: "SHEETS_RATE_LIMITED",
+    publicMessage: PUBLIC_ERROR_MESSAGES.SHEETS_RATE_LIMITED,
+    exitCode: EXIT_CODES.SHEETS_ERROR,
+  }),
+  SHEETS_TIMEOUT: Object.freeze({
+    publicCode: "SHEETS_TIMEOUT",
+    publicMessage: PUBLIC_ERROR_MESSAGES.SHEETS_TIMEOUT,
+    exitCode: EXIT_CODES.SHEETS_ERROR,
+  }),
+  MALFORMED_SHEETS_RESPONSE: Object.freeze({
+    publicCode: "MALFORMED_SHEETS_RESPONSE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.MALFORMED_SHEETS_RESPONSE,
+    exitCode: EXIT_CODES.SHEETS_ERROR,
+  }),
+  UNEXPECTED_SHEET_STRUCTURE: Object.freeze({
+    publicCode: "UNEXPECTED_SHEET_STRUCTURE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.UNEXPECTED_SHEET_STRUCTURE,
+    exitCode: EXIT_CODES.SHEETS_ERROR,
+  }),
+  SHEETS_INPUT_FAILURE: Object.freeze({
+    publicCode: "SHEETS_INPUT_FAILURE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.SHEETS_INPUT_FAILURE,
     exitCode: EXIT_CODES.USAGE_ERROR,
   }),
 });
@@ -155,6 +222,17 @@ const DatabaseQueryError = createClass("DatabaseQueryError", "DATABASE_QUERY_FAI
 const UnexpectedSchemaError = createClass("UnexpectedSchemaError", "UNEXPECTED_SCHEMA", EXIT_CODES.DATABASE_ERROR);
 const MalformedDatabaseResultError = createClass("MalformedDatabaseResultError", "MALFORMED_DATABASE_RESULT", EXIT_CODES.DATABASE_ERROR);
 const DatabaseInputError = createClass("DatabaseInputError", "DATABASE_INPUT_FAILURE", EXIT_CODES.USAGE_ERROR);
+const SheetsConfigurationError = createClass("SheetsConfigurationError", "SHEETS_CONFIGURATION_FAILURE", EXIT_CODES.CONFIGURATION_ERROR);
+const SheetsCredentialError = createClass("SheetsCredentialError", "SHEETS_CREDENTIAL_FAILURE", EXIT_CODES.CONFIGURATION_ERROR);
+const SheetsAuthenticationError = createClass("SheetsAuthenticationError", "SHEETS_AUTHENTICATION_FAILURE", EXIT_CODES.SHEETS_ERROR);
+const SheetsPermissionError = createClass("SheetsPermissionError", "SHEETS_PERMISSION_DENIED", EXIT_CODES.SHEETS_ERROR);
+const SheetsNotFoundError = createClass("SheetsNotFoundError", "SHEETS_NOT_FOUND", EXIT_CODES.SHEETS_ERROR);
+const SheetsInvalidRangeError = createClass("SheetsInvalidRangeError", "SHEETS_INVALID_RANGE", EXIT_CODES.SHEETS_ERROR);
+const SheetsRateLimitError = createClass("SheetsRateLimitError", "SHEETS_RATE_LIMITED", EXIT_CODES.SHEETS_ERROR);
+const SheetsTimeoutError = createClass("SheetsTimeoutError", "SHEETS_TIMEOUT", EXIT_CODES.SHEETS_ERROR);
+const MalformedSheetsResponseError = createClass("MalformedSheetsResponseError", "MALFORMED_SHEETS_RESPONSE", EXIT_CODES.SHEETS_ERROR);
+const UnexpectedSheetStructureError = createClass("UnexpectedSheetStructureError", "UNEXPECTED_SHEET_STRUCTURE", EXIT_CODES.SHEETS_ERROR);
+const SheetsInputError = createClass("SheetsInputError", "SHEETS_INPUT_FAILURE", EXIT_CODES.USAGE_ERROR);
 
 module.exports = {
   AuditToolError,
@@ -167,6 +245,17 @@ module.exports = {
   EXIT_CODES,
   PUBLIC_ERROR_MESSAGES,
   SafetyViolationError,
+  SheetsAuthenticationError,
+  SheetsConfigurationError,
+  SheetsCredentialError,
+  SheetsInputError,
+  SheetsInvalidRangeError,
+  SheetsNotFoundError,
+  SheetsPermissionError,
+  SheetsRateLimitError,
+  SheetsTimeoutError,
+  MalformedSheetsResponseError,
+  UnexpectedSheetStructureError,
   MalformedDatabaseResultError,
   UnexpectedSchemaError,
   UsageError,
