@@ -9,6 +9,7 @@ const EXIT_CODES = Object.freeze({
   DATABASE_ERROR: 5,
   SHEETS_ERROR: 6,
   NORMALIZATION_ERROR: 7,
+  PARITY_ERROR: 8,
 });
 
 const PUBLIC_ERROR_MESSAGES = Object.freeze({
@@ -46,6 +47,12 @@ const PUBLIC_ERROR_MESSAGES = Object.freeze({
   NORMALIZATION_INCOMPLETE_SHEETS: "The Google Sheets canonical result is incomplete",
   NORMALIZATION_BUNDLE_LIMIT_EXCEEDED: "Canonical bundle assembly exceeded a fixed safety limit",
   NORMALIZATION_BUNDLE_CONSISTENCY_FAILURE: "Canonical bundle consistency verification failed",
+  PARITY_UNTRUSTED_INPUT: "Parity comparison requires a trusted canonical bundle",
+  PARITY_UNSUPPORTED_INPUT: "The canonical bundle is not supported for parity comparison",
+  PARITY_INVALID_RECORD: "The canonical bundle contains an invalid parity record",
+  PARITY_IDENTITY_FAILURE: "A parity identity could not be processed safely",
+  PARITY_LIMIT_EXCEEDED: "Parity comparison exceeded a fixed safety limit",
+  PARITY_INTERNAL_CONSISTENCY_FAILURE: "Parity consistency verification failed",
 });
 
 const TRUSTED_ERROR_CLASSIFICATIONS = Object.freeze({
@@ -219,6 +226,36 @@ const TRUSTED_ERROR_CLASSIFICATIONS = Object.freeze({
     publicMessage: PUBLIC_ERROR_MESSAGES.NORMALIZATION_BUNDLE_CONSISTENCY_FAILURE,
     exitCode: EXIT_CODES.NORMALIZATION_ERROR,
   }),
+  PARITY_UNTRUSTED_INPUT: Object.freeze({
+    publicCode: "PARITY_UNTRUSTED_INPUT",
+    publicMessage: PUBLIC_ERROR_MESSAGES.PARITY_UNTRUSTED_INPUT,
+    exitCode: EXIT_CODES.PARITY_ERROR,
+  }),
+  PARITY_UNSUPPORTED_INPUT: Object.freeze({
+    publicCode: "PARITY_UNSUPPORTED_INPUT",
+    publicMessage: PUBLIC_ERROR_MESSAGES.PARITY_UNSUPPORTED_INPUT,
+    exitCode: EXIT_CODES.PARITY_ERROR,
+  }),
+  PARITY_INVALID_RECORD: Object.freeze({
+    publicCode: "PARITY_INVALID_RECORD",
+    publicMessage: PUBLIC_ERROR_MESSAGES.PARITY_INVALID_RECORD,
+    exitCode: EXIT_CODES.PARITY_ERROR,
+  }),
+  PARITY_IDENTITY_FAILURE: Object.freeze({
+    publicCode: "PARITY_IDENTITY_FAILURE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.PARITY_IDENTITY_FAILURE,
+    exitCode: EXIT_CODES.PARITY_ERROR,
+  }),
+  PARITY_LIMIT_EXCEEDED: Object.freeze({
+    publicCode: "PARITY_LIMIT_EXCEEDED",
+    publicMessage: PUBLIC_ERROR_MESSAGES.PARITY_LIMIT_EXCEEDED,
+    exitCode: EXIT_CODES.PARITY_ERROR,
+  }),
+  PARITY_INTERNAL_CONSISTENCY_FAILURE: Object.freeze({
+    publicCode: "PARITY_INTERNAL_CONSISTENCY_FAILURE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.PARITY_INTERNAL_CONSISTENCY_FAILURE,
+    exitCode: EXIT_CODES.PARITY_ERROR,
+  }),
 });
 const ERROR_CLASSIFICATION_TOKEN = Symbol("error-classification-token");
 const ERROR_CLASSIFICATIONS = new WeakMap();
@@ -318,6 +355,12 @@ const NormalizationInvalidPageSetError = createClass("NormalizationInvalidPageSe
 const NormalizationIncompleteSheetsError = createClass("NormalizationIncompleteSheetsError", "NORMALIZATION_INCOMPLETE_SHEETS", EXIT_CODES.NORMALIZATION_ERROR);
 const NormalizationBundleLimitError = createClass("NormalizationBundleLimitError", "NORMALIZATION_BUNDLE_LIMIT_EXCEEDED", EXIT_CODES.NORMALIZATION_ERROR);
 const NormalizationBundleConsistencyError = createClass("NormalizationBundleConsistencyError", "NORMALIZATION_BUNDLE_CONSISTENCY_FAILURE", EXIT_CODES.NORMALIZATION_ERROR);
+const ParityUntrustedInputError = createClass("ParityUntrustedInputError", "PARITY_UNTRUSTED_INPUT", EXIT_CODES.PARITY_ERROR);
+const ParityUnsupportedInputError = createClass("ParityUnsupportedInputError", "PARITY_UNSUPPORTED_INPUT", EXIT_CODES.PARITY_ERROR);
+const ParityInvalidRecordError = createClass("ParityInvalidRecordError", "PARITY_INVALID_RECORD", EXIT_CODES.PARITY_ERROR);
+const ParityIdentityError = createClass("ParityIdentityError", "PARITY_IDENTITY_FAILURE", EXIT_CODES.PARITY_ERROR);
+const ParityLimitError = createClass("ParityLimitError", "PARITY_LIMIT_EXCEEDED", EXIT_CODES.PARITY_ERROR);
+const ParityInternalConsistencyError = createClass("ParityInternalConsistencyError", "PARITY_INTERNAL_CONSISTENCY_FAILURE", EXIT_CODES.PARITY_ERROR);
 
 module.exports = {
   AuditToolError,
@@ -354,6 +397,12 @@ module.exports = {
   NormalizationMalformedRecordError,
   NormalizationUnsupportedSnapshotError,
   NormalizationUntrustedSnapshotError,
+  ParityUntrustedInputError,
+  ParityUnsupportedInputError,
+  ParityInvalidRecordError,
+  ParityIdentityError,
+  ParityLimitError,
+  ParityInternalConsistencyError,
   UnexpectedSchemaError,
   UsageError,
   classifyError,
