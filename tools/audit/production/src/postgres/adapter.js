@@ -26,6 +26,14 @@ const OPERATIONS = Object.freeze({
   METADATA: "metadata",
 });
 
+const TRUSTED_POSTGRES_SNAPSHOTS = new WeakSet();
+
+function verifyTrustedPostgresSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== "object" || !TRUSTED_POSTGRES_SNAPSHOTS.has(snapshot)) {
+    throw new TypeError("PostgreSQL snapshot is not trusted");
+  }
+}
+
 function isTrustedDatabaseInputError(error) {
   return classifyError(error).publicCode === "DATABASE_INPUT_FAILURE";
 }
@@ -127,13 +135,15 @@ function createPostgresAdapter({ safety, env = process.env, expectedRole, expect
       await connectClient(client);
       await verifyRoleSafety(boundedClient, configuration.expectedRole, configuration.expectedDatabase);
       await verifyRlsCompleteness(boundedClient, configuration.expectedRole);
-      return await runClosedReadOnlyTransaction(
+      const snapshot = await runClosedReadOnlyTransaction(
         client,
         boundedClient,
         operationName,
         input,
         maximumPageSize
       );
+      TRUSTED_POSTGRES_SNAPSHOTS.add(snapshot);
+      return snapshot;
     } catch (error) {
       primaryFailure = error;
       throw error;
@@ -177,4 +187,4 @@ function createPostgresAdapter({ safety, env = process.env, expectedRole, expect
   });
 }
 
-module.exports = { createPostgresAdapter };
+module.exports = { createPostgresAdapter, verifyTrustedPostgresSnapshot };

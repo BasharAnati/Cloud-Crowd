@@ -8,6 +8,7 @@ const EXIT_CODES = Object.freeze({
   SAFETY_VIOLATION: 4,
   DATABASE_ERROR: 5,
   SHEETS_ERROR: 6,
+  NORMALIZATION_ERROR: 7,
 });
 
 const PUBLIC_ERROR_MESSAGES = Object.freeze({
@@ -33,6 +34,12 @@ const PUBLIC_ERROR_MESSAGES = Object.freeze({
   MALFORMED_SHEETS_RESPONSE: "Google Sheets returned an invalid response",
   UNEXPECTED_SHEET_STRUCTURE: "Google Sheet structure was not as expected",
   SHEETS_INPUT_FAILURE: "Invalid audit Sheets operation input",
+  NORMALIZATION_UNTRUSTED_SNAPSHOT: "Normalization requires a trusted source snapshot",
+  NORMALIZATION_UNSUPPORTED_SNAPSHOT: "The trusted source snapshot is not supported for normalization",
+  NORMALIZATION_MALFORMED_RECORD: "A trusted source record is malformed",
+  NORMALIZATION_INVALID_FIELD: "A source field cannot be normalized safely",
+  NORMALIZATION_LIMIT_EXCEEDED: "Normalization exceeded a fixed safety limit",
+  NORMALIZATION_DATE_FAILURE: "A source date cannot be normalized safely",
 });
 
 const TRUSTED_ERROR_CLASSIFICATIONS = Object.freeze({
@@ -146,6 +153,36 @@ const TRUSTED_ERROR_CLASSIFICATIONS = Object.freeze({
     publicMessage: PUBLIC_ERROR_MESSAGES.SHEETS_INPUT_FAILURE,
     exitCode: EXIT_CODES.USAGE_ERROR,
   }),
+  NORMALIZATION_UNTRUSTED_SNAPSHOT: Object.freeze({
+    publicCode: "NORMALIZATION_UNTRUSTED_SNAPSHOT",
+    publicMessage: PUBLIC_ERROR_MESSAGES.NORMALIZATION_UNTRUSTED_SNAPSHOT,
+    exitCode: EXIT_CODES.NORMALIZATION_ERROR,
+  }),
+  NORMALIZATION_UNSUPPORTED_SNAPSHOT: Object.freeze({
+    publicCode: "NORMALIZATION_UNSUPPORTED_SNAPSHOT",
+    publicMessage: PUBLIC_ERROR_MESSAGES.NORMALIZATION_UNSUPPORTED_SNAPSHOT,
+    exitCode: EXIT_CODES.NORMALIZATION_ERROR,
+  }),
+  NORMALIZATION_MALFORMED_RECORD: Object.freeze({
+    publicCode: "NORMALIZATION_MALFORMED_RECORD",
+    publicMessage: PUBLIC_ERROR_MESSAGES.NORMALIZATION_MALFORMED_RECORD,
+    exitCode: EXIT_CODES.NORMALIZATION_ERROR,
+  }),
+  NORMALIZATION_INVALID_FIELD: Object.freeze({
+    publicCode: "NORMALIZATION_INVALID_FIELD",
+    publicMessage: PUBLIC_ERROR_MESSAGES.NORMALIZATION_INVALID_FIELD,
+    exitCode: EXIT_CODES.NORMALIZATION_ERROR,
+  }),
+  NORMALIZATION_LIMIT_EXCEEDED: Object.freeze({
+    publicCode: "NORMALIZATION_LIMIT_EXCEEDED",
+    publicMessage: PUBLIC_ERROR_MESSAGES.NORMALIZATION_LIMIT_EXCEEDED,
+    exitCode: EXIT_CODES.NORMALIZATION_ERROR,
+  }),
+  NORMALIZATION_DATE_FAILURE: Object.freeze({
+    publicCode: "NORMALIZATION_DATE_FAILURE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.NORMALIZATION_DATE_FAILURE,
+    exitCode: EXIT_CODES.NORMALIZATION_ERROR,
+  }),
 });
 const ERROR_CLASSIFICATION_TOKEN = Symbol("error-classification-token");
 const ERROR_CLASSIFICATIONS = new WeakMap();
@@ -233,6 +270,12 @@ const SheetsTimeoutError = createClass("SheetsTimeoutError", "SHEETS_TIMEOUT", E
 const MalformedSheetsResponseError = createClass("MalformedSheetsResponseError", "MALFORMED_SHEETS_RESPONSE", EXIT_CODES.SHEETS_ERROR);
 const UnexpectedSheetStructureError = createClass("UnexpectedSheetStructureError", "UNEXPECTED_SHEET_STRUCTURE", EXIT_CODES.SHEETS_ERROR);
 const SheetsInputError = createClass("SheetsInputError", "SHEETS_INPUT_FAILURE", EXIT_CODES.USAGE_ERROR);
+const NormalizationUntrustedSnapshotError = createClass("NormalizationUntrustedSnapshotError", "NORMALIZATION_UNTRUSTED_SNAPSHOT", EXIT_CODES.NORMALIZATION_ERROR);
+const NormalizationUnsupportedSnapshotError = createClass("NormalizationUnsupportedSnapshotError", "NORMALIZATION_UNSUPPORTED_SNAPSHOT", EXIT_CODES.NORMALIZATION_ERROR);
+const NormalizationMalformedRecordError = createClass("NormalizationMalformedRecordError", "NORMALIZATION_MALFORMED_RECORD", EXIT_CODES.NORMALIZATION_ERROR);
+const NormalizationInvalidFieldError = createClass("NormalizationInvalidFieldError", "NORMALIZATION_INVALID_FIELD", EXIT_CODES.NORMALIZATION_ERROR);
+const NormalizationLimitError = createClass("NormalizationLimitError", "NORMALIZATION_LIMIT_EXCEEDED", EXIT_CODES.NORMALIZATION_ERROR);
+const NormalizationDateError = createClass("NormalizationDateError", "NORMALIZATION_DATE_FAILURE", EXIT_CODES.NORMALIZATION_ERROR);
 
 module.exports = {
   AuditToolError,
@@ -257,6 +300,12 @@ module.exports = {
   MalformedSheetsResponseError,
   UnexpectedSheetStructureError,
   MalformedDatabaseResultError,
+  NormalizationDateError,
+  NormalizationInvalidFieldError,
+  NormalizationLimitError,
+  NormalizationMalformedRecordError,
+  NormalizationUnsupportedSnapshotError,
+  NormalizationUntrustedSnapshotError,
   UnexpectedSchemaError,
   UsageError,
   classifyError,

@@ -31,6 +31,14 @@ const OPERATIONS = Object.freeze({
   ALL: "all",
 });
 
+const TRUSTED_SHEETS_SNAPSHOTS = new WeakSet();
+
+function verifyTrustedSheetsSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== "object" || !TRUSTED_SHEETS_SNAPSHOTS.has(snapshot)) {
+    throw new TypeError("Google Sheets snapshot is not trusted");
+  }
+}
+
 function rejectArguments(args) {
   if (args.length !== 0) return Promise.reject(new SheetsInputError("Sheets operations do not accept arguments"));
   return null;
@@ -225,7 +233,9 @@ function createSheetsAdapter({ safety, env, envProvider, googleFactory } = {}) {
     async function readModule(moduleConfiguration, signal) {
       const response = await readFixedModule(sheets, moduleConfiguration, signal);
       const validated = validateBatchGetResponse(response, moduleConfiguration);
-      return annotateSnapshot(moduleConfiguration, validated);
+      const snapshot = annotateSnapshot(moduleConfiguration, validated);
+      TRUSTED_SHEETS_SNAPSHOTS.add(snapshot);
+      return snapshot;
     }
 
     if (operation !== OPERATIONS.ALL) {
@@ -250,7 +260,9 @@ function createSheetsAdapter({ safety, env, envProvider, googleFactory } = {}) {
         }
         snapshots.push(snapshot);
       }
-      return deepFreeze({ sourceType: "google-sheets", snapshots, cellCount, textLength });
+      const snapshot = deepFreeze({ sourceType: "google-sheets", snapshots, cellCount, textLength });
+      TRUSTED_SHEETS_SNAPSHOTS.add(snapshot);
+      return snapshot;
     })();
     return boundedAwait(workflow, "readAll", controller);
   }
@@ -271,4 +283,4 @@ function createSheetsAdapter({ safety, env, envProvider, googleFactory } = {}) {
   });
 }
 
-module.exports = { createSheetsAdapter };
+module.exports = { createSheetsAdapter, verifyTrustedSheetsSnapshot };
