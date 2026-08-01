@@ -10,6 +10,7 @@ const EXIT_CODES = Object.freeze({
   SHEETS_ERROR: 6,
   NORMALIZATION_ERROR: 7,
   PARITY_ERROR: 8,
+  REPORT_ERROR: 9,
 });
 
 const PUBLIC_ERROR_MESSAGES = Object.freeze({
@@ -53,6 +54,12 @@ const PUBLIC_ERROR_MESSAGES = Object.freeze({
   PARITY_IDENTITY_FAILURE: "A parity identity could not be processed safely",
   PARITY_LIMIT_EXCEEDED: "Parity comparison exceeded a fixed safety limit",
   PARITY_INTERNAL_CONSISTENCY_FAILURE: "Parity consistency verification failed",
+  REPORT_UNTRUSTED_INPUT: "Audit reporting requires a trusted parity result",
+  REPORT_UNSUPPORTED_INPUT: "The parity result is not supported for audit reporting",
+  REPORT_INVALID_FINDING: "The parity result contains an invalid finding",
+  REPORT_INVALID_SUMMARY: "The parity result contains an invalid summary",
+  REPORT_LIMIT_EXCEEDED: "Audit report construction exceeded a fixed safety limit",
+  REPORT_INTERNAL_CONSISTENCY_FAILURE: "Audit report consistency verification failed",
 });
 
 const TRUSTED_ERROR_CLASSIFICATIONS = Object.freeze({
@@ -256,6 +263,36 @@ const TRUSTED_ERROR_CLASSIFICATIONS = Object.freeze({
     publicMessage: PUBLIC_ERROR_MESSAGES.PARITY_INTERNAL_CONSISTENCY_FAILURE,
     exitCode: EXIT_CODES.PARITY_ERROR,
   }),
+  REPORT_UNTRUSTED_INPUT: Object.freeze({
+    publicCode: "REPORT_UNTRUSTED_INPUT",
+    publicMessage: PUBLIC_ERROR_MESSAGES.REPORT_UNTRUSTED_INPUT,
+    exitCode: EXIT_CODES.REPORT_ERROR,
+  }),
+  REPORT_UNSUPPORTED_INPUT: Object.freeze({
+    publicCode: "REPORT_UNSUPPORTED_INPUT",
+    publicMessage: PUBLIC_ERROR_MESSAGES.REPORT_UNSUPPORTED_INPUT,
+    exitCode: EXIT_CODES.REPORT_ERROR,
+  }),
+  REPORT_INVALID_FINDING: Object.freeze({
+    publicCode: "REPORT_INVALID_FINDING",
+    publicMessage: PUBLIC_ERROR_MESSAGES.REPORT_INVALID_FINDING,
+    exitCode: EXIT_CODES.REPORT_ERROR,
+  }),
+  REPORT_INVALID_SUMMARY: Object.freeze({
+    publicCode: "REPORT_INVALID_SUMMARY",
+    publicMessage: PUBLIC_ERROR_MESSAGES.REPORT_INVALID_SUMMARY,
+    exitCode: EXIT_CODES.REPORT_ERROR,
+  }),
+  REPORT_LIMIT_EXCEEDED: Object.freeze({
+    publicCode: "REPORT_LIMIT_EXCEEDED",
+    publicMessage: PUBLIC_ERROR_MESSAGES.REPORT_LIMIT_EXCEEDED,
+    exitCode: EXIT_CODES.REPORT_ERROR,
+  }),
+  REPORT_INTERNAL_CONSISTENCY_FAILURE: Object.freeze({
+    publicCode: "REPORT_INTERNAL_CONSISTENCY_FAILURE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.REPORT_INTERNAL_CONSISTENCY_FAILURE,
+    exitCode: EXIT_CODES.REPORT_ERROR,
+  }),
 });
 const ERROR_CLASSIFICATION_TOKEN = Symbol("error-classification-token");
 const ERROR_CLASSIFICATIONS = new WeakMap();
@@ -361,6 +398,12 @@ const ParityInvalidRecordError = createClass("ParityInvalidRecordError", "PARITY
 const ParityIdentityError = createClass("ParityIdentityError", "PARITY_IDENTITY_FAILURE", EXIT_CODES.PARITY_ERROR);
 const ParityLimitError = createClass("ParityLimitError", "PARITY_LIMIT_EXCEEDED", EXIT_CODES.PARITY_ERROR);
 const ParityInternalConsistencyError = createClass("ParityInternalConsistencyError", "PARITY_INTERNAL_CONSISTENCY_FAILURE", EXIT_CODES.PARITY_ERROR);
+const ReportUntrustedInputError = createClass("ReportUntrustedInputError", "REPORT_UNTRUSTED_INPUT", EXIT_CODES.REPORT_ERROR);
+const ReportUnsupportedInputError = createClass("ReportUnsupportedInputError", "REPORT_UNSUPPORTED_INPUT", EXIT_CODES.REPORT_ERROR);
+const ReportInvalidFindingError = createClass("ReportInvalidFindingError", "REPORT_INVALID_FINDING", EXIT_CODES.REPORT_ERROR);
+const ReportInvalidSummaryError = createClass("ReportInvalidSummaryError", "REPORT_INVALID_SUMMARY", EXIT_CODES.REPORT_ERROR);
+const ReportLimitError = createClass("ReportLimitError", "REPORT_LIMIT_EXCEEDED", EXIT_CODES.REPORT_ERROR);
+const ReportInternalConsistencyError = createClass("ReportInternalConsistencyError", "REPORT_INTERNAL_CONSISTENCY_FAILURE", EXIT_CODES.REPORT_ERROR);
 
 module.exports = {
   AuditToolError,
@@ -403,6 +446,12 @@ module.exports = {
   ParityIdentityError,
   ParityLimitError,
   ParityInternalConsistencyError,
+  ReportUntrustedInputError,
+  ReportUnsupportedInputError,
+  ReportInvalidFindingError,
+  ReportInvalidSummaryError,
+  ReportLimitError,
+  ReportInternalConsistencyError,
   UnexpectedSchemaError,
   UsageError,
   classifyError,

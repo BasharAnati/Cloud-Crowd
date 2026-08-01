@@ -12,6 +12,8 @@ const { partitionBundle } = require("./partition");
 const { buildSummary } = require("./summary");
 const { LIMITS, MODULES, nullObject } = require("./validation");
 
+const PARITY_RESULTS = new WeakMap();
+
 const FIELD_ORDER = new Map();
 for (const module of MODULES) {
   fieldsFor(module).forEach((field, index) => FIELD_ORDER.set(`${module}:${field}`, index));
@@ -35,6 +37,19 @@ function execute(bundle) {
   let bytes;
   try { bytes = Buffer.byteLength(JSON.stringify(result), "utf8"); } catch (_) { throw new ParityInternalConsistencyError("Parity serialization failed"); }
   if (bytes > LIMITS.outputBytes) throw new ParityLimitError("Parity output limit exceeded");
+  PARITY_RESULTS.set(result, Object.freeze({
+    producer: "compareCanonicalParityBundle",
+    findingCount: frozenFindings.length,
+    completenessState: "complete",
+  }));
+  return result;
+}
+
+function verifyTrustedParityResult(result) {
+  const metadata = PARITY_RESULTS.get(result);
+  if (!metadata || metadata.producer !== "compareCanonicalParityBundle" || metadata.completenessState !== "complete") {
+    throw new TypeError("Parity result is not trusted");
+  }
   return result;
 }
 
@@ -46,4 +61,6 @@ function compareCanonicalParityBundle(bundle) {
   }
 }
 
-module.exports = Object.freeze({ compareCanonicalParityBundle });
+Object.freeze(verifyTrustedParityResult);
+
+module.exports = Object.freeze({ compareCanonicalParityBundle, verifyTrustedParityResult });
