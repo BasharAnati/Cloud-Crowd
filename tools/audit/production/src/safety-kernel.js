@@ -8,6 +8,7 @@ const APPROVED_CONFIGURATION_KEYS = Object.freeze([
   "productionAcknowledged",
 ]);
 const APPROVED_CONFIGURATION_KEY_SET = new Set(APPROVED_CONFIGURATION_KEYS);
+const ISSUED_CAPABILITIES = new WeakSet();
 
 function deepFreeze(value) {
   Object.freeze(value);
@@ -62,7 +63,7 @@ function enforceSafety(environment) {
       "Production use must be explicitly acknowledged"
     );
   }
-  return deepFreeze({
+  const capability = deepFreeze({
     target: "production",
     mode: "read-only",
     productionAcknowledged: true,
@@ -71,8 +72,29 @@ function enforceSafety(environment) {
       writesAllowed: false,
     },
   });
+  ISSUED_CAPABILITIES.add(capability);
+  return capability;
+}
+
+function verifyReadOnlyCapability(capability) {
+  if (
+    !capability ||
+    typeof capability !== "object" ||
+    !ISSUED_CAPABILITIES.has(capability) ||
+    !Object.isFrozen(capability) ||
+    !Object.isFrozen(capability.capabilities) ||
+    capability.target !== "production" ||
+    capability.mode !== "read-only" ||
+    capability.productionAcknowledged !== true ||
+    capability.capabilities.readOnly !== true ||
+    capability.capabilities.writesAllowed !== false
+  ) {
+    throw new SafetyViolationError("A trusted read-only safety capability is required");
+  }
+  return capability;
 }
 
 module.exports = {
   enforceSafety,
+  verifyReadOnlyCapability,
 };
