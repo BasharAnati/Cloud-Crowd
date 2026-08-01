@@ -16,6 +16,18 @@ test("ticket reads use explicit fixed columns, schema qualification, stable keys
   assert.match(clientReturning.last.text, /public\.tickets/);
   assert.match(clientReturning.last.text, /ORDER BY id ASC/);
   assert.equal(page.rows[0].id, "900719925474099312345");
+  assert.deepEqual(page.pagination, {
+    kind: "tickets",
+    requestedCursor: "12",
+    section: null,
+    limit: 10,
+    returnedCount: 1,
+    firstId: "900719925474099312345",
+    lastId: "900719925474099312345",
+    nextCursor: "900719925474099312345",
+    exhausted: true,
+  });
+  assert.equal(Object.isFrozen(page.pagination), true);
 });
 
 test("section filter is parameterized", async () => {

@@ -40,6 +40,12 @@ const PUBLIC_ERROR_MESSAGES = Object.freeze({
   NORMALIZATION_INVALID_FIELD: "A source field cannot be normalized safely",
   NORMALIZATION_LIMIT_EXCEEDED: "Normalization exceeded a fixed safety limit",
   NORMALIZATION_DATE_FAILURE: "A source date cannot be normalized safely",
+  NORMALIZATION_PROVENANCE_FAILURE: "Canonical normalization provenance could not be verified",
+  NORMALIZATION_INCOMPLETE_POSTGRES: "PostgreSQL canonical pagination is incomplete",
+  NORMALIZATION_INVALID_PAGE_SET: "The PostgreSQL canonical page set is invalid",
+  NORMALIZATION_INCOMPLETE_SHEETS: "The Google Sheets canonical result is incomplete",
+  NORMALIZATION_BUNDLE_LIMIT_EXCEEDED: "Canonical bundle assembly exceeded a fixed safety limit",
+  NORMALIZATION_BUNDLE_CONSISTENCY_FAILURE: "Canonical bundle consistency verification failed",
 });
 
 const TRUSTED_ERROR_CLASSIFICATIONS = Object.freeze({
@@ -183,6 +189,36 @@ const TRUSTED_ERROR_CLASSIFICATIONS = Object.freeze({
     publicMessage: PUBLIC_ERROR_MESSAGES.NORMALIZATION_DATE_FAILURE,
     exitCode: EXIT_CODES.NORMALIZATION_ERROR,
   }),
+  NORMALIZATION_PROVENANCE_FAILURE: Object.freeze({
+    publicCode: "NORMALIZATION_PROVENANCE_FAILURE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.NORMALIZATION_PROVENANCE_FAILURE,
+    exitCode: EXIT_CODES.NORMALIZATION_ERROR,
+  }),
+  NORMALIZATION_INCOMPLETE_POSTGRES: Object.freeze({
+    publicCode: "NORMALIZATION_INCOMPLETE_POSTGRES",
+    publicMessage: PUBLIC_ERROR_MESSAGES.NORMALIZATION_INCOMPLETE_POSTGRES,
+    exitCode: EXIT_CODES.NORMALIZATION_ERROR,
+  }),
+  NORMALIZATION_INVALID_PAGE_SET: Object.freeze({
+    publicCode: "NORMALIZATION_INVALID_PAGE_SET",
+    publicMessage: PUBLIC_ERROR_MESSAGES.NORMALIZATION_INVALID_PAGE_SET,
+    exitCode: EXIT_CODES.NORMALIZATION_ERROR,
+  }),
+  NORMALIZATION_INCOMPLETE_SHEETS: Object.freeze({
+    publicCode: "NORMALIZATION_INCOMPLETE_SHEETS",
+    publicMessage: PUBLIC_ERROR_MESSAGES.NORMALIZATION_INCOMPLETE_SHEETS,
+    exitCode: EXIT_CODES.NORMALIZATION_ERROR,
+  }),
+  NORMALIZATION_BUNDLE_LIMIT_EXCEEDED: Object.freeze({
+    publicCode: "NORMALIZATION_BUNDLE_LIMIT_EXCEEDED",
+    publicMessage: PUBLIC_ERROR_MESSAGES.NORMALIZATION_BUNDLE_LIMIT_EXCEEDED,
+    exitCode: EXIT_CODES.NORMALIZATION_ERROR,
+  }),
+  NORMALIZATION_BUNDLE_CONSISTENCY_FAILURE: Object.freeze({
+    publicCode: "NORMALIZATION_BUNDLE_CONSISTENCY_FAILURE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.NORMALIZATION_BUNDLE_CONSISTENCY_FAILURE,
+    exitCode: EXIT_CODES.NORMALIZATION_ERROR,
+  }),
 });
 const ERROR_CLASSIFICATION_TOKEN = Symbol("error-classification-token");
 const ERROR_CLASSIFICATIONS = new WeakMap();
@@ -276,6 +312,12 @@ const NormalizationMalformedRecordError = createClass("NormalizationMalformedRec
 const NormalizationInvalidFieldError = createClass("NormalizationInvalidFieldError", "NORMALIZATION_INVALID_FIELD", EXIT_CODES.NORMALIZATION_ERROR);
 const NormalizationLimitError = createClass("NormalizationLimitError", "NORMALIZATION_LIMIT_EXCEEDED", EXIT_CODES.NORMALIZATION_ERROR);
 const NormalizationDateError = createClass("NormalizationDateError", "NORMALIZATION_DATE_FAILURE", EXIT_CODES.NORMALIZATION_ERROR);
+const NormalizationProvenanceError = createClass("NormalizationProvenanceError", "NORMALIZATION_PROVENANCE_FAILURE", EXIT_CODES.NORMALIZATION_ERROR);
+const NormalizationIncompletePostgresError = createClass("NormalizationIncompletePostgresError", "NORMALIZATION_INCOMPLETE_POSTGRES", EXIT_CODES.NORMALIZATION_ERROR);
+const NormalizationInvalidPageSetError = createClass("NormalizationInvalidPageSetError", "NORMALIZATION_INVALID_PAGE_SET", EXIT_CODES.NORMALIZATION_ERROR);
+const NormalizationIncompleteSheetsError = createClass("NormalizationIncompleteSheetsError", "NORMALIZATION_INCOMPLETE_SHEETS", EXIT_CODES.NORMALIZATION_ERROR);
+const NormalizationBundleLimitError = createClass("NormalizationBundleLimitError", "NORMALIZATION_BUNDLE_LIMIT_EXCEEDED", EXIT_CODES.NORMALIZATION_ERROR);
+const NormalizationBundleConsistencyError = createClass("NormalizationBundleConsistencyError", "NORMALIZATION_BUNDLE_CONSISTENCY_FAILURE", EXIT_CODES.NORMALIZATION_ERROR);
 
 module.exports = {
   AuditToolError,
@@ -301,6 +343,12 @@ module.exports = {
   UnexpectedSheetStructureError,
   MalformedDatabaseResultError,
   NormalizationDateError,
+  NormalizationProvenanceError,
+  NormalizationIncompletePostgresError,
+  NormalizationInvalidPageSetError,
+  NormalizationIncompleteSheetsError,
+  NormalizationBundleLimitError,
+  NormalizationBundleConsistencyError,
   NormalizationInvalidFieldError,
   NormalizationLimitError,
   NormalizationMalformedRecordError,

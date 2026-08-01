@@ -69,6 +69,46 @@ async function trustedHistorySnapshot(rows = [DEFAULT_HISTORY]) {
   return adapter.listHistoryPage({ limit: Math.max(1, rows.length) });
 }
 
+async function trustedCompleteTicketPages(rows = [DEFAULT_TICKET], pageLimit = 100, section) {
+  const Client = fakeClientClass({
+    onQuery(query) {
+      if (!query.text.includes("FROM public.tickets")) return undefined;
+      const values = query.values;
+      const requestedCursor = section === undefined
+        ? (values.length === 2 ? values[0] : null)
+        : (values.length === 3 ? values[1] : null);
+      const limit = values[values.length - 1];
+      const filtered = rows.filter((row) =>
+        (section === undefined || row.section === section) &&
+        (requestedCursor === null || BigInt(row.id) > BigInt(requestedCursor))
+      );
+      return { rows: filtered.slice(0, limit) };
+    },
+  });
+  const adapter = createPostgresAdapter({
+    safety: postgresCapability(), env: adapterEnvironment, expectedDatabase: "cloud_crowd", Client,
+    maximumPageSize: pageLimit,
+  });
+  const pages = [];
+  let lastSeenId;
+  let previousSnapshot;
+  do {
+    const options = {
+      limit: pageLimit,
+      ...(lastSeenId === undefined ? {} : { lastSeenId }),
+      ...(section === undefined ? {} : { section }),
+    };
+    const snapshot = lastSeenId === undefined
+      ? await adapter.listTicketsPage(options)
+      : await adapter.listTicketsPage(options, previousSnapshot);
+    pages.push(snapshot);
+    lastSeenId = snapshot.nextCursor;
+    previousSnapshot = snapshot;
+    if (snapshot.pagination.exhausted) break;
+  } while (pages.length <= rows.length + 1);
+  return pages;
+}
+
 async function trustedSheetSnapshot(method, rows, header, responseOverrides = {}) {
   const google = fakeGoogle({ responseOptions: { rows, ...(header ? { header } : {}), ...responseOverrides } });
   const adapter = createSheetsAdapter({ safety: sheetsCapability(), env: sheetsEnvironment(), googleFactory: google.factory });
@@ -92,6 +132,7 @@ module.exports = {
   DEFAULT_HISTORY,
   DEFAULT_TICKET,
   trustedAllSheetsSnapshot,
+  trustedCompleteTicketPages,
   trustedHistorySnapshot,
   trustedSheetSnapshot,
   trustedTicketSnapshot,

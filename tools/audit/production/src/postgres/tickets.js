@@ -56,7 +56,22 @@ async function listTicketsPage(client, options, maximumPageSize = DEFAULT_MAX_PA
   try { result = await client.query({ text, values }); } catch (_) { throw new DatabaseQueryError("Ticket query failed"); }
   const rows = requireRows(result).map(ticketRow);
   if (rows.length > limit) throw new MalformedDatabaseResultError("Ticket query exceeded its bound");
-  const snapshot = { rows, nextCursor: rows.length === 0 ? null : rows[rows.length - 1].id };
+  const nextCursor = rows.length === 0 ? null : rows[rows.length - 1].id;
+  const snapshot = {
+    rows,
+    nextCursor,
+    pagination: {
+      kind: "tickets",
+      requestedCursor: lastSeenId === undefined ? null : lastSeenId,
+      section: section === undefined ? null : section,
+      limit,
+      returnedCount: rows.length,
+      firstId: rows.length === 0 ? null : rows[0].id,
+      lastId: nextCursor,
+      nextCursor,
+      exhausted: rows.length < limit,
+    },
+  };
   return deepFreeze(require("./row-validation").immutableJson(snapshot));
 }
 

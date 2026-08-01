@@ -12,8 +12,10 @@ const {
   trustedTicketSnapshot,
 } = require("./helpers");
 
-test("normalization public API contains only the three fixed operations", () => {
-  assert.deepEqual(Object.keys(normalize).sort(), ["normalizeAll", "normalizePostgresSnapshot", "normalizeSheetsSnapshot"]);
+test("normalization public API contains only the four fixed operations", () => {
+  assert.deepEqual(Object.keys(normalize).sort(), [
+    "assembleCanonicalParityBundle", "normalizeAll", "normalizePostgresSnapshot", "normalizeSheetsSnapshot",
+  ]);
   assert(Object.isFrozen(normalize));
 });
 

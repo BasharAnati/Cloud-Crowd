@@ -26,11 +26,21 @@ const OPERATIONS = Object.freeze({
   METADATA: "metadata",
 });
 
-const TRUSTED_POSTGRES_SNAPSHOTS = new WeakSet();
+const TRUSTED_POSTGRES_SNAPSHOTS = new WeakMap();
 
 function verifyTrustedPostgresSnapshot(snapshot) {
   if (!snapshot || typeof snapshot !== "object" || !TRUSTED_POSTGRES_SNAPSHOTS.has(snapshot)) {
     throw new TypeError("PostgreSQL snapshot is not trusted");
+  }
+}
+
+function verifySameTrustedPostgresTicketScan(firstSnapshot, nextSnapshot) {
+  const first = firstSnapshot && typeof firstSnapshot === "object" ? TRUSTED_POSTGRES_SNAPSHOTS.get(firstSnapshot) : null;
+  const next = nextSnapshot && typeof nextSnapshot === "object" ? TRUSTED_POSTGRES_SNAPSHOTS.get(nextSnapshot) : null;
+  if (!first || !next || first.operation !== OPERATIONS.TICKETS || next.operation !== OPERATIONS.TICKETS ||
+      !first.scanContext || first.scanContext !== next.scanContext ||
+      !first.scanIdentity || first.scanIdentity !== next.scanIdentity) {
+    throw new TypeError("PostgreSQL ticket snapshots do not belong to the same trusted scan");
   }
 }
 
@@ -125,8 +135,43 @@ function createPostgresAdapter({ safety, env = process.env, expectedRole, expect
   if (!Number.isSafeInteger(maximumPageSize) || maximumPageSize <= 0) {
     throw new DatabaseConfigurationError("Maximum page size is invalid");
   }
+  const adapterIdentity = Object.freeze(Object.create(null));
 
-  async function session(operationName, input) {
+  function scanState(context, lifecycle, completionState, expectedCursor, exhausted, lastSnapshot) {
+    context.state = Object.freeze({ lifecycle, completionState, expectedCursor, exhausted, lastSnapshot });
+  }
+
+  function createTicketScanContext(validated) {
+    const context = Object.seal({
+      adapterIdentity,
+      identity: Object.freeze(Object.create(null)),
+      limit: validated.limit,
+      section: validated.section,
+      state: null,
+    });
+    scanState(context, "created", "incomplete", null, false, null);
+    return context;
+  }
+
+  function continuationContext(previousSnapshot, validated) {
+    const metadata = previousSnapshot && typeof previousSnapshot === "object"
+      ? TRUSTED_POSTGRES_SNAPSHOTS.get(previousSnapshot)
+      : null;
+    if (!metadata || metadata.operation !== OPERATIONS.TICKETS || !metadata.scanContext) {
+      throw new DatabaseInputError("Ticket continuation is not trusted");
+    }
+    const context = metadata.scanContext;
+    const state = context.state;
+    if (context.adapterIdentity !== adapterIdentity || state.lifecycle !== "ready" ||
+        state.completionState !== "incomplete" || state.exhausted ||
+        state.lastSnapshot !== previousSnapshot || state.expectedCursor !== validated.lastSeenId ||
+        context.limit !== validated.limit || context.section !== validated.section) {
+      throw new DatabaseInputError("Ticket continuation is not valid");
+    }
+    return context;
+  }
+
+  async function session(operationName, input, scanContext = null) {
     const configuration = loadConnectionConfiguration({ env, expectedRole, expectedDatabase });
     const client = constructClient(configuration, Client);
     const boundedClient = createBoundedQueryClient(client);
@@ -142,7 +187,11 @@ function createPostgresAdapter({ safety, env = process.env, expectedRole, expect
         input,
         maximumPageSize
       );
-      TRUSTED_POSTGRES_SNAPSHOTS.add(snapshot);
+      TRUSTED_POSTGRES_SNAPSHOTS.set(snapshot, Object.freeze({
+        operation: operationName,
+        scanContext,
+        scanIdentity: scanContext ? scanContext.identity : null,
+      }));
       return snapshot;
     } catch (error) {
       primaryFailure = error;
@@ -165,14 +214,40 @@ function createPostgresAdapter({ safety, env = process.env, expectedRole, expect
       return session(OPERATIONS.CONNECTION_SAFETY);
     },
     inspectSchema() { return session(OPERATIONS.SCHEMA); },
-    listTicketsPage(options) {
+    listTicketsPage(options, previousSnapshot) {
+      const argumentCount = arguments.length;
       let validated;
       try { validated = validateTicketPageOptions(options, maximumPageSize); }
       catch (error) {
         if (isTrustedDatabaseInputError(error)) return Promise.reject(error);
         return Promise.reject(new DatabaseInputError("Ticket page options are invalid"));
       }
-      return session(OPERATIONS.TICKETS, validated);
+      let context;
+      try {
+        if (validated.lastSeenId === undefined) {
+          if (argumentCount !== 1) throw new DatabaseInputError("Ticket scan input is invalid");
+          context = createTicketScanContext(validated);
+        } else {
+          if (argumentCount !== 2) throw new DatabaseInputError("Ticket continuation input is invalid");
+          context = continuationContext(previousSnapshot, validated);
+        }
+      } catch (error) {
+        if (isTrustedDatabaseInputError(error)) return Promise.reject(error);
+        return Promise.reject(new DatabaseInputError("Ticket scan input is invalid"));
+      }
+      const prior = context.state;
+      scanState(context, "in-flight", prior.completionState, prior.expectedCursor, prior.exhausted, prior.lastSnapshot);
+      return session(OPERATIONS.TICKETS, validated, context).then((snapshot) => {
+        if (snapshot.pagination.exhausted) {
+          scanState(context, "completed", "complete", snapshot.nextCursor, true, snapshot);
+        } else {
+          scanState(context, "ready", "incomplete", snapshot.nextCursor, false, snapshot);
+        }
+        return snapshot;
+      }, (error) => {
+        scanState(context, "failed", "failed", prior.expectedCursor, prior.exhausted, prior.lastSnapshot);
+        throw error;
+      });
     },
     listHistoryPage(options) {
       let validated;
@@ -187,4 +262,8 @@ function createPostgresAdapter({ safety, env = process.env, expectedRole, expect
   });
 }
 
-module.exports = { createPostgresAdapter, verifyTrustedPostgresSnapshot };
+module.exports = Object.freeze({
+  createPostgresAdapter,
+  verifySameTrustedPostgresTicketScan,
+  verifyTrustedPostgresSnapshot,
+});

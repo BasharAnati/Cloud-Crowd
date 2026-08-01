@@ -1,12 +1,22 @@
 "use strict";
 
+const { types } = require("node:util");
 const {
+  NormalizationBundleConsistencyError,
+  NormalizationBundleLimitError,
+  NormalizationIncompletePostgresError,
+  NormalizationIncompleteSheetsError,
+  NormalizationInvalidPageSetError,
   NormalizationMalformedRecordError,
+  NormalizationProvenanceError,
   NormalizationUnsupportedSnapshotError,
   NormalizationUntrustedSnapshotError,
   classifyError,
 } = require("../errors");
-const { verifyTrustedPostgresSnapshot } = require("../postgres/adapter");
+const {
+  verifySameTrustedPostgresTicketScan,
+  verifyTrustedPostgresSnapshot,
+} = require("../postgres/adapter");
 const { verifyTrustedSheetsSnapshot } = require("../sheets/adapter");
 const { canonicalRecord } = require("./canonical-record");
 const {
@@ -30,6 +40,21 @@ const {
 } = require("./validation");
 
 const MISSING = Symbol("missing-normalization-field");
+const CANONICAL_RECORDS = new WeakSet();
+const NORMALIZED_RESULTS = new WeakMap();
+const CANONICAL_BUNDLES = new WeakMap();
+const PARITY_MODULES = Object.freeze([
+  "cctv",
+  "customer-experience",
+  "complaints",
+  "complimentary-orders",
+]);
+const PARITY_MODULE_SET = new Set(PARITY_MODULES);
+const BUNDLE_LIMITS = Object.freeze({
+  postgresPages: 10_000,
+  postgresTickets: 40_000,
+  ticketsPerModule: 10_000,
+});
 const POSTGRES_TICKET_KEYS = Object.freeze(["id", "section", "status", "payload", "created_at", "updated_at"]);
 const POSTGRES_HISTORY_KEYS = Object.freeze([
   "id", "ticket_id", "section", "changed_by", "prev_status", "new_status",
@@ -117,6 +142,77 @@ function verifyPostgres(snapshot) {
 
 function verifySheets(snapshot) {
   try { verifyTrustedSheetsSnapshot(snapshot); } catch (_) { throw new NormalizationUntrustedSnapshotError("Untrusted snapshot"); }
+}
+
+function verifyTrustedCanonicalRecord(record) {
+  return CANONICAL_RECORDS.has(record);
+}
+
+function verifyTrustedNormalizedResult(result) {
+  const metadata = NORMALIZED_RESULTS.get(result);
+  if (!metadata) throw new TypeError("Normalized result is not trusted");
+  return result;
+}
+
+function verifyTrustedCanonicalBundle(bundle) {
+  const metadata = CANONICAL_BUNDLES.get(bundle);
+  if (!metadata || metadata.postgresComplete !== true || metadata.sheetsComplete !== true ||
+      metadata.allModulesRepresented !== true || metadata.postgresTicketOnly !== true) {
+    throw new TypeError("Canonical parity bundle is not trusted");
+  }
+  return bundle;
+}
+
+function uniqueValues(records, field) {
+  const output = [];
+  for (const record of records) if (!output.includes(record[field])) output.push(record[field]);
+  return Object.freeze(output);
+}
+
+function registerNormalizedResult(result, metadata) {
+  const safeMetadata = Object.freeze({
+    producer: metadata.producer,
+    normalizedSource: metadata.normalizedSource,
+    recordTypes: metadata.recordTypes || uniqueValues(result, "recordType"),
+    representedModules: metadata.representedModules || uniqueValues(result, "module"),
+    recordCount: result.length,
+    ticketCount: result.filter((record) => record.recordType === "ticket").length,
+    historyCount: result.filter((record) => record.recordType === "history").length,
+    moduleRecordCount: result.filter((record) => record.recordType === "module").length,
+    sourceSnapshotKind: metadata.sourceSnapshotKind,
+    completenessState: metadata.completenessState,
+    page: metadata.page || null,
+  });
+  for (const record of result) CANONICAL_RECORDS.add(record);
+  NORMALIZED_RESULTS.set(result, safeMetadata);
+  return result;
+}
+
+function postgresPagination(snapshot) {
+  const pagination = dataValue(snapshot, "pagination");
+  assertExactKeys(pagination, [
+    "kind", "requestedCursor", "section", "limit", "returnedCount", "firstId", "lastId", "nextCursor", "exhausted",
+  ]);
+  const metadata = {
+    kind: dataValue(pagination, "kind"),
+    requestedCursor: dataValue(pagination, "requestedCursor"),
+    section: dataValue(pagination, "section"),
+    limit: dataValue(pagination, "limit"),
+    returnedCount: dataValue(pagination, "returnedCount"),
+    firstId: dataValue(pagination, "firstId"),
+    lastId: dataValue(pagination, "lastId"),
+    nextCursor: dataValue(pagination, "nextCursor"),
+    exhausted: dataValue(pagination, "exhausted"),
+  };
+  if (metadata.kind !== "tickets" || !Number.isSafeInteger(metadata.limit) || metadata.limit <= 0 ||
+      !Number.isSafeInteger(metadata.returnedCount) || metadata.returnedCount < 0 ||
+      (metadata.requestedCursor !== null && typeof metadata.requestedCursor !== "string") ||
+      (metadata.section !== null && typeof metadata.section !== "string") ||
+      (metadata.firstId !== null && typeof metadata.firstId !== "string") ||
+      (metadata.lastId !== null && typeof metadata.lastId !== "string") ||
+      (metadata.nextCursor !== null && typeof metadata.nextCursor !== "string") ||
+      typeof metadata.exhausted !== "boolean" || metadata.nextCursor !== dataValue(snapshot, "nextCursor")) fail();
+  return Object.freeze(metadata);
 }
 
 function initialStates() {
@@ -320,12 +416,25 @@ function normalizePostgresSnapshot(snapshot) {
     if (!snapshot || !Object.hasOwn(snapshot, "rows") || !Object.hasOwn(snapshot, "nextCursor")) {
       throw new NormalizationUnsupportedSnapshotError("Unsupported snapshot");
     }
-    assertExactKeys(snapshot, ["rows", "nextCursor"]);
+    const ticketPage = Object.hasOwn(snapshot, "pagination");
+    assertExactKeys(snapshot, ticketPage ? ["rows", "nextCursor", "pagination"] : ["rows", "nextCursor"]);
     const rows = assertDenseArray(dataValue(snapshot, "rows"));
-    if (rows.length === 0) return Object.freeze([]);
-    const ticket = Object.hasOwn(rows[0], "payload");
+    const ticket = ticketPage || (rows.length > 0 && Object.hasOwn(rows[0], "payload"));
     const records = rows.map((row) => ticket ? normalizePostgresTicket(row) : normalizePostgresHistory(row));
-    return Object.freeze(records);
+    const result = Object.freeze(records);
+    const pagination = ticket ? postgresPagination(snapshot) : null;
+    const page = pagination === null ? null : Object.freeze({
+      ...pagination,
+      trustedSnapshot: snapshot,
+    });
+    return registerNormalizedResult(result, {
+      producer: "normalizePostgresSnapshot",
+      normalizedSource: "postgresql",
+      sourceSnapshotKind: ticket ? "postgres-ticket-page" : "postgres-history-page",
+      completenessState: ticket ? "page-bounded" : "not-applicable",
+      page,
+      recordTypes: Object.freeze([ticket ? "ticket" : "history"]),
+    });
   });
 }
 
@@ -459,15 +568,272 @@ function normalizeSheetsSnapshot(snapshot) {
         verifySheets(moduleSnapshot);
         records.push(...normalizeModuleSheetSnapshot(moduleSnapshot));
       }
-      return Object.freeze(records);
+      return registerNormalizedResult(Object.freeze(records), {
+        producer: "normalizeSheetsSnapshot",
+        normalizedSource: "google-sheets",
+        sourceSnapshotKind: "sheets-read-all",
+        completenessState: "all-configured-modules",
+      });
     }
-    return Object.freeze(normalizeModuleSheetSnapshot(snapshot));
+    return registerNormalizedResult(Object.freeze(normalizeModuleSheetSnapshot(snapshot)), {
+      producer: "normalizeSheetsSnapshot",
+      normalizedSource: "google-sheets",
+      sourceSnapshotKind: "sheets-single-module",
+      completenessState: "single-module-only",
+    });
   });
 }
 
 function normalizeAll(postgresSnapshot, sheetsSnapshot) {
   if (arguments.length !== 2) throw new NormalizationUnsupportedSnapshotError("Unsupported normalization input");
-  return Object.freeze([...normalizePostgresSnapshot(postgresSnapshot), ...normalizeSheetsSnapshot(sheetsSnapshot)]);
+  const result = Object.freeze([...normalizePostgresSnapshot(postgresSnapshot), ...normalizeSheetsSnapshot(sheetsSnapshot)]);
+  return registerNormalizedResult(result, {
+    producer: "normalizeAll",
+    normalizedSource: "mixed",
+    sourceSnapshotKind: "mixed-normalized-result",
+    completenessState: "not-a-parity-bundle",
+  });
 }
 
-module.exports = { normalizeAll, normalizePostgresSnapshot, normalizeSheetsSnapshot };
+function bundleFail(ErrorClass) {
+  throw new ErrorClass("Canonical bundle assembly failed");
+}
+
+function bundleOwnData(object, key, ErrorClass) {
+  let descriptor;
+  try { descriptor = Object.getOwnPropertyDescriptor(object, key); } catch (_) { bundleFail(ErrorClass); }
+  if (!descriptor || !Object.hasOwn(descriptor, "value")) bundleFail(ErrorClass);
+  return descriptor.value;
+}
+
+function assertFrozenDenseBundleArray(value, ErrorClass) {
+  let isProxy;
+  let isArray;
+  let isFrozen;
+  let keys;
+  try {
+    isProxy = types.isProxy(value);
+    if (!isProxy) {
+      isArray = Array.isArray(value);
+      isFrozen = Object.isFrozen(value);
+      keys = Reflect.ownKeys(value);
+    }
+  } catch (_) {
+    bundleFail(ErrorClass);
+  }
+  if (isProxy || !isArray || !isFrozen ||
+      keys.some((key) => key !== "length" && (typeof key !== "string" || !/^(0|[1-9][0-9]*)$/.test(key)))) {
+    bundleFail(ErrorClass);
+  }
+  for (let index = 0; index < value.length; index += 1) {
+    let present;
+    try { present = Object.hasOwn(value, index); } catch (_) { bundleFail(ErrorClass); }
+    if (!present) bundleFail(ErrorClass);
+  }
+  return value;
+}
+
+function bundleBigIntOrder(left, right) {
+  try {
+    const a = BigInt(left);
+    const b = BigInt(right);
+    return a < b ? -1 : a > b ? 1 : 0;
+  } catch (_) {
+    bundleFail(NormalizationBundleConsistencyError);
+  }
+}
+
+function validateBundleRecord(record, source, allowedTypes) {
+  let safeIdentity;
+  try {
+    safeIdentity = record !== null && typeof record === "object" && !types.isProxy(record) && Object.isFrozen(record) &&
+      verifyTrustedCanonicalRecord(record);
+  } catch (_) {
+    bundleFail(NormalizationBundleConsistencyError);
+  }
+  if (!safeIdentity || bundleOwnData(record, "source", NormalizationBundleConsistencyError) !== source ||
+      !allowedTypes.has(bundleOwnData(record, "recordType", NormalizationBundleConsistencyError)) ||
+      !PARITY_MODULE_SET.has(bundleOwnData(record, "module", NormalizationBundleConsistencyError))) {
+    bundleFail(NormalizationBundleConsistencyError);
+  }
+}
+
+function validatePostgresPages(postgresPageResults) {
+  assertFrozenDenseBundleArray(postgresPageResults, NormalizationInvalidPageSetError);
+  if (postgresPageResults.length === 0) bundleFail(NormalizationIncompletePostgresError);
+  if (postgresPageResults.length > BUNDLE_LIMITS.postgresPages) bundleFail(NormalizationBundleLimitError);
+
+  const records = [];
+  const seenPages = new Set();
+  const seenRecords = new Set();
+  const seenIds = new Set();
+  const counts = Object.fromEntries(PARITY_MODULES.map((module) => [module, 0]));
+  const ticketType = new Set(["ticket"]);
+  let expectedCursor = null;
+  let pageLimit = null;
+  let scanAnchor = null;
+  let exhausted = false;
+
+  for (let pageIndex = 0; pageIndex < postgresPageResults.length; pageIndex += 1) {
+    const page = bundleOwnData(postgresPageResults, String(pageIndex), NormalizationInvalidPageSetError);
+    if (seenPages.has(page)) bundleFail(NormalizationInvalidPageSetError);
+    seenPages.add(page);
+    const metadata = NORMALIZED_RESULTS.get(page);
+    if (!metadata) bundleFail(NormalizationProvenanceError);
+    if (metadata.producer !== "normalizePostgresSnapshot" || metadata.sourceSnapshotKind !== "postgres-ticket-page" ||
+        metadata.normalizedSource !== "postgresql" || metadata.recordTypes.length !== 1 || metadata.recordTypes[0] !== "ticket" ||
+        !metadata.page || metadata.page.section !== null) bundleFail(NormalizationInvalidPageSetError);
+    if (pageIndex === 0) scanAnchor = metadata.page.trustedSnapshot;
+    try { verifySameTrustedPostgresTicketScan(scanAnchor, metadata.page.trustedSnapshot); }
+    catch (_) { bundleFail(NormalizationInvalidPageSetError); }
+    if (pageLimit === null) pageLimit = metadata.page.limit;
+    else if (pageLimit !== metadata.page.limit) bundleFail(NormalizationInvalidPageSetError);
+    if (metadata.page.requestedCursor !== expectedCursor || exhausted) bundleFail(NormalizationIncompletePostgresError);
+    if (metadata.page.returnedCount !== page.length || metadata.recordCount !== page.length ||
+        metadata.page.nextCursor !== (page.length === 0 ? null : metadata.page.lastId)) {
+      bundleFail(NormalizationBundleConsistencyError);
+    }
+    if (metadata.page.exhausted !== (page.length < metadata.page.limit)) bundleFail(NormalizationBundleConsistencyError);
+
+    let previousId = metadata.page.requestedCursor;
+    for (let index = 0; index < page.length; index += 1) {
+      const record = bundleOwnData(page, String(index), NormalizationBundleConsistencyError);
+      validateBundleRecord(record, "postgresql", ticketType);
+      if (seenRecords.has(record)) bundleFail(NormalizationBundleConsistencyError);
+      seenRecords.add(record);
+      const ticketId = bundleOwnData(record, "ticketId", NormalizationBundleConsistencyError);
+      if (typeof ticketId !== "string" || seenIds.has(ticketId) ||
+          (previousId !== null && bundleBigIntOrder(previousId, ticketId) >= 0)) {
+        bundleFail(NormalizationBundleConsistencyError);
+      }
+      if (index === 0 && metadata.page.firstId !== ticketId) bundleFail(NormalizationBundleConsistencyError);
+      if (index === page.length - 1 && metadata.page.lastId !== ticketId) bundleFail(NormalizationBundleConsistencyError);
+      seenIds.add(ticketId);
+      previousId = ticketId;
+      const module = bundleOwnData(record, "module", NormalizationBundleConsistencyError);
+      counts[module] += 1;
+      if (counts[module] > BUNDLE_LIMITS.ticketsPerModule) bundleFail(NormalizationBundleLimitError);
+      records.push(record);
+      if (records.length > BUNDLE_LIMITS.postgresTickets) bundleFail(NormalizationBundleLimitError);
+    }
+    if (page.length === 0 && (metadata.page.firstId !== null || metadata.page.lastId !== null)) {
+      bundleFail(NormalizationBundleConsistencyError);
+    }
+    exhausted = metadata.page.exhausted;
+    expectedCursor = metadata.page.nextCursor;
+  }
+  if (!exhausted) bundleFail(NormalizationIncompletePostgresError);
+  return { records: Object.freeze(records), counts };
+}
+
+function validateSheetsReadAll(sheetsReadAllResult) {
+  const metadata = NORMALIZED_RESULTS.get(sheetsReadAllResult);
+  if (!metadata) bundleFail(NormalizationProvenanceError);
+  if (metadata.producer !== "normalizeSheetsSnapshot" || metadata.sourceSnapshotKind !== "sheets-read-all" ||
+      metadata.normalizedSource !== "google-sheets" || metadata.representedModules.length !== PARITY_MODULES.length ||
+      metadata.representedModules.some((module, index) => module !== PARITY_MODULES[index])) {
+    bundleFail(NormalizationIncompleteSheetsError);
+  }
+  assertFrozenDenseBundleArray(sheetsReadAllResult, NormalizationIncompleteSheetsError);
+
+  const records = [];
+  const seenRecords = new Set();
+  const moduleKinds = Object.fromEntries(PARITY_MODULES.map((module) => [module, null]));
+  const counts = Object.fromEntries(PARITY_MODULES.map((module) => [module, 0]));
+  const sheetTypes = new Set(["ticket", "module"]);
+  let moduleIndex = 0;
+  for (let index = 0; index < sheetsReadAllResult.length; index += 1) {
+    const record = bundleOwnData(sheetsReadAllResult, String(index), NormalizationBundleConsistencyError);
+    validateBundleRecord(record, "google-sheets", sheetTypes);
+    if (seenRecords.has(record)) bundleFail(NormalizationBundleConsistencyError);
+    seenRecords.add(record);
+    const module = bundleOwnData(record, "module", NormalizationBundleConsistencyError);
+    while (moduleIndex < PARITY_MODULES.length && PARITY_MODULES[moduleIndex] !== module) moduleIndex += 1;
+    if (moduleIndex >= PARITY_MODULES.length) bundleFail(NormalizationIncompleteSheetsError);
+    const type = bundleOwnData(record, "recordType", NormalizationBundleConsistencyError);
+    if (moduleKinds[module] === null) moduleKinds[module] = type;
+    if (moduleKinds[module] !== type || (type === "module" && counts[module] !== 0)) {
+      bundleFail(NormalizationIncompleteSheetsError);
+    }
+    if (type === "module") {
+      const flags = bundleOwnData(record, "structuralFlags", NormalizationBundleConsistencyError);
+      let validFlags;
+      try {
+        validFlags = Array.isArray(flags) && (flags.includes("EMPTY_SHEET") || flags.includes("HEADER_ONLY"));
+      } catch (_) {
+        bundleFail(NormalizationIncompleteSheetsError);
+      }
+      if (!validFlags) bundleFail(NormalizationIncompleteSheetsError);
+    }
+    counts[module] += 1;
+    if (type === "ticket" && counts[module] > BUNDLE_LIMITS.ticketsPerModule) {
+      bundleFail(NormalizationBundleLimitError);
+    }
+    records.push(record);
+  }
+  if (PARITY_MODULES.some((module) => moduleKinds[module] === null ||
+      (moduleKinds[module] === "module" && counts[module] !== 1))) {
+    bundleFail(NormalizationIncompleteSheetsError);
+  }
+  return { records: Object.freeze(records), counts, moduleKinds };
+}
+
+function frozenNullObject(entries) {
+  const object = Object.create(null);
+  for (const [key, value] of entries) Object.defineProperty(object, key, {
+    value, enumerable: true, writable: false, configurable: false,
+  });
+  return Object.freeze(object);
+}
+
+function assembleCanonicalParityBundle(postgresPageResults, sheetsReadAllResult) {
+  const argumentCount = arguments.length;
+  return withinBoundary(() => {
+    if (argumentCount !== 2) bundleFail(NormalizationInvalidPageSetError);
+    const postgres = validatePostgresPages(postgresPageResults);
+    const sheets = validateSheetsReadAll(sheetsReadAllResult);
+    const sheetTickets = sheets.records.filter((record) => record.recordType === "ticket").length;
+    const sheetModuleRecords = sheets.records.length - sheetTickets;
+    const recordsByModule = frozenNullObject(PARITY_MODULES.map((module) => [module, frozenNullObject([
+      ["postgresTickets", postgres.counts[module]],
+      ["sheetsTickets", sheets.moduleKinds[module] === "ticket" ? sheets.counts[module] : 0],
+      ["sheetModuleRecords", sheets.moduleKinds[module] === "module" ? 1 : 0],
+    ])]));
+    const counts = frozenNullObject([
+      ["postgresTickets", postgres.records.length],
+      ["sheetsTickets", sheetTickets],
+      ["sheetModuleRecords", sheetModuleRecords],
+      ["postgresPages", postgresPageResults.length],
+      ["recordsByModule", recordsByModule],
+    ]);
+    const completeness = frozenNullObject([
+      ["postgresComplete", true],
+      ["sheetsComplete", true],
+      ["allModulesRepresented", true],
+    ]);
+    const bundle = frozenNullObject([
+      ["postgresRecords", postgres.records],
+      ["sheetsRecords", sheets.records],
+      ["modules", PARITY_MODULES],
+      ["counts", counts],
+      ["completeness", completeness],
+    ]);
+    CANONICAL_BUNDLES.set(bundle, Object.freeze({
+      postgresComplete: true,
+      sheetsComplete: true,
+      allModulesRepresented: true,
+      postgresTicketOnly: true,
+    }));
+    return bundle;
+  }, NormalizationBundleConsistencyError);
+}
+
+module.exports = Object.freeze({
+  assembleCanonicalParityBundle,
+  normalizeAll,
+  normalizePostgresSnapshot,
+  normalizeSheetsSnapshot,
+  verifyTrustedCanonicalBundle,
+  verifyTrustedCanonicalRecord,
+  verifyTrustedNormalizedResult,
+});
