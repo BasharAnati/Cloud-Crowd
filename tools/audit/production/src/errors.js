@@ -11,6 +11,7 @@ const EXIT_CODES = Object.freeze({
   NORMALIZATION_ERROR: 7,
   PARITY_ERROR: 8,
   REPORT_ERROR: 9,
+  ORCHESTRATION_ERROR: 10,
 });
 
 const PUBLIC_ERROR_MESSAGES = Object.freeze({
@@ -60,6 +61,8 @@ const PUBLIC_ERROR_MESSAGES = Object.freeze({
   REPORT_INVALID_SUMMARY: "The parity result contains an invalid summary",
   REPORT_LIMIT_EXCEEDED: "Audit report construction exceeded a fixed safety limit",
   REPORT_INTERNAL_CONSISTENCY_FAILURE: "Audit report consistency verification failed",
+  ORCHESTRATION_FAILURE: "Audit orchestration failed",
+  ORCHESTRATION_PAGINATION_FAILURE: "PostgreSQL audit pagination failed",
 });
 
 const TRUSTED_ERROR_CLASSIFICATIONS = Object.freeze({
@@ -293,6 +296,16 @@ const TRUSTED_ERROR_CLASSIFICATIONS = Object.freeze({
     publicMessage: PUBLIC_ERROR_MESSAGES.REPORT_INTERNAL_CONSISTENCY_FAILURE,
     exitCode: EXIT_CODES.REPORT_ERROR,
   }),
+  ORCHESTRATION_FAILURE: Object.freeze({
+    publicCode: "ORCHESTRATION_FAILURE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.ORCHESTRATION_FAILURE,
+    exitCode: EXIT_CODES.ORCHESTRATION_ERROR,
+  }),
+  ORCHESTRATION_PAGINATION_FAILURE: Object.freeze({
+    publicCode: "ORCHESTRATION_PAGINATION_FAILURE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.ORCHESTRATION_PAGINATION_FAILURE,
+    exitCode: EXIT_CODES.ORCHESTRATION_ERROR,
+  }),
 });
 const ERROR_CLASSIFICATION_TOKEN = Symbol("error-classification-token");
 const ERROR_CLASSIFICATIONS = new WeakMap();
@@ -404,6 +417,8 @@ const ReportInvalidFindingError = createClass("ReportInvalidFindingError", "REPO
 const ReportInvalidSummaryError = createClass("ReportInvalidSummaryError", "REPORT_INVALID_SUMMARY", EXIT_CODES.REPORT_ERROR);
 const ReportLimitError = createClass("ReportLimitError", "REPORT_LIMIT_EXCEEDED", EXIT_CODES.REPORT_ERROR);
 const ReportInternalConsistencyError = createClass("ReportInternalConsistencyError", "REPORT_INTERNAL_CONSISTENCY_FAILURE", EXIT_CODES.REPORT_ERROR);
+const OrchestrationError = createClass("OrchestrationError", "ORCHESTRATION_FAILURE", EXIT_CODES.ORCHESTRATION_ERROR);
+const OrchestrationPaginationError = createClass("OrchestrationPaginationError", "ORCHESTRATION_PAGINATION_FAILURE", EXIT_CODES.ORCHESTRATION_ERROR);
 
 module.exports = {
   AuditToolError,
@@ -452,6 +467,8 @@ module.exports = {
   ReportInvalidSummaryError,
   ReportLimitError,
   ReportInternalConsistencyError,
+  OrchestrationError,
+  OrchestrationPaginationError,
   UnexpectedSchemaError,
   UsageError,
   classifyError,
