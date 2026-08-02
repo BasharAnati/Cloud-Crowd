@@ -5,12 +5,18 @@
 const { run } = require("../src/cli");
 const { version } = require("../../../../package.json");
 
-const exitCode = run({
-  args: process.argv.slice(2),
-  env: process.env,
-  version,
-  stdout: process.stdout,
-  stderr: process.stderr,
-});
+async function main() {
+  process.exitCode = await run({
+    args: process.argv.slice(2),
+    env: process.env,
+    version,
+    stdout: process.stdout,
+    stderr: process.stderr,
+  });
+}
 
-process.exitCode = exitCode;
+if (require.main === module) {
+  main().catch(() => {
+    process.exitCode = 12;
+  });
+}

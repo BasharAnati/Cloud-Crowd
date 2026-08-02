@@ -125,7 +125,11 @@ async function run() {
   }
 }
 
-run().then((value) => process.stdout.write(`${JSON.stringify(value)}\n`), (error) => {
-  process.stderr.write(`${error && error.stack ? error.stack : String(error)}\n`);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  run().then((value) => process.stdout.write(`${JSON.stringify(value)}\n`), (error) => {
+    process.stderr.write(`${error && error.stack ? error.stack : String(error)}\n`);
+    process.exitCode = 1;
+  });
+}
+
+module.exports = Object.freeze({ FakeClient, google, run, safeEnvironment });

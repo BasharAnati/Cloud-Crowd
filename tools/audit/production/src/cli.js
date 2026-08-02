@@ -2,73 +2,56 @@
 
 const { loadEnvironment } = require("./environment");
 const {
+  CliInternalError,
   EXIT_CODES,
-  UsageError,
   classifyError,
 } = require("./errors");
 const { enforceSafety } = require("./safety-kernel");
+const { executeAuditCommand } = require("./cli/audit-command");
+const { HELP } = require("./cli/help");
+const { parseArguments } = require("./cli/parser");
+const {
+  writeHelpToStdout,
+  writePreflightToStdout,
+  writePublicErrorToStderr,
+  writeVersionToStdout,
+} = require("./cli/stdout");
 
-const HELP = `Cloud Crowd Production Audit Tool
-
-Usage:
-  npm run audit:production -- --help
-  npm run audit:production -- --version
-  npm run audit:production -- preflight
-
-Commands:
-  preflight   Validate the production read-only safety configuration
-
-Options:
-  --help      Show this help
-  --version   Show the tool version
-`;
-
-function write(stream, message) {
-  stream.write(`${message}\n`);
-}
-
-function execute(args, env, version, stdout) {
-  if (args.length === 0) {
-    throw new UsageError("A command or option is required");
-  }
-
-  if (args.length === 1 && args[0] === "--help") {
-    stdout.write(HELP);
-    return;
-  }
-
-  if (args.length === 1 && args[0] === "--version") {
-    write(stdout, version);
-    return;
-  }
-
-  if (args.length === 1 && args[0] === "preflight") {
+async function execute(command, env, version, stdout) {
+  if (command.kind === "help") return writeHelpToStdout(stdout, "global");
+  if (command.kind === "audit-help") return writeHelpToStdout(stdout, "audit");
+  if (command.kind === "version") return writeVersionToStdout(stdout, version);
+  if (command.kind === "preflight") {
     const configuration = enforceSafety(loadEnvironment(env));
-    write(stdout, "Production audit preflight passed");
-    write(stdout, `Target: ${configuration.target}`);
-    write(stdout, `Mode: ${configuration.mode}`);
-    write(stdout, "Writes allowed: false");
-    return;
+    return writePreflightToStdout(stdout, configuration);
   }
-
-  throw new UsageError(`Unknown command or arguments`);
+  if (command.kind === "audit") return executeAuditCommand(command, stdout);
+  throw new CliInternalError("Parsed CLI command is invalid");
 }
 
-function run({ args, env, version, stdout, stderr }) {
+async function run({ args, env, version, stdout, stderr }) {
+  let auditCommand = false;
   try {
-    execute(args, env, version, stdout);
+    const command = parseArguments(args);
+    auditCommand = command.kind === "audit";
+    await execute(command, env, version, stdout);
     return EXIT_CODES.SUCCESS;
   } catch (error) {
-    const classification = classifyError(error);
-    write(
-      stderr,
-      `ERROR [${classification.publicCode}]: ${classification.publicMessage}`
-    );
+    let publicError = error;
+    let classification = classifyError(publicError);
+    if (auditCommand && classification.publicCode === "INTERNAL_ERROR") {
+      publicError = new CliInternalError("Audit command failed");
+      classification = classifyError(publicError);
+    }
+    try {
+      await writePublicErrorToStderr(stderr, publicError);
+    } catch (_) {
+      // The primary classification remains authoritative when stderr is unavailable.
+    }
     return classification.exitCode;
   }
 }
 
-module.exports = {
-  HELP,
-  run,
-};
+Object.freeze(run);
+
+module.exports = Object.freeze({ HELP, run });

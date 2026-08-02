@@ -13,6 +13,7 @@ const EXIT_CODES = Object.freeze({
   REPORT_ERROR: 9,
   ORCHESTRATION_ERROR: 10,
   OUTPUT_ERROR: 11,
+  CLI_ERROR: 12,
 });
 
 const PUBLIC_ERROR_MESSAGES = Object.freeze({
@@ -69,6 +70,12 @@ const PUBLIC_ERROR_MESSAGES = Object.freeze({
   OUTPUT_RENDER_FAILURE: "Audit output rendering failed",
   OUTPUT_LIMIT_EXCEEDED: "Audit output exceeded a fixed safety limit",
   OUTPUT_INTERNAL_CONSISTENCY_FAILURE: "Audit output consistency verification failed",
+  CLI_PATH_FAILURE: "Audit output path is invalid",
+  CLI_DESTINATION_EXISTS: "Audit output destination already exists",
+  CLI_WRITE_FAILURE: "Audit output could not be written",
+  CLI_CLEANUP_FAILURE: "Audit output cleanup failed",
+  CLI_BROKEN_PIPE: "Audit output stream was closed",
+  CLI_INTERNAL_FAILURE: "Audit command failed",
 });
 
 const TRUSTED_ERROR_CLASSIFICATIONS = Object.freeze({
@@ -337,6 +344,36 @@ const TRUSTED_ERROR_CLASSIFICATIONS = Object.freeze({
     publicMessage: PUBLIC_ERROR_MESSAGES.OUTPUT_INTERNAL_CONSISTENCY_FAILURE,
     exitCode: EXIT_CODES.OUTPUT_ERROR,
   }),
+  CLI_PATH_FAILURE: Object.freeze({
+    publicCode: "CLI_PATH_FAILURE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.CLI_PATH_FAILURE,
+    exitCode: EXIT_CODES.CLI_ERROR,
+  }),
+  CLI_DESTINATION_EXISTS: Object.freeze({
+    publicCode: "CLI_DESTINATION_EXISTS",
+    publicMessage: PUBLIC_ERROR_MESSAGES.CLI_DESTINATION_EXISTS,
+    exitCode: EXIT_CODES.CLI_ERROR,
+  }),
+  CLI_WRITE_FAILURE: Object.freeze({
+    publicCode: "CLI_WRITE_FAILURE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.CLI_WRITE_FAILURE,
+    exitCode: EXIT_CODES.CLI_ERROR,
+  }),
+  CLI_CLEANUP_FAILURE: Object.freeze({
+    publicCode: "CLI_CLEANUP_FAILURE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.CLI_CLEANUP_FAILURE,
+    exitCode: EXIT_CODES.CLI_ERROR,
+  }),
+  CLI_BROKEN_PIPE: Object.freeze({
+    publicCode: "CLI_BROKEN_PIPE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.CLI_BROKEN_PIPE,
+    exitCode: EXIT_CODES.CLI_ERROR,
+  }),
+  CLI_INTERNAL_FAILURE: Object.freeze({
+    publicCode: "CLI_INTERNAL_FAILURE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.CLI_INTERNAL_FAILURE,
+    exitCode: EXIT_CODES.CLI_ERROR,
+  }),
 });
 const ERROR_CLASSIFICATION_TOKEN = Symbol("error-classification-token");
 const ERROR_CLASSIFICATIONS = new WeakMap();
@@ -455,6 +492,12 @@ const OutputUnsupportedFormatError = createClass("OutputUnsupportedFormatError",
 const OutputRenderError = createClass("OutputRenderError", "OUTPUT_RENDER_FAILURE", EXIT_CODES.OUTPUT_ERROR);
 const OutputLimitError = createClass("OutputLimitError", "OUTPUT_LIMIT_EXCEEDED", EXIT_CODES.OUTPUT_ERROR);
 const OutputInternalConsistencyError = createClass("OutputInternalConsistencyError", "OUTPUT_INTERNAL_CONSISTENCY_FAILURE", EXIT_CODES.OUTPUT_ERROR);
+const CliPathError = createClass("CliPathError", "CLI_PATH_FAILURE", EXIT_CODES.CLI_ERROR);
+const CliDestinationExistsError = createClass("CliDestinationExistsError", "CLI_DESTINATION_EXISTS", EXIT_CODES.CLI_ERROR);
+const CliWriteError = createClass("CliWriteError", "CLI_WRITE_FAILURE", EXIT_CODES.CLI_ERROR);
+const CliCleanupError = createClass("CliCleanupError", "CLI_CLEANUP_FAILURE", EXIT_CODES.CLI_ERROR);
+const CliBrokenPipeError = createClass("CliBrokenPipeError", "CLI_BROKEN_PIPE", EXIT_CODES.CLI_ERROR);
+const CliInternalError = createClass("CliInternalError", "CLI_INTERNAL_FAILURE", EXIT_CODES.CLI_ERROR);
 
 module.exports = {
   AuditToolError,
@@ -510,6 +553,12 @@ module.exports = {
   OutputRenderError,
   OutputLimitError,
   OutputInternalConsistencyError,
+  CliPathError,
+  CliDestinationExistsError,
+  CliWriteError,
+  CliCleanupError,
+  CliBrokenPipeError,
+  CliInternalError,
   UnexpectedSchemaError,
   UsageError,
   classifyError,
