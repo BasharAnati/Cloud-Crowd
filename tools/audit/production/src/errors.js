@@ -12,6 +12,7 @@ const EXIT_CODES = Object.freeze({
   PARITY_ERROR: 8,
   REPORT_ERROR: 9,
   ORCHESTRATION_ERROR: 10,
+  OUTPUT_ERROR: 11,
 });
 
 const PUBLIC_ERROR_MESSAGES = Object.freeze({
@@ -63,6 +64,11 @@ const PUBLIC_ERROR_MESSAGES = Object.freeze({
   REPORT_INTERNAL_CONSISTENCY_FAILURE: "Audit report consistency verification failed",
   ORCHESTRATION_FAILURE: "Audit orchestration failed",
   ORCHESTRATION_PAGINATION_FAILURE: "PostgreSQL audit pagination failed",
+  OUTPUT_UNTRUSTED_INPUT: "Output rendering requires a trusted completed audit result",
+  OUTPUT_UNSUPPORTED_FORMAT: "The requested audit output format is not supported",
+  OUTPUT_RENDER_FAILURE: "Audit output rendering failed",
+  OUTPUT_LIMIT_EXCEEDED: "Audit output exceeded a fixed safety limit",
+  OUTPUT_INTERNAL_CONSISTENCY_FAILURE: "Audit output consistency verification failed",
 });
 
 const TRUSTED_ERROR_CLASSIFICATIONS = Object.freeze({
@@ -306,6 +312,31 @@ const TRUSTED_ERROR_CLASSIFICATIONS = Object.freeze({
     publicMessage: PUBLIC_ERROR_MESSAGES.ORCHESTRATION_PAGINATION_FAILURE,
     exitCode: EXIT_CODES.ORCHESTRATION_ERROR,
   }),
+  OUTPUT_UNTRUSTED_INPUT: Object.freeze({
+    publicCode: "OUTPUT_UNTRUSTED_INPUT",
+    publicMessage: PUBLIC_ERROR_MESSAGES.OUTPUT_UNTRUSTED_INPUT,
+    exitCode: EXIT_CODES.OUTPUT_ERROR,
+  }),
+  OUTPUT_UNSUPPORTED_FORMAT: Object.freeze({
+    publicCode: "OUTPUT_UNSUPPORTED_FORMAT",
+    publicMessage: PUBLIC_ERROR_MESSAGES.OUTPUT_UNSUPPORTED_FORMAT,
+    exitCode: EXIT_CODES.OUTPUT_ERROR,
+  }),
+  OUTPUT_RENDER_FAILURE: Object.freeze({
+    publicCode: "OUTPUT_RENDER_FAILURE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.OUTPUT_RENDER_FAILURE,
+    exitCode: EXIT_CODES.OUTPUT_ERROR,
+  }),
+  OUTPUT_LIMIT_EXCEEDED: Object.freeze({
+    publicCode: "OUTPUT_LIMIT_EXCEEDED",
+    publicMessage: PUBLIC_ERROR_MESSAGES.OUTPUT_LIMIT_EXCEEDED,
+    exitCode: EXIT_CODES.OUTPUT_ERROR,
+  }),
+  OUTPUT_INTERNAL_CONSISTENCY_FAILURE: Object.freeze({
+    publicCode: "OUTPUT_INTERNAL_CONSISTENCY_FAILURE",
+    publicMessage: PUBLIC_ERROR_MESSAGES.OUTPUT_INTERNAL_CONSISTENCY_FAILURE,
+    exitCode: EXIT_CODES.OUTPUT_ERROR,
+  }),
 });
 const ERROR_CLASSIFICATION_TOKEN = Symbol("error-classification-token");
 const ERROR_CLASSIFICATIONS = new WeakMap();
@@ -419,6 +450,11 @@ const ReportLimitError = createClass("ReportLimitError", "REPORT_LIMIT_EXCEEDED"
 const ReportInternalConsistencyError = createClass("ReportInternalConsistencyError", "REPORT_INTERNAL_CONSISTENCY_FAILURE", EXIT_CODES.REPORT_ERROR);
 const OrchestrationError = createClass("OrchestrationError", "ORCHESTRATION_FAILURE", EXIT_CODES.ORCHESTRATION_ERROR);
 const OrchestrationPaginationError = createClass("OrchestrationPaginationError", "ORCHESTRATION_PAGINATION_FAILURE", EXIT_CODES.ORCHESTRATION_ERROR);
+const OutputUntrustedInputError = createClass("OutputUntrustedInputError", "OUTPUT_UNTRUSTED_INPUT", EXIT_CODES.OUTPUT_ERROR);
+const OutputUnsupportedFormatError = createClass("OutputUnsupportedFormatError", "OUTPUT_UNSUPPORTED_FORMAT", EXIT_CODES.OUTPUT_ERROR);
+const OutputRenderError = createClass("OutputRenderError", "OUTPUT_RENDER_FAILURE", EXIT_CODES.OUTPUT_ERROR);
+const OutputLimitError = createClass("OutputLimitError", "OUTPUT_LIMIT_EXCEEDED", EXIT_CODES.OUTPUT_ERROR);
+const OutputInternalConsistencyError = createClass("OutputInternalConsistencyError", "OUTPUT_INTERNAL_CONSISTENCY_FAILURE", EXIT_CODES.OUTPUT_ERROR);
 
 module.exports = {
   AuditToolError,
@@ -469,6 +505,11 @@ module.exports = {
   ReportInternalConsistencyError,
   OrchestrationError,
   OrchestrationPaginationError,
+  OutputUntrustedInputError,
+  OutputUnsupportedFormatError,
+  OutputRenderError,
+  OutputLimitError,
+  OutputInternalConsistencyError,
   UnexpectedSchemaError,
   UsageError,
   classifyError,
