@@ -395,6 +395,11 @@
     const actions = document.createElement('div');
     actions.className = 'cc-shell-topbar-actions';
 
+    if (window.CloudCrowdTheme && typeof window.CloudCrowdTheme.createToggle === 'function') {
+      const themeToggle = window.CloudCrowdTheme.createToggle();
+      if (themeToggle) actions.appendChild(themeToggle);
+    }
+
     const userBadge = document.createElement('span');
     userBadge.className = 'cc-shell-user-badge';
     if (options.userId) userBadge.id = options.userId;

@@ -404,21 +404,6 @@ body.drawer-open{overflow:hidden;}
 .card-time{ font-size: 11px; font-weight: 700; color: #6b7280; }
 
 
-.col-header-inner::after{
-  content:"";
-  position:absolute;
-  left:15%;
-  right:15%;
-  bottom:6px;
-  height:8px;
-  background: repeating-linear-gradient(
-    -45deg,
-    var(--c),
-    var(--c) 4px,
-    transparent 4px,
-    transparent 8px
-  );
-}
 /* ===== Status Header: Ribbon Style + Gradient يبدأ من #7a88b0 ===== */
 .col-header-inner{
   position: relative;
@@ -995,7 +980,7 @@ body.drawer-open{overflow:hidden;}
 .free-orders-page .drawer-header h2{color:var(--free-orders-navy);}
 .free-orders-page .drawer-meta{padding:12px 18px;background:#f7fcfd;border-bottom:1px solid var(--free-orders-line);}
 .free-orders-page .drawer-body{gap:10px 18px !important;padding:18px !important;}
-.free-orders-page .drawer-body .kv{padding:10px 0;border-bottom:1px solid rgba(38,101,140,.1) !important;}
+.free-orders-page .drawer-body .kv{padding:10px 0;border-bottom:1px solid var(--color-divider) !important;}
 .free-orders-page .kv .k{
   color:#557488;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;
 }
@@ -1614,7 +1599,7 @@ body.drawer-open{overflow:hidden;}
 
 .ce-page .drawer-body .kv{
   padding:10px 0;
-  border-bottom:1px solid rgba(38,101,140,.1) !important;
+  border-bottom:1px solid var(--color-divider) !important;
 }
 
 .ce-page .kv .k{
@@ -2270,7 +2255,7 @@ body.drawer-open{overflow:hidden;}
 
 .complaints-page .drawer-body .kv{
   padding:10px 0;
-  border-bottom:1px solid rgba(38,101,140,.1) !important;
+  border-bottom:1px solid var(--color-divider) !important;
 }
 
 .complaints-page .kv .k{
@@ -2926,7 +2911,7 @@ body.drawer-open{overflow:hidden;}
 
 .cctv-page .drawer-body .kv{
   padding:10px 0;
-  border-bottom:1px solid rgba(38,101,140,.1) !important;
+  border-bottom:1px solid var(--color-divider) !important;
 }
 
 .cctv-page .kv .k{

@@ -1,0 +1,195 @@
+:where(html) {
+  color-scheme: light;
+  font-family: var(--font-family-sans);
+  background-color: var(--color-bg);
+}
+
+:where(html[data-theme="dark"]) {
+  color-scheme: dark;
+}
+
+:where(body) {
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+}
+
+:where(button, input, select, textarea) {
+  font-family: inherit;
+}
+
+::selection {
+  color: var(--color-selection-text);
+  background: var(--color-selection-bg);
+}
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+:where(html) {
+  scrollbar-color: var(--color-text-muted) var(--color-surface-muted);
+}
+
+.cc-theme-toggle {
+  min-width: var(--button-height-sm);
+  min-height: var(--button-height-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0 var(--button-padding-inline-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--button-radius);
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--font-size-badge);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color var(--duration-normal) var(--ease-standard),
+    background-color var(--duration-normal) var(--ease-standard),
+    border-color var(--duration-normal) var(--ease-standard),
+    box-shadow var(--duration-normal) var(--ease-standard);
+}
+
+.cc-theme-toggle:hover {
+  color: var(--color-primary-hover);
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.cc-theme-toggle:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.cc-theme-toggle__icon {
+  width: 1.15em;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.cc-theme-toggle__label {
+  white-space: nowrap;
+}
+
+.cc-theme-announcer {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Shared-shell compatibility layer. Legacy module content remains untouched. */
+.cc-shell-layout {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.cc-shell-sidebar {
+  background: var(--color-sidebar-bg);
+  color: var(--color-sidebar-text);
+  border-color: var(--color-sidebar-border);
+}
+
+.cc-shell-brand,
+.cc-shell-nav-link {
+  color: var(--color-sidebar-text);
+}
+
+.cc-shell-nav-heading {
+  color: var(--color-sidebar-muted);
+}
+
+.cc-shell-nav-link:hover,
+.cc-shell-nav-link:focus-visible,
+.cc-shell-nav-link.is-active {
+  border-color: var(--color-sidebar-border);
+  background: var(--color-sidebar-surface);
+}
+
+.cc-shell-nav-link.is-active {
+  color: var(--brand-accent-light);
+}
+
+.cc-shell-topbar {
+  min-height: var(--header-height);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border-color: var(--color-divider);
+}
+
+.cc-shell-topbar-eyebrow {
+  color: var(--color-text-muted);
+}
+
+.cc-shell-user-badge,
+.cc-shell-role-badge {
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  border-color: var(--color-border);
+}
+
+.cc-shell-logout {
+  color: var(--color-text-inverse);
+  background: var(--color-danger);
+}
+
+.cc-shell-logout:hover,
+.cc-shell-logout:focus-visible {
+  background: var(--color-danger-hover);
+}
+
+.cc-shell-module-card {
+  color: var(--color-text);
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  box-shadow: var(--card-shadow);
+}
+
+.cc-shell-module-card-description {
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 900px) {
+  :root {
+    --page-padding: var(--page-padding-tablet);
+  }
+}
+
+@media (max-width: 620px) {
+  :root {
+    --page-padding: var(--page-padding-mobile);
+  }
+
+  .cc-theme-toggle {
+    padding-inline: var(--space-2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

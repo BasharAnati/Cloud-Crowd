@@ -9,30 +9,21 @@ function ensureHistoryModal() {
 
   modal = document.createElement('div');
   modal.id = 'history-modal';
-  modal.style.cssText = `
-    position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
-    background: rgba(0,0,0,0.35); z-index: 9999;
-  `;
+  modal.className = 'history-modal';
   modal.innerHTML = `
-    <div id="history-panel" style="
-      width: min(680px, 92vw); max-height: 80vh; overflow:auto;
-      background: #fff; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      padding: 16px 18px;
-    ">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-        <h3 style="margin:0; font-size:18px;">Change History</h3>
-        <button id="history-close" style="
-          border:0; background:#eee; padding:6px 10px; border-radius:8px; cursor:pointer;
-        ">Close</button>
+    <div id="history-panel" class="history-modal__panel">
+      <div class="history-modal__header">
+        <h3 class="history-modal__title">Change History</h3>
+        <button id="history-close" class="history-modal__close">Close</button>
       </div>
-      <div id="history-body" style="margin-top:10px; font-size:14px;"></div>
+      <div id="history-body" class="history-modal__body"></div>
     </div>
   `;
   document.body.appendChild(modal);
 
-  modal.querySelector('#history-close').onclick = () => { modal.style.display = 'none'; };
+  modal.querySelector('#history-close').onclick = () => { modal.classList.remove('is-open'); };
   modal.addEventListener('click', (e) => {
-    if (e.target === modal) modal.style.display = 'none';
+    if (e.target === modal) modal.classList.remove('is-open');
   });
 
   return modal;
@@ -42,16 +33,13 @@ function ensureHistoryModal() {
 
 function buildHistoryHTML(rows) {
   if (!rows || rows.length === 0) {
-    return `<div style="padding:8px 4px; color:#666;">No changes logged yet.</div>`;
+    return `<div class="history-state history-state--empty">No changes logged yet.</div>`;
   }
 
   const header = `
-    <div style="
-      display:grid; grid-template-columns: 150px 140px 1fr 1fr; gap:8px;
-      font-weight:600; border-bottom:1px solid #eee; padding:6px 0;
-    ">
-      <div>When</div>
-      <div>By</div>
+    <div class="history-grid history-grid--header">
+      <div class="history-grid__meta">When</div>
+      <div class="history-grid__meta">By</div>
       <div>Status</div>
       <div>Action Taken</div>
     </div>
@@ -69,12 +57,9 @@ function buildHistoryHTML(rows) {
       </div>
     `;
     return `
-      <div style="
-        display:grid; grid-template-columns: 150px 140px 1fr 1fr; gap:8px;
-        border-bottom:1px dashed #eee; padding:8px 0;
-      ">
-        <div>${formatDT(r.changed_at)}</div>
-        <div>${escapeHtml(r.changed_by || '—')}</div>
+      <div class="history-grid history-grid--item">
+        <div class="history-grid__meta">${formatDT(r.changed_at)}</div>
+        <div class="history-grid__meta">${escapeHtml(r.changed_by || '—')}</div>
         ${statusPart}
         ${actionPart}
       </div>
@@ -88,8 +73,8 @@ async function viewTicketHistory(ticketId){
   const modal = ensureHistoryModal();
   const body  = modal.querySelector('#history-body');
 
-  body.innerHTML = `<div style="padding:8px 4px; color:#666;">Loading…</div>`;
-  modal.style.display = 'flex';
+  body.innerHTML = `<div class="history-state history-state--loading">Loading…</div>`;
+  modal.classList.add('is-open');
 
   try {
     const res = await fetch(`/.netlify/functions/tickets?history=1&id=${encodeURIComponent(ticketId)}`, {
@@ -100,7 +85,7 @@ async function viewTicketHistory(ticketId){
     if (!res.ok || !data.ok) throw new Error(data.error || 'Failed loading history');
     body.innerHTML = buildHistoryHTML(data.history || []);
   } catch (err) {
-    body.innerHTML = `<div style="padding:8px 4px; color:#c00;">${escapeHtml(err.message || 'Error')}</div>`;
+    body.innerHTML = `<div class="history-state history-state--error">${escapeHtml(err.message || 'Error')}</div>`;
   }
 }
 
