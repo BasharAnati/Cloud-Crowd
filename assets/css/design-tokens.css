@@ -69,6 +69,12 @@
   --page-padding-mobile: 12px;
   --page-padding: var(--page-padding-desktop);
 
+  /* Shared application layers */
+  --layer-topbar: 20;
+  --layer-sidebar: 30;
+  --layer-nav-backdrop: 50;
+  --layer-navigation: 60;
+
   /* Light theme semantic colors */
   --color-bg: #f5fbfc;
   --color-surface: #ffffff;

@@ -29,9 +29,25 @@
     return user.username.trim().toLowerCase() === 'anati' && user.role === 'admin';
   }
 
-  async function getMyAccess(moduleKey) {
+  function legacyAccessModel() {
+    return {
+      legacyFallback: true,
+      hasConfiguredAccess: false,
+      fullAccess: true,
+      access: []
+    };
+  }
+
+  async function getMyAccessModel() {
     const user = currentUser();
-    if (isAnatiAdmin()) return fullAccess(moduleKey);
+    if (isAnatiAdmin()) {
+      return {
+        legacyFallback: false,
+        hasConfiguredAccess: true,
+        fullAccess: true,
+        access: []
+      };
+    }
 
     try {
       const response = await fetch(ACCESS_ENDPOINT, {
@@ -44,21 +60,39 @@
 
       const data = await response.json();
       if (!data.ok || data.legacyFallback || !data.hasConfiguredAccess || !Array.isArray(data.access)) {
-        return fullAccess(moduleKey, true);
+        return legacyAccessModel();
       }
 
-      return (data.access || []).find((record) => record.moduleKey === moduleKey) || {
-        moduleKey,
-        canView: false,
-        canCreate: false,
-        canEdit: false,
-        canDelete: false,
-        legacyFallback: false
+      return {
+        legacyFallback: false,
+        hasConfiguredAccess: true,
+        fullAccess: false,
+        access: data.access.slice()
       };
     } catch (error) {
       console.warn('Permission check failed; using legacy page behavior.', error);
-      return fullAccess(moduleKey, true);
+      return legacyAccessModel();
     }
+  }
+
+  function getModuleAccess(accessModel, moduleKey) {
+    if (!accessModel || accessModel.legacyFallback || accessModel.fullAccess) {
+      return fullAccess(moduleKey, Boolean(accessModel?.legacyFallback));
+    }
+
+    return accessModel.access.find((record) => record.moduleKey === moduleKey) || {
+      moduleKey,
+      canView: false,
+      canCreate: false,
+      canEdit: false,
+      canDelete: false,
+      legacyFallback: false
+    };
+  }
+
+  async function getMyAccess(moduleKey) {
+    const accessModel = await getMyAccessModel();
+    return getModuleAccess(accessModel, moduleKey);
   }
 
   async function requirePageAccess(moduleKey) {
@@ -101,6 +135,8 @@
   }
 
   window.CCPermissions = {
+    getMyAccessModel,
+    getModuleAccess,
     getMyAccess,
     requirePageAccess,
     applyPermissionVisibility,

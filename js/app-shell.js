@@ -17,7 +17,7 @@
     {
       id: 'cctv',
       title: 'CCTV Operator Observations',
-      description: 'Track CCTV operator notes and observed operational violations.',
+      description: 'Track CCTV operator notes and document observed violations to support stronger security and discipline.',
       route: 'cctv.html',
       group: 'Operations',
       icon: 'video',
@@ -29,7 +29,7 @@
     {
       id: 'customer-experience',
       title: 'Customer Experience',
-      description: 'Collect customer feedback and manage service follow-up cases.',
+      description: 'Collect customer feedback through calls and record complaints or comments that require follow-up.',
       route: 'ce.html',
       group: 'Operations',
       icon: 'messages-square',
@@ -41,7 +41,7 @@
     {
       id: 'daily-complaints',
       title: 'Daily Complaints',
-      description: 'Record daily complaints, issue categories, and resolution actions.',
+      description: 'Document all complaints received by the call center and keep daily operational follow-up visible.',
       route: 'complaints.html',
       group: 'Operations',
       icon: 'clipboard-list',
@@ -53,7 +53,7 @@
     {
       id: 'complimentary-orders',
       title: 'Complimentary Orders',
-      description: 'Track customer compensation orders, discounts, and usage details.',
+      description: 'Record order and customer details for discounts or compensations, including approval details.',
       route: 'free-orders.html',
       group: 'Operations',
       icon: 'shopping-bag',
@@ -65,7 +65,7 @@
     {
       id: 'free-order-requests',
       title: 'Free Order Requests',
-      description: 'Manage immediate free order compensation requests and approvals.',
+      description: 'Manage immediate free order compensation requests from entry to sharing readiness.',
       route: 'free-order-requests.html',
       group: 'Operations',
       icon: 'file-text',
@@ -77,7 +77,7 @@
     {
       id: 'free-order-share',
       title: 'Free Order Share',
-      description: 'Review ready free order requests and mark shared orders complete.',
+      description: 'Review ready free order requests, request clarifications, and mark completed shares.',
       route: 'free-order-share.html',
       group: 'Operations',
       icon: 'truck',
@@ -89,7 +89,7 @@
     {
       id: 'call-queue',
       title: 'Call Queue',
-      description: 'Manage customer follow-up calls and call result workflows.',
+      description: 'Manage customer follow-up calls through Need Call, In Call, Called, Pending, and Done workflows.',
       route: 'call-queue.html',
       group: 'Operations',
       icon: 'phone-call',
@@ -102,7 +102,7 @@
     {
       id: 'employee-profiles',
       title: 'Employee Profiles',
-      description: 'Maintain employee records, contacts, emergency details, and assignments.',
+      description: 'Maintain central employee records, contact details, emergency contacts, and restaurant assignments.',
       route: 'employee-profiles.html',
       group: 'HR',
       icon: 'users',
@@ -114,7 +114,7 @@
     {
       id: 'attendance',
       title: 'Attendance & Shift Tracking',
-      description: 'Track employee attendance, shift timing, extra hours, and notes.',
+      description: 'Track employee attendance, shift schedules, and extra hours.',
       route: 'attendance.html',
       group: 'HR',
       icon: 'calendar-check',
@@ -126,7 +126,7 @@
     {
       id: 'weekly-quality',
       title: 'Weekly Quality Sheet',
-      description: 'Record weekly call quality evaluations and score breakdowns.',
+      description: 'Evaluate weekly call quality, calculate performance scores, and track pending or reviewed calls.',
       route: 'weekly-quality.html',
       group: 'HR',
       icon: 'badge-check',
@@ -138,7 +138,7 @@
     {
       id: 'agent-training',
       title: 'Agent Training',
-      description: 'Manage training assignments, progress, notes, and coaching status.',
+      description: 'Manage brand assignments, training status, coaching needs, and employee training progress.',
       route: 'agent-training.html',
       group: 'HR',
       icon: 'graduation-cap',
@@ -150,7 +150,7 @@
     {
       id: 'employee-deductions',
       title: 'Employee Deductions',
-      description: 'Track employee deductions, personal orders, and financial adjustments.',
+      description: 'Track employee deductions, personal orders, discounts, and financial adjustments.',
       route: 'employee-deductions.html',
       group: 'HR',
       icon: 'receipt',
@@ -162,7 +162,7 @@
     {
       id: 'client-profiles',
       title: 'Client Profiles',
-      description: 'Maintain restaurant and brand profiles, contacts, logos, and notes.',
+      description: 'Maintain restaurant and brand profiles, ownership contacts, numbers, logos, and operational notes.',
       route: 'client-profiles.html',
       group: 'Business',
       icon: 'briefcase-business',
@@ -174,7 +174,7 @@
     {
       id: 'restaurant-ratings',
       title: 'Restaurant Ratings',
-      description: 'Track weekly platform ratings across restaurant and brand profiles.',
+      description: 'Track weekly Talabat and Careem ratings across active restaurant and brand profiles.',
       route: 'restaurant-ratings.html',
       group: 'Business',
       icon: 'star',
@@ -186,12 +186,13 @@
     {
       id: 'anati-admin',
       title: 'Anati Admin Center',
-      description: 'Manage users, roles, module access, and administrative controls.',
+      description: 'Manage user profiles, roles, module access planning, and future workflow permissions.',
       route: 'anati-admin.html',
       group: 'Administration',
       icon: 'shield-check',
       order: 300,
       permissionKey: 'anati_admin',
+      anatiOnly: true,
       showInSidebar: true,
       showInDashboard: true
     }
@@ -207,6 +208,11 @@
       role: readSessionValue('cc_role').trim().toLowerCase(),
       token: readSessionValue('cc_token')
     };
+  }
+
+  function isAnatiAdmin() {
+    const user = currentUser();
+    return user.username.trim().toLowerCase() === 'anati' && user.role === 'admin';
   }
 
   function cloneModule(module) {
@@ -246,43 +252,40 @@
     return module ? cloneModule(module) : null;
   }
 
-  function isAdminUser() {
-    return currentUser().role === 'admin';
+  function fallbackModules(modules, fallbackMode) {
+    if (fallbackMode === 'legacy') {
+      return modules.filter((module) => module.anatiOnly !== true || isAnatiAdmin());
+    }
+    return modules.filter((module) => module.id === 'dashboard' || (module.anatiOnly === true && isAnatiAdmin()));
   }
 
-  function fallbackModules(modules) {
-    return modules.filter((module) => {
-      if (module.id === 'dashboard') return true;
-      return module.id === 'anati-admin' && isAdminUser();
-    });
-  }
-
-  async function canViewModule(module) {
+  function canViewModule(module, accessModel) {
+    if (module.anatiOnly === true) return isAnatiAdmin();
     if (!module.permissionKey) return true;
-    if (!window.CCPermissions || typeof window.CCPermissions.getMyAccess !== 'function') {
+    if (!window.CCPermissions || typeof window.CCPermissions.getModuleAccess !== 'function') {
       throw new Error('Permissions helper unavailable');
     }
 
-    const access = await window.CCPermissions.getMyAccess(module.permissionKey);
+    const access = window.CCPermissions.getModuleAccess(accessModel, module.permissionKey);
     if (access?.legacyFallback) throw new Error('Permission state unavailable');
     return access?.canView !== false;
   }
 
-  async function filterPermittedModules(modules) {
-    if (!readSessionValue('cc_token')) return fallbackModules(modules);
-    if (!window.CCPermissions || typeof window.CCPermissions.getMyAccess !== 'function') {
-      return fallbackModules(modules);
+  async function filterPermittedModules(modules, options = {}) {
+    const candidates = modules.filter((module) => module.hidden !== true);
+    if (!readSessionValue('cc_token') || !window.CCPermissions ||
+        typeof window.CCPermissions.getMyAccessModel !== 'function' ||
+        typeof window.CCPermissions.getModuleAccess !== 'function') {
+      return fallbackModules(candidates, options.fallbackMode);
     }
 
     try {
-      const checks = await Promise.all(modules.map(async (module) => ({
-        module,
-        canView: await canViewModule(module)
-      })));
-      return checks.filter((item) => item.canView).map((item) => item.module);
+      const accessModel = options.accessModel || await window.CCPermissions.getMyAccessModel();
+      if (accessModel?.legacyFallback) throw new Error('Permission state unavailable');
+      return candidates.filter((module) => canViewModule(module, accessModel)).map(cloneModule);
     } catch (error) {
       console.warn('App shell permission filtering failed.', error);
-      return fallbackModules(modules);
+      return fallbackModules(candidates, options.fallbackMode).map(cloneModule);
     }
   }
 
@@ -310,12 +313,10 @@
     }
 
     link.appendChild(createIcon(module.icon));
-
     const text = document.createElement('span');
     text.className = 'cc-shell-nav-text';
     text.textContent = module.title;
     link.appendChild(text);
-
     return link;
   }
 
@@ -326,6 +327,26 @@
     })).filter((entry) => entry.modules.length > 0);
   }
 
+  function createBrand(options) {
+    const brand = document.createElement('a');
+    brand.className = 'cc-shell-brand';
+    brand.href = options.brandRoute || 'dashboard.html';
+    brand.setAttribute('aria-label', options.brandAriaLabel || 'Cloud Crowd dashboard');
+
+    if (options.brandImage) {
+      const image = document.createElement('img');
+      image.className = 'cc-shell-brand-logo';
+      image.src = options.brandImage;
+      image.alt = '';
+      brand.appendChild(image);
+    }
+
+    const label = document.createElement('span');
+    label.textContent = options.brandLabel || 'Cloud Crowd';
+    brand.appendChild(label);
+    return brand;
+  }
+
   async function buildSidebar(container, options = {}) {
     if (!container) return [];
 
@@ -333,16 +354,27 @@
     const baseModules = (options.modules || getSidebarModules()).filter((module) => (
       module.showInSidebar !== false && module.hidden !== true
     ));
-    const visibleModules = await filterPermittedModules(baseModules);
+    const visibleModules = options.modulesArePermitted
+      ? baseModules.map(cloneModule)
+      : await filterPermittedModules(baseModules, options);
 
     clearElement(container);
     container.classList.add('cc-shell-sidebar');
 
-    const brand = document.createElement('a');
-    brand.className = 'cc-shell-brand';
-    brand.href = options.brandRoute || 'dashboard.html';
-    brand.textContent = options.brandLabel || 'Cloud Crowd';
-    container.appendChild(brand);
+    if (options.responsiveNavigation) {
+      const header = document.createElement('div');
+      header.className = 'cc-shell-sidebar-header';
+      header.appendChild(createBrand(options));
+      const closeButton = document.createElement('button');
+      closeButton.className = 'cc-shell-mobile-close';
+      closeButton.type = 'button';
+      closeButton.setAttribute('aria-label', 'Close application navigation');
+      closeButton.textContent = 'Close';
+      header.appendChild(closeButton);
+      container.appendChild(header);
+    } else {
+      container.appendChild(createBrand(options));
+    }
 
     const nav = document.createElement('nav');
     nav.className = 'cc-shell-nav';
@@ -361,7 +393,6 @@
       entry.modules.forEach((module) => {
         section.appendChild(createModuleLink(module, activeModule?.id));
       });
-
       nav.appendChild(section);
     });
 
@@ -374,27 +405,42 @@
 
     const user = currentUser();
     const activeModule = options.activeModule || getActiveModuleByPath();
-
     clearElement(container);
     container.classList.add('cc-shell-topbar');
 
+    let navigationButton = null;
+    let context = null;
+    if (options.responsiveNavigation) {
+      context = document.createElement('div');
+      context.className = 'cc-shell-topbar-context';
+      navigationButton = document.createElement('button');
+      navigationButton.className = 'cc-shell-nav-trigger';
+      navigationButton.type = 'button';
+      navigationButton.setAttribute('aria-label', 'Open application navigation');
+      navigationButton.setAttribute('aria-expanded', 'false');
+      if (options.sidebarId) navigationButton.setAttribute('aria-controls', options.sidebarId);
+      navigationButton.textContent = 'Menu';
+      context.appendChild(navigationButton);
+    }
+
     const titleGroup = document.createElement('div');
     titleGroup.className = 'cc-shell-topbar-title';
-
     const eyebrow = document.createElement('span');
     eyebrow.className = 'cc-shell-topbar-eyebrow';
     eyebrow.textContent = options.eyebrow || activeModule?.group || 'Cloud Crowd';
     titleGroup.appendChild(eyebrow);
-
     const title = document.createElement('strong');
     title.textContent = options.title || activeModule?.title || 'Dashboard';
     titleGroup.appendChild(title);
-
-    container.appendChild(titleGroup);
+    if (context) {
+      context.appendChild(titleGroup);
+      container.appendChild(context);
+    } else {
+      container.appendChild(titleGroup);
+    }
 
     const actions = document.createElement('div');
     actions.className = 'cc-shell-topbar-actions';
-
     if (window.CloudCrowdTheme && typeof window.CloudCrowdTheme.createToggle === 'function') {
       const themeToggle = window.CloudCrowdTheme.createToggle();
       if (themeToggle) actions.appendChild(themeToggle);
@@ -412,17 +458,16 @@
     roleBadge.textContent = user.role || 'operator';
     actions.appendChild(roleBadge);
 
+    (options.utilityActions || []).filter(Boolean).forEach((element) => actions.appendChild(element));
+
     if (typeof options.onLogout === 'function' || options.logoutHref) {
       const logoutButton = document.createElement('button');
       logoutButton.className = 'cc-shell-logout';
       logoutButton.type = 'button';
       logoutButton.textContent = options.logoutLabel || 'Log out';
       logoutButton.addEventListener('click', () => {
-        if (typeof options.onLogout === 'function') {
-          options.onLogout();
-        } else {
-          window.location.href = options.logoutHref;
-        }
+        if (typeof options.onLogout === 'function') options.onLogout();
+        else window.location.href = options.logoutHref;
       });
       actions.appendChild(logoutButton);
     }
@@ -430,8 +475,153 @@
     container.appendChild(actions);
     return {
       user,
+      navigationButton,
       activeModule: activeModule ? cloneModule(activeModule) : null
     };
+  }
+
+  function createModuleCard(module) {
+    const link = document.createElement('a');
+    link.className = 'cc-shell-module-card';
+    link.href = module.route;
+    link.dataset.moduleId = module.id;
+    link.dataset.permissionKey = module.permissionKey || '';
+
+    link.appendChild(createIcon(module.icon));
+    const title = document.createElement('h3');
+    title.className = 'cc-shell-module-card-title';
+    title.textContent = module.title;
+    link.appendChild(title);
+    const description = document.createElement('p');
+    description.className = 'cc-shell-module-card-description';
+    description.textContent = module.description;
+    link.appendChild(description);
+    const action = document.createElement('span');
+    action.className = 'cc-shell-module-card-action';
+    action.textContent = 'Open Section';
+    link.appendChild(action);
+    return link;
+  }
+
+  async function renderDashboardModules(container, options = {}) {
+    if (!container) return [];
+    const baseModules = (options.modules || getDashboardModules()).filter((module) => (
+      module.showInDashboard !== false && module.hidden !== true
+    ));
+    const visibleModules = options.modulesArePermitted
+      ? baseModules.map(cloneModule)
+      : await filterPermittedModules(baseModules, { fallbackMode: 'legacy' });
+
+    clearElement(container);
+    groupModules(visibleModules).filter((entry) => entry.group !== 'Dashboard').forEach((entry) => {
+      const section = document.createElement('section');
+      section.className = 'cc-dashboard-module-group';
+      section.dataset.group = entry.group;
+      const heading = document.createElement('h2');
+      heading.className = 'cc-dashboard-module-group-title';
+      heading.textContent = entry.group;
+      section.appendChild(heading);
+      const grid = document.createElement('div');
+      grid.className = 'cc-shell-dashboard-grid';
+      entry.modules.forEach((module) => grid.appendChild(createModuleCard(module)));
+      section.appendChild(grid);
+      container.appendChild(section);
+    });
+    return visibleModules.map(cloneModule);
+  }
+
+  function setupResponsiveNavigation(options = {}) {
+    const shell = options.shell;
+    const sidebar = options.sidebar;
+    const trigger = options.trigger;
+    const backdrop = options.backdrop;
+    if (!shell || !sidebar || !trigger || !backdrop) return null;
+
+    const mediaQuery = typeof window.matchMedia === 'function'
+      ? window.matchMedia('(max-width: 1024px)')
+      : { matches: false };
+    let isOpen = false;
+
+    function applyState() {
+      const compact = mediaQuery.matches;
+      shell.classList.toggle('is-nav-open', compact && isOpen);
+      document.body.classList.toggle('cc-shell-nav-lock', compact && isOpen);
+      trigger.setAttribute('aria-expanded', String(compact && isOpen));
+      sidebar.setAttribute('aria-hidden', String(compact && !isOpen));
+      backdrop.hidden = !(compact && isOpen);
+      if ('inert' in sidebar) sidebar.inert = compact && !isOpen;
+    }
+
+    function openNavigation() {
+      if (!mediaQuery.matches) return;
+      isOpen = true;
+      applyState();
+      const focusTarget = sidebar.querySelector('.cc-shell-mobile-close, .cc-shell-nav-link');
+      if (focusTarget) focusTarget.focus();
+    }
+
+    function closeNavigation(options = {}) {
+      const wasOpen = isOpen;
+      isOpen = false;
+      applyState();
+      if (wasOpen && options.restoreFocus !== false) trigger.focus();
+    }
+
+    trigger.addEventListener('click', openNavigation);
+    backdrop.addEventListener('click', closeNavigation);
+    sidebar.querySelector('.cc-shell-mobile-close')?.addEventListener('click', closeNavigation);
+    sidebar.querySelectorAll('.cc-shell-nav-link').forEach((link) => {
+      link.addEventListener('click', () => closeNavigation({ restoreFocus: false }));
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && isOpen) closeNavigation();
+    });
+
+    const handleMediaChange = () => {
+      isOpen = false;
+      applyState();
+    };
+    if (typeof mediaQuery.addEventListener === 'function') mediaQuery.addEventListener('change', handleMediaChange);
+    else if (typeof mediaQuery.addListener === 'function') mediaQuery.addListener(handleMediaChange);
+    applyState();
+
+    return { open: openNavigation, close: closeNavigation };
+  }
+
+  async function initializeAppShell(options = {}) {
+    const activeModule = options.activeModule || getActiveModuleByPath();
+    const permittedModules = await filterPermittedModules(
+      options.modules || getAllModules(),
+      { fallbackMode: options.fallbackMode }
+    );
+    const sidebarModules = permittedModules.filter((module) => module.showInSidebar);
+
+    await buildSidebar(options.sidebar, {
+      activeModule,
+      modules: sidebarModules,
+      modulesArePermitted: true,
+      responsiveNavigation: true,
+      brandImage: options.brandImage,
+      ariaLabel: options.navigationLabel || 'Application navigation'
+    });
+    const topbar = buildTopbar(options.topbar, {
+      activeModule,
+      eyebrow: options.eyebrow,
+      title: options.title,
+      userId: options.userId,
+      roleId: options.roleId,
+      utilityActions: options.utilityActions,
+      onLogout: options.onLogout,
+      responsiveNavigation: true,
+      sidebarId: options.sidebar?.id
+    });
+    const navigation = setupResponsiveNavigation({
+      shell: options.shell,
+      sidebar: options.sidebar,
+      trigger: topbar?.navigationButton,
+      backdrop: options.backdrop
+    });
+    return { permittedModules, navigation, topbar };
   }
 
   window.CloudCrowdAppShell = {
@@ -441,7 +631,11 @@
     getDashboardModules,
     getModuleById,
     getActiveModuleByPath,
+    filterPermittedModules,
     buildSidebar,
-    buildTopbar
+    buildTopbar,
+    renderDashboardModules,
+    setupResponsiveNavigation,
+    initializeAppShell
   };
 })();

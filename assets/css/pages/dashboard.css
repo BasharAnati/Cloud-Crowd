@@ -1,0 +1,42 @@
+.dashboard-page {
+  min-width: 320px;
+  margin: 0;
+}
+
+.dashboard-page-container {
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: var(--page-padding);
+}
+
+.dashboard-module-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.cc-dashboard-module-group-title {
+  margin: 0 0 var(--space-4);
+  color: var(--color-text);
+  font-size: var(--font-size-section-title);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-section-title);
+}
+
+.dashboard-page .cc-shell-dashboard-grid {
+  gap: var(--space-4);
+}
+
+.dashboard-page .cc-shell-module-icon {
+  width: 24px;
+  height: 24px;
+  flex-basis: 24px;
+  color: var(--color-primary);
+}
+
+@media (max-width: 620px) {
+  .dashboard-module-groups {
+    gap: var(--space-6);
+  }
+}
