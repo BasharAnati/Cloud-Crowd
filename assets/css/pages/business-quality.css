@@ -1,0 +1,311 @@
+.business-quality-page {
+  --aqua: var(--color-secondary);
+  --teal: var(--color-secondary);
+  --blue: var(--color-primary);
+  --steel: var(--color-primary);
+  --deep: var(--color-text);
+  --navy: var(--color-text);
+  --page: var(--color-bg);
+  --surface: var(--color-bg);
+  --card: var(--color-surface);
+  --white: var(--color-surface);
+  --line: var(--color-border);
+  --text: var(--color-text);
+  --muted: var(--color-text-muted);
+  --danger: var(--color-danger-text);
+  --success: var(--color-success-text);
+  --warning: var(--color-warning-text);
+  --shadow: var(--shadow-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.business-quality-container {
+  width: min(100%, var(--content-max-width));
+  margin-inline: auto;
+  padding: var(--page-padding);
+}
+
+.business-quality-page .cc-page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.business-quality-page .quality-points-context {
+  align-items: center;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  color: var(--color-text-muted);
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  white-space: nowrap;
+}
+
+.business-quality-page .quality-points-context strong {
+  color: var(--color-text);
+  font-size: var(--font-size-section-title);
+}
+
+.business-quality-page :is(.content-card, .stat-card, .client-card) {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+
+.business-quality-page :is(.card-header, .card-heading, .table-tools) {
+  border-color: var(--color-divider);
+  background: var(--color-surface-muted);
+}
+
+.business-quality-page :is(.card-header, .card-heading, .detail-section, .details-section) :is(h3, h4),
+.business-quality-page :is(.stat-card, .metric-card, .client-card, .detail-item, .weak-item) strong {
+  color: var(--color-text);
+}
+
+.business-quality-page :is(
+  .card-header,
+  .card-heading,
+  .stat-card,
+  .metric-card,
+  .client-card,
+  .detail-item,
+  .quality-details,
+  .future-card
+) :is(p, span, small) {
+  color: var(--color-text-muted);
+}
+
+.business-quality-page :is(.control, input, select, textarea) {
+  border-color: var(--input-border);
+  background: var(--input-background);
+  color: var(--input-text);
+}
+
+.business-quality-page :is(.control, input, select, textarea):hover {
+  border-color: var(--input-hover-border);
+}
+
+.business-quality-page :is(.control, input, select, textarea):focus {
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-ring);
+}
+
+.business-quality-page :is(input, textarea)::placeholder {
+  color: var(--input-placeholder);
+}
+
+.business-quality-page :is(input, select, textarea):disabled {
+  background: var(--input-disabled-background);
+  color: var(--input-disabled-text);
+}
+
+.weekly-quality-page .score-field {
+  border-color: var(--color-border);
+  background: var(--color-surface-muted);
+}
+
+.weekly-quality-page .score-field label {
+  color: var(--color-text);
+}
+
+.weekly-quality-page .score-summary {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.weekly-quality-page .score-summary strong {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.business-quality-page .primary-btn {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-primary-on-solid);
+  box-shadow: var(--shadow-sm);
+}
+
+.business-quality-page .primary-btn:hover {
+  background: var(--color-primary-hover);
+}
+
+.business-quality-page :is(.secondary-btn, .small-btn, .details-btn, .modal-close) {
+  border-color: var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.business-quality-page :is(.danger-btn, .delete-btn) {
+  border-color: var(--color-danger-border);
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+}
+
+.business-quality-page :is(.message.error, .employee-load-warning.show) {
+  border-color: var(--color-danger-border);
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+}
+
+.business-quality-page .message.success {
+  border-color: var(--color-success-border);
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
+}
+
+.business-quality-page :is(.message.warning, .migration-banner) {
+  border-color: var(--color-warning-border);
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text);
+}
+
+.business-quality-page :is(.empty-state, .future-card) {
+  border-color: var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+}
+
+.business-quality-page :is(.table-wrap, .profile-table-wrap) {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-gutter: stable;
+}
+
+.business-quality-page :is(table, .records-table, .profile-table) {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.business-quality-page :is(table, .records-table, .profile-table) :is(th, td) {
+  border-color: var(--color-divider);
+}
+
+.business-quality-page :is(table, .records-table, .profile-table) th {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.business-quality-page :is(table, .records-table, .profile-table) tbody tr:hover {
+  background: var(--color-primary-soft);
+}
+
+.weekly-quality-page table tbody {
+  background: var(--color-surface);
+}
+
+.weekly-quality-page table td {
+  color: var(--color-text);
+}
+
+.business-quality-page :is(.modal, #details-modal) {
+  background: var(--modal-overlay);
+}
+
+.business-quality-page :is(.modal-panel, #details-modal .modal-panel) {
+  border-color: var(--color-border);
+  background: var(--modal-surface);
+  color: var(--color-text);
+  box-shadow: var(--modal-shadow);
+}
+
+.business-quality-page .modal-header {
+  border-color: var(--color-divider);
+  background: var(--modal-surface);
+}
+
+.business-quality-page .modal-header h3 {
+  color: var(--color-text);
+}
+
+.business-quality-page .icon-btn {
+  border-color: var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.business-quality-page :is(.detail-section, .details-section, .detail-item, .metric-card, .weak-item) {
+  border-color: var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.business-quality-page :is(.detail-item, .metric-card, .weak-item) {
+  background: var(--color-surface);
+}
+
+.weekly-quality-page .improvement-list li {
+  border: 1px solid var(--color-warning-border);
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text);
+}
+
+.business-quality-page :is(.client-logo, .client-logo-placeholder, .logo-preview) {
+  border-color: var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.business-quality-page :is(.client-logo img, .logo-preview img) {
+  background: var(--color-surface);
+}
+
+.client-profiles-page .future-card strong {
+  color: var(--color-text);
+}
+
+.business-quality-page :is(.status-active, .status-trained, .platform-talabat) {
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
+}
+
+.business-quality-page :is(.status-inactive, .status-not-trained) {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+}
+
+.business-quality-page :is(.status-unassigned, .status-coaching) {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text);
+}
+
+.business-quality-page :is(.status-neutral, .platform-careem) {
+  background: var(--color-info-soft);
+  color: var(--color-info-text);
+}
+
+.business-quality-page :is(.rating-badge, .rating-value, .count-badge, .role-pill) {
+  border-color: var(--color-border);
+  background: var(--color-primary-soft);
+  color: var(--color-text);
+}
+
+.business-quality-page .modal-total {
+  background: var(--color-primary);
+  color: var(--color-primary-on-solid);
+}
+
+body.cc-modal-lock {
+  overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+  .business-quality-container {
+    --page-padding: var(--page-padding-tablet);
+  }
+}
+
+@media (max-width: 620px) {
+  .business-quality-container {
+    --page-padding: var(--page-padding-mobile);
+  }
+
+  .business-quality-page .cc-page-header-actions,
+  .business-quality-page .cc-page-header-actions > button {
+    width: 100%;
+  }
+}
