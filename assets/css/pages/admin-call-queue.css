@@ -1,0 +1,268 @@
+.admin-call-queue-page {
+  --navy: var(--color-text);
+  --deep: var(--color-text);
+  --aqua: var(--color-primary);
+  --ice: var(--color-primary-soft);
+  --text: var(--color-text);
+  --muted: var(--color-text-muted);
+  --line: var(--color-border);
+  --glass: var(--color-surface);
+  --glass-strong: var(--color-surface);
+  --ok: var(--color-success);
+  --warn: var(--color-warning);
+  --bad: var(--color-danger);
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+.admin-call-queue-page::before {
+  content: none;
+}
+
+.admin-call-queue-page .admin-call-queue-container {
+  width: min(var(--content-max-width), 100%);
+  min-width: 0;
+  margin: 0 auto;
+  padding: var(--page-padding-desktop);
+}
+
+.admin-call-queue-page .notice {
+  margin: 0 0 var(--space-5);
+  border-color: var(--color-warning-border);
+  color: var(--color-warning-text);
+  background: var(--color-warning-soft);
+}
+
+.admin-call-queue-page :is(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.admin-call-queue-page :is(.panel, .stat, .placeholder) {
+  border-color: var(--color-border);
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-call-queue-page :is(.panel, .placeholder) p,
+.admin-call-queue-page .stat span,
+.admin-call-queue-page .check-row,
+.admin-call-queue-page .latest-note,
+.admin-call-queue-page .empty-state {
+  color: var(--color-text-muted);
+}
+
+.admin-call-queue-page .stat strong,
+.admin-call-queue-page :is(.panel, .placeholder) h3,
+.admin-call-queue-page .detail-head h3,
+.admin-call-queue-page .info strong {
+  color: var(--color-text);
+}
+
+.admin-center-page .table-wrap {
+  max-width: 100%;
+  overflow: auto;
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  scrollbar-gutter: stable;
+}
+
+.admin-center-page table {
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.admin-center-page th {
+  color: var(--color-text-muted);
+  background: var(--table-header-background);
+}
+
+.admin-center-page :is(th, td) {
+  border-color: var(--table-divider);
+}
+
+.admin-center-page tbody tr:hover {
+  background: var(--table-row-hover-background);
+}
+
+.admin-call-queue-page .chip {
+  color: var(--color-neutral-text);
+  background: var(--color-neutral-soft);
+}
+
+.admin-center-page .chip.active,
+.admin-center-page .chip.linked {
+  color: var(--color-success-text);
+  background: var(--color-success-soft);
+}
+
+.admin-center-page .chip.disabled {
+  color: var(--color-danger-text);
+  background: var(--color-danger-soft);
+}
+
+.admin-center-page .chip.warning {
+  color: var(--color-warning-text);
+  background: var(--color-warning-soft);
+}
+
+.admin-center-page :is(.chip.system, .chip.external) {
+  color: var(--color-info-text);
+  background: var(--color-info-soft);
+}
+
+.admin-call-queue-page label,
+.admin-call-queue-page .negative-details label {
+  color: var(--color-text);
+}
+
+.admin-call-queue-page :is(input, select, textarea) {
+  border-color: var(--input-border);
+  color: var(--input-text);
+  background: var(--input-background);
+}
+
+.admin-call-queue-page :is(input, textarea)::placeholder {
+  color: var(--input-placeholder);
+}
+
+.admin-call-queue-page select option {
+  color: var(--input-text);
+  background: var(--input-background);
+}
+
+.admin-call-queue-page :is(input, select, textarea):hover {
+  border-color: var(--input-hover-border);
+}
+
+.admin-call-queue-page :is(input, select, textarea):focus {
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-ring);
+}
+
+.admin-call-queue-page :is(.check-row input, .access-cell input) {
+  accent-color: var(--color-primary);
+}
+
+.admin-call-queue-page .btn {
+  border-color: var(--color-primary);
+  color: var(--color-primary-on-solid);
+  background: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-call-queue-page .btn:hover {
+  color: var(--color-primary-on-solid);
+  background: var(--color-primary-hover);
+  box-shadow: var(--shadow-md);
+}
+
+.admin-call-queue-page .btn.secondary {
+  border-color: var(--color-border);
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-call-queue-page .btn.secondary:hover {
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+}
+
+.admin-call-queue-page .btn.warning {
+  color: var(--color-warning-text);
+  background: var(--color-warning-soft);
+}
+
+.admin-call-queue-page .btn.danger {
+  color: var(--color-danger-text);
+  background: var(--color-danger-soft);
+}
+
+.admin-call-queue-page .btn:disabled {
+  opacity: var(--button-disabled-opacity);
+}
+
+.admin-call-queue-page .message {
+  color: var(--color-text);
+}
+
+.admin-call-queue-page .message.error {
+  color: var(--color-danger-text);
+}
+
+.call-queue-page .workspace {
+  min-width: 0;
+}
+
+.call-queue-page .queue-panel {
+  scrollbar-gutter: stable;
+}
+
+.call-queue-page .status-head {
+  color: var(--color-text-muted);
+}
+
+.call-queue-page .count,
+.call-queue-page .status-badge {
+  border-color: var(--color-info-border);
+  color: var(--color-info-text);
+  background: var(--color-info-soft);
+}
+
+.call-queue-page .ticket {
+  border-color: var(--color-border);
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+}
+
+.call-queue-page :is(.ticket:hover, .ticket.active) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.call-queue-page .ticket span {
+  color: var(--color-text-muted);
+}
+
+.call-queue-page :is(.info, .notes-box) {
+  border-color: var(--color-border);
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+}
+
+.call-queue-page .info span {
+  color: var(--color-text-muted);
+}
+
+.call-queue-page .image-box {
+  border-color: var(--color-border);
+  background: var(--color-surface-muted);
+}
+
+.call-queue-page .placeholder-art {
+  color: var(--color-text-muted);
+}
+
+.call-queue-page :is(.notes-box h4, .actions h4) {
+  color: var(--color-text);
+}
+
+.call-queue-page .negative-details {
+  border-color: var(--color-warning-border);
+  color: var(--color-warning-text);
+  background: var(--color-warning-soft);
+}
+
+@media (max-width: 1024px) {
+  .admin-call-queue-page .admin-call-queue-container {
+    padding: var(--page-padding-tablet);
+  }
+}
+
+@media (max-width: 620px) {
+  .admin-call-queue-page .admin-call-queue-container {
+    padding: var(--page-padding-mobile);
+  }
+}
