@@ -1,10 +1,14 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en" dir="ltr" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
   <title>Cloud Crowd - Free Order Share</title>
+  <script src="assets/js/theme.js"></script>
+  <link rel="stylesheet" href="assets/css/design-tokens.css">
+  <link rel="stylesheet" href="app-shell.css">
+  <link rel="stylesheet" href="assets/css/theme-base.css">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="media-viewer.css">
   <style>
@@ -35,63 +39,6 @@
 
     button, input, textarea, select { font: inherit; }
     button { cursor: pointer; }
-
-    .share-shell {
-      width: min(1440px, calc(100% - 36px));
-      margin: 0 auto;
-      padding: 24px 0 42px;
-    }
-
-    .share-topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 22px;
-    }
-
-    .share-brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-width: 0;
-    }
-
-    .share-logo {
-      width: 46px;
-      height: 46px;
-      display: grid;
-      place-items: center;
-      border: 0;
-      border-radius: 12px;
-      color: #fff;
-      font-weight: 950;
-      background: linear-gradient(135deg, var(--deep), var(--aqua));
-      box-shadow: 0 12px 28px rgba(2, 56, 89, .24);
-    }
-
-    .share-brand h1 {
-      margin: 0;
-      color: var(--navy);
-      font-size: clamp(24px, 3vw, 34px);
-      line-height: 1.05;
-      font-weight: 950;
-      letter-spacing: 0;
-    }
-
-    .share-brand p {
-      margin: 5px 0 0;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .top-actions {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
 
     .primary-btn,
     .secondary-btn,
@@ -141,36 +88,6 @@
     .warn-btn:hover {
       transform: translateY(-1px);
       box-shadow: 0 12px 26px rgba(1, 28, 64, .12);
-    }
-
-    .hero-panel {
-      overflow: hidden;
-      position: relative;
-      margin-bottom: 18px;
-      padding: 24px;
-      border: 1px solid rgba(84, 172, 191, .22);
-      border-radius: 8px;
-      background:
-        linear-gradient(135deg, rgba(255, 255, 255, .96), rgba(255, 255, 255, .74)),
-        radial-gradient(circle at 88% 10%, rgba(84, 172, 191, .18), transparent 34%);
-      box-shadow: var(--shadow);
-    }
-
-    .hero-panel h2 {
-      margin: 0;
-      color: var(--navy);
-      font-size: clamp(30px, 4vw, 52px);
-      line-height: 1;
-      font-weight: 950;
-      letter-spacing: 0;
-    }
-
-    .hero-panel p {
-      max-width: 760px;
-      margin: 12px 0 0;
-      color: var(--muted);
-      font-size: 15px;
-      line-height: 1.65;
     }
 
     .message {
@@ -567,15 +484,6 @@
     }
 
     @media (max-width: 680px) {
-      .share-shell {
-        width: min(100% - 24px, 1440px);
-        padding-top: 16px;
-      }
-      .share-topbar {
-        align-items: stretch;
-        flex-direction: column;
-      }
-      .top-actions { justify-content: flex-start; }
       .toolbar,
       .stats-grid,
       .form-grid,
@@ -589,46 +497,45 @@
       .form-actions {
         flex-direction: column-reverse;
       }
-      .form-actions button,
-      .top-actions button {
+      .form-actions button {
         width: 100%;
       }
     }
   </style>
+  <link rel="stylesheet" href="assets/css/pages/workflow.css">
+  <script src="js/auth.js"></script>
   <script>
-    if (sessionStorage.getItem('cc_auth') !== '1' || !sessionStorage.getItem('cc_token') || !sessionStorage.getItem('cc_role')) {
-      localStorage.removeItem('cc_auth');
-      sessionStorage.removeItem('cc_auth');
-      localStorage.removeItem('cc_user');
-      sessionStorage.removeItem('cc_user');
-      localStorage.removeItem('cc_role');
-      sessionStorage.removeItem('cc_role');
-      localStorage.removeItem('cc_token');
-      sessionStorage.removeItem('cc_token');
+    if (readSessionValue('cc_auth') !== '1' || !readSessionValue('cc_token') || !readSessionValue('cc_role')) {
+      clearStoredSession();
       window.location.href = 'login.html';
     }
   </script>
+  <script src="js/permissions.js"></script>
+  <script src="js/maintenance.js" defer></script>
+  <script src="js/app-shell.js" defer></script>
+  <script src="js/internal-page-shell.js" defer></script>
 </head>
-<body>
-  <main class="share-shell">
-    <header class="share-topbar">
-      <div class="share-brand">
-        <button class="share-logo" type="button" onclick="window.location.href='dashboard.html'" aria-label="Back to dashboard">CC</button>
-        <div>
-          <h1>Free Order Share</h1>
-          <p>Review ready free order requests, request clarifications, and mark completed shares.</p>
-        </div>
-      </div>
-      <div class="top-actions">
-        <button class="secondary-btn" type="button" onclick="window.location.href='dashboard.html'">Back</button>
-        <button class="primary-btn" type="button" onclick="window.location.href='free-order-requests.html'">Requests</button>
-      </div>
-    </header>
+<body class="workflow-page free-order-share-page" data-shell-module="free-order-share" data-shell-user-id="workflow-user" data-shell-role-id="workflow-role">
+  <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
+    <aside id="internal-app-sidebar" aria-label="Application navigation"></aside>
 
-    <section class="hero-panel" aria-labelledby="page-title">
-      <h2 id="page-title">Free Order Share</h2>
-      <p>Work from the same Free Order Requests records. Items completed here immediately become Done in the requests workflow.</p>
-    </section>
+    <main class="cc-shell-main" id="main-content">
+      <header id="internal-app-topbar" role="banner">
+        <button id="maintenance-toggle-btn" class="cc-shell-maintenance-toggle" type="button" aria-pressed="false" hidden>OFF</button>
+      </header>
+
+      <div class="workflow-container">
+        <header class="cc-page-header">
+          <div class="cc-page-header-content">
+            <p class="cc-page-header-context">Free Order Workflow</p>
+            <h1 class="cc-page-header-title" id="page-title">Free Order Share</h1>
+            <p class="cc-page-header-description">Review ready free order requests, request clarifications, and mark completed shares.</p>
+            <p class="cc-page-header-description">Work from the same Free Order Requests records. Items completed here immediately become Done in the requests workflow.</p>
+          </div>
+          <div class="cc-page-header-actions">
+            <a class="primary-btn" href="free-order-requests.html">Requests</a>
+          </div>
+        </header>
 
     <div class="message" id="message" role="status" aria-live="polite"></div>
 
@@ -649,8 +556,11 @@
       </select>
     </section>
 
-    <section class="board" id="share-board" aria-label="Free order share board"></section>
-  </main>
+        <section class="board" id="share-board" aria-label="Free order share board"></section>
+      </div>
+    </main>
+    <button id="internal-nav-backdrop" class="cc-shell-nav-backdrop" type="button" aria-label="Close application navigation" tabindex="-1" hidden></button>
+  </div>
 
   <div class="modal" id="response-modal" role="dialog" aria-modal="true" aria-labelledby="response-modal-title">
     <div class="modal-panel">
@@ -692,7 +602,6 @@
     </div>
   </div>
 
-  <script src="js/permissions.js"></script>
   <script>
     window.CCPermissions?.requirePageAccess('free_order_share');
     const API_ENDPOINT = '/.netlify/functions/free-order-requests';

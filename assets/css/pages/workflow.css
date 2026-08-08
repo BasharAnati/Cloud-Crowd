@@ -1,0 +1,275 @@
+.workflow-page {
+  --ice: var(--color-primary-soft);
+  --aqua: var(--color-primary);
+  --steel: var(--color-primary);
+  --deep: var(--color-text);
+  --navy: var(--color-text);
+  --page: var(--color-bg);
+  --surface: var(--color-surface);
+  --text: var(--color-text);
+  --muted: var(--color-text-muted);
+  --line: var(--color-border);
+  --shadow: var(--shadow-lg);
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+.workflow-page .workflow-container {
+  width: min(var(--content-max-width), 100%);
+  margin: 0 auto;
+  padding: var(--page-padding-desktop);
+}
+
+.workflow-page .cc-page-header-description + .cc-page-header-description {
+  margin-top: var(--space-2);
+}
+
+.workflow-page :is(.primary-btn, .secondary-btn, .small-btn, .danger-btn, .done-btn, .warn-btn) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--button-icon-gap);
+  border-radius: var(--button-radius);
+  text-decoration: none;
+}
+
+.workflow-page :is(.primary-btn, .done-btn) {
+  border-color: var(--color-primary);
+  color: var(--color-primary-on-solid);
+  background: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.workflow-page :is(.primary-btn, .done-btn):hover {
+  color: var(--color-primary-on-solid);
+  background: var(--color-primary-hover);
+}
+
+.workflow-page :is(.secondary-btn, .small-btn) {
+  border-color: var(--color-border);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.workflow-page :is(.secondary-btn, .small-btn):hover {
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+}
+
+.workflow-page .danger-btn {
+  border-color: var(--color-danger-border);
+  color: var(--color-danger-text);
+  background: var(--color-danger-soft);
+}
+
+.workflow-page .warn-btn {
+  border-color: var(--color-warning-border);
+  color: var(--color-warning-text);
+  background: var(--color-warning-soft);
+}
+
+.workflow-page :is(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.workflow-page .message {
+  color: var(--color-text);
+}
+
+.workflow-page .message.error {
+  border-color: var(--color-danger-border);
+  color: var(--color-danger-text);
+  background: var(--color-danger-soft);
+}
+
+.workflow-page .message.success {
+  border-color: var(--color-success-border);
+  color: var(--color-success-text);
+  background: var(--color-success-soft);
+}
+
+.workflow-page .stat-card,
+.workflow-page .toolbar {
+  border-color: var(--color-border);
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.workflow-page .stat-card span {
+  color: var(--color-text-muted);
+}
+
+.workflow-page .stat-card strong {
+  color: var(--color-text);
+}
+
+.workflow-page .control {
+  border-color: var(--input-border);
+  color: var(--input-text);
+  background: var(--input-background);
+}
+
+.workflow-page .control::placeholder {
+  color: var(--input-placeholder);
+}
+
+.workflow-page .control:hover {
+  border-color: var(--input-hover-border);
+}
+
+.workflow-page .control:focus {
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-ring);
+}
+
+.workflow-page .board {
+  min-width: 0;
+}
+
+.workflow-page :is(.stage-column, .share-column) {
+  border-color: var(--color-border);
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  box-shadow: var(--shadow-sm);
+}
+
+.workflow-page :is(.stage-head, .column-head) {
+  border-color: var(--color-divider);
+  background: var(--color-surface);
+}
+
+.workflow-page :is(.stage-head, .column-head) h3 {
+  color: var(--color-text);
+}
+
+.workflow-page .count-pill {
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.workflow-page :is(.request-card, .share-card) {
+  border-color: var(--color-border);
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.workflow-page :is(.request-card, .share-card).needs-response {
+  border-color: var(--color-warning-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.workflow-page .share-card.done {
+  border-color: var(--color-success-border);
+}
+
+.workflow-page .card-head h4,
+.workflow-page .field-line,
+.workflow-page .field-line strong {
+  color: var(--color-text);
+}
+
+.workflow-page .card-head p,
+.workflow-page .field-line span {
+  color: var(--color-text-muted);
+}
+
+.workflow-page :is(.stage-badge, .status-badge) {
+  border-color: var(--color-info-border);
+  color: var(--color-info-text);
+  background: var(--color-info-soft);
+}
+
+.workflow-page .response-badge {
+  border-color: var(--color-warning-border);
+  color: var(--color-warning-text);
+  background: var(--color-warning-soft);
+}
+
+.workflow-page .share-note {
+  border-color: var(--color-warning-border);
+  color: var(--color-warning-text);
+  background: var(--color-warning-soft);
+}
+
+.workflow-page .share-note strong,
+.workflow-page .share-note div {
+  color: var(--color-warning-text);
+}
+
+.workflow-page .empty-state {
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+}
+
+.workflow-page .modal {
+  z-index: calc(var(--layer-navigation) + 1);
+  background: var(--modal-overlay);
+}
+
+.workflow-page .modal-panel {
+  border-color: var(--color-border);
+  color: var(--color-text);
+  background: var(--modal-surface);
+  box-shadow: var(--modal-shadow);
+}
+
+.workflow-page .modal-header {
+  border-color: var(--color-divider);
+  background: var(--modal-surface);
+}
+
+.workflow-page .modal-header h3,
+.workflow-page .form-group label,
+.workflow-page .note-form label {
+  color: var(--color-text);
+}
+
+.workflow-page .modal-header p {
+  color: var(--color-text-muted);
+}
+
+.workflow-page .icon-btn {
+  border-color: var(--color-border);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.workflow-page .modal-body {
+  color: var(--color-text);
+  background: var(--modal-surface);
+}
+
+.workflow-page .detail-item {
+  border-color: var(--color-border);
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+}
+
+.workflow-page .detail-item span {
+  color: var(--color-text-muted);
+}
+
+.workflow-page .detail-item strong {
+  color: var(--color-text);
+}
+
+@media (max-width: 1024px) {
+  .workflow-page .workflow-container {
+    padding: var(--page-padding-tablet);
+  }
+}
+
+@media (max-width: 620px) {
+  .workflow-page .workflow-container {
+    padding: var(--page-padding-mobile);
+  }
+
+  .workflow-page .cc-page-header-actions,
+  .workflow-page .cc-page-header-actions :is(a, button) {
+    width: 100%;
+  }
+}
