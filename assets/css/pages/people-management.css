@@ -1,0 +1,199 @@
+.people-management-page {
+  --ice: var(--color-primary-soft);
+  --aqua: var(--color-primary);
+  --steel: var(--color-primary);
+  --deep: var(--color-text);
+  --navy: var(--color-text);
+  --page: var(--color-bg);
+  --card: var(--color-surface);
+  --line: var(--color-border);
+  --text: var(--color-text);
+  --muted: var(--color-text-muted);
+  --danger: var(--color-danger);
+  --shadow: var(--shadow-lg);
+  min-width: 320px;
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.people-management-container {
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: var(--page-padding);
+}
+
+.people-management-page .cc-page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.people-management-page :is(.content-card, .stat-card) {
+  color: var(--color-text);
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.people-management-page :is(.card-header, .filters, .table-tools, .shift-times, .calculation-band, .guide-item, .detail-item, .empty-state) {
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  border-color: var(--color-divider);
+}
+
+.people-management-page :is(.card-header h3, .stat-card strong, .field label, .shift-times-title, .guide-item strong, .detail-item strong) {
+  color: var(--color-text);
+}
+
+.people-management-page :is(.card-header p, .stat-card span, .guide-item span, .detail-item span, .empty-state) {
+  color: var(--color-text-muted);
+}
+
+.people-management-page :is(input, select, textarea, .control, .checkbox-field) {
+  color: var(--input-text);
+  background: var(--input-background);
+  border-color: var(--input-border);
+  color-scheme: normal;
+}
+
+.people-management-page :is(input, select, textarea, .control):hover {
+  border-color: var(--input-hover-border);
+}
+
+.people-management-page :is(input, select, textarea, .control):focus {
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-ring);
+}
+
+.people-management-page :is(input, select, textarea, .control):disabled {
+  color: var(--input-disabled-text);
+  background: var(--input-disabled-background);
+}
+
+.people-management-page :is(.records-table th, .records-table td) {
+  color: var(--color-text);
+  border-color: var(--table-divider);
+}
+
+.people-management-page .records-table th {
+  background: var(--table-header-background);
+}
+
+.people-management-page :is(.primary-btn, .secondary-btn, .danger-btn, .small-btn, .icon-btn) {
+  border-radius: var(--button-radius);
+}
+
+.people-management-page .primary-btn {
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: none;
+}
+
+.people-management-page :is(.secondary-btn, .small-btn, .icon-btn) {
+  color: var(--color-text);
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.people-management-page .danger-btn {
+  color: var(--color-danger-text);
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger-border);
+}
+
+.people-management-page .modal {
+  z-index: var(--layer-navigation);
+  background: var(--modal-overlay);
+}
+
+.people-management-page .modal-panel {
+  color: var(--color-text);
+  background: var(--modal-surface);
+  border-color: var(--color-border);
+  box-shadow: var(--modal-shadow);
+}
+
+.people-management-page .modal-header {
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border-color: var(--color-divider);
+}
+
+.people-management-page .modal-header h3 {
+  color: var(--color-text);
+}
+
+.people-management-page .message.error,
+.people-management-page .employee-warning.is-error {
+  color: var(--color-danger-text);
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger-border);
+}
+
+.people-management-page .message.success {
+  color: var(--color-success-text);
+  background: var(--color-success-soft);
+  border-color: var(--color-success-border);
+}
+
+.people-management-page :is(.message.warning, .migration-banner, .employee-warning.is-warning) {
+  color: var(--color-warning-text);
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning-border);
+}
+
+.people-management-page #record-count.role-pill {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: var(--font-size-badge);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-caption);
+  white-space: nowrap;
+}
+
+.people-management-page :is(.status-chip, .role-pill, .discount-badge, .status-badge) {
+  border-color: var(--color-border);
+}
+
+.people-management-page :is(.discount-yes, .status-trained, .status-assigned) {
+  color: var(--color-success-text);
+  background: var(--color-success-soft);
+}
+
+.people-management-page :is(.discount-no, .status-neutral) {
+  color: var(--color-neutral-text);
+  background: var(--color-neutral-soft);
+}
+
+.people-management-page :is(.status-not-trained, .status-late-logout) {
+  color: var(--color-danger-text);
+  background: var(--color-danger-soft);
+}
+
+.people-management-page :is(.status-coaching, .status-unassigned, .status-left-early) {
+  color: var(--color-warning-text);
+  background: var(--color-warning-soft);
+}
+
+@media (max-width: 1024px) {
+  .people-management-page .cc-page-header-actions {
+    width: 100%;
+  }
+}
+
+@media (max-width: 620px) {
+  .people-management-page .cc-page-header-actions,
+  .people-management-page .cc-page-header-actions > button {
+    width: 100%;
+  }
+}

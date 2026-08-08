@@ -16,6 +16,7 @@ const shellSource = fs.readFileSync(path.join(ROOT, "js/app-shell.js"), "utf8");
 const permissionsSource = fs.readFileSync(path.join(ROOT, "js/permissions.js"), "utf8");
 const dashboardSource = fs.readFileSync(path.join(ROOT, "dashboard.html"), "utf8");
 const dashboardRuntime = fs.readFileSync(path.join(ROOT, "js/dashboard.js"), "utf8");
+const maintenanceRuntime = fs.readFileSync(path.join(ROOT, "js/maintenance.js"), "utf8");
 const shellCss = fs.readFileSync(path.join(ROOT, "app-shell.css"), "utf8");
 const dashboardCss = fs.readFileSync(path.join(ROOT, "assets/css/pages/dashboard.css"), "utf8");
 const PERMISSION_KEYS = [
@@ -203,6 +204,7 @@ test("Dashboard loads the shared theme and shell before page-specific presentati
   assert.match(dashboardSource, /href="app-shell\.css"/);
   assert.match(dashboardSource, /href="assets\/css\/theme-base\.css"/);
   assert.match(dashboardSource, /src="js\/app-shell\.js" defer/);
+  assert.match(dashboardSource, /src="js\/maintenance\.js" defer/);
   assert.match(dashboardSource, /src="js\/dashboard\.js" defer/);
 });
 
@@ -477,12 +479,15 @@ test("Dashboard lifecycle preserves authentication, logout, maintenance, and idl
   assert.match(dashboardSource, /readSessionValue\('cc_role'\)/);
   assert.match(dashboardSource, /src="idle-logout\.js"/);
   assert.match(dashboardRuntime, /onLogout: window\.logout/);
-  assert.match(dashboardRuntime, /const MAINTENANCE_ENDPOINT = '\/\.netlify\/functions\/maintenance'/);
-  assert.match(dashboardRuntime, /const POLL_INTERVAL = 3000/);
-  assert.match(dashboardRuntime, /window\.location\.href = 'system-update\.html'/);
-  assert.match(dashboardRuntime, /method: 'POST'/);
-  assert.match(dashboardRuntime, /JSON\.stringify\(\{ maintenance: !latestMaintenanceState \}\)/);
-  assert.match(dashboardRuntime, /window\.confirm\(message\)/);
+  assert.match(dashboardRuntime, /CloudCrowdMaintenance\.createLifecycle/);
+  assert.match(dashboardRuntime, /maintenance\.startEnforcement\(\)/);
+  assert.match(dashboardRuntime, /maintenance\.startToggleUpdates\(\)/);
+  assert.match(maintenanceRuntime, /const MAINTENANCE_ENDPOINT = '\/\.netlify\/functions\/maintenance'/);
+  assert.match(maintenanceRuntime, /const POLL_INTERVAL = 3000/);
+  assert.match(maintenanceRuntime, /window\.location\.href = 'system-update\.html'/);
+  assert.match(maintenanceRuntime, /method: 'POST'/);
+  assert.match(maintenanceRuntime, /JSON\.stringify\(\{ maintenance: !latestMaintenanceState \}\)/);
+  assert.match(maintenanceRuntime, /window\.confirm\(message\)/);
 });
 
 test("Dashboard responsive and focus presentation uses approved shared contracts", () => {

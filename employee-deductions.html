@@ -1,75 +1,15 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en" dir="ltr" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
   <title>Employee Deductions - Cloud Crowd</title>
+  <script src="assets/js/theme.js"></script>
+  <link rel="stylesheet" href="assets/css/design-tokens.css">
+  <link rel="stylesheet" href="app-shell.css">
+  <link rel="stylesheet" href="assets/css/theme-base.css">
   <style>
-    :root{
-      --ice:#A7EBF2;
-      --aqua:#54ACBF;
-      --steel:#26658C;
-      --deep:#023859;
-      --navy:#011C40;
-      --page:#f5fbfd;
-      --card:#ffffff;
-      --line:#d8eef3;
-      --text:#12324a;
-      --muted:#60798b;
-      --danger:#b91c1c;
-      --shadow:0 24px 70px rgba(2,56,89,.12);
-    }
-    *{box-sizing:border-box}
-    html,body{width:100%;min-height:100%;overflow-x:hidden}
-    body{
-      min-height:100vh;
-      margin:0;
-      font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif;
-      color:var(--text);
-      background:
-        linear-gradient(135deg,rgba(167,235,242,.55),transparent 30%),
-        linear-gradient(225deg,rgba(84,172,191,.18),transparent 34%),
-        var(--page);
-      line-height:1.5;
-    }
-    button,input,select,textarea{font:inherit}
-    button{cursor:pointer}
-    button:disabled{cursor:not-allowed;opacity:.58}
-    a{color:inherit;text-decoration:none}
-    .app-shell{min-height:100vh;display:grid;grid-template-columns:280px minmax(0,1fr)}
-    .sidebar{
-      position:sticky;top:0;min-height:100vh;padding:28px 22px;border-right:1px solid var(--line);
-      background:rgba(255,255,255,.82);box-shadow:18px 0 60px rgba(2,56,89,.08);
-      backdrop-filter:blur(16px) saturate(130%);
-    }
-    .sidebar-brand{display:flex;align-items:center;gap:13px;margin-bottom:34px}
-    .sidebar-logo{width:58px;height:58px;object-fit:contain;filter:drop-shadow(0 10px 18px rgba(84,172,191,.2))}
-    .sidebar-brand h1{margin:0;font-size:22px;line-height:1;font-weight:900;color:var(--navy)}
-    .sidebar-brand p{margin:6px 0 0;color:var(--steel);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:900}
-    .sidebar-nav{display:grid;gap:8px}
-    .nav-item{
-      display:flex;align-items:center;gap:12px;min-height:46px;padding:10px 12px;border:1px solid transparent;
-      border-radius:12px;color:#31556d;font-size:14px;font-weight:800;transition:.2s ease;
-    }
-    .nav-item:hover,.nav-item.active{color:var(--deep);border-color:rgba(84,172,191,.28);background:rgba(167,235,242,.24);transform:translateX(2px)}
-    .nav-icon{width:30px;height:30px;display:grid;place-items:center;border:1px solid rgba(84,172,191,.24);border-radius:9px;color:var(--steel);background:#f0fbfd;flex:0 0 auto}
-    .main-area{min-width:0;padding:26px clamp(20px,4vw,54px) 44px}
-    .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}
-    .breadcrumb{color:var(--steel);font-size:13px;font-weight:900;letter-spacing:.04em;text-transform:uppercase}
-    .user-tools{display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0}
-    .user-pill,.role-pill{
-      min-height:38px;display:inline-flex;align-items:center;justify-content:center;max-width:260px;padding:8px 12px;
-      border:1px solid var(--line);border-radius:999px;color:var(--deep);background:rgba(255,255,255,.82);font-size:12px;font-weight:900;
-    }
-    .logout{min-height:38px;padding:8px 14px;border:0;border-radius:999px;color:#fff;background:linear-gradient(135deg,#ef4444,#b91c1c);font-size:12px;font-weight:900}
-    .hero{
-      display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:22px;padding:32px;
-      border:1px solid var(--line);border-radius:24px;background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,255,255,.84));box-shadow:var(--shadow);
-    }
-    .eyebrow{margin:0 0 8px;color:var(--steel);font-size:12px;font-weight:950;letter-spacing:.1em;text-transform:uppercase}
-    .hero h2{margin:0;color:var(--navy);font-size:clamp(34px,5vw,58px);line-height:1;font-weight:950}
-    .hero p:last-child{max-width:760px;margin:16px 0 0;color:var(--muted);font-size:16px;line-height:1.7}
     .primary-btn,.secondary-btn,.danger-btn,.small-btn{
       min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 15px;border-radius:11px;font-weight:900;
     }
@@ -128,21 +68,13 @@
     .detail-item.full{grid-column:1/-1}
     .detail-item span{display:block;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase}
     .detail-item strong{display:block;margin-top:5px;color:var(--deep);font-size:14px;overflow-wrap:anywhere}
-    @media (max-width:1050px){
-      .app-shell{grid-template-columns:1fr}
-      .sidebar{position:relative;min-height:auto;padding:20px}
-      .sidebar-brand{margin-bottom:16px}
-      .sidebar-nav{grid-template-columns:repeat(3,minmax(0,1fr))}
-    }
     @media (max-width:850px){
       .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
       .filters{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
     @media (max-width:620px){
-      .main-area{padding:20px 16px 34px}
-      .topbar,.hero,.card-header{flex-direction:column;align-items:stretch}
-      .user-tools{justify-content:flex-start;flex-wrap:wrap}
-      .sidebar-nav,.stats-grid,.filters,.form-grid,.detail-grid,.calculation-band{grid-template-columns:1fr}
+      .card-header{flex-direction:column;align-items:stretch}
+      .stats-grid,.filters,.form-grid,.detail-grid,.calculation-band{grid-template-columns:1fr}
       .field.full,.calculation-band,.detail-item.full{grid-column:auto}
       .card-header,.filters,.table-wrap{padding-left:20px;padding-right:20px}
       .modal{padding:10px}
@@ -151,52 +83,39 @@
       .modal-actions button{width:100%}
     }
   </style>
+  <link rel="stylesheet" href="assets/css/pages/people-management.css">
+  <script src="js/auth.js"></script>
   <script>
-    if (sessionStorage.getItem('cc_auth') !== '1' || !sessionStorage.getItem('cc_token') || !sessionStorage.getItem('cc_role')) {
-      localStorage.removeItem('cc_auth');
-      sessionStorage.removeItem('cc_auth');
-      localStorage.removeItem('cc_user');
-      sessionStorage.removeItem('cc_user');
-      localStorage.removeItem('cc_role');
-      sessionStorage.removeItem('cc_role');
-      localStorage.removeItem('cc_token');
-      sessionStorage.removeItem('cc_token');
+    if (readSessionValue('cc_auth') !== '1' || !readSessionValue('cc_token') || !readSessionValue('cc_role')) {
+      clearStoredSession();
       window.location.href = 'login.html';
     }
   </script>
+  <script src="js/permissions.js"></script>
+  <script src="js/maintenance.js" defer></script>
+  <script src="js/app-shell.js" defer></script>
+  <script src="js/internal-page-shell.js" defer></script>
 </head>
-<body>
-  <div class="app-shell">
-    <aside class="sidebar" aria-label="Employee Deductions navigation">
-      <a class="sidebar-brand" href="dashboard.html" aria-label="Cloud Crowd dashboard">
-        <img src="assets/images/logo.png" alt="Cloud Crowd logo" class="sidebar-logo">
-        <div><h1>Cloud Crowd</h1><p>Operations Hub</p></div>
-      </a>
-      <nav class="sidebar-nav">
-        <a class="nav-item" href="dashboard.html"><span class="nav-icon" aria-hidden="true">&#8962;</span>Dashboard</a>
-        <a class="nav-item" href="employee-profiles.html"><span class="nav-icon" aria-hidden="true">&#9783;</span>Employee Profiles</a>
-        <a class="nav-item active" href="employee-deductions.html" aria-current="page"><span class="nav-icon" aria-hidden="true">&#8722;</span>Employee Deductions</a>
-      </nav>
-    </aside>
+<body class="people-management-page employee-deductions-page" data-shell-module="employee-deductions" data-shell-user-id="current-user" data-shell-role-id="current-role">
+  <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
+    <aside id="internal-app-sidebar" aria-label="Application navigation"></aside>
 
-    <main class="main-area">
-      <header class="topbar">
-        <a class="breadcrumb" href="dashboard.html">&larr; Dashboard</a>
-        <div class="user-tools">
-          <span class="user-pill" id="current-user">Team Member</span>
-          <span class="role-pill" id="current-role">operator</span>
-          <button class="logout" type="button" id="logout-btn">Log out</button>
-        </div>
+    <main class="cc-shell-main" id="main-content">
+      <header id="internal-app-topbar" role="banner">
+        <button id="maintenance-toggle-btn" class="cc-shell-maintenance-toggle" type="button" aria-pressed="false" hidden>OFF</button>
       </header>
 
-      <section class="hero" aria-labelledby="page-title">
-        <div>
-          <p class="eyebrow">People Operations</p>
-          <h2 id="page-title">Employee Deductions</h2>
-          <p>Track employee deductions, personal orders, discounts, and financial adjustments.</p>
+      <div class="people-management-container">
+      <header class="cc-page-header">
+        <div class="cc-page-header-content">
+          <p class="cc-page-header-context">People Operations</p>
+          <h1 class="cc-page-header-title" id="page-title">Employee Deductions</h1>
+          <p class="cc-page-header-description">Track employee deductions, personal orders, discounts, and financial adjustments.</p>
         </div>
+        <div class="cc-page-header-actions">
         <button class="primary-btn management-control" type="button" id="new-deduction-btn" data-permission-create>+ New Deduction</button>
-      </section>
+        </div>
+      </header>
 
       <div class="message" id="page-message" role="status"></div>
 
@@ -235,7 +154,10 @@
           <div class="empty-state" id="records-empty">Loading deduction records...</div>
         </div>
       </section>
+      </div>
     </main>
+
+    <button id="internal-nav-backdrop" class="cc-shell-nav-backdrop" type="button" aria-label="Close application navigation" tabindex="-1" hidden></button>
   </div>
 
   <div class="modal" id="deduction-modal" role="dialog" aria-modal="true" aria-labelledby="deduction-modal-title">
@@ -322,7 +244,6 @@
     </div>
   </div>
 
-  <script src="js/permissions.js"></script>
   <script>
     window.CCPermissions?.requirePageAccess('employee_deductions');
     const EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
@@ -673,12 +594,9 @@
       }
     }
 
-    document.getElementById('current-user').textContent = sessionStorage.getItem('cc_user') || 'Team Member';
-    document.getElementById('current-role').textContent = currentRole || 'operator';
     document.querySelectorAll('.management-control').forEach((element) => {
       element.hidden = !canManageDeductions;
     });
-    document.getElementById('logout-btn').addEventListener('click', logout);
     document.getElementById('new-deduction-btn').addEventListener('click', openCreateDeduction);
     document.getElementById('deduction-form').addEventListener('submit', saveDeduction);
     document.getElementById('original-amount').addEventListener('input', calculateAmounts);

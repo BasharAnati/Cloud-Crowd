@@ -1,5 +1,6 @@
 (function () {
   const ACCESS_ENDPOINT = '/.netlify/functions/admin-users?my-access=1';
+  let accessModelPromise = null;
 
   function readSessionValue(key) {
     return sessionStorage.getItem(key) || '';
@@ -38,7 +39,7 @@
     };
   }
 
-  async function getMyAccessModel() {
+  async function fetchMyAccessModel() {
     const user = currentUser();
     if (isAnatiAdmin()) {
       return {
@@ -73,6 +74,11 @@
       console.warn('Permission check failed; using legacy page behavior.', error);
       return legacyAccessModel();
     }
+  }
+
+  function getMyAccessModel() {
+    if (!accessModelPromise) accessModelPromise = fetchMyAccessModel();
+    return accessModelPromise;
   }
 
   function getModuleAccess(accessModel, moduleKey) {
