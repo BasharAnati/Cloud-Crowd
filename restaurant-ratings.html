@@ -144,6 +144,7 @@
   <link rel="stylesheet" href="assets/css/components/filters.css">
   <link rel="stylesheet" href="assets/css/components/cards.css">
   <link rel="stylesheet" href="assets/css/components/status.css">
+  <link rel="stylesheet" href="assets/css/components/tables.css">
 </head>
 <body class="business-quality-page restaurant-ratings-page" data-shell-module="restaurant-ratings" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -195,24 +196,24 @@
           <select class="control" id="week-filter" aria-label="Filter by week"><option value="">All weeks</option></select>
           <input class="control cc-control" id="record-search" type="search" placeholder="Search restaurant or notes" aria-label="Search restaurant ratings">
         </div>
-        <div class="table-wrap">
-          <table class="records-table">
+        <div class="table-wrap cc-table-wrap" role="region" aria-labelledby="records-title" tabindex="0">
+          <table class="records-table cc-table" aria-labelledby="records-title" data-row-hover="true">
             <thead>
               <tr>
-                <th>Restaurant</th>
-                <th>Platform</th>
-                <th>Month</th>
-                <th>Week</th>
-                <th>Rating</th>
-                <th>Reviews Count</th>
-                <th>Rating Date</th>
-                <th>Updated By</th>
-                <th>Actions</th>
+                <th scope="col">Restaurant</th>
+                <th scope="col">Platform</th>
+                <th scope="col">Month</th>
+                <th scope="col">Week</th>
+                <th scope="col">Rating</th>
+                <th scope="col">Reviews Count</th>
+                <th scope="col">Rating Date</th>
+                <th scope="col">Updated By</th>
+                <th scope="col">Actions</th>
               </tr>
             </thead>
             <tbody id="records-body"></tbody>
           </table>
-          <div class="empty-state cc-empty-state" id="records-empty">Loading restaurant ratings...</div>
+          <div class="empty-state cc-empty-state cc-table-state" id="records-empty" data-state="loading" role="status" aria-live="polite">Loading restaurant ratings...</div>
         </div>
       </section>
       </div>
@@ -491,6 +492,8 @@
         ratings = [];
         document.getElementById('records-body').innerHTML = '';
         document.getElementById('records-empty').textContent = error.message;
+        document.getElementById('records-empty').setAttribute('data-state', 'error');
+        document.getElementById('records-empty').setAttribute('role', 'alert');
         document.getElementById('records-empty').style.display = 'block';
         renderStats();
       }
@@ -588,11 +591,11 @@
           <td>${platformBadge(record.platform)}</td>
           <td>${escapeHtml(record.monthName || '-')}</td>
           <td>${escapeHtml(record.weekName || '-')}</td>
-          <td>${ratingBadge(record.rating)}</td>
-          <td>${escapeHtml(record.reviewsCount ?? 0)}</td>
+          <td class="cc-table__numeric">${ratingBadge(record.rating)}</td>
+          <td class="cc-table__numeric">${escapeHtml(record.reviewsCount ?? 0)}</td>
           <td>${escapeHtml(record.ratingDate || '-')}</td>
           <td>${escapeHtml(record.updatedBy || record.createdBy || '-')}</td>
-          <td><div class="actions">
+          <td class="cc-table__action-cell"><div class="actions cc-table__actions">
             <button class="small-btn" type="button" data-view-id="${escapeHtml(record.ratingId)}">View</button>
             <button class="small-btn" type="button" data-edit-id="${escapeHtml(record.ratingId)}" data-permission-edit>Edit</button>
             <button class="small-btn danger-btn" type="button" data-archive-id="${escapeHtml(record.ratingId)}" data-permission-delete>Archive</button>
@@ -600,6 +603,8 @@
         </tr>
       `).join('');
       empty.textContent = 'No rating records match this view.';
+      empty.setAttribute('data-state', filtered.length ? '' : ratings.length ? 'no-results' : 'empty');
+      empty.setAttribute('role', 'status');
       empty.style.display = filtered.length ? 'none' : 'block';
       document.getElementById('record-count').textContent =
         `${filtered.length} ${filtered.length === 1 ? 'record' : 'records'}`;

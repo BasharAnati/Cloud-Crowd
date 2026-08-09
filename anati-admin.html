@@ -263,6 +263,7 @@
   <link rel="stylesheet" href="assets/css/components/cards.css">
   <link rel="stylesheet" href="assets/css/components/status.css">
   <link rel="stylesheet" href="assets/css/components/forms.css">
+  <link rel="stylesheet" href="assets/css/components/tables.css">
 </head>
 <body class="admin-call-queue-page admin-center-page" data-shell-module="anati-admin" data-shell-user-id="admin-shell-user" data-shell-role-id="admin-shell-role">
   <script>
@@ -306,29 +307,29 @@
         <div class="panel">
           <div class="panel-head">
             <div>
-              <h2 class="cc-section-title">User Management</h2>
+              <h2 class="cc-section-title" id="users-table-title">User Management</h2>
               <p>Create and maintain user profiles. Temporary passwords are hashed before storage and are never returned by the API.</p>
             </div>
             <button class="btn secondary" type="button" id="refresh-users-btn">Refresh</button>
           </div>
 
-          <div class="table-wrap">
-            <table>
+          <div class="table-wrap cc-table-wrap" role="region" aria-labelledby="users-table-title" tabindex="0">
+            <table class="cc-table" aria-labelledby="users-table-title" data-row-hover="true">
               <thead>
                 <tr>
-                  <th>Username</th>
-                  <th>Display Name</th>
-                  <th>Email</th>
-                  <th>Account Type</th>
-                  <th>Link Status</th>
-                  <th>Linked Employee</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th scope="col">Username</th>
+                  <th scope="col">Display Name</th>
+                  <th scope="col">Email</th>
+                  <th scope="col">Account Type</th>
+                  <th scope="col">Link Status</th>
+                  <th scope="col">Linked Employee</th>
+                  <th scope="col">Role</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody id="users-body">
-                <tr><td colspan="9">Loading users...</td></tr>
+                <tr><td class="cc-table__state" colspan="9" data-state="loading" role="status">Loading users...</td></tr>
               </tbody>
             </table>
           </div>
@@ -389,7 +390,7 @@
       <section class="panel" style="margin-top:18px" aria-label="Module access">
         <div class="panel-head">
           <div>
-            <h2 class="cc-section-title">Module Access</h2>
+            <h2 class="cc-section-title" id="access-table-title">Module Access</h2>
             <p>Store future access rules for each user. These permissions are not enforced on dashboard/pages yet.</p>
           </div>
         </div>
@@ -405,19 +406,19 @@
           </div>
         </div>
 
-        <div class="table-wrap">
-          <table class="access-table">
+        <div class="table-wrap cc-table-wrap" role="region" aria-labelledby="access-table-title" tabindex="0">
+          <table class="access-table cc-table cc-table--matrix" aria-labelledby="access-table-title">
             <thead>
               <tr>
-                <th>Module</th>
-                <th>View</th>
-                <th>Create</th>
-                <th>Edit</th>
-                <th>Delete</th>
+                <th scope="col">Module</th>
+                <th scope="col">View</th>
+                <th scope="col">Create</th>
+                <th scope="col">Edit</th>
+                <th scope="col">Delete</th>
               </tr>
             </thead>
             <tbody id="modules-body">
-              <tr><td colspan="5">Loading modules...</td></tr>
+              <tr><td class="cc-table__state" colspan="5" data-state="loading" role="status">Loading modules...</td></tr>
             </tbody>
           </table>
         </div>
@@ -593,7 +594,7 @@
     function renderUsers() {
       const body = document.getElementById("users-body");
       if (!adminUsers.length) {
-        body.innerHTML = '<tr><td colspan="9">No user profiles found.</td></tr>';
+        body.innerHTML = '<tr><td class="cc-table__state" colspan="9" data-state="empty" role="status">No user profiles found.</td></tr>';
         return;
       }
 
@@ -623,7 +624,7 @@
           <td><span class="chip">${escapeHtml(user.role)}</span></td>
           <td>${adminStatusBadge(user.status)}</td>
           <td>
-            <div class="actions" style="margin-top:0">
+            <div class="actions cc-table__actions" style="margin-top:0">
               <button class="btn secondary" type="button" data-edit-user="${escapeHtml(user.userId)}">Edit</button>
               <button class="btn danger" type="button" data-disable-user="${escapeHtml(user.userId)}" ${user.status === "disabled" || user.username.toLowerCase() === "anati" ? "disabled" : ""}>Disable</button>
             </div>
@@ -655,7 +656,7 @@
       const body = document.getElementById("modules-body");
       const username = document.getElementById("access-user").value;
       if (!moduleRegistry.length) {
-        body.innerHTML = '<tr><td colspan="5">No modules found.</td></tr>';
+        body.innerHTML = '<tr><td class="cc-table__state" colspan="5" data-state="empty" role="status">No modules found.</td></tr>';
         return;
       }
 
@@ -663,11 +664,11 @@
         const access = accessFor(username, module.moduleKey);
         return `
           <tr data-module-key="${escapeHtml(module.moduleKey)}">
-            <td><strong>${escapeHtml(module.moduleName || module.label)}</strong></td>
-            <td class="access-cell"><input type="checkbox" data-access-field="canView" ${access.canView ? "checked" : ""}></td>
-            <td class="access-cell"><input type="checkbox" data-access-field="canCreate" ${access.canCreate ? "checked" : ""}></td>
-            <td class="access-cell"><input type="checkbox" data-access-field="canEdit" ${access.canEdit ? "checked" : ""}></td>
-            <td class="access-cell"><input type="checkbox" data-access-field="canDelete" ${access.canDelete ? "checked" : ""}></td>
+            <th scope="row"><strong>${escapeHtml(module.moduleName || module.label)}</strong></th>
+            <td class="access-cell"><input type="checkbox" data-access-field="canView" aria-label="${escapeHtml((module.moduleName || module.label) + ' — View')}" ${access.canView ? "checked" : ""}></td>
+            <td class="access-cell"><input type="checkbox" data-access-field="canCreate" aria-label="${escapeHtml((module.moduleName || module.label) + ' — Create')}" ${access.canCreate ? "checked" : ""}></td>
+            <td class="access-cell"><input type="checkbox" data-access-field="canEdit" aria-label="${escapeHtml((module.moduleName || module.label) + ' — Edit')}" ${access.canEdit ? "checked" : ""}></td>
+            <td class="access-cell"><input type="checkbox" data-access-field="canDelete" aria-label="${escapeHtml((module.moduleName || module.label) + ' — Delete')}" ${access.canDelete ? "checked" : ""}></td>
           </tr>
         `;
       }).join("");

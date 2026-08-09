@@ -738,7 +738,8 @@ test("integrated HTML determines the real linked and embedded stylesheet order",
     "assets/css/components/forms.css",
     "assets/css/components/filters.css",
     "assets/css/components/cards.css",
-    "assets/css/components/status.css"
+    "assets/css/components/status.css",
+    "assets/css/components/tables.css"
   ]);
 });
 

@@ -109,6 +109,7 @@
   <link rel="stylesheet" href="assets/css/components/filters.css">
   <link rel="stylesheet" href="assets/css/components/cards.css">
   <link rel="stylesheet" href="assets/css/components/status.css">
+  <link rel="stylesheet" href="assets/css/components/tables.css">
 </head>
 <body class="people-management-page employee-deductions-page" data-shell-module="employee-deductions" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -154,18 +155,18 @@
           </select>
           <input class="control" id="month-filter" type="month" aria-label="Filter by month">
         </div>
-        <div class="table-wrap">
-          <table class="records-table">
+        <div class="table-wrap cc-table-wrap" role="region" aria-labelledby="records-title" tabindex="0">
+          <table class="records-table cc-table" aria-labelledby="records-title">
             <thead>
               <tr>
-                <th>Employee</th><th>Deduction Type</th><th>Restaurant</th><th>Order Number</th>
-                <th>Original Amount</th><th>Employee Discount</th><th>Final Deduction</th>
-                <th>Order Date</th><th>Approved By</th><th>Actions</th>
+                <th scope="col">Employee</th><th scope="col">Deduction Type</th><th scope="col">Restaurant</th><th scope="col">Order Number</th>
+                <th scope="col">Original Amount</th><th scope="col">Employee Discount</th><th scope="col">Final Deduction</th>
+                <th scope="col">Order Date</th><th scope="col">Approved By</th><th scope="col">Actions</th>
               </tr>
             </thead>
             <tbody id="records-body"></tbody>
           </table>
-          <div class="empty-state cc-empty-state" id="records-empty">Loading deduction records...</div>
+          <div class="empty-state cc-empty-state cc-table-state" id="records-empty" data-state="loading" role="status" aria-live="polite">Loading deduction records...</div>
         </div>
       </section>
       </div>
@@ -412,6 +413,8 @@
         deductions = [];
         document.getElementById('records-body').innerHTML = '';
         document.getElementById('records-empty').textContent = error.message;
+        document.getElementById('records-empty').setAttribute('data-state', 'error');
+        document.getElementById('records-empty').setAttribute('role', 'alert');
         document.getElementById('records-empty').style.display = 'block';
         renderStats();
       }
@@ -478,12 +481,12 @@
             <td>${escapeHtml(deduction.deductionType || '-')}</td>
             <td>${escapeHtml(deduction.restaurantName || '-')}</td>
             <td>${escapeHtml(deduction.orderNumber || '-')}</td>
-            <td class="amount">${formatAmount(deduction.originalAmount)}</td>
+            <td class="amount cc-table__numeric">${formatAmount(deduction.originalAmount)}</td>
             <td><span class="discount-badge ${deduction.applyEmployeeDiscount ? 'discount-yes' : 'discount-no'}">${deduction.applyEmployeeDiscount ? 'Yes (10%)' : 'No'}</span></td>
-            <td class="amount">${formatAmount(deduction.finalDeductionAmount)}</td>
+            <td class="amount cc-table__numeric">${formatAmount(deduction.finalDeductionAmount)}</td>
             <td>${escapeHtml(deduction.orderDateTime || '-')}</td>
             <td>${escapeHtml(deduction.approvedBy || '-')}</td>
-            <td><div class="actions">
+            <td class="cc-table__action-cell"><div class="actions cc-table__actions">
               <button class="small-btn" type="button" data-view-id="${escapeHtml(deduction.deductionId)}">View Details</button>
               ${managementActions}
             </div></td>
@@ -491,6 +494,8 @@
         `;
       }).join('');
       empty.textContent = 'No deduction records match this view.';
+      empty.setAttribute('data-state', filtered.length ? '' : deductions.length ? 'no-results' : 'empty');
+      empty.setAttribute('role', 'status');
       empty.style.display = filtered.length ? 'none' : 'block';
       document.getElementById('record-count').textContent =
         `${filtered.length} ${filtered.length === 1 ? 'record' : 'records'}`;

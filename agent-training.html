@@ -116,6 +116,7 @@
   <link rel="stylesheet" href="assets/css/components/filters.css">
   <link rel="stylesheet" href="assets/css/components/cards.css">
   <link rel="stylesheet" href="assets/css/components/status.css">
+  <link rel="stylesheet" href="assets/css/components/tables.css">
 </head>
 <body class="people-management-page agent-training-page" data-shell-module="agent-training" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -244,17 +245,17 @@
             <option>Unassigned</option>
           </select>
         </div>
-        <div class="table-wrap">
-          <table class="records-table">
+        <div class="table-wrap cc-table-wrap" role="region" aria-labelledby="records-title" tabindex="0">
+          <table class="records-table cc-table" aria-labelledby="records-title">
             <thead>
               <tr>
-                <th>Employee</th><th>Restaurant / Brand</th><th>Assignment Status</th><th>Training Status</th>
-                <th>Training Date</th><th>Updated By</th><th>Notes</th><th>Actions</th>
+                <th scope="col">Employee</th><th scope="col">Restaurant / Brand</th><th scope="col">Assignment Status</th><th scope="col">Training Status</th>
+                <th scope="col">Training Date</th><th scope="col">Updated By</th><th scope="col">Notes</th><th scope="col">Actions</th>
               </tr>
             </thead>
             <tbody id="records-body"></tbody>
           </table>
-          <div class="empty-state cc-empty-state" id="records-empty">Loading training assignments...</div>
+          <div class="empty-state cc-empty-state cc-table-state" id="records-empty" data-state="loading" role="status" aria-live="polite">Loading training assignments...</div>
         </div>
       </section>
       </div>
@@ -491,6 +492,8 @@
         trainingRecords = [];
         document.getElementById('records-body').innerHTML = '';
         document.getElementById('records-empty').textContent = error.message;
+        document.getElementById('records-empty').setAttribute('data-state', 'error');
+        document.getElementById('records-empty').setAttribute('role', 'alert');
         document.getElementById('records-empty').style.display = 'block';
         renderStats();
       }
@@ -571,7 +574,7 @@
             <td>${escapeHtml(record.trainingDate || '-')}</td>
             <td>${escapeHtml(record.updatedByName || record.updatedBy || '-')}</td>
             <td class="notes-cell">${escapeHtml(record.notes || '-')}</td>
-            <td><div class="actions">
+            <td class="cc-table__action-cell"><div class="actions cc-table__actions">
               <button class="small-btn" type="button" data-view-id="${escapeHtml(record.trainingId)}">View Details</button>
               ${managementActions}
             </div></td>
@@ -579,6 +582,8 @@
         `;
       }).join('');
       empty.textContent = 'No training assignments match this view.';
+      empty.setAttribute('data-state', filtered.length ? '' : trainingRecords.length ? 'no-results' : 'empty');
+      empty.setAttribute('role', 'status');
       empty.style.display = filtered.length ? 'none' : 'block';
       document.getElementById('record-count').textContent =
         `${filtered.length} ${filtered.length === 1 ? 'record' : 'records'}`;

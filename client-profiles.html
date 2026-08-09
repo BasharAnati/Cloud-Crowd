@@ -180,6 +180,7 @@
   <link rel="stylesheet" href="assets/css/components/filters.css">
   <link rel="stylesheet" href="assets/css/components/cards.css">
   <link rel="stylesheet" href="assets/css/components/status.css">
+  <link rel="stylesheet" href="assets/css/components/tables.css">
 </head>
 <body class="business-quality-page client-profiles-page" data-shell-module="client-profiles" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -770,10 +771,10 @@
 
     function renderTrainingSection(trainingRecords, trainingError) {
       if (trainingError) {
-        return `<div class="empty-state">Training records could not be loaded. ${escapeHtml(trainingError)}</div>`;
+        return `<div class="empty-state cc-table-state" data-state="error" role="alert">Training records could not be loaded. ${escapeHtml(trainingError)}</div>`;
       }
       if (!trainingRecords.length) {
-        return '<div class="empty-state">No assigned agents yet.</div>';
+        return '<div class="empty-state cc-table-state" data-state="empty" role="status">No assigned agents yet.</div>';
       }
 
       const assignedRecords = trainingRecords.filter(
@@ -804,14 +805,14 @@
         `).join('');
       const latestAssignedSection = latestAssignedRows
         ? `
-          <div class="profile-table-wrap">
-            <table class="profile-table">
-              <thead><tr><th>Employee</th><th>Assignment Status</th><th>Training Status</th><th>Training Date</th><th>Notes</th></tr></thead>
+          <div class="profile-table-wrap cc-table-wrap" role="region" aria-label="Client assigned agent training" tabindex="0">
+            <table class="profile-table cc-table cc-table--compact" aria-label="Client assigned agent training" data-row-hover="true">
+              <thead><tr><th scope="col">Employee</th><th scope="col">Assignment Status</th><th scope="col">Training Status</th><th scope="col">Training Date</th><th scope="col">Notes</th></tr></thead>
               <tbody>${latestAssignedRows}</tbody>
             </table>
           </div>
         `
-        : '<div class="empty-state">No assigned agents yet.</div>';
+        : '<div class="empty-state cc-table-state" data-state="empty" role="status">No assigned agents yet.</div>';
 
       return `
         <div class="metrics-grid">
@@ -842,7 +843,7 @@
 
     function renderQualityPerformanceSection(qualityRecords) {
       if (!qualityRecords.length) {
-        return '<div class="empty-state">No weekly quality records yet.</div>';
+        return '<div class="empty-state cc-table-state" data-state="empty" role="status">No weekly quality records yet.</div>';
       }
 
       const totals = qualityRecords.map(getQualityTotal).filter((score) => Number.isFinite(score));
@@ -872,7 +873,7 @@
             <td>${escapeHtml(getQualityDateTime(record) || '-')}</td>
             <td>${escapeHtml(getQualityAgentName(record) || '-')}</td>
             <td>${escapeHtml(getQualityAuditorName(record) || '-')}</td>
-            <td><strong>${formatScore(getQualityTotal(record), '%')}</strong></td>
+            <td class="cc-table__numeric"><strong>${formatScore(getQualityTotal(record), '%')}</strong></td>
             <td>${renderQualityDetails(record)}</td>
           </tr>
         `).join('');
@@ -886,9 +887,9 @@
           <div class="metric-card"><span>Last Evaluation Date</span><strong>${escapeHtml(getQualityDateTime(latestDate) || '-')}</strong></div>
           <div class="metric-card"><span>Top Agent</span><strong>${escapeHtml(topAgent?.name || '-')}</strong>${topAgent ? `<small>${formatScore(topAgent.average, '%')} avg</small>` : ''}</div>
         </div>
-        <div class="profile-table-wrap">
-          <table class="profile-table">
-            <thead><tr><th>Date &amp; Time</th><th>Agent</th><th>Auditor</th><th>Total Score</th><th>Details</th></tr></thead>
+        <div class="profile-table-wrap cc-table-wrap" role="region" aria-label="Client weekly quality history" tabindex="0">
+          <table class="profile-table cc-table cc-table--compact" aria-label="Client weekly quality history" data-row-hover="true">
+            <thead><tr><th scope="col">Date &amp; Time</th><th scope="col">Agent</th><th scope="col">Auditor</th><th scope="col">Total Score</th><th scope="col">Details</th></tr></thead>
             <tbody>${latestRows}</tbody>
           </table>
         </div>
@@ -938,10 +939,10 @@
 
     function renderDeliveryRatingsSection(ratingRecords, ratingError) {
       if (ratingError) {
-        return `<div class="empty-state">Delivery platform ratings could not be loaded. ${escapeHtml(ratingError)}</div>`;
+        return `<div class="empty-state cc-table-state" data-state="error" role="alert">Delivery platform ratings could not be loaded. ${escapeHtml(ratingError)}</div>`;
       }
       if (!ratingRecords.length) {
-        return '<div class="empty-state">No delivery platform ratings yet.</div>';
+        return '<div class="empty-state cc-table-state" data-state="empty" role="status">No delivery platform ratings yet.</div>';
       }
 
       const latestTalabat = latestRatingByPlatform(ratingRecords, 'Talabat');
@@ -959,8 +960,8 @@
             <td>${escapeHtml(record.platform || '-')}</td>
             <td>${escapeHtml(record.monthName || '-')}</td>
             <td>${escapeHtml(record.weekName || '-')}</td>
-            <td>${ratingValue(record.rating)}</td>
-            <td>${escapeHtml(record.reviewsCount ?? 0)}</td>
+              <td class="cc-table__numeric">${ratingValue(record.rating)}</td>
+              <td class="cc-table__numeric">${escapeHtml(record.reviewsCount ?? 0)}</td>
             <td>${escapeHtml(record.ratingDate || '-')}</td>
             <td>${escapeHtml(record.notes || '-')}</td>
           </tr>
@@ -973,9 +974,9 @@
           <div class="metric-card"><span>Average Latest Rating</span><strong>${ratingValue(averageLatest)}</strong><small>Latest available platforms</small></div>
           <div class="metric-card"><span>Last Rating Update</span><strong>${escapeHtml(lastUpdate?.ratingDate || '-')}</strong></div>
         </div>
-        <div class="profile-table-wrap">
-          <table class="profile-table">
-            <thead><tr><th>Platform</th><th>Month</th><th>Week</th><th>Rating</th><th>Reviews Count</th><th>Rating Date</th><th>Notes</th></tr></thead>
+        <div class="profile-table-wrap cc-table-wrap" role="region" aria-label="Client delivery platform ratings" tabindex="0">
+          <table class="profile-table cc-table cc-table--compact" aria-label="Client delivery platform ratings" data-row-hover="true">
+            <thead><tr><th scope="col">Platform</th><th scope="col">Month</th><th scope="col">Week</th><th scope="col">Rating</th><th scope="col">Reviews Count</th><th scope="col">Rating Date</th><th scope="col">Notes</th></tr></thead>
             <tbody>${latestRows}</tbody>
           </table>
         </div>

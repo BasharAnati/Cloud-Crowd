@@ -305,6 +305,7 @@
   <link rel="stylesheet" href="assets/css/components/filters.css">
   <link rel="stylesheet" href="assets/css/components/cards.css">
   <link rel="stylesheet" href="assets/css/components/status.css">
+  <link rel="stylesheet" href="assets/css/components/tables.css">
 </head>
 <body class="employee-profiles-ops-center">
   <div class="profiles-shell cc-shell-layout">
@@ -1117,11 +1118,11 @@
             <td>${escapeHtml(deduction.deductionType || '-')}</td>
             <td>${escapeHtml(deduction.restaurantName || '-')}</td>
             <td>${escapeHtml(deduction.orderNumber || '-')}</td>
-            <td class="profile-score">${formatDeductionAmount(deduction.finalDeductionAmount)}</td>
+            <td class="profile-score cc-table__numeric">${formatDeductionAmount(deduction.finalDeductionAmount)}</td>
           </tr>
         `).join('');
         const deductionsSection = deductionsError
-          ? `<div class="profile-empty">Financial deductions could not be loaded. ${escapeHtml(deductionsError)}</div>`
+          ? `<div class="profile-empty cc-table-state" data-state="error" role="alert">Financial deductions could not be loaded. ${escapeHtml(deductionsError)}</div>`
           : deductionRecords.length
             ? `
               <div class="metrics-grid">
@@ -1132,14 +1133,14 @@
                 <div class="metric-card"><span>Health Insurance</span><strong>${deductionCount('Health Insurance')}</strong></div>
                 <div class="metric-card"><span>Last Deduction</span><strong>${escapeHtml(sortedDeductions[0]?.orderDateTime || sortedDeductions[0]?.createdAt || '-')}</strong></div>
               </div>
-              <div class="profile-table-wrap">
-                <table class="profile-table">
-                  <thead><tr><th>Date</th><th>Type</th><th>Restaurant</th><th>Order Number</th><th>Final Amount</th></tr></thead>
+              <div class="profile-table-wrap cc-table-wrap" role="region" aria-label="Employee deduction history" tabindex="0">
+                <table class="profile-table cc-table cc-table--compact" aria-label="Employee deduction history">
+                  <thead><tr><th scope="col">Date</th><th scope="col">Type</th><th scope="col">Restaurant</th><th scope="col">Order Number</th><th scope="col">Final Amount</th></tr></thead>
                   <tbody>${deductionRows}</tbody>
                 </table>
               </div>
             `
-            : '<div class="profile-empty">No financial deduction records yet.</div>';
+            : '<div class="profile-empty cc-table-state" data-state="empty" role="status">No financial deduction records yet.</div>';
         const sortedTraining = [...trainingRecords].sort((a, b) => {
           const aTime = Date.parse(
             String(a.trainingDate || a.updatedAt || a.createdAt || '').replace(' ', 'T')
@@ -1171,7 +1172,7 @@
           </tr>
         `).join('');
         const trainingSection = trainingError
-          ? `<div class="profile-empty">Training records could not be loaded. ${escapeHtml(trainingError)}</div>`
+          ? `<div class="profile-empty cc-table-state" data-state="error" role="alert">Training records could not be loaded. ${escapeHtml(trainingError)}</div>`
           : trainingRecords.length
             ? `
               <div class="metrics-grid">
@@ -1184,17 +1185,17 @@
               <div class="training-progress" aria-label="Training progress ${trainingProgress}%">
                 <span style="width:${trainingProgress}%"></span>
               </div>
-              <div class="profile-table-wrap">
-                <table class="profile-table">
-                  <thead><tr><th>Date</th><th>Restaurant / Brand</th><th>Assignment</th><th>Training Status</th><th>Updated By</th></tr></thead>
+              <div class="profile-table-wrap cc-table-wrap" role="region" aria-label="Employee training history" tabindex="0">
+                <table class="profile-table cc-table cc-table--compact" aria-label="Employee training history">
+                  <thead><tr><th scope="col">Date</th><th scope="col">Restaurant / Brand</th><th scope="col">Assignment</th><th scope="col">Training Status</th><th scope="col">Updated By</th></tr></thead>
                   <tbody>${trainingRows}</tbody>
                 </table>
               </div>
             `
-            : '<div class="profile-empty">No training records yet.</div>';
+            : '<div class="profile-empty cc-table-state" data-state="empty" role="status">No training records yet.</div>';
         const attendanceSection = attendance.records.length
           ? `
-              ${attendanceError ? `<div class="profile-empty">Attendance database could not be loaded. Showing local browser records. ${escapeHtml(attendanceError)}</div>` : ''}
+              ${attendanceError ? `<div class="profile-empty cc-table-state" data-state="degraded" role="status">Attendance database could not be loaded. Showing local browser records. ${escapeHtml(attendanceError)}</div>` : ''}
               <div class="metrics-grid">
                 <div class="metric-card"><span>Total Records</span><strong>${attendance.records.length}</strong></div>
                 <div class="metric-card"><span>On Time Count</span><strong>${attendance.onTime}</strong></div>
@@ -1204,16 +1205,16 @@
                 <div class="metric-card"><span>Total Extra Time</span><strong>${durationValue}</strong><small>${durationNote}</small></div>
                 <div class="metric-card"><span>Last Attendance</span><strong>${escapeHtml(attendance.lastDate || '-')}</strong></div>
               </div>
-              <div class="profile-table-wrap">
-                <table class="profile-table">
-                  <thead><tr><th>Date</th><th>Shift Time</th><th>Login Status</th><th>Logout Status</th><th>Extra Time</th><th>Note</th></tr></thead>
+              <div class="profile-table-wrap cc-table-wrap" role="region" aria-label="Employee attendance history" tabindex="0">
+                <table class="profile-table cc-table cc-table--compact" aria-label="Employee attendance history">
+                  <thead><tr><th scope="col">Date</th><th scope="col">Shift Time</th><th scope="col">Login Status</th><th scope="col">Logout Status</th><th scope="col">Extra Time</th><th scope="col">Note</th></tr></thead>
                   <tbody>${attendanceRows}</tbody>
                 </table>
               </div>
             `
           : attendanceError
-            ? `<div class="profile-empty">Attendance database could not be loaded. No local attendance records found. ${escapeHtml(attendanceError)}</div>`
-            : '<div class="profile-empty">No attendance records yet.</div>';
+            ? `<div class="profile-empty cc-table-state" data-state="error" role="alert">Attendance database could not be loaded. No local attendance records found. ${escapeHtml(attendanceError)}</div>`
+            : '<div class="profile-empty cc-table-state" data-state="empty" role="status">No attendance records yet.</div>';
         const futureMetrics = [
           'Call Queue', 'Free Orders'
         ].map((label) => `

@@ -1,0 +1,125 @@
+.cc-table-wrap.cc-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  overscroll-behavior-inline: contain;
+  scrollbar-color: var(--color-primary) var(--color-surface-muted);
+}
+
+.cc-table-wrap.cc-table-wrap:focus-visible {
+  outline: var(--button-focus-outline);
+  outline-offset: var(--space-1);
+}
+
+.cc-table.cc-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.cc-table.cc-table :is(th, td) {
+  min-height: var(--table-row-min-height);
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--table-divider);
+  color: var(--color-text);
+  background: var(--color-surface);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+  text-align: start;
+  vertical-align: top;
+}
+
+.cc-table.cc-table thead th {
+  height: var(--table-header-height);
+  color: var(--color-text-muted);
+  background: var(--table-header-background);
+  font-size: var(--font-size-table-header);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.cc-table.cc-table tbody tr:last-child > :is(th, td) {
+  border-bottom: 0;
+}
+
+.cc-table.cc-table[data-row-hover="true"] tbody tr:hover > :is(th, td) {
+  background: var(--table-row-hover-background);
+}
+
+.cc-table.cc-table--compact :is(th, td) {
+  min-height: 0;
+  padding: 11px var(--space-3);
+  font-size: var(--font-size-caption);
+}
+
+.cc-table.cc-table--compact thead th {
+  height: auto;
+  font-size: var(--font-size-caption);
+}
+
+.cc-table.cc-table .cc-table__numeric {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-bold);
+  text-align: end;
+  white-space: nowrap;
+}
+
+.cc-table.cc-table .cc-table__muted {
+  color: var(--color-text-muted);
+}
+
+.cc-table__action-cell {
+  white-space: nowrap;
+}
+
+.cc-table__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  min-width: max-content;
+}
+
+.cc-table.cc-table--matrix :is(th, td):not(:first-child) {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.cc-table.cc-table--matrix tbody th[scope="row"] {
+  font-weight: var(--font-weight-bold);
+  text-align: start;
+}
+
+.cc-table__state {
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  text-align: center;
+}
+
+.cc-table.cc-table .cc-table__state {
+  padding: var(--space-6) var(--space-4);
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  text-align: center;
+}
+
+.cc-table-state {
+  margin: var(--space-4) 0 0;
+  padding: var(--space-6) var(--space-4);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  text-align: center;
+}
+
+.cc-table-state[data-state="error"] {
+  border-color: var(--color-danger-border);
+  color: var(--color-danger-text);
+  background: var(--color-danger-soft);
+}

@@ -305,7 +305,7 @@ test("Restaurant Ratings preserves calculations, filters, endpoints, and table c
   assert.match(source, /method: 'DELETE'/);
   assert.match(source, /\.records-table\{width:100%;min-width:1080px/);
   ["Restaurant", "Platform", "Month", "Week", "Rating", "Reviews Count", "Rating Date", "Updated By", "Actions"]
-    .forEach((heading) => assert.match(source, new RegExp(`<th>${heading}</th>`)));
+    .forEach((heading) => assert.match(source, new RegExp(`<th scope="col">${heading}</th>`)));
 });
 
 test("Weekly Quality preserves scoring, ordering, fallback, storage, and table contracts", async () => {
@@ -404,7 +404,7 @@ test("Weekly Quality preserves scoring, ordering, fallback, storage, and table c
   assert.match(source, /\?action=bulk-import/);
   assert.match(source, /\.table-wrap[\s\S]*?table\s*\{[\s\S]*?min-width:\s*980px/);
   ["Date &amp; Time", "Auditor", "Agent", "Restaurant", "Phone Number", "Total Score", "Recording", "Actions"]
-    .forEach((heading) => assert.match(source, new RegExp(`<th>${heading}</th>`)));
+    .forEach((heading) => assert.match(source, new RegExp(`<th scope="col">${heading}</th>`)));
   assert.match(source, /accept="\.mp3,audio\/mpeg"/);
   assert.match(source, /\['http:', 'https:'\]/);
 });

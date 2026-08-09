@@ -623,6 +623,7 @@
   <link rel="stylesheet" href="assets/css/components/filters.css">
   <link rel="stylesheet" href="assets/css/components/cards.css">
   <link rel="stylesheet" href="assets/css/components/status.css">
+  <link rel="stylesheet" href="assets/css/components/tables.css">
 </head>
 <body class="business-quality-page weekly-quality-page" data-shell-module="weekly-quality" data-shell-user-id="quality-user-name" data-shell-role-id="quality-role-badge">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -772,23 +773,23 @@
           </select>
           <span class="count-badge" id="record-count">0 Records</span>
         </div>
-        <div class="table-wrap">
-          <table>
+        <div class="table-wrap cc-table-wrap" role="region" aria-labelledby="records-title" tabindex="0">
+          <table class="cc-table" aria-labelledby="records-title" data-row-hover="true">
             <thead>
               <tr>
-                <th>Date &amp; Time</th>
-                <th>Auditor</th>
-                <th>Agent</th>
-                <th>Restaurant</th>
-                <th>Phone Number</th>
-                <th>Total Score</th>
-                <th>Recording</th>
-                <th>Actions</th>
+                <th scope="col">Date &amp; Time</th>
+                <th scope="col">Auditor</th>
+                <th scope="col">Agent</th>
+                <th scope="col">Restaurant</th>
+                <th scope="col">Phone Number</th>
+                <th scope="col">Total Score</th>
+                <th scope="col">Recording</th>
+                <th scope="col">Actions</th>
               </tr>
             </thead>
             <tbody id="records-body"></tbody>
           </table>
-          <div class="empty-state cc-empty-state" id="empty-state">
+          <div class="empty-state cc-empty-state cc-table-state" id="empty-state" data-state="empty" role="status" aria-live="polite">
             <strong>No evaluations found</strong>
             Save an evaluation or adjust the active filters.
           </div>
@@ -1394,16 +1395,19 @@
             <td>${escapeHtml(getAgentName(record) || '-')}</td>
             <td>${escapeHtml(getRecordRestaurantName(record) || '-')}</td>
             <td>${escapeHtml(record.phoneNumber || '-')}</td>
-            <td class="score-cell">${Number(record.totalScore) || 0}%</td>
+            <td class="score-cell cc-table__numeric">${Number(record.totalScore) || 0}%</td>
             <td class="${record.recording ? 'recording-state' : ''}">${record.recording ? 'Available' : '-'}</td>
-            <td class="actions-cell">
-              <button class="details-btn" type="button" data-details-id="${escapeHtml(record.id)}">View Details</button>
-              <button class="delete-btn" type="button" data-delete-id="${escapeHtml(record.id)}" data-permission-delete>Delete</button>
+            <td class="actions-cell cc-table__action-cell">
+              <div class="cc-table__actions">
+                <button class="details-btn" type="button" data-details-id="${escapeHtml(record.id)}">View Details</button>
+                <button class="delete-btn" type="button" data-delete-id="${escapeHtml(record.id)}" data-permission-delete>Delete</button>
+              </div>
             </td>
           </tr>
         `;
       }).join('');
 
+      emptyState.setAttribute('data-state', records.length ? '' : allRecords.length ? 'no-results' : 'empty');
       emptyState.style.display = records.length ? 'none' : 'block';
       document.getElementById('record-count').textContent = `${records.length} ${records.length === 1 ? 'Record' : 'Records'}`;
     }
