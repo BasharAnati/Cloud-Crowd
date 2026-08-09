@@ -1,0 +1,29 @@
+/* Locally rendered Lucide icon contract. */
+.cc-icon,
+.cc-icon-host > svg,
+.cc-shell-module-icon > svg {
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
+  flex: 0 0 var(--icon-size-md);
+  display: block;
+  stroke-width: 2;
+}
+
+.cc-icon--sm { width: var(--icon-size-sm); height: var(--icon-size-sm); flex-basis: var(--icon-size-sm); }
+.cc-icon--lg { width: var(--icon-size-lg); height: var(--icon-size-lg); flex-basis: var(--icon-size-lg); }
+
+.cc-shell-module-icon[data-cc-icon-rendered] {
+  width: var(--icon-size-lg);
+  height: var(--icon-size-lg);
+  flex-basis: var(--icon-size-lg);
+  border: 0;
+  border-radius: 0;
+}
+
+.cc-shell-module-icon[data-cc-icon-rendered]::before,
+.cc-shell-module-icon[data-cc-icon-rendered]::after {
+  content: none;
+}
+
+.cc-button > .cc-icon:first-child { margin-inline-start: 0; }
+.cc-button > .cc-icon:last-child { margin-inline-end: 0; }

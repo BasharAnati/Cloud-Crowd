@@ -98,7 +98,7 @@ test('Authentication, permissions, idle logout, and maintenance contracts are pr
   assert.match(maintenanceRuntime, /window\.location\.href = 'system-update\.html'/);
   assert.match(maintenanceRuntime, /method:\s*'POST'/);
   assert.match(maintenanceRuntime, /JSON\.stringify\(\{ maintenance: !latestMaintenanceState \}\)/);
-  assert.match(maintenanceRuntime, /window\.confirm\(message\)/);
+  assert.match(maintenanceRuntime, /CloudCrowdConfirmation\.request\(message/);
   assert.doesNotMatch(shellRuntime, /MAINTENANCE_ENDPOINT|fetchMaintenanceStatus|toggleMaintenanceMode/);
   assert.doesNotMatch(dashboardRuntime, /MAINTENANCE_ENDPOINT|fetchMaintenanceStatus|toggleMaintenanceMode/);
 });

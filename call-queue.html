@@ -6,6 +6,11 @@
   <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
   <title>Call Queue - Cloud Crowd</title>
   <script src="assets/js/theme.js"></script>
+  <script src="assets/vendor/lucide/lucide-subset.js"></script>
+  <script src="assets/js/components/buttons.js"></script>
+  <script src="assets/js/components/icons.js"></script>
+  <script src="assets/js/components/feedback.js"></script>
+  <script src="assets/js/components/confirmation.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
   <link rel="stylesheet" href="app-shell.css">
   <link rel="stylesheet" href="assets/css/theme-base.css">
@@ -247,6 +252,9 @@
   <script src="js/app-shell.js" defer></script>
   <script src="js/internal-page-shell.js" defer></script>
   <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
+  <link rel="stylesheet" href="assets/css/components/buttons.css">
+  <link rel="stylesheet" href="assets/css/components/icons.css">
+  <link rel="stylesheet" href="assets/css/components/feedback.css">
 </head>
 <body class="admin-call-queue-page call-queue-page" data-shell-module="call-queue" data-shell-user-id="call-queue-shell-user" data-shell-role-id="call-queue-shell-role">
   <script>
@@ -479,7 +487,7 @@
             <label for="negative-note">Note</label>
             <textarea id="negative-note" placeholder="Add details for the pending follow-up"></textarea>
             <div class="action-row">
-              <button class="btn danger" type="button" id="save-negative-btn">Save Negative Result</button>
+              <button class="btn cc-button cc-button--warning cc-button--md" type="button" id="save-negative-btn">Save Negative Result</button>
             </div>
           </div>
         </div>

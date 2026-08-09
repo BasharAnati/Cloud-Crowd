@@ -298,6 +298,8 @@
     span.className = 'cc-shell-module-icon';
     span.setAttribute('aria-hidden', 'true');
     span.dataset.icon = name || 'circle';
+    span.dataset.ccIcon = name || 'circle';
+    if (window.CloudCrowdIcons) window.CloudCrowdIcons.render(span, name || 'circle');
     return span;
   }
 
@@ -366,10 +368,11 @@
       header.className = 'cc-shell-sidebar-header';
       header.appendChild(createBrand(options));
       const closeButton = document.createElement('button');
-      closeButton.className = 'cc-shell-mobile-close';
+      closeButton.className = 'cc-shell-mobile-close cc-button cc-button--secondary cc-button--md';
       closeButton.type = 'button';
       closeButton.setAttribute('aria-label', 'Close application navigation');
       closeButton.textContent = 'Close';
+      if (window.CloudCrowdIcons) window.CloudCrowdIcons.leadingIcon(closeButton, 'x');
       header.appendChild(closeButton);
       container.appendChild(header);
     } else {
@@ -414,12 +417,13 @@
       context = document.createElement('div');
       context.className = 'cc-shell-topbar-context';
       navigationButton = document.createElement('button');
-      navigationButton.className = 'cc-shell-nav-trigger';
+      navigationButton.className = 'cc-shell-nav-trigger cc-button cc-button--secondary cc-button--md';
       navigationButton.type = 'button';
       navigationButton.setAttribute('aria-label', 'Open application navigation');
       navigationButton.setAttribute('aria-expanded', 'false');
       if (options.sidebarId) navigationButton.setAttribute('aria-controls', options.sidebarId);
       navigationButton.textContent = 'Menu';
+      if (window.CloudCrowdIcons) window.CloudCrowdIcons.leadingIcon(navigationButton, 'menu');
       context.appendChild(navigationButton);
     }
 
@@ -462,9 +466,10 @@
 
     if (typeof options.onLogout === 'function' || options.logoutHref) {
       const logoutButton = document.createElement('button');
-      logoutButton.className = 'cc-shell-logout';
+      logoutButton.className = 'cc-shell-logout cc-button cc-button--outline cc-button--md';
       logoutButton.type = 'button';
       logoutButton.textContent = options.logoutLabel || 'Log out';
+      if (window.CloudCrowdIcons) window.CloudCrowdIcons.leadingIcon(logoutButton, 'log-out');
       logoutButton.addEventListener('click', () => {
         if (typeof options.onLogout === 'function') options.onLogout();
         else window.location.href = options.logoutHref;

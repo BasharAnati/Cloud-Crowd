@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
   <script src="assets/js/theme.js"></script>
+  <script src="assets/vendor/lucide/lucide-subset.js"></script>
+  <script src="assets/js/components/buttons.js"></script>
+  <script src="assets/js/components/icons.js"></script>
+  <script src="assets/js/components/feedback.js"></script>
+  <script src="assets/js/components/confirmation.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
   <link rel="stylesheet" href="app-shell.css">
   <link rel="stylesheet" href="assets/css/theme-base.css">
@@ -292,6 +297,9 @@
     }
   </script>
   <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
+  <link rel="stylesheet" href="assets/css/components/buttons.css">
+  <link rel="stylesheet" href="assets/css/components/icons.css">
+  <link rel="stylesheet" href="assets/css/components/feedback.css">
 </head>
 <body class="employee-profiles-ops-center">
   <div class="profiles-shell cc-shell-layout">
@@ -461,6 +469,12 @@
 
     function showMessage(message, type = 'error') {
       const element = document.getElementById('page-message');
+      if (window.CloudCrowdFeedback) {
+        element.classList.remove('success', 'error', 'warning', 'info');
+        window.CloudCrowdFeedback.inline(element, message, type || 'info', { duration: 5000 });
+        element.classList.add('message', 'show', type);
+        return;
+      }
       element.textContent = message;
       element.className = `message show ${type}`;
       window.setTimeout(() => {
@@ -474,8 +488,11 @@
       return true;
     }
 
-    function logout(confirmFirst = true) {
-      if (confirmFirst && !window.confirm('Confirm logout?')) return;
+    async function logout(confirmFirst = true) {
+      if (confirmFirst && !await window.CloudCrowdConfirmation.request('Confirm logout?', {
+        title: 'Log out',
+        confirmLabel: 'Log out'
+      })) return;
       localStorage.removeItem('cc_auth');
       sessionStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
@@ -1370,7 +1387,11 @@
     async function archiveEmployee(employeeId) {
       if (!canManageEmployees) return;
       const employee = employees.find((item) => item.employeeId === employeeId);
-      if (!window.confirm(`Archive ${employee?.fullName || 'this employee'}? Historical records will remain available.`)) return;
+      if (!await window.CloudCrowdConfirmation.request(`Archive ${employee?.fullName || 'this employee'}? Historical records will remain available.`, {
+        title: 'Archive employee',
+        confirmLabel: 'Archive',
+        intent: 'danger'
+      })) return;
 
       try {
         await apiRequest(

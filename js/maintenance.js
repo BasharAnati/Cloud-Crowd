@@ -61,7 +61,10 @@
       const message = latestMaintenanceState
         ? 'Maintenance mode is currently ON.\nEmployees currently cannot access the internal system.\nIf you turn it OFF, employees will be able to access the system normally again.\nDo you want to continue?'
         : 'Maintenance mode is currently OFF.\nIf you turn it ON, all employee accounts will be redirected to the system update page and will not be able to access the internal system.\nDo you want to continue?';
-      if (!window.confirm(message)) return;
+      if (!await window.CloudCrowdConfirmation.request(message, {
+        title: 'Change maintenance mode',
+        confirmLabel: 'Continue'
+      })) return;
 
       if (button) button.disabled = true;
       try {

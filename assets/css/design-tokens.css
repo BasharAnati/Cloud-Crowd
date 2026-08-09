@@ -74,6 +74,8 @@
   --layer-sidebar: 30;
   --layer-nav-backdrop: 50;
   --layer-navigation: 60;
+  --layer-modal: 90;
+  --layer-toast: 100;
 
   /* Light theme semantic colors */
   --color-bg: #f5fbfc;
@@ -147,7 +149,13 @@
   --button-padding-inline-lg: 20px;
   --button-icon-gap: 8px;
   --button-disabled-opacity: 0.5;
+  --button-disabled-background: var(--color-surface-muted);
+  --button-disabled-text: var(--color-text-muted);
   --button-radius: var(--radius-md);
+  --button-focus-outline: 3px solid var(--color-focus);
+  --icon-size-sm: 16px;
+  --icon-size-md: 18px;
+  --icon-size-lg: 20px;
 
   /* Input foundation */
   --input-height: 40px;

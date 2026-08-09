@@ -6,6 +6,11 @@
   <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
   <title>Attendance & Shift Tracking - Cloud Crowd</title>
   <script src="assets/js/theme.js"></script>
+  <script src="assets/vendor/lucide/lucide-subset.js"></script>
+  <script src="assets/js/components/buttons.js"></script>
+  <script src="assets/js/components/icons.js"></script>
+  <script src="assets/js/components/feedback.js"></script>
+  <script src="assets/js/components/confirmation.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
   <link rel="stylesheet" href="app-shell.css">
   <link rel="stylesheet" href="assets/css/theme-base.css">
@@ -302,6 +307,9 @@
   <script src="js/app-shell.js" defer></script>
   <script src="js/internal-page-shell.js" defer></script>
   <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
+  <link rel="stylesheet" href="assets/css/components/buttons.css">
+  <link rel="stylesheet" href="assets/css/components/icons.css">
+  <link rel="stylesheet" href="assets/css/components/feedback.css">
 </head>
 <body class="people-management-page attendance-page" data-shell-module="attendance" data-shell-user-id="attendance-user-name" data-shell-role-id="attendance-role-badge">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -563,7 +571,7 @@
     function showEmployeeLoadWarning(message, isError = false) {
       const warning = document.getElementById('employee-load-warning');
       if (!warning) return;
-      warning.textContent = message;
+      window.CloudCrowdFeedback.banner(warning, message, isError ? 'error' : 'warning');
       warning.classList.add('show');
       warning.classList.toggle('is-error', isError);
       warning.classList.toggle('is-warning', !isError);
@@ -572,14 +580,14 @@
     function clearEmployeeLoadWarning() {
       const warning = document.getElementById('employee-load-warning');
       if (!warning) return;
-      warning.textContent = '';
+      window.CloudCrowdFeedback.clear(warning);
       warning.classList.remove('show', 'is-error', 'is-warning');
     }
 
     function showAttendanceSyncWarning(message) {
       const warning = document.getElementById('attendance-sync-warning');
       if (!warning) return;
-      warning.textContent = message;
+      window.CloudCrowdFeedback.banner(warning, message, 'error');
       warning.classList.add('show', 'is-error');
       warning.classList.remove('is-warning');
     }
@@ -587,7 +595,7 @@
     function clearAttendanceSyncWarning() {
       const warning = document.getElementById('attendance-sync-warning');
       if (!warning) return;
-      warning.textContent = '';
+      window.CloudCrowdFeedback.clear(warning);
       warning.classList.remove('show', 'is-error', 'is-warning');
     }
 
@@ -600,6 +608,9 @@
       if (!banner || !copy || !importButton) return;
 
       const shouldShow = localRecords.length > 0 && !isDone;
+      banner.classList.add('cc-feedback', 'cc-feedback--banner', 'cc-feedback--warning');
+      banner.setAttribute('aria-live', 'polite');
+      banner.setAttribute('aria-atomic', 'true');
       banner.classList.toggle('show', shouldShow);
       copy.textContent = `${localRecords.length} local ${localRecords.length === 1 ? 'record' : 'records'} found. Existing browser records will be preserved after import.`;
       importButton.disabled = !shouldShow || attendanceSource !== 'api';

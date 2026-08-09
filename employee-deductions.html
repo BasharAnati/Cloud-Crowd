@@ -6,6 +6,11 @@
   <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
   <title>Employee Deductions - Cloud Crowd</title>
   <script src="assets/js/theme.js"></script>
+  <script src="assets/vendor/lucide/lucide-subset.js"></script>
+  <script src="assets/js/components/buttons.js"></script>
+  <script src="assets/js/components/icons.js"></script>
+  <script src="assets/js/components/feedback.js"></script>
+  <script src="assets/js/components/confirmation.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
   <link rel="stylesheet" href="app-shell.css">
   <link rel="stylesheet" href="assets/css/theme-base.css">
@@ -96,6 +101,9 @@
   <script src="js/app-shell.js" defer></script>
   <script src="js/internal-page-shell.js" defer></script>
   <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
+  <link rel="stylesheet" href="assets/css/components/buttons.css">
+  <link rel="stylesheet" href="assets/css/components/icons.css">
+  <link rel="stylesheet" href="assets/css/components/feedback.css">
 </head>
 <body class="people-management-page employee-deductions-page" data-shell-module="employee-deductions" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -300,6 +308,12 @@
 
     function showMessage(message, type = 'error', persistent = false) {
       const element = document.getElementById('page-message');
+      if (window.CloudCrowdFeedback) {
+        element.classList.remove('success', 'error', 'warning', 'info');
+        window.CloudCrowdFeedback.inline(element, message, type || 'info', persistent ? {} : { duration: 5000 });
+        element.classList.add('message', 'show', type);
+        return;
+      }
       element.textContent = message;
       element.className = `message show ${type}`;
       if (!persistent) {
@@ -585,7 +599,11 @@
     async function deleteDeduction(id) {
       if (!canManageDeductions) return;
       const deduction = findDeduction(id);
-      if (!deduction || !window.confirm(`Delete the deduction for ${deduction.employeeNameSnapshot}?`)) return;
+      if (!deduction || !await window.CloudCrowdConfirmation.request(`Delete the deduction for ${deduction.employeeNameSnapshot}?`, {
+        title: 'Delete deduction',
+        confirmLabel: 'Delete',
+        intent: 'danger'
+      })) return;
       try {
         await apiRequest(`${DEDUCTIONS_ENDPOINT}?id=${encodeURIComponent(id)}`, {method: 'DELETE'});
         showMessage('Deduction deleted.', 'success');

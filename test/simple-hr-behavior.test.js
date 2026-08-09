@@ -142,6 +142,12 @@ function loadBusiness(source, marker, exposure, options = {}) {
   };
   context.window = context;
   context.globalThis = context;
+  context.CloudCrowdConfirmation = { request: async (message) => context.confirm(message) };
+  context.CloudCrowdFeedback = {
+    inline(element, message) { element.textContent = message || ""; element.hidden = !message; return element; },
+    banner(element, message) { element.textContent = message || ""; element.hidden = !message; return element; },
+    clear(element) { element.textContent = ""; element.hidden = true; }
+  };
   vm.runInNewContext(`${script.slice(0, markerIndex)}\n${exposure}`, context);
   return { context, document, sessionStorage, localStorage, fetchCalls, api: context.__api };
 }
@@ -259,6 +265,7 @@ test("shared maintenance lifecycle preserves enforcement, polling, authorization
     confirm: (message) => { confirmationMessage = message; return true; }
   };
   context.window = context;
+  context.CloudCrowdConfirmation = { request: async (message) => context.confirm(message) };
   context.location = { href: "attendance.html" };
   context.setInterval = (callback, delay) => { intervals.push({ callback, delay }); return intervals.length; };
   context.readSessionValue = (key) => sessionStorage.getItem(key) || "";

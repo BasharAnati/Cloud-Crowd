@@ -487,7 +487,7 @@ test("Dashboard lifecycle preserves authentication, logout, maintenance, and idl
   assert.match(maintenanceRuntime, /window\.location\.href = 'system-update\.html'/);
   assert.match(maintenanceRuntime, /method: 'POST'/);
   assert.match(maintenanceRuntime, /JSON\.stringify\(\{ maintenance: !latestMaintenanceState \}\)/);
-  assert.match(maintenanceRuntime, /window\.confirm\(message\)/);
+  assert.match(maintenanceRuntime, /CloudCrowdConfirmation\.request\(message/);
 });
 
 test("Dashboard responsive and focus presentation uses approved shared contracts", () => {

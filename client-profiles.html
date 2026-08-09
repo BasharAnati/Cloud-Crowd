@@ -6,6 +6,11 @@
   <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
   <title>Client Profiles - Cloud Crowd</title>
   <script src="assets/js/theme.js"></script>
+  <script src="assets/vendor/lucide/lucide-subset.js"></script>
+  <script src="assets/js/components/buttons.js"></script>
+  <script src="assets/js/components/icons.js"></script>
+  <script src="assets/js/components/feedback.js"></script>
+  <script src="assets/js/components/confirmation.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
   <link rel="stylesheet" href="app-shell.css">
   <link rel="stylesheet" href="assets/css/theme-base.css">
@@ -167,6 +172,9 @@
   <script src="js/app-shell.js" defer></script>
   <script src="js/internal-page-shell.js" defer></script>
   <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
+  <link rel="stylesheet" href="assets/css/components/buttons.css">
+  <link rel="stylesheet" href="assets/css/components/icons.css">
+  <link rel="stylesheet" href="assets/css/components/feedback.css">
 </head>
 <body class="business-quality-page client-profiles-page" data-shell-module="client-profiles" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -358,8 +366,11 @@
       }[character]));
     }
 
-    function logout(confirmFirst = true) {
-      if (confirmFirst && !window.confirm('Confirm logout?')) return;
+    async function logout(confirmFirst = true) {
+      if (confirmFirst && !await window.CloudCrowdConfirmation.request('Confirm logout?', {
+        title: 'Log out',
+        confirmLabel: 'Log out'
+      })) return;
       localStorage.removeItem('cc_auth');
       sessionStorage.removeItem('cc_auth');
       localStorage.removeItem('cc_user');
@@ -390,6 +401,12 @@
 
     function showMessage(message, type = 'error') {
       const element = document.getElementById('page-message');
+      if (window.CloudCrowdFeedback) {
+        element.classList.remove('success', 'error', 'warning', 'info');
+        window.CloudCrowdFeedback.inline(element, message, type || 'info', { duration: 5000 });
+        element.classList.add('message', 'show', type);
+        return;
+      }
       element.textContent = message;
       element.className = `message show ${type}`;
       window.setTimeout(() => {
@@ -1064,7 +1081,11 @@
     async function archiveRestaurant(restaurantId) {
       if (!canManageClients) return;
       const restaurant = restaurants.find((item) => item.restaurantId === restaurantId);
-      if (!window.confirm(`Archive ${restaurant?.brandName || 'this client'}?`)) return;
+      if (!await window.CloudCrowdConfirmation.request(`Archive ${restaurant?.brandName || 'this client'}?`, {
+        title: 'Archive client',
+        confirmLabel: 'Archive',
+        intent: 'danger'
+      })) return;
 
       try {
         await apiRequest(

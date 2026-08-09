@@ -34,12 +34,14 @@ function canUserCreate(section) {
   return CREATOR_ALLOW.all.includes(CURRENT_USER);
 }
 
-function logout() {
-  const confirmLogout = confirm("Confirm logout?");
-  if (confirmLogout) {
-    clearStoredSession();
-    window.location.href = "login.html";
-  }
+async function logout() {
+  const confirmLogout = await window.CloudCrowdConfirmation.request("Confirm logout?", {
+    title: "Log out",
+    confirmLabel: "Log out"
+  });
+  if (!confirmLogout) return;
+  clearStoredSession();
+  window.location.href = "login.html";
 }
 
 window.CURRENT_USER = CURRENT_USER;

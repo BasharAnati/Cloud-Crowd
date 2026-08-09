@@ -20,7 +20,7 @@
 
   const STORAGE_KEY = "cc_theme";
   const PREFERENCES = Object.freeze(["light", "dark", "system"]);
-  const ICONS = Object.freeze({ light: "☀", dark: "☾", system: "◐" });
+  const ICONS = Object.freeze({ light: "sun", dark: "moon", system: "monitor" });
   const LABELS = Object.freeze({ light: "Light", dark: "Dark", system: "System" });
 
   function isValidPreference(value) {
@@ -112,7 +112,12 @@
       if (!toggle || !toggle.__ccThemeParts) return;
       const label = preferenceLabel();
       const nextLabel = LABELS[nextPreference()];
-      toggle.__ccThemeParts.icon.textContent = ICONS[preference];
+      const icon = toggle.__ccThemeParts.icon;
+      icon.textContent = "";
+      icon.dataset.ccIcon = ICONS[preference];
+      if (env.CloudCrowdIcons && typeof env.CloudCrowdIcons.render === "function") {
+        env.CloudCrowdIcons.render(icon, ICONS[preference], "sm");
+      }
       toggle.__ccThemeParts.label.textContent = LABELS[preference];
       toggle.setAttribute("aria-label", `Theme: ${label}. Activate to switch to ${nextLabel}.`);
       toggle.setAttribute("data-theme-preference", preference);
@@ -201,7 +206,7 @@
       const label = documentRef.createElement("span");
 
       button.type = "button";
-      button.className = "cc-theme-toggle";
+      button.className = "cc-theme-toggle cc-button cc-button--secondary cc-button--md";
       button.setAttribute("data-theme-toggle", "");
       icon.className = "cc-theme-toggle__icon";
       icon.setAttribute("aria-hidden", "true");

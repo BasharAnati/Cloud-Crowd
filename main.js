@@ -622,12 +622,24 @@ function getMutationPermission(action) {
 
 function requireMutationPermission(action) {
   const permission = getMutationPermission(action);
-  if (!permission.allowed) alert(permission.message);
+  if (!permission.allowed) showOperationalInline(permission.message, 'error');
   return permission.allowed;
+}
+
+function showOperationalInline(message, variant = 'error', container = null) {
+  const host = container || document.querySelector('main') || document.body;
+  const regionId = container ? 'cc-operational-feedback-drawer' : 'cc-operational-feedback-page';
+  const region = window.CloudCrowdFeedback.ensureInlineRegion(regionId, host);
+  window.CloudCrowdFeedback.inline(region, message, variant);
 }
 
 function setMutationLoading(control, loading, label) {
   if (!control) return;
+
+  if (window.CloudCrowdButtons) {
+    window.CloudCrowdButtons.setLoading(control, loading, label);
+    return;
+  }
 
   if (loading) {
     if (!control.dataset.mutationLabel) {
@@ -647,8 +659,13 @@ function setMutationLoading(control, loading, label) {
   }
 }
 
-function notifyMutation(message) {
-  if (message) alert(message);
+function notifyMutation(message, variant = 'success') {
+  if (!message) return;
+  if (variant === 'success') {
+    window.CloudCrowdFeedback.toast(message, 'success');
+  } else {
+    showOperationalInline(message, variant);
+  }
 }
 
 async function readMutationResponse(response, fallbackMessage) {
@@ -720,7 +737,7 @@ async function runMutationLifecycle(options) {
     }
 
     console.error(`${action} mutation failed:`, error);
-    notifyMutation(`${failureMessage}: ${error?.message || 'Unknown error'}`);
+    notifyMutation(`${failureMessage}: ${error?.message || 'Unknown error'}`, 'error');
     return { ok: false, reason: 'error', error };
   } finally {
     try {
@@ -1074,7 +1091,7 @@ function openTicketDrawer(index){
   if (histLink) {
     histLink.onclick = (e) => {
       e.preventDefault();
-      if (!ticket._id) { alert('No ticket id found.'); return; }
+      if (!ticket._id) { showOperationalInline('No ticket id found.', 'error', document.querySelector('.drawer.open .drawer-body')); return; }
       viewTicketHistory(ticket._id);
     };
   }
@@ -1282,7 +1299,11 @@ async function deleteTicket(idx, control) {
     loadingLabel: 'Deleting...',
     prepare: async () => {
       const ref = ticket.caseNumber || ticket.orderNumber || '';
-      return confirm(`Delete ticket ${ref}?`) ? { ticket } : MUTATION_CANCELLED;
+      return await window.CloudCrowdConfirmation.request(`Delete ticket ${ref}?`, {
+        title: 'Delete ticket',
+        confirmLabel: 'Delete',
+        intent: 'danger'
+      }) ? { ticket } : MUTATION_CANCELLED;
     },
     request: async ({ ticket: currentTicket }) => {
       if (Number.isFinite(Number(currentTicket._id))) {

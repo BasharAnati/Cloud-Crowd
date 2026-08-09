@@ -126,6 +126,11 @@ function loadPage(kind, role = "manager") {
     fetch(...args) { return context.fetchHandler(...args); }
   };
   context.window = context;
+  context.CloudCrowdConfirmation = { request: async (message) => context.confirm(message) };
+  context.CloudCrowdFeedback = {
+    inline(element, message) { element.textContent = message || ""; element.hidden = !message; return element; },
+    clear(element) { element.textContent = ""; element.hidden = true; }
+  };
   context.location = { href: "", pathname: kind === "requests" ? "/free-order-requests.html" : "/free-order-share.html" };
   context.CCPermissions = { requirePageAccess() {} };
   context.CloudCrowdMediaViewer = {
@@ -331,6 +336,10 @@ test("Requests executes projection, filtering, statistics, exact writes, archive
 
   calls.length = 0;
   loaded.api.setRecords([{ requestId: "same-request-id", orderNumber: "ORD-9" }]);
+  loaded.context.confirm = () => false;
+  await loaded.api.archiveRequest("same-request-id");
+  assert.equal(calls.length, 0, "archive cancellation performs no mutation");
+  loaded.context.confirm = () => true;
   await loaded.api.archiveRequest("same-request-id");
   assert.equal(calls[0].url, "/.netlify/functions/free-order-requests?id=same-request-id");
   assert.equal(calls[0].options.method, "DELETE");
@@ -385,6 +394,10 @@ test("Share executes fallback, filters, statistics, exact actions, media, and de
 
   calls.length = 0;
   loaded.api.setRecords([{ requestId: "same-request-id", orderNumber: "ORD-9", shareStage: "received" }]);
+  loaded.context.confirm = () => false;
+  await loaded.api.markDone("same-request-id");
+  assert.equal(calls.length, 0, "workflow cancellation performs no mutation");
+  loaded.context.confirm = () => true;
   await loaded.api.markDone("same-request-id");
   assert.equal(calls[0].url, "/.netlify/functions/free-order-requests?id=same-request-id&action=share-done");
   assert.equal(calls[0].options.method, "PUT");
@@ -467,7 +480,7 @@ test("Sprint 1.3D pages consume the shared shell, theme, Page Header, and no loc
   assert.match(shellRuntime, /CloudCrowdAppShell\.initializeAppShell/);
   assert.match(shellRuntime, /CloudCrowdMaintenance\.createLifecycle/);
   assert.match(maintenanceRuntime, /const POLL_INTERVAL = 3000/);
-  assert.match(pages.share, /<a class="primary-btn" href="free-order-requests\.html">Requests<\/a>/);
+  assert.match(pages.share, /<a class="primary-btn cc-button cc-button--outline cc-button--md" href="free-order-requests\.html">Requests<\/a>/);
   assert.doesNotMatch(pages.requests, /free-order-share\.html/);
 });
 

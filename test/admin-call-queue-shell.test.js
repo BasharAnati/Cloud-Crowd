@@ -399,6 +399,10 @@ function loadAdmin() {
     }
   };
   context.window = context;
+  context.CloudCrowdConfirmation = { request: async (message) => context.confirm(message) };
+  context.CloudCrowdFeedback = {
+    inline(element, message) { element.textContent = message || ""; return element; }
+  };
   const exposure = `window.__api = {
     apiRequest, dataRequest, renderStats, renderUsers, renderModules, updateAccountFields,
     saveUser, disableUser, collectAccessPayload, saveAccess, loadAdminCenter,
@@ -546,10 +550,14 @@ test("Admin executes exact create, update, disable, access, statistics, and degr
 
   loaded.calls.length = 0;
   loaded.api.setUsers([{ userId: "user-id-1", username: "worker", role: "agent", status: "active" }]);
+  loaded.context.confirm = (message) => { loaded.confirmations.push(message); return false; };
+  await loaded.api.disableUser("user-id-1");
+  assert.equal(loaded.calls.length, 0, "Disable cancellation performs no DELETE");
+  loaded.context.confirm = (message) => { loaded.confirmations.push(message); return true; };
   await loaded.api.disableUser("user-id-1");
   assert.equal(loaded.calls[0].url, "/.netlify/functions/admin-users?id=user-id-1");
   assert.equal(loaded.calls[0].options.method, "DELETE");
-  assert.deepEqual(loaded.confirmations, ["Disable worker?"]);
+  assert.deepEqual(loaded.confirmations, ["Disable worker?", "Disable worker?"]);
 
   loaded.calls.length = 0;
   loaded.document.getElementById("access-user").value = "worker";

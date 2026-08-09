@@ -1,0 +1,183 @@
+/* Sprint 1.5 shared button foundation. Business hooks remain page-owned. */
+body .cc-button {
+  height: var(--button-height-md);
+  min-height: var(--button-height-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--button-icon-gap);
+  max-width: 100%;
+  padding: 0 var(--button-padding-inline-md);
+  border: 1px solid transparent;
+  border-radius: var(--button-radius);
+  color: var(--color-text);
+  background: transparent;
+  box-shadow: none;
+  font-family: inherit;
+  font-size: var(--font-size-button);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard),
+    opacity var(--duration-fast) var(--ease-standard);
+}
+
+body .cc-button--sm {
+  height: var(--button-height-sm);
+  min-height: var(--button-height-sm);
+  padding-inline: var(--button-padding-inline-sm);
+}
+
+body .cc-button--md {
+  height: var(--button-height-md);
+  min-height: var(--button-height-md);
+  padding-inline: var(--button-padding-inline-md);
+}
+
+body .cc-button--lg {
+  height: var(--button-height-lg);
+  min-height: var(--button-height-lg);
+  padding-inline: var(--button-padding-inline-lg);
+}
+
+body .cc-button--primary {
+  color: var(--color-primary-on-solid);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+body .cc-button--primary:hover { background: var(--color-primary-hover); }
+body .cc-button--primary:active { background: var(--color-primary-active); }
+
+body .cc-button--secondary {
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  border-color: var(--color-border);
+}
+
+body .cc-button--secondary:hover { border-color: var(--color-primary); background: var(--color-primary-soft); }
+body .cc-button--secondary:active { color: var(--color-primary-hover); background: var(--color-surface-muted); }
+
+body .cc-button--ghost {
+  color: var(--color-primary);
+  background: transparent;
+  border-color: transparent;
+}
+
+body .cc-button--ghost:hover { color: var(--color-primary-hover); background: var(--color-primary-soft); }
+body .cc-button--ghost:active { color: var(--color-primary-active); background: var(--color-surface-muted); }
+
+body .cc-button--outline {
+  color: var(--color-primary);
+  background: var(--color-surface);
+  border-color: var(--color-primary);
+}
+
+body .cc-button--outline:hover { color: var(--color-primary-hover); background: var(--color-primary-soft); }
+body .cc-button--outline:active { color: var(--color-primary-active); background: var(--color-surface-muted); }
+
+body .cc-button--danger {
+  color: var(--color-danger-text);
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger-border);
+}
+
+body .cc-button--danger:hover { color: var(--color-danger-on-solid); background: var(--color-danger); border-color: var(--color-danger); }
+body .cc-button--danger:active { color: var(--color-danger-on-solid); background: var(--color-danger-hover); border-color: var(--color-danger-hover); }
+
+body .cc-button--success {
+  color: var(--color-success-on-solid);
+  background: var(--color-success);
+  border-color: var(--color-success);
+}
+
+body .cc-button--success:hover { background: var(--color-success-hover); border-color: var(--color-success-hover); }
+body .cc-button--success:active { filter: saturate(0.88); }
+
+body .cc-button--warning {
+  color: var(--color-warning-text);
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning-border);
+}
+
+body .cc-button--warning:hover { color: var(--color-warning-on-solid); background: var(--color-warning); }
+body .cc-button--warning:active { color: var(--color-warning-on-solid); background: var(--color-warning-hover); }
+
+/* Legacy `.btn` regions carry two-class selectors; keep the explicit Warning
+   variant authoritative without changing unrelated legacy actions. */
+body .btn.cc-button--warning {
+  color: var(--color-warning-text);
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning-border);
+}
+
+body .btn.cc-button--warning:hover { color: var(--color-warning-on-solid); background: var(--color-warning); }
+body .btn.cc-button--warning:active { color: var(--color-warning-on-solid); background: var(--color-warning-hover); }
+
+body .cc-button:focus-visible,
+body .cc-icon-button:focus-visible {
+  outline: var(--button-focus-outline);
+  outline-offset: 2px;
+}
+
+body .cc-button:active:not(:disabled, [aria-disabled="true"]),
+body .cc-icon-button:active:not(:disabled, [aria-disabled="true"]) {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+body .cc-button:is(:disabled, [aria-disabled="true"]),
+body .cc-icon-button:is(:disabled, [aria-disabled="true"]) {
+  color: var(--button-disabled-text);
+  background: var(--button-disabled-background);
+  border-color: var(--color-border);
+  box-shadow: none;
+  opacity: var(--button-disabled-opacity);
+  cursor: not-allowed;
+  transform: none;
+}
+
+body .cc-button[aria-busy="true"],
+body .cc-button.is-loading {
+  cursor: wait;
+}
+
+body .cc-button[aria-busy="true"]::before,
+body .cc-button.is-loading::before {
+  width: 1em;
+  height: 1em;
+  flex: 0 0 1em;
+  border: 2px solid currentColor;
+  border-inline-end-color: transparent;
+  border-radius: var(--radius-full);
+  content: "";
+  animation: cc-button-spin var(--duration-slow) linear infinite;
+}
+
+body .cc-icon-button {
+  width: var(--button-height-md);
+  min-width: var(--button-height-md);
+  height: var(--button-height-md);
+  min-height: var(--button-height-md);
+  padding: 0;
+  border-radius: var(--button-radius);
+}
+
+body .cc-icon-button.cc-button--sm { width: var(--button-height-sm); min-width: var(--button-height-sm); }
+body .cc-icon-button.cc-button--lg { width: var(--button-height-lg); min-width: var(--button-height-lg); }
+
+@keyframes cc-button-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  body .cc-button[aria-busy="true"]::before,
+  body .cc-button.is-loading::before { animation-duration: 1.2s; }
+}

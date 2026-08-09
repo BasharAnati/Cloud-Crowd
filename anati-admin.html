@@ -6,6 +6,11 @@
   <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
   <title>Anati Admin Center - Cloud Crowd</title>
   <script src="assets/js/theme.js"></script>
+  <script src="assets/vendor/lucide/lucide-subset.js"></script>
+  <script src="assets/js/components/buttons.js"></script>
+  <script src="assets/js/components/icons.js"></script>
+  <script src="assets/js/components/feedback.js"></script>
+  <script src="assets/js/components/confirmation.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
   <link rel="stylesheet" href="app-shell.css">
   <link rel="stylesheet" href="assets/css/theme-base.css">
@@ -251,6 +256,9 @@
   <script src="js/app-shell.js" defer></script>
   <script src="js/internal-page-shell.js" defer></script>
   <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
+  <link rel="stylesheet" href="assets/css/components/buttons.css">
+  <link rel="stylesheet" href="assets/css/components/icons.css">
+  <link rel="stylesheet" href="assets/css/components/feedback.css">
 </head>
 <body class="admin-call-queue-page admin-center-page" data-shell-module="anati-admin" data-shell-user-id="admin-shell-user" data-shell-role-id="admin-shell-role">
   <script>
@@ -281,7 +289,7 @@
           </div>
         </header>
 
-        <div class="notice">Phase 2 supports database-backed login with legacy fallback. Temporary passwords can be set here, but forced password change screens come in a later phase.</div>
+        <div class="notice cc-feedback cc-feedback--banner cc-feedback--warning" role="status" aria-live="polite" aria-atomic="true">Phase 2 supports database-backed login with legacy fallback. Temporary passwords can be set here, but forced password change screens come in a later phase.</div>
 
       <section class="stats" aria-label="Admin Center stats">
         <div class="stat"><span>Total Users</span><strong id="stat-total">0</strong></div>
@@ -482,6 +490,11 @@
 
     function showMessage(id, message, isError = false) {
       const element = document.getElementById(id);
+      if (window.CloudCrowdFeedback) {
+        window.CloudCrowdFeedback.inline(element, message, isError ? 'error' : 'success');
+        element.classList.toggle("error", isError);
+        return;
+      }
       element.textContent = message;
       element.classList.toggle("error", isError);
     }
@@ -754,7 +767,11 @@
 
     async function disableUser(userId) {
       const user = adminUsers.find((entry) => entry.userId === userId);
-      if (!user || !confirm(`Disable ${user.username}?`)) return;
+      if (!user || !await window.CloudCrowdConfirmation.request(`Disable ${user.username}?`, {
+        title: 'Disable user',
+        confirmLabel: 'Disable',
+        intent: 'danger'
+      })) return;
 
       try {
         await apiRequest(`?id=${encodeURIComponent(userId)}`, { method: "DELETE" });

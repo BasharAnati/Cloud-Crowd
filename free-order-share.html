@@ -6,6 +6,11 @@
   <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
   <title>Cloud Crowd - Free Order Share</title>
   <script src="assets/js/theme.js"></script>
+  <script src="assets/vendor/lucide/lucide-subset.js"></script>
+  <script src="assets/js/components/buttons.js"></script>
+  <script src="assets/js/components/icons.js"></script>
+  <script src="assets/js/components/feedback.js"></script>
+  <script src="assets/js/components/confirmation.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
   <link rel="stylesheet" href="app-shell.css">
   <link rel="stylesheet" href="assets/css/theme-base.css">
@@ -515,6 +520,9 @@
   <script src="js/app-shell.js" defer></script>
   <script src="js/internal-page-shell.js" defer></script>
   <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
+  <link rel="stylesheet" href="assets/css/components/buttons.css">
+  <link rel="stylesheet" href="assets/css/components/icons.css">
+  <link rel="stylesheet" href="assets/css/components/feedback.css">
 </head>
 <body class="workflow-page free-order-share-page" data-shell-module="free-order-share" data-shell-user-id="workflow-user" data-shell-role-id="workflow-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -534,7 +542,7 @@
             <p class="cc-page-header-description">Work from the same Free Order Requests records. Items completed here immediately become Done in the requests workflow.</p>
           </div>
           <div class="cc-page-header-actions">
-            <a class="primary-btn" href="free-order-requests.html">Requests</a>
+            <a class="primary-btn cc-button cc-button--outline cc-button--md" href="free-order-requests.html">Requests</a>
           </div>
         </header>
 
@@ -676,6 +684,13 @@
 
     function setMessage(message, type = '') {
       const el = document.getElementById('message');
+      if (window.CloudCrowdFeedback) {
+        if (message) window.CloudCrowdFeedback.inline(el, message, type || 'info');
+        else window.CloudCrowdFeedback.clear(el);
+        el.classList.add('message');
+        if (type) el.classList.add(type);
+        return;
+      }
       el.textContent = message || '';
       el.className = `message ${type}`.trim();
     }
@@ -860,7 +875,10 @@
     async function markDone(id) {
       const item = itemById(id);
       if (!item) return;
-      if (!window.confirm(`Mark request ${item.orderNumber} as done?`)) return;
+      if (!await window.CloudCrowdConfirmation.request(`Mark request ${item.orderNumber} as done?`, {
+        title: 'Mark request done',
+        confirmLabel: 'Mark done'
+      })) return;
 
       try {
         const response = await fetch(`${API_ENDPOINT}?id=${encodeURIComponent(id)}&action=share-done`, {
