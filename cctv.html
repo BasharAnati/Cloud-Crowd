@@ -11,6 +11,7 @@
   <script src="assets/js/components/icons.js"></script>
   <script src="assets/js/components/feedback.js"></script>
   <script src="assets/js/components/confirmation.js"></script>
+  <script src="assets/js/components/status-registry.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="app-shell.css">
@@ -94,6 +95,8 @@
   <link rel="stylesheet" href="assets/css/components/feedback.css">
   <link rel="stylesheet" href="assets/css/components/forms.css">
   <link rel="stylesheet" href="assets/css/components/filters.css">
+  <link rel="stylesheet" href="assets/css/components/cards.css">
+  <link rel="stylesheet" href="assets/css/components/status.css">
 </head>
 <body class="cctv-page cctv-ops-center">
   <div class="cctv-module-shell cc-shell-layout">
@@ -112,23 +115,23 @@
         </div>
       </header>
 
-      <section class="cctv-stats" aria-label="CCTV case summary">
-        <article class="cctv-stat-card cctv-stat-total">
+      <section class="cctv-stats cc-metric-grid" aria-label="CCTV case summary">
+        <article class="cctv-stat-card cc-metric-card cctv-stat-total">
           <span class="cctv-stat-icon" aria-hidden="true"></span>
           <span class="cctv-stat-label">Total Cases</span>
           <strong id="cctv-stat-total">0</strong>
         </article>
-        <article class="cctv-stat-card cctv-stat-escalated">
+        <article class="cctv-stat-card cc-metric-card cctv-stat-escalated">
           <span class="cctv-stat-icon" aria-hidden="true"></span>
           <span class="cctv-stat-label">Escalated</span>
           <strong id="cctv-stat-escalated">0</strong>
         </article>
-        <article class="cctv-stat-card cctv-stat-review">
+        <article class="cctv-stat-card cc-metric-card cctv-stat-review">
           <span class="cctv-stat-icon" aria-hidden="true"></span>
           <span class="cctv-stat-label">Under Review</span>
           <strong id="cctv-stat-under-review">0</strong>
         </article>
-        <article class="cctv-stat-card cctv-stat-closed">
+        <article class="cctv-stat-card cc-metric-card cctv-stat-closed">
           <span class="cctv-stat-icon" aria-hidden="true"></span>
           <span class="cctv-stat-label">Closed</span>
           <strong id="cctv-stat-closed">0</strong>

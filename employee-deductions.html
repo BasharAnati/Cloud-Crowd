@@ -11,6 +11,7 @@
   <script src="assets/js/components/icons.js"></script>
   <script src="assets/js/components/feedback.js"></script>
   <script src="assets/js/components/confirmation.js"></script>
+  <script src="assets/js/components/status-registry.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
   <link rel="stylesheet" href="app-shell.css">
   <link rel="stylesheet" href="assets/css/theme-base.css">
@@ -106,6 +107,8 @@
   <link rel="stylesheet" href="assets/css/components/feedback.css">
   <link rel="stylesheet" href="assets/css/components/forms.css">
   <link rel="stylesheet" href="assets/css/components/filters.css">
+  <link rel="stylesheet" href="assets/css/components/cards.css">
+  <link rel="stylesheet" href="assets/css/components/status.css">
 </head>
 <body class="people-management-page employee-deductions-page" data-shell-module="employee-deductions" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -130,11 +133,11 @@
 
       <div class="message" id="page-message" role="status"></div>
 
-      <section class="stats-grid" aria-label="Deduction summary">
-        <article class="stat-card"><span>Total Deductions Amount</span><strong id="stat-total">0.00</strong></article>
-        <article class="stat-card"><span>This Month Deductions</span><strong id="stat-month">0.00</strong></article>
-        <article class="stat-card"><span>Employees With Deductions</span><strong id="stat-employees">0</strong></article>
-        <article class="stat-card"><span>Most Common Deduction Type</span><strong id="stat-type">-</strong></article>
+      <section class="stats-grid cc-metric-grid" aria-label="Deduction summary">
+        <article class="stat-card cc-metric-card"><span>Total Deductions Amount</span><strong id="stat-total">0.00</strong></article>
+        <article class="stat-card cc-metric-card"><span>This Month Deductions</span><strong id="stat-month">0.00</strong></article>
+        <article class="stat-card cc-metric-card"><span>Employees With Deductions</span><strong id="stat-employees">0</strong></article>
+        <article class="stat-card cc-metric-card"><span>Most Common Deduction Type</span><strong id="stat-type">-</strong></article>
       </section>
 
       <section class="content-card" aria-labelledby="records-title">
@@ -162,7 +165,7 @@
             </thead>
             <tbody id="records-body"></tbody>
           </table>
-          <div class="empty-state" id="records-empty">Loading deduction records...</div>
+          <div class="empty-state cc-empty-state" id="records-empty">Loading deduction records...</div>
         </div>
       </section>
       </div>

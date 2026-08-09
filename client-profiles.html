@@ -11,6 +11,7 @@
   <script src="assets/js/components/icons.js"></script>
   <script src="assets/js/components/feedback.js"></script>
   <script src="assets/js/components/confirmation.js"></script>
+  <script src="assets/js/components/status-registry.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
   <link rel="stylesheet" href="app-shell.css">
   <link rel="stylesheet" href="assets/css/theme-base.css">
@@ -177,6 +178,8 @@
   <link rel="stylesheet" href="assets/css/components/feedback.css">
   <link rel="stylesheet" href="assets/css/components/forms.css">
   <link rel="stylesheet" href="assets/css/components/filters.css">
+  <link rel="stylesheet" href="assets/css/components/cards.css">
+  <link rel="stylesheet" href="assets/css/components/status.css">
 </head>
 <body class="business-quality-page client-profiles-page" data-shell-module="client-profiles" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -201,11 +204,11 @@
 
       <div class="message" id="page-message" role="status"></div>
 
-      <section class="stats-grid" aria-label="Client summary">
-        <article class="stat-card"><span>Total Clients</span><strong id="stat-total">0</strong></article>
-        <article class="stat-card"><span>Active Clients</span><strong id="stat-active">0</strong></article>
-        <article class="stat-card"><span>Archived Clients</span><strong id="stat-archived">0</strong></article>
-        <article class="stat-card"><span>Assigned Agents</span><strong id="stat-agents">0</strong></article>
+      <section class="stats-grid cc-metric-grid" aria-label="Client summary">
+        <article class="stat-card cc-metric-card"><span>Total Clients</span><strong id="stat-total">0</strong></article>
+        <article class="stat-card cc-metric-card"><span>Active Clients</span><strong id="stat-active">0</strong></article>
+        <article class="stat-card cc-metric-card"><span>Archived Clients</span><strong id="stat-archived">0</strong></article>
+        <article class="stat-card cc-metric-card"><span>Assigned Agents</span><strong id="stat-agents">0</strong></article>
       </section>
 
       <section class="content-card" aria-labelledby="directory-title">
@@ -225,7 +228,7 @@
           </select>
         </div>
         <div class="client-grid" id="client-grid">
-          <div class="empty-state">Loading client profiles...</div>
+          <div class="empty-state cc-empty-state">Loading client profiles...</div>
         </div>
       </section>
       </div>
@@ -443,8 +446,14 @@
     }
 
     function statusBadge(status) {
+      const registry = window.CloudCrowdStatusRegistry;
+      if (registry) {
+        const presentation = registry.get('client', status);
+        const toneClass = registry.getToneClass('client', status);
+        return `<span class="status-badge cc-status ${toneClass}">${escapeHtml(presentation.label)}</span>`;
+      }
       const safeStatus = status === 'inactive' ? 'inactive' : 'active';
-      return `<span class="status-badge status-${safeStatus}">${statusLabel(safeStatus)}</span>`;
+      return `<span class="status-badge cc-status cc-status--neutral">${escapeHtml(statusLabel(safeStatus))}</span>`;
     }
 
     function valueOrDash(value) {
@@ -572,7 +581,13 @@
         'No training or assignment needed': 'neutral'
       };
       const className = statusMap[status] || 'neutral';
-      return `<span class="status-badge status-${className}">${escapeHtml(status || '-')}</span>`;
+      const domain = status === 'Assigned' || status === 'Unassigned'
+        ? 'training-assignment'
+        : 'training-outcome';
+      const registry = window.CloudCrowdStatusRegistry;
+      const presentation = registry ? registry.get(domain, status) : { label: status || '-' };
+      const toneClass = registry ? registry.getToneClass(domain, status) : 'cc-status--neutral';
+      return `<span class="status-badge status-${className} cc-status ${toneClass}">${escapeHtml(presentation.label)}</span>`;
     }
 
     async function loadRestaurants() {
@@ -624,7 +639,7 @@
             <button class="small-btn danger-btn" type="button" data-archive-id="${escapeHtml(restaurant.restaurantId)}" data-permission-delete>Archive</button>
           ` : '';
           return `
-            <article class="client-card">
+            <article class="client-card cc-card">
               <div class="client-card-head">
                 ${logoMarkup(restaurant)}
                 <div>
@@ -998,7 +1013,7 @@
           'Free Orders',
           'Call Queue'
         ].map((label) => `
-          <div class="future-card">
+          <div class="future-card cc-planned-card">
             <strong>${escapeHtml(label)}</strong>
             <span>Coming soon</span>
           </div>

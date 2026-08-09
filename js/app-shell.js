@@ -487,7 +487,7 @@
 
   function createModuleCard(module) {
     const link = document.createElement('a');
-    link.className = 'cc-shell-module-card';
+    link.className = 'cc-shell-module-card cc-card';
     link.href = module.route;
     link.dataset.moduleId = module.id;
     link.dataset.permissionKey = module.permissionKey || '';

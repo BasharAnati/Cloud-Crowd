@@ -77,6 +77,28 @@ function drawerCaseLabel(){
   return window.currentSection === 'ce' ? 'Order Number' : 'Case Number';
 }
 
+function ticketStatusDomain(){
+  return ({
+    cctv: 'operations-cctv',
+    ce: 'operations-customer-experience',
+    complaints: 'operations-complaints',
+    'free-orders': 'complimentary-orders'
+  })[window.currentSection] || 'operations-cctv';
+}
+
+function ticketStatusPresentation(status){
+  if (window.CloudCrowdStatusRegistry) {
+    return window.CloudCrowdStatusRegistry.get(ticketStatusDomain(), status);
+  }
+  return { rawValue: status, label: displayStatusName(status), tone: 'neutral', known: false };
+}
+
+function ticketStatusToneClass(status){
+  return window.CloudCrowdStatusRegistry
+    ? window.CloudCrowdStatusRegistry.getToneClass(ticketStatusDomain(), status)
+    : 'cc-status--neutral';
+}
+
 function normalizeFilterText(value){
   return String(value || '').trim().toLowerCase();
 }
@@ -178,7 +200,7 @@ function getCeCardContent(ticket){
 
   return `
     <div class="ce-ticket-top">
-      <span class="ce-status-pill ${bandClassForStatus(status)}">${displayStatusName(status)}</span>
+      <span class="ce-status-pill cc-status ${ticketStatusToneClass(status)}">${escapeHtml(ticketStatusPresentation(status).label)}</span>
       ${dateText ? `<span class="ce-ticket-date">${escapeHtml(dateText)}</span>` : ''}
     </div>
     <div class="ce-ticket-order">${escapeHtml(orderNumber)}</div>
@@ -194,7 +216,7 @@ function getCeCardContent(ticket){
 
 function createCeEmptyState(kind){
   const empty = document.createElement('div');
-  empty.className = 'ce-empty-state';
+  empty.className = 'ce-empty-state cc-empty-state';
   if (kind === 'filter') {
     empty.innerHTML = `
       <strong>No matching cases</strong>
@@ -293,7 +315,7 @@ function getComplaintCardContent(ticket){
 
   return `
     <div class="complaints-ticket-top">
-      <span class="complaints-status-pill ${bandClassForStatus(status)}">${displayStatusName(status)}</span>
+      <span class="complaints-status-pill cc-status ${ticketStatusToneClass(status)}">${escapeHtml(ticketStatusPresentation(status).label)}</span>
       ${dateText ? `<span class="complaints-ticket-date">${escapeHtml(dateText)}</span>` : ''}
     </div>
     <div class="complaints-ticket-case">${escapeHtml(caseNumber)}</div>
@@ -310,7 +332,7 @@ function getComplaintCardContent(ticket){
 
 function createComplaintsEmptyState(kind){
   const empty = document.createElement('div');
-  empty.className = 'complaints-empty-state';
+  empty.className = 'complaints-empty-state cc-empty-state';
   if (kind === 'filter') {
     empty.innerHTML = `
       <strong>No matching complaints</strong>
@@ -430,7 +452,7 @@ function getCctvCardContent(ticket){
 
   return `
     <div class="cctv-ticket-top">
-      <span class="cctv-status-pill ${bandClassForStatus(status)}">${displayStatusName(status)}</span>
+      <span class="cctv-status-pill cc-status ${ticketStatusToneClass(status)}">${escapeHtml(ticketStatusPresentation(status).label)}</span>
       ${dateTimeText ? `<span class="cctv-ticket-date">${escapeHtml(dateTimeText)}</span>` : ''}
     </div>
     <div class="cctv-ticket-case">${escapeHtml(getCaseDisplay(ticket))}</div>
@@ -447,7 +469,7 @@ function getCctvCardContent(ticket){
 
 function createCctvEmptyState(kind){
   const empty = document.createElement('div');
-  empty.className = 'cctv-empty-state';
+  empty.className = 'cctv-empty-state cc-empty-state';
   if (kind === 'filter') {
     empty.innerHTML = `
       <strong>No matching CCTV cases</strong>
@@ -558,7 +580,7 @@ function getFreeOrderCardContent(ticket){
 
   return `
     <div class="free-orders-ticket-top">
-      <span class="free-orders-status-pill ${bandClassForStatus(status)}">${displayStatusName(status)}</span>
+      <span class="free-orders-status-pill cc-status ${ticketStatusToneClass(status)}">${escapeHtml(ticketStatusPresentation(status).label)}</span>
       ${dateText ? `<span class="free-orders-ticket-date">${escapeHtml(dateText)}</span>` : ''}
     </div>
     <div class="free-orders-ticket-order">${escapeHtml(getCaseDisplay(ticket))}</div>
@@ -579,7 +601,7 @@ function getFreeOrderCardContent(ticket){
 
 function createFreeOrdersEmptyState(kind){
   const empty = document.createElement('div');
-  empty.className = 'free-orders-empty-state';
+  empty.className = 'free-orders-empty-state cc-empty-state';
   if (kind === 'filter') {
     empty.innerHTML = `
       <strong>No matching complimentary orders</strong>
@@ -680,7 +702,7 @@ function renderTickets(){
 
     if (!statusTickets.length) {
       const empty = document.createElement('div');
-      empty.className = 'kanban-empty-state';
+      empty.className = 'kanban-empty-state cc-empty-state';
       empty.textContent = isFreeOrders ? 'No orders in this status' : (isCe || isComplaints || isCctv) ? 'No cases in this status' : 'No tickets in this status';
       col.appendChild(empty);
     }
@@ -688,14 +710,14 @@ function renderTickets(){
     statusTickets.forEach(ticket=>{
       const card = document.createElement('div');
       card.className = isCe
-        ? 'ticket-card ce-ticket-card'
+        ? 'ticket-card ce-ticket-card cc-card'
         : isComplaints
-          ? 'ticket-card complaints-ticket-card'
+          ? 'ticket-card complaints-ticket-card cc-card'
           : isCctv
-            ? 'ticket-card cctv-ticket-card'
+            ? 'ticket-card cctv-ticket-card cc-card'
             : isFreeOrders
-              ? 'ticket-card free-orders-ticket-card'
-              : 'ticket-card';
+              ? 'ticket-card free-orders-ticket-card cc-card'
+              : 'ticket-card cc-card';
 
       let timeStr = '';
       const baseDT = ticket.dateTime || ticket.creationDate || ticket.orderDate;
@@ -709,7 +731,7 @@ function renderTickets(){
 
       const band = `
         <div class="card-band ${bandClassForStatus(ticket.status)}">
-          <span class="band-status">${displayStatusName(ticket.status || 'Uncategorized')}</span>
+          <span class="band-status">${escapeHtml(ticketStatusPresentation(ticket.status || 'Uncategorized').label)}</span>
           <span class="band-case">${escapeHtml(getCaseDisplay(ticket))}</span>
         </div>
       `;

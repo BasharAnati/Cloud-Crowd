@@ -11,6 +11,7 @@
   <script src="assets/js/components/icons.js"></script>
   <script src="assets/js/components/feedback.js"></script>
   <script src="assets/js/components/confirmation.js"></script>
+  <script src="assets/js/components/status-registry.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
   <link rel="stylesheet" href="app-shell.css">
   <link rel="stylesheet" href="assets/css/theme-base.css">
@@ -620,6 +621,8 @@
   <link rel="stylesheet" href="assets/css/components/feedback.css">
   <link rel="stylesheet" href="assets/css/components/forms.css">
   <link rel="stylesheet" href="assets/css/components/filters.css">
+  <link rel="stylesheet" href="assets/css/components/cards.css">
+  <link rel="stylesheet" href="assets/css/components/status.css">
 </head>
 <body class="business-quality-page weekly-quality-page" data-shell-module="weekly-quality" data-shell-user-id="quality-user-name" data-shell-role-id="quality-role-badge">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -642,20 +645,20 @@
         </div>
       </header>
 
-      <section class="stats-grid" aria-label="Quality evaluation summary">
-        <article class="stat-card">
+      <section class="stats-grid cc-metric-grid" aria-label="Quality evaluation summary">
+        <article class="stat-card cc-metric-card">
           <span class="stat-label">Total Evaluations</span>
           <strong class="stat-value" id="stat-total">0</strong>
         </article>
-        <article class="stat-card">
+        <article class="stat-card cc-metric-card">
           <span class="stat-label">Average Score</span>
           <strong class="stat-value" id="stat-average">0%</strong>
         </article>
-        <article class="stat-card">
+        <article class="stat-card cc-metric-card">
           <span class="stat-label">Highest Score</span>
           <strong class="stat-value" id="stat-highest">0%</strong>
         </article>
-        <article class="stat-card">
+        <article class="stat-card cc-metric-card">
           <span class="stat-label">Lowest Score</span>
           <strong class="stat-value" id="stat-lowest">0%</strong>
         </article>
@@ -785,7 +788,7 @@
             </thead>
             <tbody id="records-body"></tbody>
           </table>
-          <div class="empty-state" id="empty-state">
+          <div class="empty-state cc-empty-state" id="empty-state">
             <strong>No evaluations found</strong>
             Save an evaluation or adjust the active filters.
           </div>

@@ -12,6 +12,8 @@
     "test:typography-layout-headers": "node --test test/typography-layout-headers.test.js",
     "test:sprint-1-6-characterization": "node --test test/sprint-1-6-characterization.test.js",
     "test:sprint-1-6": "node --test test/sprint-1-6-forms-filters.test.js",
+    "test:sprint-1-7-characterization": "node --test test/sprint-1-7-characterization.test.js",
+    "test:sprint-1-7": "node --test test/sprint-1-7-cards-status.test.js",
     "test:theme": "node --test test/theme.test.js",
     "test:audit": "node --test tools/audit/production/test/*.test.js tools/audit/production/test/postgres/*.test.js tools/audit/production/test/sheets/*.test.js tools/audit/production/test/normalize/*.test.js tools/audit/production/test/parity/*.test.js tools/audit/production/test/report/*.test.js tools/audit/production/test/orchestrator/*.test.js tools/audit/production/test/output/*.test.js tools/audit/production/test/cli/*.test.js"
   },

@@ -11,6 +11,7 @@
   <script src="assets/js/components/icons.js"></script>
   <script src="assets/js/components/feedback.js"></script>
   <script src="assets/js/components/confirmation.js"></script>
+  <script src="assets/js/components/status-registry.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
   <link rel="stylesheet" href="app-shell.css">
   <link rel="stylesheet" href="assets/css/theme-base.css">
@@ -259,6 +260,8 @@
   <link rel="stylesheet" href="assets/css/components/buttons.css">
   <link rel="stylesheet" href="assets/css/components/icons.css">
   <link rel="stylesheet" href="assets/css/components/feedback.css">
+  <link rel="stylesheet" href="assets/css/components/cards.css">
+  <link rel="stylesheet" href="assets/css/components/status.css">
   <link rel="stylesheet" href="assets/css/components/forms.css">
 </head>
 <body class="admin-call-queue-page admin-center-page" data-shell-module="anati-admin" data-shell-user-id="admin-shell-user" data-shell-role-id="admin-shell-role">
@@ -292,11 +295,11 @@
 
         <div class="notice cc-feedback cc-feedback--banner cc-feedback--warning" role="status" aria-live="polite" aria-atomic="true">Phase 2 supports database-backed login with legacy fallback. Temporary passwords can be set here, but forced password change screens come in a later phase.</div>
 
-      <section class="stats" aria-label="Admin Center stats">
-        <div class="stat"><span>Total Users</span><strong id="stat-total">0</strong></div>
-        <div class="stat"><span>Active Users</span><strong id="stat-active">0</strong></div>
-        <div class="stat"><span>Disabled Users</span><strong id="stat-disabled">0</strong></div>
-        <div class="stat"><span>Admins / Managers</span><strong id="stat-leaders">0</strong></div>
+      <section class="stats cc-metric-grid" aria-label="Admin Center stats">
+        <div class="stat cc-metric-card"><span>Total Users</span><strong id="stat-total">0</strong></div>
+        <div class="stat cc-metric-card"><span>Active Users</span><strong id="stat-active">0</strong></div>
+        <div class="stat cc-metric-card"><span>Disabled Users</span><strong id="stat-disabled">0</strong></div>
+        <div class="stat cc-metric-card"><span>Admins / Managers</span><strong id="stat-leaders">0</strong></div>
       </section>
 
       <section class="grid" aria-label="User management">
@@ -422,15 +425,15 @@
       </section>
 
       <section class="placeholder-grid" aria-label="Future admin sections">
-        <div class="placeholder">
+        <div class="placeholder cc-planned-card">
           <h2 class="cc-section-title">Workflow Permissions</h2>
           <p>Future controls for workflow-specific approvals, transitions, and ownership rules.</p>
         </div>
-        <div class="placeholder">
+        <div class="placeholder cc-planned-card">
           <h2 class="cc-section-title">Maintenance Control</h2>
           <p>Future centralized controls for maintenance mode and operational access windows.</p>
         </div>
-        <div class="placeholder">
+        <div class="placeholder cc-planned-card">
           <h2 class="cc-section-title">Audit Logs</h2>
           <p>Future searchable review surface for admin actions and access changes.</p>
         </div>
@@ -580,6 +583,13 @@
       document.getElementById("stat-leaders").textContent = leaders;
     }
 
+    function adminStatusBadge(status) {
+      const registry = window.CloudCrowdStatusRegistry;
+      const presentation = registry ? registry.get('admin-user', status) : { label: status };
+      const toneClass = registry ? registry.getToneClass('admin-user', status) : 'cc-status--neutral';
+      return `<span class="chip cc-status ${toneClass}">${escapeHtml(presentation.label)}</span>`;
+    }
+
     function renderUsers() {
       const body = document.getElementById("users-body");
       if (!adminUsers.length) {
@@ -611,7 +621,7 @@
           <td><span class="chip ${linkClass}">${escapeHtml(linkStatus)}</span></td>
           <td>${linkedLabel}</td>
           <td><span class="chip">${escapeHtml(user.role)}</span></td>
-          <td><span class="chip ${user.status === "active" ? "active" : "disabled"}">${escapeHtml(user.status)}</span></td>
+          <td>${adminStatusBadge(user.status)}</td>
           <td>
             <div class="actions" style="margin-top:0">
               <button class="btn secondary" type="button" data-edit-user="${escapeHtml(user.userId)}">Edit</button>

@@ -11,6 +11,7 @@
   <script src="assets/js/components/icons.js"></script>
   <script src="assets/js/components/feedback.js"></script>
   <script src="assets/js/components/confirmation.js"></script>
+  <script src="assets/js/components/status-registry.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
   <link rel="stylesheet" href="app-shell.css">
   <link rel="stylesheet" href="assets/css/theme-base.css">
@@ -501,6 +502,8 @@
   <link rel="stylesheet" href="assets/css/components/feedback.css">
   <link rel="stylesheet" href="assets/css/components/forms.css">
   <link rel="stylesheet" href="assets/css/components/filters.css">
+  <link rel="stylesheet" href="assets/css/components/cards.css">
+  <link rel="stylesheet" href="assets/css/components/status.css">
 </head>
 <body class="workflow-page free-order-requests-page" data-shell-module="free-order-requests" data-shell-user-id="workflow-user" data-shell-role-id="workflow-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -526,12 +529,12 @@
 
     <div class="message" id="message" role="status" aria-live="polite"></div>
 
-    <section class="stats-grid" aria-label="Free order request statistics">
-      <article class="stat-card"><span>Total Requests</span><strong id="stat-total">0</strong></article>
-      <article class="stat-card"><span>Pending Details</span><strong id="stat-pending">0</strong></article>
-      <article class="stat-card"><span>Ready to Share</span><strong id="stat-ready">0</strong></article>
-      <article class="stat-card"><span>Needs Response</span><strong id="stat-needs-response">0</strong></article>
-      <article class="stat-card"><span>Done</span><strong id="stat-done">0</strong></article>
+    <section class="stats-grid cc-metric-grid" aria-label="Free order request statistics">
+      <article class="stat-card cc-metric-card"><span>Total Requests</span><strong id="stat-total">0</strong></article>
+      <article class="stat-card cc-metric-card"><span>Pending Details</span><strong id="stat-pending">0</strong></article>
+      <article class="stat-card cc-metric-card"><span>Ready to Share</span><strong id="stat-ready">0</strong></article>
+      <article class="stat-card cc-metric-card"><span>Needs Response</span><strong id="stat-needs-response">0</strong></article>
+      <article class="stat-card cc-metric-card"><span>Done</span><strong id="stat-done">0</strong></article>
     </section>
 
     <section class="toolbar cc-filter-bar cc-filter-bar--compact" aria-label="Request filters">
@@ -706,6 +709,13 @@
       return STAGE_COLUMNS.find((item) => item.key === stage)?.label || stage || '-';
     }
 
+    function requestStageBadge(stage, legacyClass) {
+      const registry = window.CloudCrowdStatusRegistry;
+      const presentation = registry ? registry.get('free-order-requests', stage) : { label: stageLabel(stage) };
+      const toneClass = registry ? registry.getToneClass('free-order-requests', stage) : 'cc-status--neutral';
+      return `<span class="${legacyClass} cc-status ${toneClass}">${escapeHtml(presentation.label)}</span>`;
+    }
+
     function requestDisplayStage(request) {
       if (request.shareStage === 'needs_response') return 'needs_response';
       return request.internalStage || '';
@@ -810,10 +820,10 @@
     function renderCard(request) {
       const needsResponse = request.shareStage === 'needs_response';
       const readyBadge = request.internalStage === 'ready_to_share' && !needsResponse
-        ? '<span class="stage-badge">Ready for Free Order Share</span>'
+        ? requestStageBadge('ready_to_share', 'stage-badge')
         : '';
       const responseBadge = needsResponse
-        ? '<span class="response-badge">Needs Response</span>'
+        ? requestStageBadge('needs_response', 'response-badge')
         : '';
       const completeButton = request.internalStage === 'pending_details'
         ? `<button class="small-btn" type="button" data-complete-id="${escapeHtml(request.requestId)}" data-permission-edit>Complete Details</button>`
@@ -823,7 +833,7 @@
         : '';
 
       return `
-        <article class="request-card ${needsResponse ? 'needs-response' : ''}">
+        <article class="request-card cc-card ${needsResponse ? 'needs-response' : ''}">
           <div class="card-head">
             <div>
               <h3>${escapeHtml(request.orderNumber)}</h3>

@@ -11,6 +11,7 @@
   <script src="assets/js/components/icons.js"></script>
   <script src="assets/js/components/feedback.js"></script>
   <script src="assets/js/components/confirmation.js"></script>
+  <script src="assets/js/components/status-registry.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
   <link rel="stylesheet" href="app-shell.css">
   <link rel="stylesheet" href="assets/css/theme-base.css">
@@ -113,6 +114,8 @@
   <link rel="stylesheet" href="assets/css/components/feedback.css">
   <link rel="stylesheet" href="assets/css/components/forms.css">
   <link rel="stylesheet" href="assets/css/components/filters.css">
+  <link rel="stylesheet" href="assets/css/components/cards.css">
+  <link rel="stylesheet" href="assets/css/components/status.css">
 </head>
 <body class="people-management-page agent-training-page" data-shell-module="agent-training" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -137,12 +140,12 @@
 
       <div class="message" id="page-message" role="status"></div>
 
-      <section class="stats-grid" aria-label="Training summary">
-        <article class="stat-card"><span>Total Employees</span><strong id="stat-employees">0</strong></article>
-        <article class="stat-card"><span>Assigned Brands</span><strong id="stat-assigned">0</strong></article>
-        <article class="stat-card"><span>Fully Trained</span><strong id="stat-trained">0</strong></article>
-        <article class="stat-card"><span>Coaching Needed</span><strong id="stat-coaching">0</strong></article>
-        <article class="stat-card"><span>Unassigned Brands</span><strong id="stat-unassigned">0</strong></article>
+      <section class="stats-grid cc-metric-grid" aria-label="Training summary">
+        <article class="stat-card cc-metric-card"><span>Total Employees</span><strong id="stat-employees">0</strong></article>
+        <article class="stat-card cc-metric-card"><span>Assigned Brands</span><strong id="stat-assigned">0</strong></article>
+        <article class="stat-card cc-metric-card"><span>Fully Trained</span><strong id="stat-trained">0</strong></article>
+        <article class="stat-card cc-metric-card"><span>Coaching Needed</span><strong id="stat-coaching">0</strong></article>
+        <article class="stat-card cc-metric-card"><span>Unassigned Brands</span><strong id="stat-unassigned">0</strong></article>
       </section>
 
       <div class="section-layout">
@@ -206,7 +209,7 @@
           </div>
         </section>
 
-        <section class="content-card" aria-labelledby="guide-title">
+        <section class="content-card cc-card cc-card--information" aria-labelledby="guide-title">
           <div class="card-header">
             <div><h2 class="cc-section-title" id="guide-title">Training Status Guide</h2><p>Use consistent labels across restaurant coverage.</p></div>
           </div>
@@ -251,7 +254,7 @@
             </thead>
             <tbody id="records-body"></tbody>
           </table>
-          <div class="empty-state" id="records-empty">Loading training assignments...</div>
+          <div class="empty-state cc-empty-state" id="records-empty">Loading training assignments...</div>
         </div>
       </section>
       </div>
@@ -362,7 +365,13 @@
     }
 
     function statusBadge(status) {
-      return `<span class="status-badge ${statusClass(status)}">${escapeHtml(status || '-')}</span>`;
+      const domain = status === 'Assigned' || status === 'Unassigned'
+        ? 'training-assignment'
+        : 'training-outcome';
+      const registry = window.CloudCrowdStatusRegistry;
+      const presentation = registry ? registry.get(domain, status) : { label: status || '-' };
+      const toneClass = registry ? registry.getToneClass(domain, status) : 'cc-status--neutral';
+      return `<span class="status-badge cc-status ${toneClass}">${escapeHtml(presentation.label)}</span>`;
     }
 
     function getRecordRestaurantName(record) {

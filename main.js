@@ -1080,8 +1080,8 @@ function openTicketDrawer(index){
 
   // شارة الحالة + رابط السجل
    metaEl.innerHTML = `
-    <span class="meta-badge ${bandClassForStatus(ticket.status)}">
-      ${displayStatusName(ticket.status || 'Uncategorized')}
+    <span class="meta-badge cc-status ${ticketStatusToneClass(ticket.status)}">
+      ${escapeHtml(ticketStatusPresentation(ticket.status || 'Uncategorized').label)}
     </span>
     <a class="history-link" id="drawer-history-link" title="View change history">History</a>
   `;

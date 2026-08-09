@@ -10,6 +10,7 @@
   <script src="assets/js/components/icons.js"></script>
   <script src="assets/js/components/feedback.js"></script>
   <script src="assets/js/components/confirmation.js"></script>
+  <script src="assets/js/components/status-registry.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
   <link rel="stylesheet" href="app-shell.css">
   <link rel="stylesheet" href="assets/css/theme-base.css">
@@ -302,6 +303,8 @@
   <link rel="stylesheet" href="assets/css/components/feedback.css">
   <link rel="stylesheet" href="assets/css/components/forms.css">
   <link rel="stylesheet" href="assets/css/components/filters.css">
+  <link rel="stylesheet" href="assets/css/components/cards.css">
+  <link rel="stylesheet" href="assets/css/components/status.css">
 </head>
 <body class="employee-profiles-ops-center">
   <div class="profiles-shell cc-shell-layout">
@@ -329,11 +332,11 @@
 
       <div class="message" id="page-message" role="status"></div>
 
-      <section class="stats-grid" aria-label="Employee summary">
-        <article class="stat-card stat-total"><span class="stat-icon" aria-hidden="true">&#9783;</span><div><span>Total Employees</span><strong id="stat-total">0</strong></div></article>
-        <article class="stat-card stat-active"><span class="stat-icon" aria-hidden="true">&#10003;</span><div><span>Active Employees</span><strong id="stat-active">0</strong></div></article>
-        <article class="stat-card stat-archived"><span class="stat-icon" aria-hidden="true">&#8635;</span><div><span>Archived Employees</span><strong id="stat-archived">0</strong></div></article>
-        <article class="stat-card stat-restaurants"><span class="stat-icon" aria-hidden="true">&#9670;</span><div><span>Assigned Restaurants</span><strong id="stat-restaurants">0</strong></div></article>
+      <section class="stats-grid cc-metric-grid" aria-label="Employee summary">
+        <article class="stat-card cc-metric-card stat-total"><span class="stat-icon" aria-hidden="true">&#9783;</span><div><span>Total Employees</span><strong id="stat-total">0</strong></div></article>
+        <article class="stat-card cc-metric-card stat-active"><span class="stat-icon" aria-hidden="true">&#10003;</span><div><span>Active Employees</span><strong id="stat-active">0</strong></div></article>
+        <article class="stat-card cc-metric-card stat-archived"><span class="stat-icon" aria-hidden="true">&#8635;</span><div><span>Archived Employees</span><strong id="stat-archived">0</strong></div></article>
+        <article class="stat-card cc-metric-card stat-restaurants"><span class="stat-icon" aria-hidden="true">&#9670;</span><div><span>Assigned Restaurants</span><strong id="stat-restaurants">0</strong></div></article>
       </section>
 
       <section class="employee-profiles-workspace-layout" aria-label="Employee directory and workspace">
@@ -354,7 +357,7 @@
             </select>
           </div>
           <div class="employee-grid" id="employee-grid">
-            <div class="empty-state">Loading employee profiles...</div>
+            <div class="empty-state cc-empty-state">Loading employee profiles...</div>
           </div>
         </aside>
 
@@ -574,6 +577,14 @@
       });
     }
 
+    function employeeStatusBadge(status) {
+      const registry = window.CloudCrowdStatusRegistry;
+      const fallbackLabel = status === 'inactive' ? 'Archived' : status === 'active' ? 'Active' : status || '-';
+      const presentation = registry ? registry.get('employee', status) : { label: fallbackLabel };
+      const toneClass = registry ? registry.getToneClass('employee', status) : 'cc-status--neutral';
+      return `<span class="status-badge cc-status ${toneClass}">${escapeHtml(presentation.label)}</span>`;
+    }
+
     function renderEmployees() {
       const filtered = getFilteredEmployees();
       const grid = document.getElementById('employee-grid');
@@ -597,14 +608,14 @@
           ? employee.assignedRestaurants.map((name) => `<span class="chip">${escapeHtml(name)}</span>`).join('')
           : '<span class="chip">No restaurants assigned</span>';
         return `
-          <article class="employee-card${employee.employeeId === selectedEmployeeId ? ' is-selected' : ''}" ${employee.employeeId === selectedEmployeeId ? 'aria-current="true"' : ''}>
+          <article class="employee-card cc-card${employee.employeeId === selectedEmployeeId ? ' is-selected' : ''}" ${employee.employeeId === selectedEmployeeId ? 'aria-current="true"' : ''}>
             <button class="employee-card-head employee-select" type="button" data-view-id="${escapeHtml(employee.employeeId)}" aria-label="Open ${escapeHtml(employee.fullName)} workspace">
               <span class="employee-avatar" aria-hidden="true">${escapeHtml(initials)}</span>
               <div class="employee-identity">
                 <h4>${escapeHtml(employee.fullName)}</h4>
                 <p>${escapeHtml(employee.primaryPhone || 'No primary phone')}</p>
               </div>
-              <span class="status-badge status-${escapeHtml(employee.status)}">${escapeHtml(employee.status)}</span>
+              ${employeeStatusBadge(employee.status)}
             </button>
             <div class="restaurant-list">${restaurants}</div>
           </article>
@@ -1206,7 +1217,7 @@
         const futureMetrics = [
           'Call Queue', 'Free Orders'
         ].map((label) => `
-          <div class="future-card">
+          <div class="future-card cc-planned-card">
             <strong>${escapeHtml(label)}</strong>
             <span>Coming soon</span>
           </div>
@@ -1255,7 +1266,7 @@
                 <p class="workspace-kicker">Employee record</p>
                 <h2 class="cc-section-title">${escapeHtml(employee.fullName)}</h2>
                 <div class="workspace-profile-meta">
-                  <span class="status-badge status-${escapeHtml(employee.status)}">${escapeHtml(employee.status === 'inactive' ? 'Archived' : 'Active')}</span>
+                  ${employeeStatusBadge(employee.status)}
                   <span>${employee.assignedRestaurants.length} restaurant${employee.assignedRestaurants.length === 1 ? '' : 's'}</span>
                 </div>
               </div>

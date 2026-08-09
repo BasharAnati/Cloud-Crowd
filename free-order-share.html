@@ -11,6 +11,7 @@
   <script src="assets/js/components/icons.js"></script>
   <script src="assets/js/components/feedback.js"></script>
   <script src="assets/js/components/confirmation.js"></script>
+  <script src="assets/js/components/status-registry.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
   <link rel="stylesheet" href="app-shell.css">
   <link rel="stylesheet" href="assets/css/theme-base.css">
@@ -525,6 +526,8 @@
   <link rel="stylesheet" href="assets/css/components/feedback.css">
   <link rel="stylesheet" href="assets/css/components/forms.css">
   <link rel="stylesheet" href="assets/css/components/filters.css">
+  <link rel="stylesheet" href="assets/css/components/cards.css">
+  <link rel="stylesheet" href="assets/css/components/status.css">
 </head>
 <body class="workflow-page free-order-share-page" data-shell-module="free-order-share" data-shell-user-id="workflow-user" data-shell-role-id="workflow-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -550,11 +553,11 @@
 
     <div class="message" id="message" role="status" aria-live="polite"></div>
 
-    <section class="stats-grid" aria-label="Free order share statistics">
-      <article class="stat-card"><span>Received</span><strong id="stat-received">0</strong></article>
-      <article class="stat-card"><span>Needs Response</span><strong id="stat-needs-response">0</strong></article>
-      <article class="stat-card"><span>Done</span><strong id="stat-done">0</strong></article>
-      <article class="stat-card"><span>Total Share Items</span><strong id="stat-total">0</strong></article>
+    <section class="stats-grid cc-metric-grid" aria-label="Free order share statistics">
+      <article class="stat-card cc-metric-card"><span>Received</span><strong id="stat-received">0</strong></article>
+      <article class="stat-card cc-metric-card"><span>Needs Response</span><strong id="stat-needs-response">0</strong></article>
+      <article class="stat-card cc-metric-card"><span>Done</span><strong id="stat-done">0</strong></article>
+      <article class="stat-card cc-metric-card"><span>Total Share Items</span><strong id="stat-total">0</strong></article>
     </section>
 
     <section class="toolbar cc-filter-bar cc-filter-bar--compact" aria-label="Share filters">
@@ -685,6 +688,13 @@
       return SHARE_COLUMNS.find((item) => item.key === stage)?.label || stage || '-';
     }
 
+    function shareStageBadge(stage, legacyClass) {
+      const registry = window.CloudCrowdStatusRegistry;
+      const presentation = registry ? registry.get('free-order-share', stage) : { label: stageLabel(stage) };
+      const toneClass = registry ? registry.getToneClass('free-order-share', stage) : 'cc-status--neutral';
+      return `<span class="${legacyClass} cc-status ${toneClass}">${escapeHtml(presentation.label)}</span>`;
+    }
+
     function setMessage(message, type = '') {
       const el = document.getElementById('message');
       if (window.CloudCrowdFeedback) {
@@ -771,11 +781,11 @@
         ? `<button class="done-btn" type="button" data-done-id="${escapeHtml(item.requestId)}" data-permission-edit>Mark Done</button>`
         : '';
       const badge = needsResponse
-        ? '<span class="response-badge">Needs Response</span>'
-        : `<span class="status-badge">${escapeHtml(stageLabel(stage))}</span>`;
+        ? shareStageBadge(stage, 'response-badge')
+        : shareStageBadge(stage, 'status-badge');
 
       return `
-        <article class="share-card ${needsResponse ? 'needs-response' : ''} ${done ? 'done' : ''}">
+        <article class="share-card cc-card ${needsResponse ? 'needs-response' : ''} ${done ? 'done' : ''}">
           <div class="card-head">
             <div>
               <h3>${escapeHtml(item.orderNumber)}</h3>

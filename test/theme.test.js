@@ -719,7 +719,9 @@ test("integrated HTML determines the real linked and embedded stylesheet order",
     "assets/css/components/icons.css",
     "assets/css/components/feedback.css",
     "assets/css/components/forms.css",
-    "assets/css/components/filters.css"
+    "assets/css/components/filters.css",
+    "assets/css/components/cards.css",
+    "assets/css/components/status.css"
   ];
   Object.values(OPERATION_CONTRACTS).forEach(({ page }) => {
     assert.deepEqual(extractPageSources(ROOT, page).map((source) => source.name), operationsOrder, `${page} stylesheet order`);
@@ -734,7 +736,9 @@ test("integrated HTML determines the real linked and embedded stylesheet order",
     "assets/css/components/icons.css",
     "assets/css/components/feedback.css",
     "assets/css/components/forms.css",
-    "assets/css/components/filters.css"
+    "assets/css/components/filters.css",
+    "assets/css/components/cards.css",
+    "assets/css/components/status.css"
   ]);
 });
 

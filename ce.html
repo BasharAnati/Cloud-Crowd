@@ -11,6 +11,7 @@
   <script src="assets/js/components/icons.js"></script>
   <script src="assets/js/components/feedback.js"></script>
   <script src="assets/js/components/confirmation.js"></script>
+  <script src="assets/js/components/status-registry.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="app-shell.css">
@@ -88,6 +89,8 @@
   <link rel="stylesheet" href="assets/css/components/feedback.css">
   <link rel="stylesheet" href="assets/css/components/forms.css">
   <link rel="stylesheet" href="assets/css/components/filters.css">
+  <link rel="stylesheet" href="assets/css/components/cards.css">
+  <link rel="stylesheet" href="assets/css/components/status.css">
 </head>
 <body class="ce-page ce-ops-center">
   <div class="ce-module-shell cc-shell-layout">
@@ -106,23 +109,23 @@
         </div>
       </header>
 
-    <section class="ce-stats" aria-label="Customer Experience case summary">
-      <article class="ce-stat-card ce-stat-total">
+    <section class="ce-stats cc-metric-grid" aria-label="Customer Experience case summary">
+      <article class="ce-stat-card cc-metric-card ce-stat-total">
         <span class="ce-stat-icon" aria-hidden="true"></span>
         <span class="ce-stat-label">Total Cases</span>
         <strong id="ce-stat-total">0</strong>
       </article>
-      <article class="ce-stat-card ce-stat-review">
+      <article class="ce-stat-card cc-metric-card ce-stat-review">
         <span class="ce-stat-icon" aria-hidden="true"></span>
         <span class="ce-stat-label">Under Review</span>
         <strong id="ce-stat-under-review">0</strong>
       </article>
-      <article class="ce-stat-card ce-stat-pending">
+      <article class="ce-stat-card cc-metric-card ce-stat-pending">
         <span class="ce-stat-icon" aria-hidden="true"></span>
         <span class="ce-stat-label">Pending Call Back</span>
         <strong id="ce-stat-pending">0</strong>
       </article>
-      <article class="ce-stat-card ce-stat-closed">
+      <article class="ce-stat-card cc-metric-card ce-stat-closed">
         <span class="ce-stat-icon" aria-hidden="true"></span>
         <span class="ce-stat-label">Closed</span>
         <strong id="ce-stat-closed">0</strong>

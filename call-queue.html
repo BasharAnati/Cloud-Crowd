@@ -11,6 +11,7 @@
   <script src="assets/js/components/icons.js"></script>
   <script src="assets/js/components/feedback.js"></script>
   <script src="assets/js/components/confirmation.js"></script>
+  <script src="assets/js/components/status-registry.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
   <link rel="stylesheet" href="app-shell.css">
   <link rel="stylesheet" href="assets/css/theme-base.css">
@@ -255,6 +256,8 @@
   <link rel="stylesheet" href="assets/css/components/buttons.css">
   <link rel="stylesheet" href="assets/css/components/icons.css">
   <link rel="stylesheet" href="assets/css/components/feedback.css">
+  <link rel="stylesheet" href="assets/css/components/cards.css">
+  <link rel="stylesheet" href="assets/css/components/status.css">
   <link rel="stylesheet" href="assets/css/components/forms.css">
 </head>
 <body class="admin-call-queue-page call-queue-page" data-shell-module="call-queue" data-shell-user-id="call-queue-shell-user" data-shell-role-id="call-queue-shell-role">
@@ -292,7 +295,7 @@
           <div class="panel queue-panel" id="queue-list"></div>
 
           <div class="panel workspace-panel" id="workspace-panel">
-            <div class="empty-state">Select a call ticket to open the workspace.</div>
+            <div class="empty-state cc-empty-state">Select a call ticket to open the workspace.</div>
           </div>
         </section>
       </div>
@@ -389,12 +392,19 @@
       return tickets.find((ticket) => ticket.id === selectedTicketId) || null;
     }
 
+    function queueStatusBadge(status) {
+      const registry = window.CloudCrowdStatusRegistry;
+      const presentation = registry ? registry.get('call-queue', status) : { label: status || '-' };
+      const toneClass = registry ? registry.getToneClass('call-queue', status) : 'cc-status--neutral';
+      return `<span class="status-badge cc-status ${toneClass}">${escapeHtml(presentation.label)}</span>`;
+    }
+
     function renderQueue() {
       const queue = document.getElementById('queue-list');
       queue.innerHTML = STATUSES.map((status) => {
         const group = tickets.filter((ticket) => ticket.status === status);
         const cards = group.map((ticket) => `
-          <button class="ticket ${ticket.id === selectedTicketId ? 'active' : ''}" type="button" data-ticket-id="${ticket.id}">
+          <button class="ticket cc-card ${ticket.id === selectedTicketId ? 'active' : ''}" type="button" data-ticket-id="${ticket.id}">
             <strong>${escapeHtml(ticket.customerName)}</strong>
             <span>${escapeHtml(ticket.phone)} · ${escapeHtml(ticket.orderNumber)}</span>
             <div class="ticket-meta">
@@ -438,7 +448,7 @@
             <h2 class="cc-section-title">${escapeHtml(ticket.customerName)}</h2>
             <div class="chip">${escapeHtml(ticket.id)}</div>
           </div>
-          <span class="status-badge">${escapeHtml(ticket.status)}</span>
+          ${queueStatusBadge(ticket.status)}
         </div>
 
         <div class="info-grid">

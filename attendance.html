@@ -11,6 +11,7 @@
   <script src="assets/js/components/icons.js"></script>
   <script src="assets/js/components/feedback.js"></script>
   <script src="assets/js/components/confirmation.js"></script>
+  <script src="assets/js/components/status-registry.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
   <link rel="stylesheet" href="app-shell.css">
   <link rel="stylesheet" href="assets/css/theme-base.css">
@@ -312,6 +313,8 @@
   <link rel="stylesheet" href="assets/css/components/feedback.css">
   <link rel="stylesheet" href="assets/css/components/forms.css">
   <link rel="stylesheet" href="assets/css/components/filters.css">
+  <link rel="stylesheet" href="assets/css/components/cards.css">
+  <link rel="stylesheet" href="assets/css/components/status.css">
 </head>
 <body class="people-management-page attendance-page" data-shell-module="attendance" data-shell-user-id="attendance-user-name" data-shell-role-id="attendance-role-badge">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -470,7 +473,7 @@
             </thead>
             <tbody id="records-table-body"></tbody>
           </table>
-          <div class="empty-state" id="records-empty">No attendance records yet.</div>
+          <div class="empty-state cc-empty-state" id="records-empty">No attendance records yet.</div>
         </div>
       </section>
       </div>
@@ -734,8 +737,13 @@
     function createStatusCell(status) {
       const cell = document.createElement('td');
       const badge = document.createElement('span');
-      badge.className = `status-badge ${getStatusClass(status)}`;
-      badge.textContent = status || '-';
+      const registry = window.CloudCrowdStatusRegistry;
+      const presentation = registry
+        ? registry.get('attendance', status)
+        : { label: status || '-' };
+      const toneClass = registry ? registry.getToneClass('attendance', status) : 'cc-status--neutral';
+      badge.className = `status-badge cc-status ${toneClass}`;
+      badge.textContent = presentation.label;
       cell.appendChild(badge);
       return cell;
     }
