@@ -86,6 +86,8 @@
   <link rel="stylesheet" href="assets/css/components/buttons.css">
   <link rel="stylesheet" href="assets/css/components/icons.css">
   <link rel="stylesheet" href="assets/css/components/feedback.css">
+  <link rel="stylesheet" href="assets/css/components/forms.css">
+  <link rel="stylesheet" href="assets/css/components/filters.css">
 </head>
 <body class="ce-page ce-ops-center">
   <div class="ce-module-shell cc-shell-layout">
@@ -127,7 +129,7 @@
       </article>
     </section>
 
-    <section class="ce-filters" aria-label="Customer Experience filters">
+    <section class="ce-filters cc-filter-bar cc-filter-bar--inline" aria-label="Customer Experience filters">
       <div class="ce-filter-field ce-filter-search">
         <label for="ce-search">Search</label>
         <input id="ce-search" type="search" placeholder="Order, customer, or phone">
@@ -161,9 +163,9 @@
   <div class="modal" id="modal">
     <div class="modal-content">
       <h2 class="cc-modal-title">Add New Ticket</h2>
-      <form id="ticket-form">
+      <form id="ticket-form" class="cc-form">
         <div id="dynamic-form"></div>
-        <div class="form-actions">
+        <div class="form-actions cc-form-actions">
           <button type="submit" class="submit-btn">Submit</button>
           <button type="button" class="cancel-btn" onclick="closeModal()">Cancel</button>
         </div>

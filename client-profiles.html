@@ -175,6 +175,8 @@
   <link rel="stylesheet" href="assets/css/components/buttons.css">
   <link rel="stylesheet" href="assets/css/components/icons.css">
   <link rel="stylesheet" href="assets/css/components/feedback.css">
+  <link rel="stylesheet" href="assets/css/components/forms.css">
+  <link rel="stylesheet" href="assets/css/components/filters.css">
 </head>
 <body class="business-quality-page client-profiles-page" data-shell-module="client-profiles" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -214,8 +216,8 @@
           </div>
           <span class="role-pill" id="record-count">0 records</span>
         </div>
-        <div class="filters">
-          <input class="control" id="client-search" type="search" placeholder="Search brand, owner, or number">
+        <div class="filters cc-filter-bar cc-filter-bar--compact" aria-label="Client directory filters">
+          <input class="control cc-control" id="client-search" type="search" placeholder="Search brand, owner, or number" aria-label="Search clients by brand, owner, or number">
           <select class="control" id="status-filter" aria-label="Filter clients by status">
             <option value="all">All clients</option>
             <option value="active">Active clients</option>
@@ -248,63 +250,61 @@
         <button class="icon-btn" type="button" data-close-modal="client-modal" aria-label="Close client form">&times;</button>
       </div>
       <div class="modal-body">
-        <form id="client-form">
+        <form id="client-form" class="cc-form">
           <input id="restaurant-id" type="hidden">
           <input id="logo-url" type="hidden">
-          <div class="form-grid">
-            <div class="field">
-              <label for="brand-name">Brand Name</label>
-              <input class="control" id="brand-name" name="brandName" type="text" maxlength="200" required>
-            </div>
-            <div class="field">
-              <label for="status">Status</label>
-              <select class="control" id="status" name="status" required>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-            <div class="field full">
-              <label for="logo-upload">Logo Upload</label>
-              <div class="logo-upload-row">
-                <div class="logo-preview" id="logo-preview">--</div>
-                <input class="control" id="logo-upload" name="logoUpload" type="file" accept="image/*">
-                <button class="secondary-btn" type="button" id="clear-logo-btn">Remove Logo</button>
+          <p class="cc-form__required-note"><strong>*</strong> indicates a required field.</p>
+          <div class="form-grid cc-form-grid">
+            <section class="cc-form-section cc-form-grid__full" aria-labelledby="client-brand-title">
+              <h4 class="cc-form-section__title" id="client-brand-title">Brand Identity</h4>
+              <div class="cc-form-grid">
+                <div class="field">
+                  <label class="cc-field__label--required" for="brand-name">Brand Name</label>
+                  <input class="control" id="brand-name" name="brandName" type="text" maxlength="200" required>
+                </div>
+                <div class="field">
+                  <label class="cc-field__label--required" for="status">Status</label>
+                  <select class="control" id="status" name="status" required>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
               </div>
-            </div>
-            <div class="field">
-              <label for="call-center-number">Call Center Number</label>
-              <input class="control" id="call-center-number" name="callCenterNumber" type="text" maxlength="80">
-            </div>
-            <div class="field">
-              <label for="original-restaurant-number">Original Restaurant Number</label>
-              <input class="control" id="original-restaurant-number" name="originalRestaurantNumber" type="text" maxlength="80">
-            </div>
-            <div class="field">
-              <label for="forwarded-number">Forwarded Number</label>
-              <input class="control" id="forwarded-number" name="forwardedNumber" type="text" maxlength="80">
-            </div>
-            <div class="field">
-              <label for="brand-owner-name">Brand Owner Name</label>
-              <input class="control" id="brand-owner-name" name="brandOwnerName" type="text" maxlength="200">
-            </div>
-            <div class="field">
-              <label for="brand-owner-phone">Brand Owner Phone</label>
-              <input class="control" id="brand-owner-phone" name="brandOwnerPhone" type="text" maxlength="80">
-            </div>
-            <div class="field">
-              <label for="account-manager-name">Account Manager Name</label>
-              <input class="control" id="account-manager-name" name="accountManagerName" type="text" maxlength="200">
-            </div>
-            <div class="field">
-              <label for="restaurant-manager-name">Restaurant Manager Name</label>
-              <input class="control" id="restaurant-manager-name" name="restaurantManagerName" type="text" maxlength="200">
-            </div>
-            <div class="field full">
-              <label for="notes">Notes</label>
-              <textarea class="control" id="notes" name="notes" maxlength="5000"></textarea>
-            </div>
+            </section>
+            <section class="cc-form-section cc-form-grid__full" aria-labelledby="client-media-title">
+              <h4 class="cc-form-section__title" id="client-media-title">Media</h4>
+              <div class="field full">
+                <label for="logo-upload">Logo Upload</label>
+                <div class="logo-upload-row">
+                  <div class="logo-preview" id="logo-preview">--</div>
+                  <input class="control" id="logo-upload" name="logoUpload" type="file" accept="image/*">
+                  <button class="secondary-btn" type="button" id="clear-logo-btn">Remove Logo</button>
+                </div>
+              </div>
+            </section>
+            <section class="cc-form-section cc-form-grid__full" aria-labelledby="client-numbers-title">
+              <h4 class="cc-form-section__title" id="client-numbers-title">Contact Numbers</h4>
+              <div class="cc-form-grid">
+                <div class="field"><label for="call-center-number">Call Center Number</label><input class="control" id="call-center-number" name="callCenterNumber" type="text" maxlength="80"></div>
+                <div class="field"><label for="original-restaurant-number">Original Restaurant Number</label><input class="control" id="original-restaurant-number" name="originalRestaurantNumber" type="text" maxlength="80"></div>
+                <div class="field"><label for="forwarded-number">Forwarded Number</label><input class="control" id="forwarded-number" name="forwardedNumber" type="text" maxlength="80"></div>
+              </div>
+            </section>
+            <section class="cc-form-section cc-form-grid__full" aria-labelledby="client-management-title">
+              <h4 class="cc-form-section__title" id="client-management-title">Ownership and Management</h4>
+              <div class="cc-form-grid">
+                <div class="field"><label for="brand-owner-name">Brand Owner Name</label><input class="control" id="brand-owner-name" name="brandOwnerName" type="text" maxlength="200"></div>
+                <div class="field"><label for="brand-owner-phone">Brand Owner Phone</label><input class="control" id="brand-owner-phone" name="brandOwnerPhone" type="text" maxlength="80"></div>
+                <div class="field"><label for="account-manager-name">Account Manager Name</label><input class="control" id="account-manager-name" name="accountManagerName" type="text" maxlength="200"></div>
+                <div class="field"><label for="restaurant-manager-name">Restaurant Manager Name</label><input class="control" id="restaurant-manager-name" name="restaurantManagerName" type="text" maxlength="200"></div>
+              </div>
+            </section>
+            <section class="cc-form-section cc-form-grid__full" aria-labelledby="client-notes-title">
+              <h4 class="cc-form-section__title" id="client-notes-title">Notes</h4>
+              <div class="field full"><label for="notes">Notes</label><textarea class="control" id="notes" name="notes" maxlength="5000"></textarea></div>
+            </section>
           </div>
-          <div class="modal-actions">
+          <div class="modal-actions cc-form-actions">
             <button class="secondary-btn" type="button" data-close-modal="client-modal">Cancel</button>
             <button class="primary-btn" type="submit" id="save-client-btn">Save Client</button>
           </div>

@@ -1,0 +1,260 @@
+/* Cloud Crowd shared form foundation — Sprint 1.6 */
+
+.cc-form {
+  min-width: 0;
+  color: var(--color-text);
+}
+
+.cc-field,
+.cc-form :where(.field, .form-group) {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.cc-field__label,
+.cc-form :where(.field, .form-group) > label,
+.cc-form > label {
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.cc-field__label--required::after {
+  content: " *";
+  color: var(--color-danger-text);
+  font-weight: 700;
+}
+
+.cc-form__required-note {
+  margin: 0 0 var(--space-4);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.cc-form__required-note strong {
+  color: var(--color-danger-text);
+}
+
+.cc-field__helper,
+.cc-field__error {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.cc-field__helper { color: var(--color-text-muted); }
+.cc-field__error { color: var(--color-danger-text); }
+
+body .cc-form :is(.cc-control, .control, input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select, textarea),
+body :is(.cc-control, .control).cc-control {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--input-height);
+  padding: 8px 12px;
+  border: 1px solid var(--input-border);
+  border-radius: var(--input-radius);
+  outline: 0;
+  color: var(--input-text);
+  background: var(--input-background);
+  font: inherit;
+  line-height: 1.35;
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+
+body .cc-form textarea:is(.cc-control, .control),
+body .cc-form textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+body .cc-form input[type="file"] {
+  height: auto;
+  padding-block: 6px;
+  overflow: hidden;
+}
+
+body .cc-form :is(.cc-control, .control, input, select, textarea)::placeholder {
+  color: var(--input-placeholder);
+  opacity: 1;
+}
+
+body .cc-form :is(.cc-control, .control, input:not([type="checkbox"]):not([type="radio"]), select, textarea):hover:not(:disabled) {
+  border-color: var(--input-hover-border);
+}
+
+body .cc-form :is(.cc-control, .control, input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus,
+body .cc-form :is(.cc-control, .control, input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus-visible {
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-ring);
+  outline: 0;
+}
+
+body .cc-form :is(.cc-control, .control, input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select, textarea):disabled,
+body .cc-form :is(.cc-control, .control, input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select, textarea)[aria-disabled="true"] {
+  color: var(--input-disabled-text);
+  background: var(--input-disabled-background);
+  border-color: var(--color-border);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+body .cc-form :is(.cc-control, .control, input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select, textarea)[aria-invalid="true"] {
+  border-color: var(--input-error-border);
+  box-shadow: var(--input-error-ring);
+}
+
+body .cc-form.cc-form--lg :is(.cc-control, .control, input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select) {
+  min-height: var(--input-height-lg);
+}
+
+.cc-checkbox {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
+  color: var(--color-text);
+}
+
+.cc-checkbox input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--color-primary);
+}
+
+.cc-checkbox input[type="checkbox"]:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.cc-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  min-width: 0;
+}
+
+.cc-form-grid--four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.cc-form-grid__full,
+.cc-form-grid > :is(.full, .cc-field--full) { grid-column: 1 / -1; }
+
+.cc-form-section {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.cc-form-section + .cc-form-section {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--color-divider);
+}
+
+.cc-form-section__header { display: grid; gap: 4px; }
+.cc-form-section__title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.cc-form-section__description {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.cc-form-actions,
+.cc-form :is(.form-actions, .modal-actions) {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cc-dependent-field { position: relative; }
+.cc-dependent-field[aria-busy="true"] { color: var(--color-text-muted); }
+
+/* Minimal adapter for the existing Operations checkbox multi-select runtime. */
+.cc-multi-select { position: relative; min-width: 0; }
+.cc-multi-select__trigger {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  min-height: var(--input-height);
+  padding: 8px 12px;
+  border: 1px solid var(--input-border);
+  border-radius: var(--input-radius);
+  color: var(--input-text);
+  background: var(--input-background);
+  text-align: left;
+  cursor: pointer;
+}
+.cc-multi-select__trigger:hover { border-color: var(--input-hover-border); }
+.cc-multi-select__trigger:focus-visible {
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-ring);
+  outline: 0;
+}
+.cc-multi-select__values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.cc-multi-select__values[hidden] { display: none; }
+.cc-multi-select__values span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--input-radius);
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+.cc-multi-select__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  color: var(--color-danger-text);
+  background: var(--color-danger-soft);
+  cursor: pointer;
+}
+
+@media (max-width: 1024px) {
+  .cc-form-grid--four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 768px) {
+  .cc-form-grid,
+  .cc-form-grid--four { grid-template-columns: 1fr; }
+  .cc-form-grid__full,
+  .cc-form-grid > :is(.full, .cc-field--full) { grid-column: auto; }
+}
+
+@media (max-width: 390px) {
+  .cc-form-actions,
+  .cc-form :is(.form-actions, .modal-actions) {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+  .cc-form-actions > :is(button, a),
+  .cc-form :is(.form-actions, .modal-actions) > :is(button, a) { width: 100%; }
+}

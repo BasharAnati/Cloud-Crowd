@@ -1,0 +1,88 @@
+/* Cloud Crowd shared filter layout foundation — Sprint 1.6 */
+
+.cc-filter-bar {
+  display: grid;
+  align-items: end;
+  gap: 12px;
+  min-width: 0;
+}
+
+.cc-filter-bar--compact {
+  grid-template-columns: minmax(220px, 1fr) minmax(170px, 230px);
+}
+
+.cc-filter-bar--inline {
+  grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(150px, 220px));
+}
+
+.cc-filter-bar--dense {
+  grid-template-columns: minmax(240px, 1.25fr) repeat(4, minmax(140px, 1fr));
+}
+
+.cc-filter-bar--dense-six {
+  grid-template-columns: minmax(240px, 1.25fr) repeat(5, minmax(130px, 1fr));
+}
+
+.cc-filter-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cc-filter-field > label,
+.cc-filter-bar > div > label {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+body .cc-filter-bar :is(input, select, .cc-control) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--input-height);
+  padding: 8px 12px;
+  border: 1px solid var(--input-border);
+  border-radius: var(--input-radius);
+  outline: 0;
+  color: var(--input-text);
+  background: var(--input-background);
+  font: inherit;
+  line-height: 1.35;
+}
+
+body .cc-filter-bar :is(input, select, .cc-control)::placeholder {
+  color: var(--input-placeholder);
+  opacity: 1;
+}
+
+body .cc-filter-bar :is(input, select, .cc-control):hover:not(:disabled) {
+  border-color: var(--input-hover-border);
+}
+
+body .cc-filter-bar :is(input, select, .cc-control):focus,
+body .cc-filter-bar :is(input, select, .cc-control):focus-visible {
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-ring);
+  outline: 0;
+}
+
+body .cc-filter-bar :is(input, select, .cc-control):disabled {
+  color: var(--input-disabled-text);
+  background: var(--input-disabled-background);
+  cursor: not-allowed;
+}
+
+@media (max-width: 1024px) {
+  .cc-filter-bar--inline,
+  .cc-filter-bar--dense,
+  .cc-filter-bar--dense-six { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  .cc-filter-bar,
+  .cc-filter-bar--compact,
+  .cc-filter-bar--inline,
+  .cc-filter-bar--dense,
+  .cc-filter-bar--dense-six { grid-template-columns: 1fr; }
+}

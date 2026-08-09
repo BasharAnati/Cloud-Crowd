@@ -523,6 +523,8 @@
   <link rel="stylesheet" href="assets/css/components/buttons.css">
   <link rel="stylesheet" href="assets/css/components/icons.css">
   <link rel="stylesheet" href="assets/css/components/feedback.css">
+  <link rel="stylesheet" href="assets/css/components/forms.css">
+  <link rel="stylesheet" href="assets/css/components/filters.css">
 </head>
 <body class="workflow-page free-order-share-page" data-shell-module="free-order-share" data-shell-user-id="workflow-user" data-shell-role-id="workflow-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -555,8 +557,8 @@
       <article class="stat-card"><span>Total Share Items</span><strong id="stat-total">0</strong></article>
     </section>
 
-    <section class="toolbar" aria-label="Filters">
-      <input class="control" id="search-filter" type="search" placeholder="Search by order number, customer name, or phone">
+    <section class="toolbar cc-filter-bar cc-filter-bar--compact" aria-label="Share filters">
+      <input class="control cc-control" id="search-filter" type="search" placeholder="Search by order number, customer name, or phone" aria-label="Search shared free order requests">
       <select class="control" id="stage-filter" aria-label="Filter by share stage">
         <option value="">All stages</option>
         <option value="received">Received</option>
@@ -581,13 +583,14 @@
         <button class="icon-btn" type="button" data-close-modal="response-modal" aria-label="Close form">&times;</button>
       </div>
       <div class="modal-body">
-        <form id="response-form">
+        <form id="response-form" class="cc-form">
           <input id="response-request-id" type="hidden">
+          <p class="cc-form__required-note"><strong>*</strong> indicates a required field.</p>
           <div class="note-form">
-            <label for="share-note">Response / Question Note</label>
+            <label class="cc-field__label--required" for="share-note">Response / Question Note</label>
             <textarea class="control" id="share-note" name="shareNote" maxlength="5000" required></textarea>
           </div>
-          <div class="form-actions">
+          <div class="form-actions cc-form-actions">
             <button class="secondary-btn" type="button" data-close-modal="response-modal">Cancel</button>
             <button class="primary-btn" type="submit" id="save-response-btn">Save Note</button>
           </div>

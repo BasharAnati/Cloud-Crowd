@@ -310,6 +310,8 @@
   <link rel="stylesheet" href="assets/css/components/buttons.css">
   <link rel="stylesheet" href="assets/css/components/icons.css">
   <link rel="stylesheet" href="assets/css/components/feedback.css">
+  <link rel="stylesheet" href="assets/css/components/forms.css">
+  <link rel="stylesheet" href="assets/css/components/filters.css">
 </head>
 <body class="people-management-page attendance-page" data-shell-module="attendance" data-shell-user-id="attendance-user-name" data-shell-role-id="attendance-role-badge">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -352,16 +354,17 @@
           <span class="status-chip">Manual Entry</span>
         </div>
 
-        <form class="attendance-form" id="attendance-form">
+        <form class="attendance-form cc-form cc-form--lg cc-form-grid" id="attendance-form">
+          <p class="cc-form__required-note"><strong>*</strong> indicates a required field.</p>
           <div class="field">
-            <label for="agent">Agent</label>
+            <label class="cc-field__label--required" for="agent">Agent</label>
             <select id="agent" name="employeeId" required disabled>
               <option value="">Loading employees...</option>
             </select>
           </div>
 
           <div class="field">
-            <label for="record-date">Date</label>
+            <label class="cc-field__label--required" for="record-date">Date</label>
             <input id="record-date" name="date" type="date" required>
           </div>
 
@@ -423,7 +426,7 @@
             </div>
           </div>
 
-          <div class="form-actions">
+          <div class="form-actions cc-form-actions">
             <button class="secondary-btn" type="reset">Clear</button>
             <button class="primary-btn" type="submit" id="save-record-btn" disabled>Save Record</button>
           </div>
@@ -439,7 +442,7 @@
           <span class="status-chip" id="records-count">0 Records</span>
         </div>
 
-        <div class="table-tools">
+        <div class="table-tools cc-filter-bar cc-filter-bar--compact" aria-label="Attendance filters">
           <div class="field">
             <label for="agent-search">Search by agent</label>
             <input id="agent-search" type="search" placeholder="Type an agent name">

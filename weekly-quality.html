@@ -618,6 +618,8 @@
   <link rel="stylesheet" href="assets/css/components/buttons.css">
   <link rel="stylesheet" href="assets/css/components/icons.css">
   <link rel="stylesheet" href="assets/css/components/feedback.css">
+  <link rel="stylesheet" href="assets/css/components/forms.css">
+  <link rel="stylesheet" href="assets/css/components/filters.css">
 </head>
 <body class="business-quality-page weekly-quality-page" data-shell-module="weekly-quality" data-shell-user-id="quality-user-name" data-shell-role-id="quality-role-badge">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -674,40 +676,41 @@
         <div class="employee-load-warning" id="employee-load-warning" role="alert"></div>
         <div class="employee-load-warning" id="restaurant-load-warning" role="alert"></div>
 
-        <form class="evaluation-form" id="quality-form">
-          <section class="form-section">
+        <form class="evaluation-form cc-form" id="quality-form">
+          <p class="cc-form__required-note"><strong>*</strong> indicates a required field.</p>
+          <section class="form-section cc-form-section">
             <h3 class="section-title"><span class="section-number">1</span>Call Information</h3>
-            <div class="form-grid">
+            <div class="form-grid cc-form-grid cc-form-grid--four">
               <div class="field">
-                <label for="call-date-time">Call Date &amp; Time</label>
+                <label class="cc-field__label--required" for="call-date-time">Call Date &amp; Time</label>
                 <input id="call-date-time" name="callDateTime" type="text" placeholder="2026-06-07 14:08:27" pattern="\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}" title="Use YYYY-MM-DD HH:mm:ss" required>
               </div>
               <div class="field">
-                <label for="auditor-name">Auditor Name</label>
+                <label class="cc-field__label--required" for="auditor-name">Auditor Name</label>
                 <select id="auditor-name" name="auditorEmployeeId" required disabled>
                   <option value="">Loading employees...</option>
                 </select>
               </div>
               <div class="field">
-                <label for="agent-name">Agent Name</label>
+                <label class="cc-field__label--required" for="agent-name">Agent Name</label>
                 <select id="agent-name" name="agentEmployeeId" required disabled>
                   <option value="">Loading employees...</option>
                 </select>
               </div>
               <div class="field wide">
-                <label for="campaign">Campaign / Restaurant</label>
+                <label class="cc-field__label--required" for="campaign">Campaign / Restaurant</label>
                 <select id="campaign" name="restaurantId" required disabled>
                   <option value="">Loading restaurants...</option>
                 </select>
               </div>
               <div class="field">
-                <label for="phone-number">Phone Number</label>
+                <label class="cc-field__label--required" for="phone-number">Phone Number</label>
                 <input id="phone-number" name="phoneNumber" type="tel" autocomplete="tel" required>
               </div>
             </div>
           </section>
 
-          <section class="form-section">
+          <section class="form-section cc-form-section">
             <h3 class="section-title"><span class="section-number">2</span>Quality Scores</h3>
             <div class="score-grid" id="score-grid">
               <div class="field score-field"><label for="score-greetings">Greetings</label><select id="score-greetings" name="greetings" class="score-select"></select></div>
@@ -727,9 +730,9 @@
             </div>
           </section>
 
-          <section class="form-section">
+          <section class="form-section cc-form-section">
             <h3 class="section-title"><span class="section-number">3</span>Notes &amp; Recording</h3>
-            <div class="form-grid">
+            <div class="form-grid cc-form-grid">
               <div class="field full">
                 <label for="notes">Notes</label>
                 <textarea id="notes" name="notes" placeholder="Add quality observations, strengths, or coaching points."></textarea>
@@ -741,7 +744,7 @@
             </div>
           </section>
 
-          <div class="form-actions">
+          <div class="form-actions cc-form-actions">
             <button class="secondary-btn" type="reset">Clear Form</button>
             <button class="primary-btn" type="submit" data-permission-create>Save Evaluation</button>
           </div>
@@ -755,7 +758,7 @@
             <p id="records-storage-note">Records load from the database first, with local browser records used only as a fallback.</p>
           </div>
         </div>
-        <div class="table-tools">
+        <div class="table-tools cc-filter-bar cc-filter-bar--inline" aria-label="Quality record filters">
           <input id="record-search" type="search" placeholder="Search records" aria-label="Search records">
           <input id="date-filter" type="date" aria-label="Filter by date" title="Filter by Date">
           <select id="restaurant-filter" aria-label="Filter by restaurant">

@@ -1369,6 +1369,39 @@ document.addEventListener('keydown',e=>{ if (e.key==='Escape') closeTicketDrawer
 // ----------------------------
 // Modal (single tidy version)
 // ----------------------------
+const OPERATION_FORM_SECTIONS = {
+  cctv: [
+    { title: 'Case Context', fields: ['status', 'branch', 'date', 'time'] },
+    { title: 'Footage and Location', fields: ['cameras', 'sections'] },
+    { title: 'People and Policy', fields: ['staff', 'reviewType', 'violations'] },
+    { title: 'Case Details', fields: ['notes'] },
+    { title: 'Attachment and Action', fields: ['cctvPdf', 'actionTaken'] }
+  ],
+  ce: [
+    { title: 'Customer and Order', fields: ['status', 'orderNumber', 'department', 'customerName', 'phone', 'creationDate'] },
+    { title: 'Source and Context', fields: ['shift', 'orderType', 'branch', 'restaurant', 'channel', 'feedbackDate'] },
+    { title: 'Experience Classification', fields: ['issueCategory', 'customerNotes'] },
+    { title: 'Resolution', fields: ['actionTaken', 'satisfaction'] }
+  ],
+  complaints: [
+    { title: 'Complaint and Order', fields: ['status', 'orderNumber', 'department', 'customerName', 'phone', 'creationDate'] },
+    { title: 'Responsibility and Context', fields: ['shift', 'orderType', 'branch', 'restaurant', 'channel'] },
+    { title: 'Issue', fields: ['issueCategory', 'complaintDetails'] },
+    { title: 'Resolution', fields: ['actionTaken'] }
+  ],
+  'free-orders': [
+    { title: 'Customer and Order', fields: ['status', 'customerName', 'phone', 'orderDate', 'orderNumber'] },
+    { title: 'Order and Compensation', fields: ['orderOnCirca', 'discountAmount', 'reasonForDiscount', 'channel'] },
+    { title: 'Approval and Attachment', fields: ['decisionMaker', 'attached'] },
+    { title: 'Usage and Deduction', fields: ['discountDate', 'newOrderNumber', 'deductionFrom'] },
+    { title: 'Case Details', fields: ['caseDescription'] }
+  ]
+};
+
+function operationControlId(section, fieldName){
+  return `cc-${section}-${fieldName}`.replace(/[^a-z0-9_-]+/gi, '-').toLowerCase();
+}
+
 function openModal(section){
   if (!requireMutationPermission('create')) return;
   window.currentSection = section;
@@ -1378,20 +1411,28 @@ function openModal(section){
   const dynamicForm = document.getElementById('dynamic-form');
 
   dynamicForm.innerHTML = '';
-  dynamicForm.className = 'form-grid';
+  dynamicForm.className = 'cc-form-sections';
+
+  const fieldGroups = new Map();
 
   formFields[_currentSection].forEach(field=>{
     const group = document.createElement('div');
-    group.classList.add('form-group');
+    group.classList.add('form-group', 'cc-field');
+    const controlId = operationControlId(_currentSection, field.name);
 
     const label = document.createElement('label');
+    label.id = `${controlId}-label`;
+    label.htmlFor = controlId;
+    label.classList.add('cc-field__label');
     label.textContent = field.label;
     group.appendChild(label);
 
-    const makeFull = ()=> group.classList.add('full');
+    const makeFull = ()=> group.classList.add('full', 'cc-form-grid__full');
 
     if (field.type === 'select'){
       const select = document.createElement('select');
+      select.id = controlId;
+      select.classList.add('cc-control');
       select.name = field.name;
       field.options.forEach(o=>{
         const opt = document.createElement('option');
@@ -1402,29 +1443,54 @@ function openModal(section){
 
     } else if (field.type === 'multi-select'){
       const multi = document.createElement('div');
-      multi.classList.add('multi-select');
+      multi.classList.add('multi-select', 'cc-multi-select');
       multi.dataset.name = field.name;
+      multi.id = `${controlId}-group`;
+      multi.setAttribute('role', 'group');
+      multi.setAttribute('aria-labelledby', label.id);
 
-      const selected = document.createElement('div');
-      selected.classList.add('selected');
+      const selected = document.createElement('button');
+      selected.id = controlId;
+      selected.type = 'button';
+      selected.classList.add('selected', 'cc-multi-select__trigger');
+      selected.setAttribute('aria-labelledby', label.id);
+      selected.setAttribute('aria-expanded', 'false');
+      selected.setAttribute('aria-controls', `${controlId}-options`);
       selected.textContent='Select options...';
       multi.appendChild(selected);
 
+      const values=document.createElement('div');
+      values.classList.add('cc-multi-select__values');
+      values.id = `${controlId}-values`;
+      values.hidden = true;
+      multi.appendChild(values);
+
       const dropdown=document.createElement('div');
       dropdown.classList.add('dropdown');
-      field.options.forEach(o=>{
+      dropdown.id = `${controlId}-options`;
+      field.options.forEach((o, optionIndex)=>{
         const lbl=document.createElement('label');
         const cb=document.createElement('input');
         cb.type='checkbox';
         cb.value=o;
+        cb.id = `${controlId}-option-${optionIndex}`;
+        lbl.htmlFor = cb.id;
         lbl.appendChild(cb);
         lbl.appendChild(document.createTextNode(o));
         dropdown.appendChild(lbl);
       });
       multi.appendChild(dropdown);
 
-      selected.addEventListener('click',()=> multi.classList.toggle('open'));
-      document.addEventListener('click',(e)=>{ if (!multi.contains(e.target)) multi.classList.remove('open'); });
+      selected.addEventListener('click',()=>{
+        const isOpen = multi.classList.toggle('open');
+        selected.setAttribute('aria-expanded', String(isOpen));
+      });
+      document.addEventListener('click',(e)=>{
+        if (!multi.contains(e.target)) {
+          multi.classList.remove('open');
+          selected.setAttribute('aria-expanded', 'false');
+        }
+      });
       dropdown.querySelectorAll('input').forEach(cb=> cb.addEventListener('change',()=> updateSelected(multi)));
 
       makeFull();
@@ -1432,12 +1498,16 @@ function openModal(section){
 
     } else if (field.type === 'textarea'){
       const ta = document.createElement('textarea');
+      ta.id = controlId;
+      ta.classList.add('cc-control');
       ta.name = field.name;
       group.appendChild(ta);
       makeFull();
 
     } else if (field.type === 'file'){
       const input = document.createElement('input');
+      input.id = controlId;
+      input.classList.add('cc-control');
       input.type = 'file';
       input.name = field.name;
       input.accept = field.accept || '*/*';
@@ -1471,12 +1541,33 @@ function openModal(section){
 
     } else {
       const inp = document.createElement('input');
+      inp.id = controlId;
+      inp.classList.add('cc-control');
       inp.type = field.type; // date/time/datetime-local/text...
       inp.name = field.name;
       group.appendChild(inp);
     }
 
-    dynamicForm.appendChild(group);
+    fieldGroups.set(field.name, group);
+  });
+
+  (OPERATION_FORM_SECTIONS[_currentSection] || []).forEach((definition, sectionIndex)=>{
+    const formSection = document.createElement('section');
+    formSection.className = 'cc-form-section';
+    const title = document.createElement('h3');
+    title.className = 'cc-form-section__title';
+    title.id = `cc-${_currentSection}-form-section-${sectionIndex}`;
+    title.textContent = definition.title;
+    formSection.setAttribute('aria-labelledby', title.id);
+    formSection.appendChild(title);
+    const grid = document.createElement('div');
+    grid.className = 'form-grid cc-form-grid';
+    definition.fields.forEach((fieldName)=>{
+      const group = fieldGroups.get(fieldName);
+      if (group) grid.appendChild(group);
+    });
+    formSection.appendChild(grid);
+    dynamicForm.appendChild(formSection);
   });
 
   document.getElementById('ticket-form')
@@ -1491,22 +1582,27 @@ function openModal(section){
 window.openModal = openModal;
 
 function updateSelected(multi){
-  const selected = multi.querySelector('.selected');
-  selected.innerHTML='';
+  const values = multi.querySelector('.cc-multi-select__values');
+  values.innerHTML='';
   multi.querySelectorAll('input:checked').forEach(cb=>{
     const span=document.createElement('span'); span.textContent=cb.value;
     const x=document.createElement('button'); x.textContent='x';
-    x.addEventListener('click',(e)=>{ e.stopPropagation(); cb.checked=false; updateSelected(multi); });
-    span.appendChild(x); selected.appendChild(span);
+    x.type='button';
+    x.classList.add('cc-multi-select__remove');
+    x.setAttribute('aria-label', `Remove ${cb.value}`);
+    x.addEventListener('click',(e)=>{ e.preventDefault(); e.stopPropagation(); cb.checked=false; updateSelected(multi); });
+    span.appendChild(x); values.appendChild(span);
   });
-  if (selected.innerHTML==='') selected.textContent='Select options...';
+  values.hidden = values.innerHTML==='';
 }
 
 function closeModal(){
   document.getElementById('modal').style.display='none';
   document.getElementById('ticket-form').reset();
   document.querySelectorAll('.multi-select').forEach(m=>{
-    m.querySelector('.selected').innerHTML='';
+    m.querySelector('.cc-multi-select__values').innerHTML='';
+    m.querySelector('.cc-multi-select__values').hidden=true;
+    m.querySelector('.cc-multi-select__trigger').setAttribute('aria-expanded', 'false');
     m.querySelectorAll('input').forEach(cb=> cb.checked=false);
     m.classList.remove('open');
   });

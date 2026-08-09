@@ -255,6 +255,7 @@
   <link rel="stylesheet" href="assets/css/components/buttons.css">
   <link rel="stylesheet" href="assets/css/components/icons.css">
   <link rel="stylesheet" href="assets/css/components/feedback.css">
+  <link rel="stylesheet" href="assets/css/components/forms.css">
 </head>
 <body class="admin-call-queue-page call-queue-page" data-shell-module="call-queue" data-shell-user-id="call-queue-shell-user" data-shell-role-id="call-queue-shell-role">
   <script>
@@ -287,7 +288,7 @@
           </div>
         </header>
 
-        <section class="workspace" aria-label="Call queue workspace">
+        <section class="workspace cc-form" aria-label="Call queue workspace">
           <div class="panel queue-panel" id="queue-list"></div>
 
           <div class="panel workspace-panel" id="workspace-panel">
@@ -467,7 +468,7 @@
         <div class="notes-box">
           <h3>Latest Note</h3>
           <p class="latest-note">${escapeHtml(latestNote)}</p>
-          <textarea id="note-input" placeholder="Add a call note"></textarea>
+          <textarea id="note-input" class="cc-control" placeholder="Add a call note" aria-label="Add a call note"></textarea>
           <div class="action-row">
             <button class="btn secondary" type="button" id="add-note-btn">Add Note</button>
           </div>
@@ -483,9 +484,9 @@
           </div>
           <div class="negative-details" id="negative-details">
             <label for="negative-reason">Reason</label>
-            <input id="negative-reason" placeholder="Example: No answer, customer busy">
+            <input id="negative-reason" class="cc-control" placeholder="Example: No answer, customer busy">
             <label for="negative-note">Note</label>
-            <textarea id="negative-note" placeholder="Add details for the pending follow-up"></textarea>
+            <textarea id="negative-note" class="cc-control" placeholder="Add details for the pending follow-up"></textarea>
             <div class="action-row">
               <button class="btn cc-button cc-button--warning cc-button--md" type="button" id="save-negative-btn">Save Negative Result</button>
             </div>

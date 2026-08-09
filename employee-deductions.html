@@ -104,6 +104,8 @@
   <link rel="stylesheet" href="assets/css/components/buttons.css">
   <link rel="stylesheet" href="assets/css/components/icons.css">
   <link rel="stylesheet" href="assets/css/components/feedback.css">
+  <link rel="stylesheet" href="assets/css/components/forms.css">
+  <link rel="stylesheet" href="assets/css/components/filters.css">
 </head>
 <body class="people-management-page employee-deductions-page" data-shell-module="employee-deductions" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -140,8 +142,8 @@
           <div><h2 class="cc-section-title" id="records-title">Deduction Records</h2><p>Review and filter employee financial adjustments.</p></div>
           <span class="role-pill" id="record-count">0 records</span>
         </div>
-        <div class="filters">
-          <input class="control" id="employee-search" type="search" placeholder="Search by employee">
+        <div class="filters cc-filter-bar cc-filter-bar--inline" aria-label="Deduction filters">
+          <input class="control cc-control" id="employee-search" type="search" placeholder="Search by employee" aria-label="Search deductions by employee">
           <select class="control" id="restaurant-filter" aria-label="Filter by restaurant"><option value="">All restaurants</option></select>
           <select class="control" id="type-filter" aria-label="Filter by deduction type">
             <option value="">All deduction types</option>
@@ -176,17 +178,18 @@
         <button class="icon-btn" type="button" data-close-modal="deduction-modal" aria-label="Close deduction form">&times;</button>
       </div>
       <div class="modal-body">
-        <form id="deduction-form">
+        <form id="deduction-form" class="cc-form">
           <input id="deduction-id" type="hidden">
-          <div class="form-grid">
+          <p class="cc-form__required-note"><strong>*</strong> indicates a required field.</p>
+          <div class="form-grid cc-form-grid">
             <div class="field">
-              <label for="employee-id">Employee</label>
+              <label class="cc-field__label--required" for="employee-id">Employee</label>
               <select class="control" id="employee-id" name="employeeId" required disabled>
                 <option value="">Loading employees...</option>
               </select>
             </div>
             <div class="field">
-              <label for="deduction-type">Deduction Type</label>
+              <label class="cc-field__label--required" for="deduction-type">Deduction Type</label>
               <select class="control" id="deduction-type" name="deductionType" required>
                 <option value="">Select type</option>
                 <option>Personal Order</option><option>Order Mistake</option><option>Health Insurance</option><option>Delivery Cost</option><option>Other</option>
@@ -211,11 +214,11 @@
               <input class="control" id="order-date-time" name="orderDateTime" type="text" placeholder="2026-06-07 14:08:27" pattern="\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}" title="Use YYYY-MM-DD HH:mm:ss">
             </div>
             <div class="field">
-              <label for="original-amount">Original Amount</label>
+              <label class="cc-field__label--required" for="original-amount">Original Amount</label>
               <input class="control" id="original-amount" name="originalAmount" type="number" min="0" step="0.01" required>
             </div>
             <div class="field full">
-              <div class="checkbox-field">
+              <div class="checkbox-field cc-checkbox">
                 <input id="apply-discount" name="applyEmployeeDiscount" type="checkbox">
                 <label for="apply-discount">Apply Employee Discount (10%)</label>
               </div>
@@ -234,7 +237,7 @@
               <textarea class="control" id="notes" name="notes" maxlength="5000"></textarea>
             </div>
           </div>
-          <div class="modal-actions">
+          <div class="modal-actions cc-form-actions">
             <button class="secondary-btn" type="button" data-close-modal="deduction-modal">Cancel</button>
             <button class="primary-btn" type="submit" id="save-deduction-btn">Save Deduction</button>
           </div>

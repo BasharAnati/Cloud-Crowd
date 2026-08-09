@@ -139,6 +139,8 @@
   <link rel="stylesheet" href="assets/css/components/buttons.css">
   <link rel="stylesheet" href="assets/css/components/icons.css">
   <link rel="stylesheet" href="assets/css/components/feedback.css">
+  <link rel="stylesheet" href="assets/css/components/forms.css">
+  <link rel="stylesheet" href="assets/css/components/filters.css">
 </head>
 <body class="business-quality-page restaurant-ratings-page" data-shell-module="restaurant-ratings" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -179,7 +181,7 @@
           </div>
           <span class="role-pill" id="record-count">0 records</span>
         </div>
-        <div class="filters">
+        <div class="filters cc-filter-bar cc-filter-bar--dense" aria-label="Restaurant rating filters">
           <select class="control" id="restaurant-filter" aria-label="Filter by restaurant"><option value="">All restaurants</option></select>
           <select class="control" id="platform-filter" aria-label="Filter by platform">
             <option value="">All platforms</option>
@@ -188,7 +190,7 @@
           </select>
           <select class="control" id="month-filter" aria-label="Filter by month"><option value="">All months</option></select>
           <select class="control" id="week-filter" aria-label="Filter by week"><option value="">All weeks</option></select>
-          <input class="control" id="record-search" type="search" placeholder="Search restaurant or notes">
+          <input class="control cc-control" id="record-search" type="search" placeholder="Search restaurant or notes" aria-label="Search restaurant ratings">
         </div>
         <div class="table-wrap">
           <table class="records-table">
@@ -222,17 +224,18 @@
         <button class="icon-btn" type="button" data-close-modal="rating-modal" aria-label="Close rating form">&times;</button>
       </div>
       <div class="modal-body">
-        <form id="rating-form">
+        <form id="rating-form" class="cc-form">
           <input id="rating-id" type="hidden">
-          <div class="form-grid">
+          <p class="cc-form__required-note"><strong>*</strong> indicates a required field.</p>
+          <div class="form-grid cc-form-grid">
             <div class="field">
-              <label for="restaurant-id">Restaurant</label>
+              <label class="cc-field__label--required" for="restaurant-id">Restaurant</label>
               <select class="control" id="restaurant-id" name="restaurantId" required disabled>
                 <option value="">Loading restaurants...</option>
               </select>
             </div>
             <div class="field">
-              <label for="platform">Platform</label>
+              <label class="cc-field__label--required" for="platform">Platform</label>
               <select class="control" id="platform" name="platform" required>
                 <option value="">Select platform</option>
                 <option>Talabat</option>
@@ -240,23 +243,23 @@
               </select>
             </div>
             <div class="field">
-              <label for="month-name">Month</label>
+              <label class="cc-field__label--required" for="month-name">Month</label>
               <select class="control" id="month-name" name="monthName" required></select>
             </div>
             <div class="field">
-              <label for="week-name">Week</label>
+              <label class="cc-field__label--required" for="week-name">Week</label>
               <select class="control" id="week-name" name="weekName" required></select>
             </div>
             <div class="field">
-              <label for="rating">Rating</label>
+              <label class="cc-field__label--required" for="rating">Rating</label>
               <input class="control" id="rating" name="rating" type="number" min="0" max="5" step="0.01" required>
             </div>
             <div class="field">
-              <label for="reviews-count">Reviews Count</label>
+              <label class="cc-field__label--required" for="reviews-count">Reviews Count</label>
               <input class="control" id="reviews-count" name="reviewsCount" type="number" min="0" step="1" value="0" required>
             </div>
             <div class="field full">
-              <label for="rating-date">Rating Date</label>
+              <label class="cc-field__label--required" for="rating-date">Rating Date</label>
               <input class="control" id="rating-date" name="ratingDate" type="date" required>
             </div>
             <div class="field full">
@@ -264,7 +267,7 @@
               <textarea class="control" id="notes" name="notes" maxlength="5000"></textarea>
             </div>
           </div>
-          <div class="modal-actions">
+          <div class="modal-actions cc-form-actions">
             <button class="secondary-btn" type="button" data-close-modal="rating-modal">Cancel</button>
             <button class="primary-btn" type="submit" id="save-rating-btn">Save Rating</button>
           </div>

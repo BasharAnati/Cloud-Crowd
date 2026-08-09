@@ -499,6 +499,8 @@
   <link rel="stylesheet" href="assets/css/components/buttons.css">
   <link rel="stylesheet" href="assets/css/components/icons.css">
   <link rel="stylesheet" href="assets/css/components/feedback.css">
+  <link rel="stylesheet" href="assets/css/components/forms.css">
+  <link rel="stylesheet" href="assets/css/components/filters.css">
 </head>
 <body class="workflow-page free-order-requests-page" data-shell-module="free-order-requests" data-shell-user-id="workflow-user" data-shell-role-id="workflow-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -532,8 +534,8 @@
       <article class="stat-card"><span>Done</span><strong id="stat-done">0</strong></article>
     </section>
 
-    <section class="toolbar" aria-label="Filters">
-      <input class="control" id="search-filter" type="search" placeholder="Search by order number, customer name, or phone">
+    <section class="toolbar cc-filter-bar cc-filter-bar--compact" aria-label="Request filters">
+      <input class="control cc-control" id="search-filter" type="search" placeholder="Search by order number, customer name, or phone" aria-label="Search free order requests">
       <select class="control" id="stage-filter" aria-label="Filter by stage">
         <option value="">All stages</option>
         <option value="pending_details">Pending Details</option>
@@ -559,14 +561,15 @@
         <button class="icon-btn" type="button" data-close-modal="request-modal" aria-label="Close form">&times;</button>
       </div>
       <div class="modal-body">
-        <form id="request-form">
-          <div class="form-grid">
+        <form id="request-form" class="cc-form">
+          <p class="cc-form__required-note"><strong>*</strong> indicates a required field.</p>
+          <div class="form-grid cc-form-grid">
             <div class="form-group">
-              <label for="order-number">Order Number</label>
+              <label class="cc-field__label--required" for="order-number">Order Number</label>
               <input class="control" id="order-number" name="orderNumber" type="text" maxlength="120" required>
             </div>
             <div class="form-group">
-              <label for="customer-name">Customer Name</label>
+              <label class="cc-field__label--required" for="customer-name">Customer Name</label>
               <input class="control" id="customer-name" name="customerName" type="text" maxlength="200" required>
             </div>
             <div class="form-group">
@@ -574,19 +577,19 @@
               <input class="control" id="phone-number" name="phoneNumber" type="text" maxlength="80">
             </div>
             <div class="form-group">
-              <label for="creation-time">Creation Time</label>
+              <label class="cc-field__label--required" for="creation-time">Creation Time</label>
               <input class="control" id="creation-time" name="creationTime" type="text" maxlength="120" placeholder="2026-06-07 14:08:27" required>
             </div>
             <div class="form-group">
-              <label for="discount-amount">Discount Amount</label>
+              <label class="cc-field__label--required" for="discount-amount">Discount Amount</label>
               <input class="control" id="discount-amount" name="discountAmount" type="number" min="0" step="0.01" required>
             </div>
             <div class="form-group full">
-              <label for="reason-for-discount">Reason for Discount</label>
+              <label class="cc-field__label--required" for="reason-for-discount">Reason for Discount</label>
               <textarea class="control" id="reason-for-discount" name="reasonForDiscount" maxlength="5000" required></textarea>
             </div>
           </div>
-          <div class="form-actions">
+          <div class="form-actions cc-form-actions">
             <button class="secondary-btn" type="button" data-close-modal="request-modal">Cancel</button>
             <button class="primary-btn" type="submit" id="save-request-btn">Save Request</button>
           </div>
@@ -605,11 +608,12 @@
         <button class="icon-btn" type="button" data-close-modal="details-modal" aria-label="Close form">&times;</button>
       </div>
       <div class="modal-body">
-        <form id="details-form">
+        <form id="details-form" class="cc-form">
           <input id="details-request-id" type="hidden">
-          <div class="form-grid">
+          <p class="cc-form__required-note"><strong>*</strong> indicates a required field.</p>
+          <div class="form-grid cc-form-grid">
             <div class="form-group">
-              <label for="decision-maker">Decision Maker</label>
+              <label class="cc-field__label--required" for="decision-maker">Decision Maker</label>
               <input class="control" id="decision-maker" name="decisionMaker" type="text" maxlength="200" required>
             </div>
             <div class="form-group">
@@ -617,11 +621,11 @@
               <input class="control" id="attached" name="attached" type="text" maxlength="5000" placeholder="Paste link, image reference, or attachment note">
             </div>
             <div class="form-group">
-              <label for="deduction-from">Deduction From</label>
+              <label class="cc-field__label--required" for="deduction-from">Deduction From</label>
               <input class="control" id="deduction-from" name="deductionFrom" type="text" maxlength="200" required>
             </div>
             <div class="form-group full">
-              <label for="case-description">Case Description</label>
+              <label class="cc-field__label--required" for="case-description">Case Description</label>
               <textarea class="control" id="case-description" name="caseDescription" maxlength="5000" required></textarea>
             </div>
             <div class="form-group full">
@@ -629,7 +633,7 @@
               <textarea class="control" id="notes" name="notes" maxlength="5000"></textarea>
             </div>
           </div>
-          <div class="form-actions">
+          <div class="form-actions cc-form-actions">
             <button class="secondary-btn" type="button" data-close-modal="details-modal">Cancel</button>
             <button class="primary-btn" type="submit" id="save-details-btn">Save Details</button>
           </div>

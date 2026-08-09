@@ -159,6 +159,7 @@
 
   /* Input foundation */
   --input-height: 40px;
+  --input-height-lg: 48px;
   --input-background: var(--color-surface);
   --input-border: var(--color-border);
   --input-text: var(--color-text);
@@ -170,7 +171,7 @@
   --input-disabled-text: var(--color-text-muted);
   --input-error-border: var(--color-danger);
   --input-error-ring: 0 0 0 3px rgba(180, 35, 52, 0.18);
-  --input-radius: var(--radius-md);
+  --input-radius: 10px;
 
   /* Card foundation */
   --card-background: var(--color-surface);

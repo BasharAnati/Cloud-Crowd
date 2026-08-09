@@ -86,6 +86,8 @@
   <link rel="stylesheet" href="assets/css/components/buttons.css">
   <link rel="stylesheet" href="assets/css/components/icons.css">
   <link rel="stylesheet" href="assets/css/components/feedback.css">
+  <link rel="stylesheet" href="assets/css/components/forms.css">
+  <link rel="stylesheet" href="assets/css/components/filters.css">
 </head>
 <body class="complaints-page complaints-ops-center">
   <div class="complaints-module-shell cc-shell-layout">
@@ -132,7 +134,7 @@
         </article>
       </section>
 
-      <section class="complaints-filters" aria-label="Daily Complaints filters">
+      <section class="complaints-filters cc-filter-bar cc-filter-bar--dense" aria-label="Daily Complaints filters">
         <div class="complaints-filter-field complaints-filter-search">
           <label for="complaints-search">Search</label>
           <input id="complaints-search" type="search" placeholder="Order, case, customer, or phone">
@@ -172,9 +174,9 @@
   <div class="modal" id="modal">
     <div class="modal-content">
       <h2 class="cc-modal-title">Add New Ticket</h2>
-      <form id="ticket-form">
+      <form id="ticket-form" class="cc-form">
         <div id="dynamic-form"></div>
-        <div class="form-actions">
+        <div class="form-actions cc-form-actions">
           <button type="submit" class="submit-btn">Submit</button>
           <button type="button" class="cancel-btn" onclick="closeModal()">Cancel</button>
         </div>

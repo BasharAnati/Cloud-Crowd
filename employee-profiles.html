@@ -300,6 +300,8 @@
   <link rel="stylesheet" href="assets/css/components/buttons.css">
   <link rel="stylesheet" href="assets/css/components/icons.css">
   <link rel="stylesheet" href="assets/css/components/feedback.css">
+  <link rel="stylesheet" href="assets/css/components/forms.css">
+  <link rel="stylesheet" href="assets/css/components/filters.css">
 </head>
 <body class="employee-profiles-ops-center">
   <div class="profiles-shell cc-shell-layout">
@@ -343,8 +345,8 @@
             </div>
             <span class="role-pill" id="record-count">0 records</span>
           </div>
-          <div class="filters">
-            <input class="control" id="employee-search" type="search" placeholder="Search employee or restaurant">
+          <div class="filters cc-filter-bar cc-filter-bar--compact" aria-label="Employee directory filters">
+            <input class="control cc-control" id="employee-search" type="search" placeholder="Search employee or restaurant" aria-label="Search employees or restaurants">
             <select class="control" id="status-filter" aria-label="Filter employees by status">
               <option value="all">All employees</option>
               <option value="active">Active employees</option>
@@ -376,43 +378,49 @@
         <button class="icon-btn" type="button" data-close-modal="employee-modal" aria-label="Close form">&times;</button>
       </div>
       <div class="modal-body">
-        <form id="employee-form">
+        <form id="employee-form" class="cc-form">
           <input id="employee-id" type="hidden">
-          <div class="form-grid">
-            <div class="field full">
-              <label for="full-name">Full Name</label>
-              <input class="control" id="full-name" name="fullName" type="text" maxlength="200" required>
-            </div>
-            <div class="field full">
-              <label for="employee-notes">Notes</label>
-              <textarea class="control" id="employee-notes" name="notes" maxlength="5000"></textarea>
-            </div>
+          <p class="cc-form__required-note"><strong>*</strong> indicates a required field.</p>
+          <div class="form-grid cc-form-grid">
+            <section class="form-section cc-form-section" aria-labelledby="employee-identity-title">
+              <h4 class="cc-form-section__title" id="employee-identity-title">Identity and Notes</h4>
+              <div class="cc-form-grid">
+                <div class="field full">
+                  <label class="cc-field__label--required" for="full-name">Full Name</label>
+                  <input class="control" id="full-name" name="fullName" type="text" maxlength="200" required>
+                </div>
+                <div class="field full">
+                  <label for="employee-notes">Notes</label>
+                  <textarea class="control" id="employee-notes" name="notes" maxlength="5000"></textarea>
+                </div>
+              </div>
+            </section>
 
-            <section class="form-section">
+            <section class="form-section cc-form-section" aria-labelledby="employee-phones-title">
               <div class="section-heading">
-                <h4>Phone Numbers</h4>
+                <h4 id="employee-phones-title">Phone Numbers</h4>
                 <button class="small-btn" type="button" id="add-phone-btn">+ Add Number</button>
               </div>
               <div class="dynamic-list" id="phone-list"></div>
             </section>
 
-            <section class="form-section">
+            <section class="form-section cc-form-section" aria-labelledby="employee-contacts-title">
               <div class="section-heading">
-                <h4>Emergency Contacts</h4>
+                <h4 id="employee-contacts-title">Emergency Contacts</h4>
                 <button class="small-btn" type="button" id="add-contact-btn">+ Add Contact</button>
               </div>
               <div class="dynamic-list" id="contact-list"></div>
             </section>
 
-            <section class="form-section">
+            <section class="form-section cc-form-section" aria-labelledby="employee-restaurants-title">
               <div class="section-heading">
-                <h4>Assigned Restaurants</h4>
+                <h4 id="employee-restaurants-title">Assigned Restaurants</h4>
                 <button class="small-btn" type="button" id="add-restaurant-btn">+ Add Restaurant</button>
               </div>
               <div class="dynamic-list" id="restaurant-list"></div>
             </section>
           </div>
-          <div class="modal-actions">
+          <div class="modal-actions cc-form-actions">
             <button class="secondary-btn" type="button" data-close-modal="employee-modal">Cancel</button>
             <button class="primary-btn" type="submit" id="save-employee-btn">Save Employee</button>
           </div>
@@ -618,9 +626,9 @@
       const row = document.createElement('div');
       row.className = 'dynamic-row phone-row';
       row.innerHTML = `
-        <input class="control phone-label" type="text" maxlength="80" placeholder="Label, e.g. Personal" value="${escapeHtml(phone.label || '')}">
-        <input class="control phone-number" type="tel" maxlength="60" placeholder="Phone number" value="${escapeHtml(phone.phoneNumber || '')}">
-        <label class="primary-check">
+        <input class="control cc-control phone-label" type="text" maxlength="80" placeholder="Label, e.g. Personal" aria-label="Phone label" value="${escapeHtml(phone.label || '')}">
+        <input class="control cc-control phone-number" type="tel" maxlength="60" placeholder="Phone number" aria-label="Phone number" value="${escapeHtml(phone.phoneNumber || '')}">
+        <label class="primary-check cc-checkbox">
           <input class="phone-primary" type="checkbox" ${phone.isPrimary ? 'checked' : ''}>
           Primary
         </label>
@@ -633,9 +641,9 @@
       const row = document.createElement('div');
       row.className = 'dynamic-row contact-row';
       row.innerHTML = `
-        <input class="control contact-name" type="text" maxlength="160" placeholder="Contact name" value="${escapeHtml(contact.contactName || '')}">
-        <input class="control contact-relationship" type="text" maxlength="100" placeholder="Relationship" value="${escapeHtml(contact.relationship || '')}">
-        <input class="control contact-phone" type="tel" maxlength="60" placeholder="Phone number" value="${escapeHtml(contact.phoneNumber || '')}">
+        <input class="control cc-control contact-name" type="text" maxlength="160" placeholder="Contact name" aria-label="Emergency contact name" value="${escapeHtml(contact.contactName || '')}">
+        <input class="control cc-control contact-relationship" type="text" maxlength="100" placeholder="Relationship" aria-label="Emergency contact relationship" value="${escapeHtml(contact.relationship || '')}">
+        <input class="control cc-control contact-phone" type="tel" maxlength="60" placeholder="Phone number" aria-label="Emergency contact phone number" value="${escapeHtml(contact.phoneNumber || '')}">
         <button class="remove-row" type="button" aria-label="Remove emergency contact">&times;</button>
       `;
       return row;
@@ -645,7 +653,7 @@
       const row = document.createElement('div');
       row.className = 'dynamic-row restaurant-row';
       row.innerHTML = `
-        <input class="control restaurant-name" type="text" maxlength="160" placeholder="Restaurant name" value="${escapeHtml(name)}">
+        <input class="control cc-control restaurant-name" type="text" maxlength="160" placeholder="Restaurant name" aria-label="Assigned restaurant name" value="${escapeHtml(name)}">
         <button class="remove-row" type="button" aria-label="Remove restaurant">&times;</button>
       `;
       return row;

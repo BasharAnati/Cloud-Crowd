@@ -259,6 +259,7 @@
   <link rel="stylesheet" href="assets/css/components/buttons.css">
   <link rel="stylesheet" href="assets/css/components/icons.css">
   <link rel="stylesheet" href="assets/css/components/feedback.css">
+  <link rel="stylesheet" href="assets/css/components/forms.css">
 </head>
 <body class="admin-call-queue-page admin-center-page" data-shell-module="anati-admin" data-shell-user-id="admin-shell-user" data-shell-role-id="admin-shell-role">
   <script>
@@ -338,63 +339,42 @@
             </div>
           </div>
 
-          <form id="user-form">
+          <form id="user-form" class="cc-form">
             <input type="hidden" id="user-id">
-            <div class="form-grid">
-              <label>
-                Username
-                <input id="username" autocomplete="off" required>
-              </label>
-              <label>
-                Display Name
-                <input id="display-name" autocomplete="off">
-              </label>
-              <label>
-                Email
-                <input id="email" type="email" autocomplete="off">
-              </label>
-              <label>
-                Account Type
-                <select id="account-type">
-                  <option value="employee">Employee</option>
-                  <option value="external">External</option>
-                  <option value="system">System Admin</option>
-                  <option value="client" disabled>Client - coming later</option>
-                </select>
-              </label>
-              <label id="employee-link-field">
-                Linked Employee
-                <select id="employee-id"></select>
-              </label>
-              <label>
-                Role
-                <select id="role">
-                  <option value="agent">Agent</option>
-                  <option value="manager">Manager</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </label>
-              <label>
-                Status
-                <select id="status">
-                  <option value="active">Active</option>
-                  <option value="disabled">Disabled</option>
-                </select>
-              </label>
-              <label>
-                Temporary Password
-                <input id="temporary-password" type="password" autocomplete="new-password" placeholder="Leave blank to keep current password">
-              </label>
-              <label class="check-row">
-                <input id="must-reset-password" type="checkbox">
-                Must reset password later
-              </label>
-              <label class="check-row" id="system-account-row" hidden>
-                <input id="is-system-account" type="checkbox">
-                Confirm system/admin account
-              </label>
+            <p class="cc-form__required-note"><strong>*</strong> indicates a required field.</p>
+            <div class="form-grid cc-form-grid">
+              <section class="cc-form-section cc-form-grid__full" aria-labelledby="admin-identity-title">
+                <h3 class="cc-form-section__title" id="admin-identity-title">Account Identity</h3>
+                <div class="cc-form-grid">
+                  <label class="cc-field__label--required">Username<input id="username" autocomplete="off" required></label>
+                  <label>Display Name<input id="display-name" autocomplete="off"></label>
+                  <label>Email<input id="email" type="email" autocomplete="off"></label>
+                </div>
+              </section>
+              <section class="cc-form-section cc-form-grid__full" aria-labelledby="admin-linkage-title">
+                <h3 class="cc-form-section__title" id="admin-linkage-title">Account Linkage</h3>
+                <div class="cc-form-grid">
+                  <label>Account Type<select id="account-type"><option value="employee">Employee</option><option value="external">External</option><option value="system">System Admin</option><option value="client" disabled>Client - coming later</option></select></label>
+                  <label id="employee-link-field">Linked Employee<select id="employee-id"></select></label>
+                </div>
+              </section>
+              <section class="cc-form-section cc-form-grid__full" aria-labelledby="admin-role-title">
+                <h3 class="cc-form-section__title" id="admin-role-title">Role and Status</h3>
+                <div class="cc-form-grid">
+                  <label>Role<select id="role"><option value="agent">Agent</option><option value="manager">Manager</option><option value="admin">Admin</option></select></label>
+                  <label>Status<select id="status"><option value="active">Active</option><option value="disabled">Disabled</option></select></label>
+                </div>
+              </section>
+              <section class="cc-form-section cc-form-grid__full" aria-labelledby="admin-security-title">
+                <h3 class="cc-form-section__title" id="admin-security-title">Access and Security</h3>
+                <div class="cc-form-grid">
+                  <label>Temporary Password<input id="temporary-password" type="password" autocomplete="new-password" placeholder="Leave blank to keep current password"></label>
+                  <label class="check-row cc-checkbox"><input id="must-reset-password" type="checkbox">Must reset password later</label>
+                  <label class="check-row cc-checkbox" id="system-account-row" hidden><input id="is-system-account" type="checkbox">Confirm system/admin account</label>
+                </div>
+              </section>
             </div>
-            <div class="actions">
+            <div class="actions cc-form-actions">
               <button class="btn" type="submit" id="save-user-btn">Create User Profile</button>
               <button class="btn secondary" type="button" id="reset-form-btn">Clear</button>
             </div>
@@ -580,6 +560,8 @@
       document.getElementById("system-account-row").hidden = !isSystem;
       employeeSelect.required = isEmployee;
       systemCheckbox.required = isSystem;
+      employeeSelect.closest("label")?.classList.toggle("cc-field__label--required", isEmployee);
+      systemCheckbox.closest("label")?.classList.toggle("cc-field__label--required", isSystem);
       if (!isEmployee) employeeSelect.value = "";
       if (!isSystem) systemCheckbox.checked = false;
       if (isSystem) {

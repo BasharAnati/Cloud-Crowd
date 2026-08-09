@@ -111,6 +111,8 @@
   <link rel="stylesheet" href="assets/css/components/buttons.css">
   <link rel="stylesheet" href="assets/css/components/icons.css">
   <link rel="stylesheet" href="assets/css/components/feedback.css">
+  <link rel="stylesheet" href="assets/css/components/forms.css">
+  <link rel="stylesheet" href="assets/css/components/filters.css">
 </head>
 <body class="people-management-page agent-training-page" data-shell-module="agent-training" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -149,23 +151,24 @@
             <div><h2 class="cc-section-title" id="form-title">New Training Assignment</h2><p>Create or update agent assignment coverage by restaurant or brand.</p></div>
           </div>
           <div class="quick-form">
-            <form id="training-form">
+            <form id="training-form" class="cc-form">
               <input id="training-id" type="hidden">
-              <div class="form-grid">
+              <p class="cc-form__required-note"><strong>*</strong> indicates a required field.</p>
+              <div class="form-grid cc-form-grid">
                 <div class="field">
-                  <label for="employee-id">Employee</label>
+                  <label class="cc-field__label--required" for="employee-id">Employee</label>
                   <select class="control" id="employee-id" name="employeeId" required disabled>
                     <option value="">Loading employees...</option>
                   </select>
                 </div>
                 <div class="field">
-                  <label for="restaurant-id">Restaurant / Brand</label>
+                  <label class="cc-field__label--required" for="restaurant-id">Restaurant / Brand</label>
                   <select class="control" id="restaurant-id" name="restaurantId" required disabled>
                     <option value="">Loading restaurants...</option>
                   </select>
                 </div>
                 <div class="field">
-                  <label for="assignment-status">Assignment Status</label>
+                  <label class="cc-field__label--required" for="assignment-status">Assignment Status</label>
                   <select class="control" id="assignment-status" name="assignmentStatus" required>
                     <option value="">Select assignment status</option>
                     <option>Assigned</option>
@@ -173,7 +176,7 @@
                   </select>
                 </div>
                 <div class="field">
-                  <label for="training-status">Training Status</label>
+                  <label class="cc-field__label--required" for="training-status">Training Status</label>
                   <select class="control" id="training-status" name="trainingStatus" required>
                     <option value="">Select training status</option>
                     <option>Trained</option>
@@ -195,7 +198,7 @@
                   <textarea class="control" id="notes" name="notes" maxlength="5000"></textarea>
                 </div>
               </div>
-              <div class="modal-actions">
+              <div class="modal-actions cc-form-actions">
                 <button class="secondary-btn" type="button" id="reset-training-btn">Clear</button>
                 <button class="primary-btn" type="submit" id="save-training-btn">Save Assignment</button>
               </div>
@@ -222,8 +225,8 @@
           <div><h2 class="cc-section-title" id="records-title">Training Assignments</h2><p>Review, filter, and maintain agent restaurant training records.</p></div>
           <span class="role-pill" id="record-count">0 records</span>
         </div>
-        <div class="filters">
-          <input class="control" id="employee-search" type="search" placeholder="Search employee">
+        <div class="filters cc-filter-bar cc-filter-bar--inline" aria-label="Training filters">
+          <input class="control cc-control" id="employee-search" type="search" placeholder="Search employee" aria-label="Search training by employee">
           <select class="control" id="restaurant-filter" aria-label="Filter by restaurant"><option value="">All brands</option></select>
           <select class="control" id="training-filter" aria-label="Filter by training status">
             <option value="">All training statuses</option>
