@@ -13,7 +13,7 @@ function ensureHistoryModal() {
   modal.innerHTML = `
     <div id="history-panel" class="history-modal__panel">
       <div class="history-modal__header">
-        <h3 class="history-modal__title">Change History</h3>
+        <h3 class="history-modal__title cc-modal-title">Change History</h3>
         <button id="history-close" class="history-modal__close">Close</button>
       </div>
       <div id="history-body" class="history-modal__body"></div>

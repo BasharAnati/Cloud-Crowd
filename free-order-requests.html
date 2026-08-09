@@ -198,7 +198,7 @@
       border-bottom: 1px solid rgba(38, 101, 140, .14);
     }
 
-    .stage-head h3 {
+    .stage-head h2 {
       margin: 0;
       color: var(--navy);
       font-size: 16px;
@@ -249,7 +249,7 @@
       gap: 10px;
     }
 
-    .card-head h4 {
+    .card-head h3 {
       margin: 0;
       color: var(--navy);
       font-size: 17px;
@@ -490,6 +490,7 @@
   <script src="js/maintenance.js" defer></script>
   <script src="js/app-shell.js" defer></script>
   <script src="js/internal-page-shell.js" defer></script>
+  <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
 </head>
 <body class="workflow-page free-order-requests-page" data-shell-module="free-order-requests" data-shell-user-id="workflow-user" data-shell-role-id="workflow-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -500,7 +501,7 @@
         <button id="maintenance-toggle-btn" class="cc-shell-maintenance-toggle" type="button" aria-pressed="false" hidden>OFF</button>
       </header>
 
-      <div class="workflow-container">
+      <div class="workflow-container cc-page-container cc-page-container--workspace">
         <header class="cc-page-header">
           <div class="cc-page-header-content">
             <p class="cc-page-header-context">Free Order Workflow</p>
@@ -544,7 +545,7 @@
     <div class="modal-panel">
       <div class="modal-header">
         <div>
-          <h3 id="request-modal-title">New Request</h3>
+          <h3 class="cc-modal-title" id="request-modal-title">New Request</h3>
           <p id="request-modal-subtitle">Create the entry. It will move directly to Pending Details.</p>
         </div>
         <button class="icon-btn" type="button" data-close-modal="request-modal" aria-label="Close form">&times;</button>
@@ -590,7 +591,7 @@
     <div class="modal-panel">
       <div class="modal-header">
         <div>
-          <h3 id="details-modal-title">Complete Details</h3>
+          <h3 class="cc-modal-title" id="details-modal-title">Complete Details</h3>
           <p>Complete internal details before this request is ready to share.</p>
         </div>
         <button class="icon-btn" type="button" data-close-modal="details-modal" aria-label="Close form">&times;</button>
@@ -633,7 +634,7 @@
     <div class="modal-panel">
       <div class="modal-header">
         <div>
-          <h3 id="view-modal-title">Request Details</h3>
+          <h3 class="cc-modal-title" id="view-modal-title">Request Details</h3>
           <p id="view-modal-subtitle"></p>
         </div>
         <button class="icon-btn" type="button" data-close-modal="view-modal" aria-label="Close details">&times;</button>
@@ -806,7 +807,7 @@
         <article class="request-card ${needsResponse ? 'needs-response' : ''}">
           <div class="card-head">
             <div>
-              <h4>${escapeHtml(request.orderNumber)}</h4>
+              <h3>${escapeHtml(request.orderNumber)}</h3>
               <p>${escapeHtml(request.customerName)}</p>
             </div>
             <div>${readyBadge}${responseBadge}</div>
@@ -834,7 +835,7 @@
         return `
           <section class="stage-column" aria-label="${escapeHtml(column.label)}">
             <div class="stage-head">
-              <h3>${escapeHtml(column.label)}</h3>
+              <h2 class="cc-section-title">${escapeHtml(column.label)}</h2>
               <span class="count-pill">${items.length}</span>
             </div>
             ${body}

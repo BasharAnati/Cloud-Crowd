@@ -77,23 +77,24 @@
   <script src="js/tickets-render.js" defer></script>
   <script src="js/media-viewer.js" defer></script>
   <script src="main.js" defer></script>
+  <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
 </head>
 <body class="free-orders-page free-orders-ops-center">
   <div class="free-orders-module-shell cc-shell-layout">
     <aside id="free-orders-app-sidebar" aria-label="Complimentary Orders navigation"></aside>
 
-    <main class="free-orders-workspace free-orders-main-area" id="main-content">
+    <main class="free-orders-workspace free-orders-main-area cc-page-container cc-page-container--workspace" id="main-content">
       <header id="free-orders-app-topbar" role="banner"></header>
 
-      <section class="free-orders-hero" aria-labelledby="free-orders-page-title">
-        <div class="free-orders-hero-copy">
-          <h2 id="free-orders-page-title">Complimentary Orders Operations Center</h2>
-          <p>Track complimentary orders, approvals, usage status, and case resolution progress.</p>
+      <header class="free-orders-hero cc-page-header" aria-labelledby="free-orders-page-title">
+        <div class="free-orders-hero-copy cc-page-header-content">
+          <h1 class="cc-page-header-title" id="free-orders-page-title">Complimentary Orders Operations Center</h1>
+          <p class="cc-page-header-description">Track complimentary orders, approvals, usage status, and case resolution progress.</p>
         </div>
-        <div class="free-orders-actions">
+        <div class="free-orders-actions cc-page-header-actions">
           <button class="add-ticket-btn" type="button" onclick="openModal('free-orders')" data-permission-create>Add New Ticket</button>
         </div>
-      </section>
+      </header>
 
     <section class="free-orders-stats" aria-label="Complimentary order stats">
       <div class="free-orders-stat-card">
@@ -159,7 +160,7 @@
 
   <div class="modal" id="modal">
     <div class="modal-content">
-      <h2>Add New Ticket</h2>
+      <h2 class="cc-modal-title">Add New Ticket</h2>
       <form id="ticket-form">
         <div id="dynamic-form"></div>
         <div class="form-actions">
@@ -177,7 +178,7 @@
       <div class="drawer-header">
         <div>
           <div class="drawer-case">Order Number: <span id="drawer-caseNumber"></span></div>
-          <h2 id="drawer-title">Details</h2>
+          <h2 class="cc-modal-title" id="drawer-title">Details</h2>
         </div>
         <button class="drawer-close" onclick="closeTicketDrawer()" aria-label="Close">×</button>
       </div>

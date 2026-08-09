@@ -250,6 +250,7 @@
   <script src="js/maintenance.js" defer></script>
   <script src="js/app-shell.js" defer></script>
   <script src="js/internal-page-shell.js" defer></script>
+  <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
 </head>
 <body class="admin-call-queue-page admin-center-page" data-shell-module="anati-admin" data-shell-user-id="admin-shell-user" data-shell-role-id="admin-shell-role">
   <script>
@@ -271,7 +272,7 @@
         <button id="maintenance-toggle-btn" class="cc-shell-maintenance-toggle" type="button" aria-pressed="false" hidden>OFF</button>
       </header>
 
-      <div class="admin-call-queue-container admin-center-container">
+      <div class="admin-call-queue-container admin-center-container cc-page-container cc-page-container--workspace">
         <header class="cc-page-header">
           <div class="cc-page-header-content">
             <p class="cc-page-header-context">Administration</p>
@@ -293,7 +294,7 @@
         <div class="panel">
           <div class="panel-head">
             <div>
-              <h3>User Management</h3>
+              <h2 class="cc-section-title">User Management</h2>
               <p>Create and maintain user profiles. Temporary passwords are hashed before storage and are never returned by the API.</p>
             </div>
             <button class="btn secondary" type="button" id="refresh-users-btn">Refresh</button>
@@ -324,7 +325,7 @@
         <div class="panel">
           <div class="panel-head">
             <div>
-              <h3 id="form-title">Create User Profile</h3>
+              <h2 class="cc-section-title" id="form-title">Create User Profile</h2>
               <p id="form-subtitle">Set a temporary password only when creating or resetting login access.</p>
             </div>
           </div>
@@ -397,7 +398,7 @@
       <section class="panel" style="margin-top:18px" aria-label="Module access">
         <div class="panel-head">
           <div>
-            <h3>Module Access</h3>
+            <h2 class="cc-section-title">Module Access</h2>
             <p>Store future access rules for each user. These permissions are not enforced on dashboard/pages yet.</p>
           </div>
         </div>
@@ -434,15 +435,15 @@
 
       <section class="placeholder-grid" aria-label="Future admin sections">
         <div class="placeholder">
-          <h3>Workflow Permissions</h3>
+          <h2 class="cc-section-title">Workflow Permissions</h2>
           <p>Future controls for workflow-specific approvals, transitions, and ownership rules.</p>
         </div>
         <div class="placeholder">
-          <h3>Maintenance Control</h3>
+          <h2 class="cc-section-title">Maintenance Control</h2>
           <p>Future centralized controls for maintenance mode and operational access windows.</p>
         </div>
         <div class="placeholder">
-          <h3>Audit Logs</h3>
+          <h2 class="cc-section-title">Audit Logs</h2>
           <p>Future searchable review surface for admin actions and access changes.</p>
         </div>
       </section>

@@ -166,6 +166,7 @@
   <script src="js/maintenance.js" defer></script>
   <script src="js/app-shell.js" defer></script>
   <script src="js/internal-page-shell.js" defer></script>
+  <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
 </head>
 <body class="business-quality-page client-profiles-page" data-shell-module="client-profiles" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -176,7 +177,7 @@
         <button id="maintenance-toggle-btn" class="cc-shell-maintenance-toggle" type="button" aria-pressed="false" hidden>OFF</button>
       </header>
 
-      <div class="business-quality-container">
+      <div class="business-quality-container cc-page-container cc-page-container--workspace">
       <header class="cc-page-header">
         <div class="cc-page-header-content">
           <p class="cc-page-header-context">Client Operations</p>
@@ -200,7 +201,7 @@
       <section class="content-card" aria-labelledby="directory-title">
         <div class="card-header">
           <div>
-            <h3 id="directory-title">Client Directory</h3>
+            <h2 class="cc-section-title" id="directory-title">Client Directory</h2>
             <p>Search restaurants and open the full operational profile.</p>
           </div>
           <span class="role-pill" id="record-count">0 records</span>
@@ -225,7 +226,7 @@
   <div class="modal" id="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
     <div class="modal-panel">
       <div class="modal-header">
-        <h3 id="profile-modal-title">Client Profile</h3>
+        <h3 class="cc-modal-title" id="profile-modal-title">Client Profile</h3>
         <button class="icon-btn" type="button" data-close-modal="profile-modal" aria-label="Close client profile">&times;</button>
       </div>
       <div class="modal-body" id="profile-modal-body"></div>
@@ -235,7 +236,7 @@
   <div class="modal" id="client-modal" role="dialog" aria-modal="true" aria-labelledby="client-modal-title">
     <div class="modal-panel">
       <div class="modal-header">
-        <h3 id="client-modal-title">Add Client</h3>
+        <h3 class="cc-modal-title" id="client-modal-title">Add Client</h3>
         <button class="icon-btn" type="button" data-close-modal="client-modal" aria-label="Close client form">&times;</button>
       </div>
       <div class="modal-body">

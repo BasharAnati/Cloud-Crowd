@@ -130,6 +130,7 @@
   <script src="js/maintenance.js" defer></script>
   <script src="js/app-shell.js" defer></script>
   <script src="js/internal-page-shell.js" defer></script>
+  <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
 </head>
 <body class="business-quality-page restaurant-ratings-page" data-shell-module="restaurant-ratings" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -140,7 +141,7 @@
         <button id="maintenance-toggle-btn" class="cc-shell-maintenance-toggle" type="button" aria-pressed="false" hidden>OFF</button>
       </header>
 
-      <div class="business-quality-container">
+      <div class="business-quality-container cc-page-container cc-page-container--standard">
       <header class="cc-page-header">
         <div class="cc-page-header-content">
           <p class="cc-page-header-context">Client Profiles Module</p>
@@ -165,7 +166,7 @@
       <section class="content-card" aria-labelledby="records-title">
         <div class="card-header">
           <div>
-            <h3 id="records-title">Rating Records</h3>
+            <h2 class="cc-section-title" id="records-title">Rating Records</h2>
             <p>Review, filter, and maintain weekly delivery platform ratings.</p>
           </div>
           <span class="role-pill" id="record-count">0 records</span>
@@ -209,7 +210,7 @@
   <div class="modal" id="rating-modal" role="dialog" aria-modal="true" aria-labelledby="rating-modal-title">
     <div class="modal-panel">
       <div class="modal-header">
-        <h3 id="rating-modal-title">Add Rating</h3>
+        <h3 class="cc-modal-title" id="rating-modal-title">Add Rating</h3>
         <button class="icon-btn" type="button" data-close-modal="rating-modal" aria-label="Close rating form">&times;</button>
       </div>
       <div class="modal-body">
@@ -267,7 +268,7 @@
   <div class="modal" id="details-modal" role="dialog" aria-modal="true" aria-labelledby="details-modal-title">
     <div class="modal-panel">
       <div class="modal-header">
-        <h3 id="details-modal-title">Rating Details</h3>
+        <h3 class="cc-modal-title" id="details-modal-title">Rating Details</h3>
         <button class="icon-btn" type="button" data-close-modal="details-modal" aria-label="Close rating details">&times;</button>
       </div>
       <div class="modal-body" id="details-modal-body"></div>

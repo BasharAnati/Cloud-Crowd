@@ -609,6 +609,7 @@
   <script src="js/maintenance.js" defer></script>
   <script src="js/app-shell.js" defer></script>
   <script src="js/internal-page-shell.js" defer></script>
+  <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
 </head>
 <body class="business-quality-page weekly-quality-page" data-shell-module="weekly-quality" data-shell-user-id="quality-user-name" data-shell-role-id="quality-role-badge">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -619,13 +620,13 @@
         <button id="maintenance-toggle-btn" class="cc-shell-maintenance-toggle" type="button" aria-pressed="false" hidden>OFF</button>
       </header>
 
-      <div class="business-quality-container">
+      <div class="business-quality-container cc-page-container cc-page-container--standard">
       <header class="cc-page-header">
         <div class="cc-page-header-content">
           <h1 class="cc-page-header-title" id="quality-title">Weekly Quality Sheet</h1>
           <p class="cc-page-header-description">Evaluate call quality consistently, review coaching opportunities, and keep weekly performance records clear and accessible.</p>
         </div>
-        <div class="quality-points-context" aria-hidden="true">
+        <div class="quality-points-context cc-page-header-companion" aria-hidden="true">
           <strong>100</strong>
           <span>Quality Points</span>
         </div>
@@ -658,7 +659,7 @@
       <section class="content-card" aria-labelledby="evaluation-form-title">
         <div class="card-heading">
           <div>
-            <h3 id="evaluation-form-title">New Call Evaluation</h3>
+            <h2 class="cc-section-title" id="evaluation-form-title">New Call Evaluation</h2>
             <p>Complete all call details and assign a score for each quality measure.</p>
           </div>
         </div>
@@ -667,7 +668,7 @@
 
         <form class="evaluation-form" id="quality-form">
           <section class="form-section">
-            <h4 class="section-title"><span class="section-number">1</span>Call Information</h4>
+            <h3 class="section-title"><span class="section-number">1</span>Call Information</h3>
             <div class="form-grid">
               <div class="field">
                 <label for="call-date-time">Call Date &amp; Time</label>
@@ -699,7 +700,7 @@
           </section>
 
           <section class="form-section">
-            <h4 class="section-title"><span class="section-number">2</span>Quality Scores</h4>
+            <h3 class="section-title"><span class="section-number">2</span>Quality Scores</h3>
             <div class="score-grid" id="score-grid">
               <div class="field score-field"><label for="score-greetings">Greetings</label><select id="score-greetings" name="greetings" class="score-select"></select></div>
               <div class="field score-field"><label for="score-knowledge">Knowledge</label><select id="score-knowledge" name="knowledge" class="score-select"></select></div>
@@ -719,7 +720,7 @@
           </section>
 
           <section class="form-section">
-            <h4 class="section-title"><span class="section-number">3</span>Notes &amp; Recording</h4>
+            <h3 class="section-title"><span class="section-number">3</span>Notes &amp; Recording</h3>
             <div class="form-grid">
               <div class="field full">
                 <label for="notes">Notes</label>
@@ -742,7 +743,7 @@
       <section class="content-card" aria-labelledby="records-title">
         <div class="card-heading">
           <div>
-            <h3 id="records-title">Evaluation Records</h3>
+            <h2 class="cc-section-title" id="records-title">Evaluation Records</h2>
             <p id="records-storage-note">Records load from the database first, with local browser records used only as a fallback.</p>
           </div>
         </div>
@@ -787,7 +788,7 @@
   <div class="modal" id="details-modal" role="dialog" aria-modal="true" aria-labelledby="details-modal-title">
     <div class="modal-panel">
       <div class="modal-header">
-        <h3 id="details-modal-title">Evaluation Details</h3>
+        <h3 class="cc-modal-title" id="details-modal-title">Evaluation Details</h3>
         <button class="modal-close" id="details-modal-close" type="button" aria-label="Close evaluation details">Close</button>
       </div>
       <div class="modal-body" id="details-modal-body"></div>

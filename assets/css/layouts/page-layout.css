@@ -1,0 +1,170 @@
+/* Sprint 1.4 shared internal-page typography, header, and outer-layout contract. */
+:root {
+  --cc-page-gutter: var(--page-padding-desktop);
+}
+
+.cc-page-container {
+  width: 100%;
+  min-width: 0;
+  margin-inline: auto;
+  padding: var(--cc-page-gutter);
+}
+
+.cc-page-container--standard {
+  max-width: var(--content-max-width);
+}
+
+.cc-page-container--workspace {
+  max-width: none;
+}
+
+:is(
+  .cctv-ops-center,
+  .ce-ops-center,
+  .complaints-ops-center,
+  .free-orders-ops-center,
+  .employee-profiles-ops-center
+) .cc-page-container {
+  padding-inline: var(--cc-page-gutter);
+}
+
+:is(.cctv-ops-center, .ce-ops-center, .complaints-ops-center, .free-orders-ops-center)
+  .cc-page-container {
+  padding-block: 0 var(--cc-page-gutter);
+}
+
+:is(
+  .cctv-ops-center,
+  .ce-ops-center,
+  .complaints-ops-center,
+  .free-orders-ops-center,
+  .employee-profiles-ops-center
+) .cc-page-header {
+  margin-bottom: var(--space-8);
+}
+
+.cc-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-6);
+  margin: 0 0 var(--space-8);
+}
+
+.cc-page-header-content {
+  flex: 1 1 420px;
+  min-width: 0;
+}
+
+.cc-page-header-title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-page-title);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-page-title);
+  letter-spacing: normal;
+}
+
+.cc-page-header-context {
+  margin: 0 0 var(--space-2);
+  color: var(--color-primary);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-caption);
+}
+
+.cc-page-header-description {
+  max-width: 760px;
+  margin: var(--space-3) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-body);
+}
+
+.cc-page-header-actions,
+.cc-page-header-companion {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  max-width: 100%;
+  min-width: 0;
+}
+
+.cc-page-container .cc-section-title,
+.cc-page-container > section > :is(h2, header) > .cc-section-title {
+  font-size: var(--font-size-section-title);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-section-title);
+  letter-spacing: normal;
+}
+
+.cc-page-container :is(h3, h4) {
+  letter-spacing: normal;
+}
+
+.cc-page-container .cc-card-title,
+body :is(.modal-content, .modal-header, .drawer-header, .history-modal__header) .cc-modal-title {
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-card-title);
+  letter-spacing: normal;
+}
+
+.cc-page-container :is(.table-wrap, .profile-table-wrap) {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.cc-page-container {
+  overflow-x: visible;
+}
+
+@media (max-width: 1024px) {
+  :root {
+    --cc-page-gutter: var(--page-padding-tablet);
+  }
+
+  .cc-page-header-actions,
+  .cc-page-header-companion {
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 620px) {
+  :root {
+    --cc-page-gutter: var(--page-padding-mobile);
+  }
+
+  .cc-page-header {
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+  }
+
+  :is(
+    .cctv-ops-center,
+    .ce-ops-center,
+    .complaints-ops-center,
+    .free-orders-ops-center,
+    .employee-profiles-ops-center
+  ) .cc-page-header {
+    margin-bottom: var(--space-6);
+  }
+
+  .cc-page-header-content,
+  .cc-page-header-actions,
+  .cc-page-header-companion {
+    flex-basis: 100%;
+    width: 100%;
+  }
+
+  .cc-page-header-actions > :is(a, button) {
+    max-width: 100%;
+  }
+}

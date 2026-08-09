@@ -197,7 +197,7 @@
       border-bottom: 1px solid rgba(38, 101, 140, .14);
     }
 
-    .column-head h3 {
+    .column-head h2 {
       margin: 0;
       color: var(--navy);
       font-size: 16px;
@@ -268,7 +268,7 @@
       gap: 10px;
     }
 
-    .card-head h4 {
+    .card-head h3 {
       margin: 0;
       color: var(--navy);
       font-size: 17px;
@@ -514,6 +514,7 @@
   <script src="js/maintenance.js" defer></script>
   <script src="js/app-shell.js" defer></script>
   <script src="js/internal-page-shell.js" defer></script>
+  <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
 </head>
 <body class="workflow-page free-order-share-page" data-shell-module="free-order-share" data-shell-user-id="workflow-user" data-shell-role-id="workflow-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -524,7 +525,7 @@
         <button id="maintenance-toggle-btn" class="cc-shell-maintenance-toggle" type="button" aria-pressed="false" hidden>OFF</button>
       </header>
 
-      <div class="workflow-container">
+      <div class="workflow-container cc-page-container cc-page-container--workspace">
         <header class="cc-page-header">
           <div class="cc-page-header-content">
             <p class="cc-page-header-context">Free Order Workflow</p>
@@ -566,7 +567,7 @@
     <div class="modal-panel">
       <div class="modal-header">
         <div>
-          <h3 id="response-modal-title">Needs Response</h3>
+          <h3 class="cc-modal-title" id="response-modal-title">Needs Response</h3>
           <p>Add the question or clarification needed before this share can be completed.</p>
         </div>
         <button class="icon-btn" type="button" data-close-modal="response-modal" aria-label="Close form">&times;</button>
@@ -591,7 +592,7 @@
     <div class="modal-panel">
       <div class="modal-header">
         <div>
-          <h3 id="view-modal-title">Share Details</h3>
+          <h3 class="cc-modal-title" id="view-modal-title">Share Details</h3>
           <p id="view-modal-subtitle"></p>
         </div>
         <button class="icon-btn" type="button" data-close-modal="view-modal" aria-label="Close details">&times;</button>
@@ -759,7 +760,7 @@
         <article class="share-card ${needsResponse ? 'needs-response' : ''} ${done ? 'done' : ''}">
           <div class="card-head">
             <div>
-              <h4>${escapeHtml(item.orderNumber)}</h4>
+              <h3>${escapeHtml(item.orderNumber)}</h3>
               <p>${escapeHtml(item.customerName)}</p>
             </div>
             <div>${badge}</div>
@@ -788,7 +789,7 @@
         return `
           <section class="share-column" aria-label="${escapeHtml(column.label)}">
             <div class="column-head">
-              <h3>${escapeHtml(column.label)}</h3>
+              <h2 class="cc-section-title">${escapeHtml(column.label)}</h2>
               <span class="count-pill">${items.length}</span>
             </div>
             ${body}

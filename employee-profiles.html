@@ -291,6 +291,7 @@
       window.location.href = 'login.html';
     }
   </script>
+  <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
 </head>
 <body class="employee-profiles-ops-center">
   <div class="profiles-shell cc-shell-layout">
@@ -303,18 +304,18 @@
         <button id="logout-btn" type="button" hidden>Log out</button>
       </header>
 
-      <main class="main-area" id="main-content">
+      <main class="main-area cc-page-container cc-page-container--workspace" id="main-content">
 
-      <section class="hero" aria-labelledby="page-title">
-        <div class="hero-content">
-          <p class="eyebrow">People Operations</p>
-          <h2 id="page-title">Employee Profiles</h2>
-          <p>Maintain employee records, contact details, restaurant assignments, and operational history.</p>
+      <header class="hero cc-page-header" aria-labelledby="page-title">
+        <div class="hero-content cc-page-header-content">
+          <p class="eyebrow cc-page-header-context">People Operations</p>
+          <h1 class="cc-page-header-title" id="page-title">Employee Profiles</h1>
+          <p class="cc-page-header-description">Maintain employee records, contact details, restaurant assignments, and operational history.</p>
         </div>
-        <div class="hero-actions">
+        <div class="hero-actions cc-page-header-actions">
           <button class="primary-btn write-control" type="button" id="add-employee-btn" data-permission-create>+ Add Employee</button>
         </div>
-      </section>
+      </header>
 
       <div class="message" id="page-message" role="status"></div>
 
@@ -330,7 +331,7 @@
           <div class="card-header">
             <div>
               <p class="directory-eyebrow">People directory</p>
-              <h3 id="directory-title">Employee Directory</h3>
+              <h2 class="cc-section-title" id="directory-title">Employee Directory</h2>
             </div>
             <span class="role-pill" id="record-count">0 records</span>
           </div>
@@ -351,7 +352,7 @@
           <div class="workspace-empty-state">
             <span class="workspace-empty-icon" aria-hidden="true">&#9783;</span>
             <p class="workspace-kicker">Employee workspace</p>
-            <h3>Select an employee</h3>
+            <h2 class="cc-section-title">Select an employee</h2>
             <p>Choose a record from the directory to review contact information, assignments, and operational summaries.</p>
           </div>
         </section>
@@ -363,7 +364,7 @@
   <div class="modal" id="employee-modal" role="dialog" aria-modal="true" aria-labelledby="employee-modal-title">
     <div class="modal-panel">
       <div class="modal-header">
-        <h3 id="employee-modal-title">Add Employee</h3>
+        <h3 class="cc-modal-title" id="employee-modal-title">Add Employee</h3>
         <button class="icon-btn" type="button" data-close-modal="employee-modal" aria-label="Close form">&times;</button>
       </div>
       <div class="modal-body">
@@ -921,7 +922,7 @@
         <div class="workspace-empty-state">
           <span class="workspace-empty-icon" aria-hidden="true">&#9783;</span>
           <p class="workspace-kicker">Employee workspace</p>
-          <h3>Select an employee</h3>
+          <h2 class="cc-section-title">Select an employee</h2>
           <p>Choose a record from the directory to review contact information, assignments, and operational summaries.</p>
         </div>
       `;
@@ -954,7 +955,7 @@
         <div class="workspace-empty-state workspace-error-state">
           <span class="workspace-empty-icon" aria-hidden="true">!</span>
           <p class="workspace-kicker">Workspace unavailable</p>
-          <h3>Employee profile could not be loaded</h3>
+          <h2 class="cc-section-title">Employee profile could not be loaded</h2>
           <p>${escapeHtml(message)}</p>
           ${retry && selectedEmployeeId
             ? '<button class="small-btn" type="button" data-retry-workspace>Try again</button>'
@@ -1227,7 +1228,7 @@
               <span class="workspace-avatar" aria-hidden="true">${escapeHtml(getEmployeeInitials(employee.fullName))}</span>
               <div>
                 <p class="workspace-kicker">Employee record</p>
-                <h3>${escapeHtml(employee.fullName)}</h3>
+                <h2 class="cc-section-title">${escapeHtml(employee.fullName)}</h2>
                 <div class="workspace-profile-meta">
                   <span class="status-badge status-${escapeHtml(employee.status)}">${escapeHtml(employee.status === 'inactive' ? 'Archived' : 'Active')}</span>
                   <span>${employee.assignedRestaurants.length} restaurant${employee.assignedRestaurants.length === 1 ? '' : 's'}</span>
@@ -1240,7 +1241,7 @@
           <div class="workspace-section-grid">
             <section class="workspace-card workspace-overview-card">
               <div class="workspace-card-heading">
-                <div><p class="workspace-kicker">Record details</p><h4>Overview</h4></div>
+                <div><p class="workspace-kicker">Record details</p><h3>Overview</h3></div>
                 <span class="section-source">Employee Profiles</span>
               </div>
               <div class="workspace-definition-grid">
@@ -1253,7 +1254,7 @@
             </section>
 
             <section class="workspace-card workspace-contact-card">
-              <div class="workspace-card-heading"><div><p class="workspace-kicker">Reachability</p><h4>Contact Information</h4></div></div>
+              <div class="workspace-card-heading"><div><p class="workspace-kicker">Reachability</p><h3>Contact Information</h3></div></div>
               <div class="workspace-primary-contact">
                 <span>Primary phone</span>
                 <strong>${valueOrDash(primaryPhone?.phoneNumber)}</strong>
@@ -1267,13 +1268,13 @@
             </section>
 
             <section class="workspace-card workspace-restaurant-card">
-              <div class="workspace-card-heading"><div><p class="workspace-kicker">Operations</p><h4>Restaurant Assignments</h4></div><span class="workspace-count">${employee.assignedRestaurants.length}</span></div>
+              <div class="workspace-card-heading"><div><p class="workspace-kicker">Operations</p><h3>Restaurant Assignments</h3></div><span class="workspace-count">${employee.assignedRestaurants.length}</span></div>
               <div class="restaurant-list">${restaurants}</div>
             </section>
           </div>
 
           <section class="workspace-summary-section" aria-label="Employee operational summaries">
-            <div class="workspace-card-heading"><div><p class="workspace-kicker">At a glance</p><h4>Operational Summary</h4></div></div>
+            <div class="workspace-card-heading"><div><p class="workspace-kicker">At a glance</p><h3>Operational Summary</h3></div></div>
             <div class="workspace-summary-grid">
               <article><span>Attendance count</span><strong>${attendance.records.length}</strong><small>${escapeHtml(attendanceState)}</small></article>
               <article><span>Quality score</span><strong>${escapeHtml(qualityValue)}</strong><small>${escapeHtml(qualityState)}</small></article>
@@ -1283,7 +1284,7 @@
           </section>
 
           <section class="workspace-modules-section" aria-label="Linked employee modules">
-            <div class="workspace-card-heading"><div><p class="workspace-kicker">Linked modules</p><h4>Detailed Workspaces</h4></div><span class="section-source">Phase 1</span></div>
+            <div class="workspace-card-heading"><div><p class="workspace-kicker">Linked modules</p><h3>Detailed Workspaces</h3></div><span class="section-source">Phase 1</span></div>
             <div class="workspace-module-grid">
               <article><span class="workspace-module-icon" aria-hidden="true">A</span><div><h5>Attendance</h5><p>${escapeHtml(attendanceState)}</p></div><small>Detailed workspace coming next</small></article>
               <article><span class="workspace-module-icon" aria-hidden="true">Q</span><div><h5>Weekly Quality</h5><p>${escapeHtml(qualityState)}</p></div><small>Detailed workspace coming next</small></article>

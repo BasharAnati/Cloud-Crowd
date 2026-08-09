@@ -326,7 +326,7 @@
   letter-spacing: 0.05em;
 }
 
-.employee-profiles-ops-center .workspace-profile-header h3 {
+.employee-profiles-ops-center .workspace-profile-header h2 {
   overflow: hidden;
   margin: 3px 0 5px;
   color: var(--color-text);
@@ -383,7 +383,7 @@
   margin-bottom: 13px;
 }
 
-.employee-profiles-ops-center .workspace-card-heading h4 {
+.employee-profiles-ops-center .workspace-card-heading h3 {
   margin: 3px 0 0;
   color: var(--color-text);
   font-size: 14px;
@@ -687,7 +687,7 @@
     padding: 17px;
   }
 
-  .employee-profiles-ops-center .workspace-profile-header h3 {
+  .employee-profiles-ops-center .workspace-profile-header h2 {
     font-size: 21px;
   }
 

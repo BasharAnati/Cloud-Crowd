@@ -361,15 +361,91 @@ function specificity(selector) {
   return score;
 }
 
-function declarationAffects(declaration, property) {
-  if (declaration.property === property) return true;
-  if (["background", "background-color"].includes(property) &&
-      ["background", "background-color"].includes(declaration.property)) return true;
-  if (property === "border-color" && declaration.property === "border") return true;
-  if (property === "border-bottom-color") {
-    return ["border-bottom", "border-color", "border"].includes(declaration.property);
+function splitWhitespaceTopLevel(source) {
+  const parts = [];
+  let buffer = "";
+  let parentheses = 0;
+  let quote = "";
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+    if (quote) {
+      buffer += character;
+      if (character === quote && source[index - 1] !== "\\") quote = "";
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = character;
+      buffer += character;
+      continue;
+    }
+    if (character === "(") parentheses += 1;
+    if (character === ")") parentheses -= 1;
+    if (/\s/.test(character) && parentheses === 0) {
+      if (buffer) parts.push(buffer);
+      buffer = "";
+    } else {
+      buffer += character;
+    }
   }
-  return false;
+  if (buffer) parts.push(buffer);
+  return parts;
+}
+
+function boxSideValue(value, side) {
+  const values = splitWhitespaceTopLevel(value);
+  if (!values.length || values.length > 4) return null;
+  const [top, right = top, bottom = top, left = right] = values.length === 3
+    ? [values[0], values[1], values[2], values[1]]
+    : values.length === 2
+      ? [values[0], values[1], values[0], values[1]]
+      : values;
+  return { top, right, bottom, left }[side];
+}
+
+function axisSideValue(value, side) {
+  const values = splitWhitespaceTopLevel(value);
+  if (!values.length || values.length > 2) return null;
+  return side === "start" ? values[0] : values[1] || values[0];
+}
+
+function declarationValueForProperty(declaration, property) {
+  if (declaration.property === property) return declaration.value;
+  if (["background", "background-color"].includes(property) &&
+      ["background", "background-color"].includes(declaration.property)) return declaration.value;
+  if (property === "border-color" && declaration.property === "border") return declaration.value;
+  if (property === "border-bottom-color") {
+    return ["border-bottom", "border-color", "border"].includes(declaration.property) ? declaration.value : null;
+  }
+
+  const logicalToPhysical = {
+    "padding-inline-start": "padding-left",
+    "padding-inline-end": "padding-right",
+    "padding-block-start": "padding-top",
+    "padding-block-end": "padding-bottom",
+    "margin-inline-start": "margin-left",
+    "margin-inline-end": "margin-right",
+    "margin-block-start": "margin-top",
+    "margin-block-end": "margin-bottom"
+  };
+  const target = logicalToPhysical[property] || property;
+  const declared = logicalToPhysical[declaration.property] || declaration.property;
+  if (declared === target) return declaration.value;
+
+  const box = target.match(/^(padding|margin)-(top|right|bottom|left)$/);
+  if (!box) return null;
+  const [, family, side] = box;
+  if (declaration.property === family) return boxSideValue(declaration.value, side);
+  if (declaration.property === `${family}-inline` && ["left", "right"].includes(side)) {
+    return axisSideValue(declaration.value, side === "left" ? "start" : "end");
+  }
+  if (declaration.property === `${family}-block` && ["top", "bottom"].includes(side)) {
+    return axisSideValue(declaration.value, side === "top" ? "start" : "end");
+  }
+  return null;
+}
+
+function declarationAffects(declaration, property) {
+  return declarationValueForProperty(declaration, property) !== null;
 }
 
 function outranks(candidate, winner) {
@@ -405,7 +481,13 @@ function createCascade(root, page, options = {}) {
       const selectorSpecificity = specificity(rule.selector);
       for (const declaration of rule.declarations) {
         if (!declarationAffects(declaration, property)) continue;
-        const candidate = { ...declaration, selector: rule.selector, sourceName: rule.sourceName, specificity: selectorSpecificity };
+        const candidate = {
+          ...declaration,
+          value: declarationValueForProperty(declaration, property),
+          selector: rule.selector,
+          sourceName: rule.sourceName,
+          specificity: selectorSpecificity
+        };
         if (outranks(candidate, winning)) winning = candidate;
       }
     }
@@ -413,6 +495,7 @@ function createCascade(root, page, options = {}) {
       if (!declarationAffects(declaration, property)) continue;
       const candidate = {
         ...declaration,
+        value: declarationValueForProperty(declaration, property),
         selector: "style attribute",
         sourceName: `${page}#inline`,
         inline: true,

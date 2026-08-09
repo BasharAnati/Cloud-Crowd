@@ -15,7 +15,7 @@
 }
 
 .workflow-page .workflow-container {
-  width: min(var(--content-max-width), 100%);
+  width: 100%;
   margin: 0 auto;
   padding: var(--page-padding-desktop);
 }
@@ -165,7 +165,7 @@
   border-color: var(--color-success-border);
 }
 
-.workflow-page .card-head h4,
+.workflow-page .card-head h3,
 .workflow-page .field-line,
 .workflow-page .field-line strong {
   color: var(--color-text);

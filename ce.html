@@ -77,23 +77,24 @@
   <script src="js/tickets-render.js" defer></script>
   <script src="js/media-viewer.js" defer></script>
   <script src="main.js" defer></script>
+  <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
 </head>
 <body class="ce-page ce-ops-center">
   <div class="ce-module-shell cc-shell-layout">
     <aside id="ce-app-sidebar" aria-label="Customer Experience navigation"></aside>
 
-    <main class="ce-workspace ce-main-area" id="main-content">
+    <main class="ce-workspace ce-main-area cc-page-container cc-page-container--workspace" id="main-content">
       <header id="ce-app-topbar" role="banner"></header>
 
-      <section class="ce-hero" aria-labelledby="ce-page-title">
-        <div class="ce-hero-copy">
-          <h2 id="ce-page-title">Customer Experience Operations Center</h2>
-          <p>Track customer feedback, order issues, callbacks, and resolution progress.</p>
+      <header class="ce-hero cc-page-header" aria-labelledby="ce-page-title">
+        <div class="ce-hero-copy cc-page-header-content">
+          <h1 class="cc-page-header-title" id="ce-page-title">Customer Experience Operations Center</h1>
+          <p class="cc-page-header-description">Track customer feedback, order issues, callbacks, and resolution progress.</p>
         </div>
-        <div class="ce-actions">
+        <div class="ce-actions cc-page-header-actions">
           <button class="add-ticket-btn" type="button" onclick="openModal('ce')" data-permission-create>Add New Ticket</button>
         </div>
-      </section>
+      </header>
 
     <section class="ce-stats" aria-label="Customer Experience case summary">
       <article class="ce-stat-card ce-stat-total">
@@ -151,7 +152,7 @@
 
   <div class="modal" id="modal">
     <div class="modal-content">
-      <h2>Add New Ticket</h2>
+      <h2 class="cc-modal-title">Add New Ticket</h2>
       <form id="ticket-form">
         <div id="dynamic-form"></div>
         <div class="form-actions">
@@ -169,7 +170,7 @@
       <div class="drawer-header">
         <div>
           <div class="drawer-case">Order Number: <span id="drawer-caseNumber"></span></div>
-          <h2 id="drawer-title">Details</h2>
+          <h2 class="cc-modal-title" id="drawer-title">Details</h2>
         </div>
         <button class="drawer-close" onclick="closeTicketDrawer()" aria-label="Close">×</button>
       </div>

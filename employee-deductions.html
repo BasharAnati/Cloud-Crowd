@@ -95,6 +95,7 @@
   <script src="js/maintenance.js" defer></script>
   <script src="js/app-shell.js" defer></script>
   <script src="js/internal-page-shell.js" defer></script>
+  <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
 </head>
 <body class="people-management-page employee-deductions-page" data-shell-module="employee-deductions" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -105,7 +106,7 @@
         <button id="maintenance-toggle-btn" class="cc-shell-maintenance-toggle" type="button" aria-pressed="false" hidden>OFF</button>
       </header>
 
-      <div class="people-management-container">
+      <div class="people-management-container cc-page-container cc-page-container--standard">
       <header class="cc-page-header">
         <div class="cc-page-header-content">
           <p class="cc-page-header-context">People Operations</p>
@@ -128,7 +129,7 @@
 
       <section class="content-card" aria-labelledby="records-title">
         <div class="card-header">
-          <div><h3 id="records-title">Deduction Records</h3><p>Review and filter employee financial adjustments.</p></div>
+          <div><h2 class="cc-section-title" id="records-title">Deduction Records</h2><p>Review and filter employee financial adjustments.</p></div>
           <span class="role-pill" id="record-count">0 records</span>
         </div>
         <div class="filters">
@@ -163,7 +164,7 @@
   <div class="modal" id="deduction-modal" role="dialog" aria-modal="true" aria-labelledby="deduction-modal-title">
     <div class="modal-panel">
       <div class="modal-header">
-        <h3 id="deduction-modal-title">New Deduction</h3>
+        <h3 class="cc-modal-title" id="deduction-modal-title">New Deduction</h3>
         <button class="icon-btn" type="button" data-close-modal="deduction-modal" aria-label="Close deduction form">&times;</button>
       </div>
       <div class="modal-body">
@@ -237,7 +238,7 @@
   <div class="modal" id="details-modal" role="dialog" aria-modal="true" aria-labelledby="details-modal-title">
     <div class="modal-panel details-panel">
       <div class="modal-header">
-        <h3 id="details-modal-title">Deduction Details</h3>
+        <h3 class="cc-modal-title" id="details-modal-title">Deduction Details</h3>
         <button class="icon-btn" type="button" data-close-modal="details-modal" aria-label="Close deduction details">&times;</button>
       </div>
       <div class="modal-body" id="details-modal-body"></div>

@@ -9,6 +9,7 @@
     "test:business-quality-shell": "node --test test/business-quality-shell.test.js",
     "test:workflow-shell": "node --test test/workflow-shell.test.js",
     "test:admin-call-queue-shell": "node --test test/admin-call-queue-shell.test.js",
+    "test:typography-layout-headers": "node --test test/typography-layout-headers.test.js",
     "test:theme": "node --test test/theme.test.js",
     "test:audit": "node --test tools/audit/production/test/*.test.js tools/audit/production/test/postgres/*.test.js tools/audit/production/test/sheets/*.test.js tools/audit/production/test/normalize/*.test.js tools/audit/production/test/parity/*.test.js tools/audit/production/test/report/*.test.js tools/audit/production/test/orchestrator/*.test.js tools/audit/production/test/output/*.test.js tools/audit/production/test/cli/*.test.js"
   },

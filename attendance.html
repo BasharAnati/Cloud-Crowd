@@ -301,6 +301,7 @@
   <script src="js/maintenance.js" defer></script>
   <script src="js/app-shell.js" defer></script>
   <script src="js/internal-page-shell.js" defer></script>
+  <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
 </head>
 <body class="people-management-page attendance-page" data-shell-module="attendance" data-shell-user-id="attendance-user-name" data-shell-role-id="attendance-role-badge">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -311,7 +312,7 @@
         <button id="maintenance-toggle-btn" class="cc-shell-maintenance-toggle" type="button" aria-pressed="false" hidden>OFF</button>
       </header>
 
-      <div class="people-management-container">
+      <div class="people-management-container cc-page-container cc-page-container--standard">
       <header class="cc-page-header">
         <div class="cc-page-header-content">
           <p class="cc-page-header-context">HR Operations</p>
@@ -337,7 +338,7 @@
       <section class="content-card" aria-labelledby="record-form-title">
         <div class="card-header">
           <div>
-            <h3 id="record-form-title">New Attendance Record</h3>
+            <h2 class="cc-section-title" id="record-form-title">New Attendance Record</h2>
             <p>Fill in shift status, timing, and notes for one agent.</p>
           </div>
           <span class="status-chip">Manual Entry</span>
@@ -403,7 +404,7 @@
           </div>
 
           <div class="shift-times" aria-labelledby="shift-times-title">
-            <h4 class="shift-times-title" id="shift-times-title">Supposed Shift Times</h4>
+            <h3 class="shift-times-title" id="shift-times-title">Supposed Shift Times</h3>
             <div class="field">
               <label for="from-time">From Time</label>
               <input id="from-time" name="fromTime" type="time">
@@ -424,7 +425,7 @@
       <section class="content-card records-card" aria-labelledby="records-title">
         <div class="card-header">
           <div>
-            <h3 id="records-title">Attendance Records</h3>
+            <h2 class="cc-section-title" id="records-title">Attendance Records</h2>
             <p>Search, filter, and review saved attendance entries.</p>
           </div>
           <span class="status-chip" id="records-count">0 Records</span>
