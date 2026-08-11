@@ -176,15 +176,7 @@
       box-shadow: 0 0 0 3px rgba(84, 172, 191, .18);
     }
 
-    .board {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
-      align-items: start;
-    }
-
     .stage-column {
-      min-width: 0;
       min-height: 420px;
       display: flex;
       flex-direction: column;
@@ -462,7 +454,6 @@
 
     @media (max-width: 1040px) {
       .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .board { grid-template-columns: 1fr; }
       .stage-column { min-height: 0; }
     }
 
@@ -506,6 +497,7 @@
   <link rel="stylesheet" href="assets/css/components/cards.css">
   <link rel="stylesheet" href="assets/css/components/status.css">
   <link rel="stylesheet" href="assets/css/components/dialogs.css">
+  <link rel="stylesheet" href="assets/css/components/kanban.css">
 </head>
 <body class="workflow-page free-order-requests-page" data-shell-module="free-order-requests" data-shell-user-id="workflow-user" data-shell-role-id="workflow-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -550,7 +542,7 @@
       </select>
     </section>
 
-        <section class="board" id="requests-board" aria-label="Free order request board"></section>
+        <section class="board cc-kanban cc-kanban--workflow" id="requests-board" aria-label="Free order request board"></section>
       </div>
     </main>
     <button id="internal-nav-backdrop" class="cc-shell-nav-backdrop" type="button" aria-label="Close application navigation" tabindex="-1" hidden></button>
@@ -869,15 +861,15 @@
         const items = filtered.filter((request) => requestDisplayStage(request) === column.key);
         const body = items.length
           ? items.map(renderCard).join('')
-          : '<div class="empty-state">No requests in this stage.</div>';
+          : '<div class="empty-state cc-kanban__empty">No requests in this stage.</div>';
 
         return `
-          <section class="stage-column" aria-label="${escapeHtml(column.label)}">
-            <div class="stage-head">
-              <h2 class="cc-section-title">${escapeHtml(column.label)}</h2>
-              <span class="count-pill">${items.length}</span>
+          <section class="stage-column cc-kanban__column" aria-label="${escapeHtml(column.label)}">
+            <div class="stage-head cc-kanban__header">
+              <h2 class="cc-section-title cc-kanban__title">${escapeHtml(column.label)}</h2>
+              <span class="count-pill cc-kanban__count">${items.length}</span>
             </div>
-            ${body}
+            <div class="cc-kanban__stack">${body}</div>
           </section>
         `;
       }).join('');

@@ -63,7 +63,7 @@ body{background-color:#f4f7fa;color:#333;line-height:1.6;}
 .add-ticket-btn:hover{background:#22c55e;}
 .back-btn:hover{background:#ef4444;}
 
-/* ============ Kanban: one row, fits page (no scrollbar) ============ */
+/* Legacy board baseline; the shared Kanban foundation owns overflow and column geometry. */
 #tickets{
   --cols: 6;
   --page-gutter: 0px;
@@ -74,7 +74,6 @@ body{background-color:#f4f7fa;color:#333;line-height:1.6;}
   width:100%;
   padding-inline: var(--page-gutter);
   box-sizing:border-box;
-  overflow-x:hidden;
 }
 
 section.group{
@@ -895,9 +894,9 @@ section.group{
 }
 
 .free-orders-board{padding:0;}
-.free-orders-page #tickets{gap:16px;overflow-x:hidden;}
+.free-orders-page #tickets{gap:16px;}
 .free-orders-page section.group.free-orders-column{
-  min-width:0;padding:12px;border:1px solid var(--free-orders-line);border-radius:8px;
+  padding:12px;border:1px solid var(--free-orders-line);border-radius:8px;
   background:rgba(255,255,255,.62);box-shadow:0 14px 36px rgba(1,28,64,.06);
 }
 .free-orders-page .col-header{margin-bottom:10px;}
@@ -1008,7 +1007,6 @@ section.group{
   .free-orders-sidebar-brand{margin-bottom:16px;}
   .free-orders-sidebar-nav{grid-template-columns:repeat(2,minmax(0,1fr));}
   .free-orders-nav-item.active{grid-column:1 / -1;}
-  .free-orders-page #tickets{grid-template-columns:repeat(2, minmax(0, 1fr));}
 }
 @media (max-width:720px){
   .free-orders-workspace{padding:20px 16px 34px;}
@@ -1020,8 +1018,7 @@ section.group{
   .free-orders-actions{flex-direction:row;align-items:stretch;}
   .free-orders-actions .add-ticket-btn{flex:1 1 0;}
   .free-orders-stats,
-  .free-orders-filters,
-  .free-orders-page #tickets{grid-template-columns:1fr;}
+  .free-orders-filters{grid-template-columns:1fr;}
   .free-orders-stat-card{min-height:auto;}
   .free-orders-page section.group.free-orders-column{padding:10px;}
   .free-orders-page .drawer-body{grid-template-columns:1fr !important;}
@@ -1387,11 +1384,9 @@ section.group{
 
 .ce-page #tickets{
   gap:16px;
-  overflow-x:hidden;
 }
 
 .ce-page section.group.ce-column{
-  min-width:0;
   padding:12px;
   border:1px solid var(--ce-line);
   border-radius:8px;
@@ -1647,7 +1642,6 @@ section.group{
   .ce-nav-item.active{grid-column:1 / -1;}
   .ce-stats{grid-template-columns:repeat(2, minmax(0, 1fr));}
   .ce-filters{grid-template-columns:repeat(2, minmax(0, 1fr));}
-  .ce-page #tickets{grid-template-columns:repeat(2, minmax(0, 1fr));}
 }
 
 @media (max-width:720px){
@@ -1671,8 +1665,7 @@ section.group{
     flex:1 1 0;
   }
   .ce-stats,
-  .ce-filters,
-  .ce-page #tickets{
+  .ce-filters{
     grid-template-columns:1fr;
   }
   .ce-stat-card{min-height:auto;}
@@ -2043,11 +2036,9 @@ section.group{
 
 .complaints-page #tickets{
   gap:16px;
-  overflow-x:hidden;
 }
 
 .complaints-page section.group.complaints-column{
-  min-width:0;
   padding:12px;
   border:1px solid var(--complaints-line);
   border-radius:8px;
@@ -2306,7 +2297,6 @@ section.group{
   .complaints-sidebar-brand{margin-bottom:16px;}
   .complaints-sidebar-nav{grid-template-columns:repeat(2,minmax(0,1fr));}
   .complaints-nav-item.active{grid-column:1 / -1;}
-  .complaints-page #tickets{grid-template-columns:repeat(2, minmax(0, 1fr));}
 }
 
 @media (max-width:720px){
@@ -2330,8 +2320,7 @@ section.group{
     flex:1 1 0;
   }
   .complaints-stats,
-  .complaints-filters,
-  .complaints-page #tickets{
+  .complaints-filters{
     grid-template-columns:1fr;
   }
   .complaints-stat-card{min-height:auto;}
@@ -2701,11 +2690,9 @@ section.group{
 
 .cctv-page #tickets{
   gap:16px;
-  overflow-x:hidden;
 }
 
 .cctv-page section.group.cctv-column{
-  min-width:0;
   padding:12px;
   border:1px solid var(--cctv-line);
   border-radius:8px;
@@ -2967,7 +2954,6 @@ section.group{
   .cctv-sidebar-nav{grid-template-columns:repeat(2,minmax(0,1fr));}
   .cctv-nav-item.active{grid-column:1 / -1;}
   .cctv-stats{grid-template-columns:repeat(2, minmax(0, 1fr));}
-  .cctv-page #tickets{grid-template-columns:repeat(2, minmax(0, 1fr));}
 }
 
 @media (max-width:720px){
@@ -2991,8 +2977,7 @@ section.group{
     flex:1 1 0;
   }
   .cctv-stats,
-  .cctv-filters,
-  .cctv-page #tickets{
+  .cctv-filters{
     grid-template-columns:1fr;
   }
   .cctv-stat-card{min-height:auto;}

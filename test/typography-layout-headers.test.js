@@ -342,9 +342,9 @@ test("the shared Change History renderer has one semantic title contract across 
 test("representative dynamic renderers preserve the remediated heading hierarchy", () => {
   assert.match(html("employee-profiles.html"), /workspace-profile-header[\s\S]*?<h2 class="cc-section-title">\$\{escapeHtml\(employee\.fullName\)\}<\/h2>/, "Employee Profiles renderer uses an h2 profile heading");
   assert.match(html("employee-profiles.html"), /workspace-card-heading[\s\S]*?<h3>Overview<\/h3>/, "Employee Profiles renderer uses h3 card headings");
-  assert.match(html("free-order-requests.html"), /<h2 class="cc-section-title">\$\{escapeHtml\(column\.label\)\}<\/h2>/, "Requests renderer uses h2 stage headings");
+  assert.match(html("free-order-requests.html"), /<h2 class="cc-section-title cc-kanban__title">\$\{escapeHtml\(column\.label\)\}<\/h2>/, "Requests renderer uses h2 stage headings");
   assert.match(html("free-order-requests.html"), /<h3>\$\{escapeHtml\(request\.orderNumber\)\}<\/h3>/, "Requests renderer uses h3 card headings");
-  assert.match(html("free-order-share.html"), /<h2 class="cc-section-title">\$\{escapeHtml\(column\.label\)\}<\/h2>/, "Share renderer uses h2 column headings");
+  assert.match(html("free-order-share.html"), /<h2 class="cc-section-title cc-kanban__title">\$\{escapeHtml\(column\.label\)\}<\/h2>/, "Share renderer uses h2 column headings");
   assert.match(html("call-queue.html"), /<h2 class="cc-section-title">\$\{escapeHtml\(ticket\.customerName\)\}<\/h2>/, "Call Queue renderer uses an h2 customer heading");
   assert.match(html("call-queue.html"), /<h3>Latest Note<\/h3>[\s\S]*?<h3>Call Actions<\/h3>/, "Call Queue renderer uses h3 subheadings");
 });

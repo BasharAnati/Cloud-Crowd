@@ -172,6 +172,7 @@ function element(tag, options = {}, parent = null) {
     states: new Set(options.states || []),
     pseudoElement: options.pseudoElement || "",
     inlineStyle: options.inlineStyle || "",
+    siblingIndex: options.siblingIndex || 0,
     parent
   };
 }
@@ -284,12 +285,15 @@ function matchesCompound(target, original) {
   if (attributeMismatch) return false;
 
   let pseudoMismatch = false;
-  compound = compound.replace(/:([a-z0-9_-]+)(?:\(([^)]*)\))?/gi, (_match, name) => {
+  compound = compound.replace(/:([a-z0-9_-]+)(?:\(([^)]*)\))?/gi, (_match, name, argument = "") => {
     const normalized = name.toLowerCase();
     if (normalized === "root") pseudoMismatch ||= target.tag !== "html" || Boolean(target.parent);
     else if (["hover", "focus", "focus-visible", "active", "disabled", "checked", "open"].includes(normalized)) {
       pseudoMismatch ||= !target.states.has(normalized);
-    } else if (["first-child", "last-child", "only-child", "nth-child", "nth-of-type"].includes(normalized)) {
+    } else if (normalized === "nth-child") {
+      if (!/^\d+$/.test(argument.trim())) unsupported = `Unsupported applicable pseudo-class :nth-child(${argument}) in ${original}`;
+      else pseudoMismatch ||= target.siblingIndex !== Number(argument);
+    } else if (["first-child", "last-child", "only-child", "nth-of-type"].includes(normalized)) {
       pseudoMismatch = true;
     } else {
       unsupported = `Unsupported applicable pseudo-class :${name} in ${original}`;

@@ -216,7 +216,7 @@ function getCeCardContent(ticket){
 
 function createCeEmptyState(kind){
   const empty = document.createElement('div');
-  empty.className = 'ce-empty-state cc-empty-state';
+  empty.className = 'ce-empty-state cc-empty-state cc-kanban__empty';
   if (kind === 'filter') {
     empty.innerHTML = `
       <strong>No matching cases</strong>
@@ -332,7 +332,7 @@ function getComplaintCardContent(ticket){
 
 function createComplaintsEmptyState(kind){
   const empty = document.createElement('div');
-  empty.className = 'complaints-empty-state cc-empty-state';
+  empty.className = 'complaints-empty-state cc-empty-state cc-kanban__empty';
   if (kind === 'filter') {
     empty.innerHTML = `
       <strong>No matching complaints</strong>
@@ -469,7 +469,7 @@ function getCctvCardContent(ticket){
 
 function createCctvEmptyState(kind){
   const empty = document.createElement('div');
-  empty.className = 'cctv-empty-state cc-empty-state';
+  empty.className = 'cctv-empty-state cc-empty-state cc-kanban__empty';
   if (kind === 'filter') {
     empty.innerHTML = `
       <strong>No matching CCTV cases</strong>
@@ -601,7 +601,7 @@ function getFreeOrderCardContent(ticket){
 
 function createFreeOrdersEmptyState(kind){
   const empty = document.createElement('div');
-  empty.className = 'free-orders-empty-state cc-empty-state';
+  empty.className = 'free-orders-empty-state cc-empty-state cc-kanban__empty';
   if (kind === 'filter') {
     empty.innerHTML = `
       <strong>No matching complimentary orders</strong>
@@ -635,6 +635,7 @@ function renderTickets(){
   const wrap = document.getElementById('tickets');
   if (!wrap) return;
   wrap.innerHTML = '';
+  wrap.classList.add('cc-kanban', 'cc-kanban--operations');
 
   const isCe = window.currentSection === 'ce';
   const isComplaints = window.currentSection === 'complaints';
@@ -693,18 +694,20 @@ function renderTickets(){
 
   wrap.style.setProperty('--cols', Math.max(1, columns.length));
 
-  columns.forEach(status=>{
+  columns.forEach((status, columnIndex)=>{
     const col = document.createElement('section');
-    col.className = `group ${isCe ? 'ce-column' : ''} ${isComplaints ? 'complaints-column' : ''} ${isCctv ? 'cctv-column' : ''} ${isFreeOrders ? 'free-orders-column' : ''}`;
+    col.className = `group cc-kanban__column ${isCe ? 'ce-column' : ''} ${isComplaints ? 'complaints-column' : ''} ${isCctv ? 'cctv-column' : ''} ${isFreeOrders ? 'free-orders-column' : ''}`;
 
     const count = (grouped[status]||[]).length;
+    const titleId = `cc-${window.currentSection}-kanban-column-${columnIndex}`;
+    col.setAttribute('aria-labelledby', titleId);
 
     const header = document.createElement('div');
     header.className = 'col-header';
     header.innerHTML = `
-      <div class="col-header-inner">
-        <div class="col-title">${escapeHtml(status)}${(isCe || isComplaints || isCctv || isFreeOrders) ? '' : ` (${count})`}</div>
-        ${(isCe || isComplaints || isCctv || isFreeOrders) ? `<span class="col-count">${count}</span>` : ''}
+      <div class="col-header-inner cc-kanban__header">
+        <h2 class="col-title cc-kanban__title" id="${titleId}">${escapeHtml(status)}${(isCe || isComplaints || isCctv || isFreeOrders) ? '' : ` (${count})`}</h2>
+        ${(isCe || isComplaints || isCctv || isFreeOrders) ? `<span class="col-count cc-kanban__count">${count}</span>` : ''}
       </div>
     `;
     col.appendChild(header);
@@ -714,12 +717,14 @@ function renderTickets(){
     col.appendChild(under);
 
     const statusTickets = grouped[status] || [];
+    const stack = document.createElement('div');
+    stack.className = 'cc-kanban__stack';
 
     if (!statusTickets.length) {
       const empty = document.createElement('div');
-      empty.className = 'kanban-empty-state cc-empty-state';
+      empty.className = 'kanban-empty-state cc-empty-state cc-kanban__empty';
       empty.textContent = isFreeOrders ? 'No orders in this status' : (isCe || isComplaints || isCctv) ? 'No cases in this status' : 'No tickets in this status';
-      col.appendChild(empty);
+      stack.appendChild(empty);
     }
 
     statusTickets.forEach(ticket=>{
@@ -778,9 +783,10 @@ function renderTickets(){
               ? getFreeOrderCardContent(ticket)
               : head + main;
       makeTicketCardInteractive(card, () => openTicketDrawerByCase(getCaseDisplay(ticket), card));
-      col.appendChild(card);
+      stack.appendChild(card);
     });
 
+    col.appendChild(stack);
     wrap.appendChild(col);
   });
 }

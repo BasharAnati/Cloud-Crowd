@@ -25,6 +25,8 @@ const SHARED_SHELL_PAGES = [
   "employee-profiles.html"
 ];
 const DIRECT_COLOR = /#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i;
+// Kanban titles (12px) and empty states (12.5px) do not qualify as WCAG large text.
+const NORMAL_TEXT_CONTRAST = 4.5;
 
 function cssBlock(source, selectorPattern) {
   const match = source.match(new RegExp(`${selectorPattern}\\s*\\{([^}]*)\\}`, "i"));
@@ -91,6 +93,130 @@ function relativeLuminance(hex) {
 function contrastRatio(foreground, background) {
   const values = [relativeLuminance(foreground), relativeLuminance(background)].sort((a, b) => b - a);
   return (values[0] + 0.05) / (values[1] + 0.05);
+}
+
+function parseRgba(value, label = "color") {
+  const source = String(value).trim().toLowerCase();
+  const hex = source.match(/^#([0-9a-f]{3,8})$/i);
+  if (hex && [3, 4, 6, 8].includes(hex[1].length)) {
+    const expanded = hex[1].length <= 4 ? [...hex[1]].map((part) => part + part).join("") : hex[1];
+    return {
+      r: parseInt(expanded.slice(0, 2), 16),
+      g: parseInt(expanded.slice(2, 4), 16),
+      b: parseInt(expanded.slice(4, 6), 16),
+      a: expanded.length === 8 ? parseInt(expanded.slice(6, 8), 16) / 255 : 1
+    };
+  }
+  const rgb = source.match(/^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)(?:\s*,\s*([0-9.]+))?\s*\)$/i);
+  if (rgb) {
+    const channels = rgb.slice(1, 4).map(Number);
+    const alpha = rgb[4] === undefined ? 1 : Number(rgb[4]);
+    assert.ok(channels.every((channel) => Number.isFinite(channel) && channel >= 0 && channel <= 255), `${label}: invalid RGB channel in ${value}`);
+    assert.ok(Number.isFinite(alpha) && alpha >= 0 && alpha <= 1, `${label}: invalid alpha in ${value}`);
+    return { r: channels[0], g: channels[1], b: channels[2], a: alpha };
+  }
+  if (source === "transparent") return { r: 0, g: 0, b: 0, a: 0 };
+  assert.fail(`${label}: unsupported resolved color ${value}`);
+}
+
+function compositeRgba(foreground, background, label = "composite") {
+  for (const [name, color] of [["foreground", foreground], ["background", background]]) {
+    assert.ok(color && ["r", "g", "b", "a"].every((key) => Number.isFinite(color[key])), `${label}: invalid ${name} color`);
+  }
+  const alpha = foreground.a + background.a * (1 - foreground.a);
+  assert.ok(alpha > 0 && alpha <= 1, `${label}: composite has no visible backing surface`);
+  return {
+    r: (foreground.r * foreground.a + background.r * background.a * (1 - foreground.a)) / alpha,
+    g: (foreground.g * foreground.a + background.g * background.a * (1 - foreground.a)) / alpha,
+    b: (foreground.b * foreground.a + background.b * background.a * (1 - foreground.a)) / alpha,
+    a: alpha
+  };
+}
+
+function rgbaHex(color, label = "color") {
+  assert.ok(color && color.a >= 0.999, `${label}: effective color is not opaque`);
+  const channels = [color.r, color.g, color.b].map((channel) => {
+    assert.ok(Number.isFinite(channel), `${label}: effective channel is not finite`);
+    return Math.max(0, Math.min(255, Math.round(channel))).toString(16).padStart(2, "0");
+  });
+  return `#${channels.join("")}`;
+}
+
+function splitCssArguments(source) {
+  const parts = [];
+  let buffer = "";
+  let depth = 0;
+  for (const character of source) {
+    if (character === "(") depth += 1;
+    if (character === ")") depth -= 1;
+    if (character === "," && depth === 0) {
+      parts.push(buffer.trim());
+      buffer = "";
+    } else buffer += character;
+  }
+  assert.equal(depth, 0, `unbalanced CSS function: ${source}`);
+  if (buffer.trim()) parts.push(buffer.trim());
+  return parts;
+}
+
+function gradientStops(value, label = "gradient") {
+  const gradient = String(value).trim().match(/^linear-gradient\((.*)\)$/i);
+  assert.ok(gradient, `${label}: unsupported background ${value}`);
+  const parts = splitCssArguments(gradient[1]);
+  if (parts[0] && /^(?:to\s+|[-+]?\d*\.?\d+(?:deg|rad|turn|grad))\b/i.test(parts[0])) parts.shift();
+  assert.ok(parts.length > 0, `${label}: gradient has no color stops`);
+  return parts.map((stop, index) => {
+    const color = stop.match(/^(#[0-9a-f]{3,8}\b|rgba?\([^)]*\))(?:\s+[-+a-z0-9.%]+)*$/i);
+    assert.ok(color, `${label}: unsupported gradient stop ${index + 1}: ${stop}`);
+    return parseRgba(color[1], `${label} stop ${index + 1}`);
+  });
+}
+
+function resolvedBackgroundLayers(cascade, target, label) {
+  const winner = cascade.winner(target, "background-color");
+  assert.ok(winner, `${label}: missing background declaration`);
+  const resolved = cascade.resolveValue(target, winner.value);
+  assert.doesNotMatch(resolved, /var\(/, `${label}: unresolved background ${resolved}`);
+  const layers = /gradient\(/i.test(resolved)
+    ? gradientStops(resolved, label)
+    : [parseRgba(resolved, label)];
+  assert.ok(layers.length > 0, `${label}: no resolved background colors`);
+  return { winner, resolved, layers };
+}
+
+function effectiveSolidBackground(cascade, target, label) {
+  assert.ok(target, `${label}: missing backing-surface ancestor`);
+  const parent = target.parent ? effectiveSolidBackground(cascade, target.parent, label) : { r: 0, g: 0, b: 0, a: 0 };
+  const winner = cascade.winner(target, "background-color");
+  if (!winner) return parent;
+  const resolved = cascade.resolveValue(target, winner.value);
+  assert.doesNotMatch(resolved, /gradient\(/i, `${label}: unsupported gradient in backing-surface chain at ${target.tag}`);
+  return compositeRgba(parseRgba(resolved, `${label} ${target.tag} background`), parent, label);
+}
+
+function effectiveBackgroundColors(cascade, target, label) {
+  const { winner, resolved, layers } = resolvedBackgroundLayers(cascade, target, label);
+  const backing = effectiveSolidBackground(cascade, target.parent, `${label} backing surface`);
+  assert.ok(backing.a >= 0.999, `${label}: backing-surface chain did not resolve to opaque`);
+  return { winner, resolved, colors: layers.map((layer) => compositeRgba(layer, backing, label)) };
+}
+
+function assertEffectiveContrast(cascade, label, foregroundTarget, backgroundTarget, threshold = NORMAL_TEXT_CONTRAST) {
+  const foregroundWinner = cascade.winner(foregroundTarget, "color");
+  assert.ok(foregroundWinner, `${label}: missing foreground declaration`);
+  const resolvedForeground = cascade.resolveValue(foregroundTarget, foregroundWinner.value);
+  assert.doesNotMatch(resolvedForeground, /var\(/, `${label}: unresolved foreground ${resolvedForeground}`);
+  const foreground = parseRgba(resolvedForeground, `${label} foreground`);
+  const backgrounds = effectiveBackgroundColors(cascade, backgroundTarget, `${label} background`);
+  const ratios = backgrounds.colors.map((background, index) => {
+    const effectiveForeground = compositeRgba(foreground, background, `${label} foreground`);
+    const ratio = cascadeContrastRatio(rgbaHex(effectiveForeground, `${label} foreground`), rgbaHex(background, `${label} background`));
+    assert.ok(Number.isFinite(ratio), `${label} stop ${index + 1}: contrast is not finite`);
+    assert.ok(ratio >= threshold, `${label} stop ${index + 1}: contrast ${ratio.toFixed(2)}:1 is below ${threshold}:1`);
+    return ratio;
+  });
+  assert.ok(ratios.length > 0, `${label}: no contrast comparisons executed`);
+  return { foregroundWinner, backgrounds, ratios };
 }
 
 function assertTokenContrast(tokenMap, foreground, background, label) {
@@ -236,15 +362,48 @@ const OPERATION_CONTRACTS = {
   }
 };
 
-function operationElements(key, theme) {
+function operationElements(key, theme, options = {}) {
   const contract = OPERATION_CONTRACTS[key];
+  const emptyBoardBranch = options.branch === "empty-board";
+  const rendersColumns = !emptyBoardBranch || key !== "free-orders";
+  const columnSiblingOffset = emptyBoardBranch ? 1 : 0;
   const html = cssElement("html", { attributes: { "data-theme": theme } });
   const root = cssElement("body", { classes: [contract.pageClass, contract.rootClass] }, html);
   const shell = cssElement("div", { classes: [`${key}-module-shell`, "cc-shell-layout"] }, root);
   const sidebar = cssElement("aside", { id: `${key}-app-sidebar`, classes: ["cc-shell-sidebar"] }, shell);
-  const main = cssElement("main", { classes: ["cc-shell-main"] }, shell);
+  const main = cssElement("main", { classes: [`${key}-workspace`, `${key}-main-area`, "cc-page-container", "cc-page-container--workspace"] }, shell);
   const topbar = cssElement("header", { id: `${key}-app-topbar`, classes: ["cc-shell-topbar"] }, main);
-  const card = cssElement("article", { classes: [`${key}-ticket-card`] }, main);
+  const boardWrapper = cssElement("div", { classes: ["ticket-list", `${key}-board`] }, main);
+  const board = cssElement("div", { id: "tickets", classes: ["cc-kanban", "cc-kanban--operations"] }, boardWrapper);
+  const wholeBoardEmpty = emptyBoardBranch
+    ? cssElement("div", {
+      classes: [`${key}-empty-state`, "cc-empty-state", "cc-kanban__empty"],
+      siblingIndex: 1
+    }, board)
+    : null;
+  const wholeBoardStrong = wholeBoardEmpty ? cssElement("strong", {}, wholeBoardEmpty) : null;
+  const wholeBoardDetail = wholeBoardEmpty ? cssElement("span", {}, wholeBoardEmpty) : null;
+  const kanbanColumns = rendersColumns ? contract.statuses.map((_status, index) => {
+    const siblingIndex = index + 1 + columnSiblingOffset;
+    const column = cssElement("section", {
+      classes: ["group", `${key}-column`, "cc-kanban__column"],
+      siblingIndex
+    }, board);
+    const legacyHeader = cssElement("div", { classes: ["col-header"] }, column);
+    const header = cssElement("div", { classes: ["col-header-inner", "cc-kanban__header"] }, legacyHeader);
+    const title = cssElement("h2", { classes: ["col-title", "cc-kanban__title"] }, header);
+    const count = cssElement("span", { classes: ["col-count", "cc-kanban__count"] }, header);
+    const stack = cssElement("div", { classes: ["cc-kanban__stack"] }, column);
+    const card = emptyBoardBranch ? null : cssElement("div", {
+      classes: ["ticket-card", `${key}-ticket-card`, "cc-card"],
+      attributes: { role: "button", tabindex: "0" }
+    }, stack);
+    const empty = cssElement("div", { classes: ["kanban-empty-state", "cc-empty-state", "cc-kanban__empty"] }, stack);
+    return { column, header, title, count, stack, card, empty, position: index + 1, siblingIndex };
+  }) : [];
+  const {
+    column, header: columnHeader, title: columnTitle, count: columnCount, stack, card, empty
+  } = kanbanColumns[0] || {};
   const modal = cssElement("div", { classes: ["modal"] }, root);
   const modalPanel = cssElement("section", { classes: ["modal-content"] }, modal);
   const formGroup = cssElement("div", { classes: ["form-group"] }, modalPanel);
@@ -281,7 +440,9 @@ function operationElements(key, theme) {
   const historyEmpty = cssElement("div", { classes: ["history-state", "history-state--empty"] }, historyBody);
   const status = (name) => cssElement("div", { classes: ["card-band", `band-${name}`] }, card);
   return {
-    html, root, sidebar, main, topbar, card, modalPanel, modalInput, placeholder, modalSelect,
+    html, root, sidebar, main, topbar, boardWrapper, board, wholeBoardEmpty, wholeBoardStrong,
+    wholeBoardDetail, emptyBoardBranch, kanbanColumns, column, columnHeader, columnTitle,
+    columnCount, stack, card, empty, modalPanel, modalInput, placeholder, modalSelect,
     modalTextarea, multiSelected, modalPrimary, modalSecondary, drawerPanel, close, drawerInput,
     drawerSelect, drawerTextarea, divider, drawerPrimary, drawerSecondary, historyOverlay,
     historyPanel, historyHeader, historyTitle, historyClose, historyBody, historyItem,
@@ -312,6 +473,78 @@ function assertSemanticWinner(cascade, label, target, property, token) {
   assert.ok(result, winnerDescription(cascade, label, property, result, expected));
   assert.ok(result.value.includes(`var(${token})`), winnerDescription(cascade, label, property, result, expected));
   return result;
+}
+
+function assertTokenizedWinner(cascade, label, target, property) {
+  const result = cascade.winner(target, property);
+  assert.ok(result, winnerDescription(cascade, label, property, result, "semantic tokenized value"));
+  assert.match(result.value, /var\(--[a-z0-9-]+\)/i, winnerDescription(cascade, label, property, result, "semantic tokenized value"));
+  assert.doesNotMatch(result.value, DIRECT_COLOR, winnerDescription(cascade, label, property, result, "no direct color"));
+  return result;
+}
+
+function assertOperationsKanbanTheme(cascade, targets, label) {
+  const readings = targets.kanbanColumns.map((targetsForPosition) => {
+    const positionLabel = `${label} column ${targetsForPosition.position} child ${targetsForPosition.siblingIndex}`;
+    assertTokenizedWinner(cascade, positionLabel, targetsForPosition.column, "background-color");
+    assertTokenizedWinner(cascade, positionLabel, targetsForPosition.column, "border-color");
+    const headerBackground = assertTokenizedWinner(cascade, `${positionLabel} header`, targetsForPosition.header, "background-color");
+    assertTokenizedWinner(cascade, `${positionLabel} header`, targetsForPosition.header, "border-color");
+    assertSemanticWinner(cascade, `${positionLabel} title`, targetsForPosition.title, "color", "--color-text");
+    if (targetsForPosition.siblingIndex > 1 && targetsForPosition.siblingIndex <= targets.kanbanColumns.length) {
+      assert.match(headerBackground.selector, new RegExp(`nth-child\\(${targetsForPosition.siblingIndex}\\)`),
+        `${positionLabel} exercises its positional production selector`);
+    } else {
+      assert.doesNotMatch(headerBackground.selector, /nth-child\(/,
+        `${positionLabel} exercises the production base selector when no positional selector matches`);
+    }
+
+    assertSemanticWinner(cascade, `${positionLabel} count`, targetsForPosition.count, "background-color", "--color-surface");
+    assertSemanticWinner(cascade, `${positionLabel} count`, targetsForPosition.count, "color", "--color-text");
+    assertSemanticWinner(cascade, `${positionLabel} count`, targetsForPosition.count, "border-color", "--color-border");
+    if (targetsForPosition.card) {
+      assertTokenizedWinner(cascade, `${positionLabel} interactive ticket`, targetsForPosition.card, "background-color");
+      assertTokenizedWinner(cascade, `${positionLabel} interactive ticket`, targetsForPosition.card, "color");
+      assertSemanticWinner(cascade, `${positionLabel} interactive ticket`, targetsForPosition.card, "border-color", "--color-border");
+    }
+    assertTokenizedWinner(cascade, `${positionLabel} empty state`, targetsForPosition.empty, "background-color");
+    assertTokenizedWinner(cascade, `${positionLabel} empty state`, targetsForPosition.empty, "color");
+    assertSemanticWinner(cascade, `${positionLabel} empty state`, targetsForPosition.empty, "border-color", "--color-border");
+
+    const headerContrast = assertEffectiveContrast(cascade, `${positionLabel} title/header`, targetsForPosition.title, targetsForPosition.header);
+    const emptyContrast = assertEffectiveContrast(cascade, `${positionLabel} empty state`, targetsForPosition.empty, targetsForPosition.empty);
+    actualContrast(cascade, `${positionLabel} count`, targetsForPosition.count);
+    if (targetsForPosition.card) actualContrast(cascade, `${positionLabel} interactive ticket`, targetsForPosition.card);
+    return { position: targetsForPosition.position, headerContrast, emptyContrast };
+  });
+  return readings;
+}
+
+function assertOperationsWholeBoardTheme(cascade, targets, label) {
+  assert.ok(targets.wholeBoardEmpty, `${label}: missing whole-board empty`);
+  assert.equal(targets.wholeBoardEmpty.parent, targets.board, `${label}: whole-board empty must be a direct board child`);
+  assert.equal(targets.wholeBoardEmpty.siblingIndex, 1, `${label}: whole-board empty must be child 1`);
+  assertTokenizedWinner(cascade, label, targets.wholeBoardEmpty, "background-color");
+  assertTokenizedWinner(cascade, label, targets.wholeBoardEmpty, "color");
+  assertSemanticWinner(cascade, label, targets.wholeBoardEmpty, "border-color", "--color-border");
+
+  const containerContrast = assertEffectiveContrast(
+    cascade, `${label} container text`, targets.wholeBoardEmpty, targets.wholeBoardEmpty
+  );
+  const strongForeground = assertTokenizedWinner(cascade, `${label} strong`, targets.wholeBoardStrong, "color");
+  const wholeBoardClass = targets.wholeBoardEmpty.classes.values().next().value;
+  assert.match(strongForeground.selector, new RegExp(`\\.${wholeBoardClass} strong`),
+    `${label}: strong exercises its explicit production foreground`);
+  const strongContrast = assertEffectiveContrast(
+    cascade, `${label} strong`, targets.wholeBoardStrong, targets.wholeBoardEmpty
+  );
+  const detailForeground = cascade.winner(targets.wholeBoardDetail, "color");
+  const containerForeground = cascade.winner(targets.wholeBoardEmpty, "color");
+  assert.equal(detailForeground.selector, containerForeground.selector, `${label}: detail inherits the container foreground`);
+  const detailContrast = assertEffectiveContrast(
+    cascade, `${label} detail`, targets.wholeBoardDetail, targets.wholeBoardEmpty
+  );
+  return { containerContrast, strongContrast, detailContrast };
 }
 
 function actualContrast(cascade, label, foregroundTarget, backgroundTarget = foregroundTarget) {
@@ -723,7 +956,8 @@ test("integrated HTML determines the real linked and embedded stylesheet order",
     "assets/css/components/cards.css",
     "assets/css/components/status.css",
     "assets/css/components/dialogs.css",
-    "assets/css/components/drawers.css"
+    "assets/css/components/drawers.css",
+    "assets/css/components/kanban.css"
   ];
   Object.values(OPERATION_CONTRACTS).forEach(({ page }) => {
     assert.deepEqual(extractPageSources(ROOT, page).map((source) => source.name), operationsOrder, `${page} stylesheet order`);
@@ -794,6 +1028,38 @@ test("runtime history modal emits semantic classes without inline visual styling
   assert.equal(typeof closeControl.onclick, "function");
 });
 
+test("THT-01 color helpers resolve variables, gradients, alpha layers, ancestor surfaces, and contrast", () => {
+  const targets = operationElements("ce", "dark");
+  const cascade = createCascade(ROOT, "ce.html", { viewportWidth: 390, extraSources: [{
+    name: "tht-01-helper-vars.css",
+    css: ":root { --tht-01-base: #eefcff; --tht-01-recursive: var(--tht-01-base); } :root[data-theme=\"dark\"] .ce-page.ce-ops-center #tickets .cc-kanban__empty { color: var(--tht-01-recursive); }"
+  }] });
+  const foreground = cascade.winner(targets.empty, "color");
+  assert.equal(foreground.sourceName, "tht-01-helper-vars.css");
+  assert.equal(cascade.resolveValue(targets.empty, foreground.value), "#eefcff", "recursive variables resolve before color parsing");
+
+  const stops = gradientStops("linear-gradient(135deg, rgba(38, 101, 140, 0.34) 0%, #eefcff 100%)", "helper gradient");
+  assert.equal(stops.length, 2);
+  assert.deepEqual(stops[0], { r: 38, g: 101, b: 140, a: 0.34 });
+  assert.deepEqual(stops[1], { r: 238, g: 252, b: 255, a: 1 });
+  assert.equal(rgbaHex(compositeRgba(
+    { r: 255, g: 0, b: 0, a: 0.5 },
+    { r: 0, g: 0, b: 255, a: 1 },
+    "helper alpha"
+  )), "#800080");
+
+  const effectiveEmpty = effectiveBackgroundColors(cascade, targets.empty, "helper empty state");
+  assert.equal(rgbaHex(effectiveEmpty.colors[0]), "#16456b", "alpha layers composite through column and board surfaces");
+  assert.equal(cascadeContrastRatio("#000000", "#ffffff"), 21);
+  assert.throws(() => gradientStops("linear-gradient(135deg)", "empty helper gradient"), /no color stops/);
+
+  const unresolvedCascade = createCascade(ROOT, "ce.html", { extraSources: [{
+    name: "tht-01-unresolved.css",
+    css: ".ce-page.ce-ops-center #tickets .cc-kanban__empty { background: var(--tht-01-missing); }"
+  }] });
+  assert.throws(() => effectiveBackgroundColors(unresolvedCascade, targets.empty, "unresolved helper surface"), /unresolved semantic token/);
+});
+
 test("actual linked cascade winners satisfy operations-page semantic contracts", () => {
   Object.entries(OPERATION_CONTRACTS).forEach(([key, contract]) => {
     ["light", "dark"].forEach((theme) => {
@@ -848,6 +1114,193 @@ test("actual linked cascade winners satisfy operations-page semantic contracts",
       assert.equal(panelBackground, theme === "light" ? "#ffffff" : "#0b3554", `${contract.page} ${theme} modal surface`);
     });
   });
+});
+
+test("Operations Kanban internals retain readable semantic Light and Dark winners at desktop and mobile widths", () => {
+  Object.entries(OPERATION_CONTRACTS).forEach(([key, contract]) => {
+    [1440, 390].forEach((viewportWidth) => {
+      ["light", "dark"].forEach((theme) => {
+        const cascade = createCascade(ROOT, contract.page, { viewportWidth });
+        const targets = operationElements(key, theme);
+        assertOperationsKanbanTheme(cascade, targets, `${contract.page}@${viewportWidth}/${theme}`);
+      });
+    });
+  });
+});
+
+test("THT-01 whole-board branches retain readable container, strong, and detail text with real sibling positions", () => {
+  Object.entries(OPERATION_CONTRACTS).forEach(([key, contract]) => {
+    [1440, 390].forEach((viewportWidth) => {
+      ["light", "dark"].forEach((theme) => {
+        const cascade = createCascade(ROOT, contract.page, { viewportWidth });
+        const targets = operationElements(key, theme, { branch: "empty-board" });
+        const label = `${contract.page}@${viewportWidth}/${theme} whole-board`;
+        assertOperationsWholeBoardTheme(cascade, targets, label);
+
+        if (key === "free-orders") {
+          assert.equal(targets.kanbanColumns.length, 0, `${label}: production early return renders no columns`);
+        } else {
+          assert.equal(targets.kanbanColumns.length, contract.statuses.length, `${label}: production continues with every column`);
+          targets.kanbanColumns.forEach((column, index) => {
+            assert.equal(column.siblingIndex, index + 2, `${label}: column ${index + 1} has its shifted one-based child index`);
+          });
+          assertOperationsKanbanTheme(cascade, targets, `${label} shifted`);
+        }
+      });
+    });
+  });
+});
+
+test("Operations Kanban theme contract rejects a dark-mode light-only internal override", () => {
+  const cascade = createCascade(ROOT, "ce.html", { viewportWidth: 390, extraSources: [{
+    name: "irr-04-light-only-kanban.css",
+    css: ".ce-page.ce-ops-center #tickets .col-header-inner.cc-kanban__header { background: #fff; color: #fff; border-color: #fff; }"
+  }] });
+  const targets = operationElements("ce", "dark");
+  assert.throws(() => assertOperationsKanbanTheme(cascade, targets, "mutated ce.html@390/dark"), assert.AssertionError);
+});
+
+test("THT-01 semantic mutations fail specifically on effective contrast for shared and positional surfaces", () => {
+  const contrastFailure = /contrast [0-9.]+:1 is below 4\.5:1/;
+  const fixture = (css) => {
+    const targets = operationElements("ce", "dark");
+    const cascade = createCascade(ROOT, "ce.html", { viewportWidth: 390, extraSources: [{ name: "tht-01-semantic-mutant.css", css }] });
+    return { cascade, targets };
+  };
+  const headerMutation = (background, suffix = "") => `
+    :root[data-theme="dark"] .ce-page.ce-ops-center #tickets > section.group.ce-column${suffix} .col-header-inner.cc-kanban__header {
+      background: linear-gradient(135deg, ${background}, ${background});
+    }`;
+  const assertHeaderContrastFailure = (css, position, label) => {
+    const { cascade, targets } = fixture(css);
+    const target = targets.kanbanColumns[position - 1];
+    assertTokenizedWinner(cascade, `${label} header`, target.header, "background-color");
+    assertSemanticWinner(cascade, `${label} title`, target.title, "color", "--color-text");
+    assert.throws(() => assertEffectiveContrast(cascade, label, target.title, target.header), contrastFailure);
+    return { cascade, targets };
+  };
+
+  assertHeaderContrastFailure(headerMutation("var(--color-text)"), 1, "same-token header/title");
+  assertHeaderContrastFailure(headerMutation("var(--color-text-muted)"), 1, "different-token low-contrast header/title");
+
+  for (const [background, label] of [
+    ["var(--color-text)", "same-token empty state"],
+    ["var(--color-text-muted)", "different-token low-contrast empty state"]
+  ]) {
+    const { cascade, targets } = fixture(`
+      :root[data-theme="dark"] .ce-page.ce-ops-center #tickets .cc-kanban__empty {
+        color: var(--color-text);
+        background: ${background};
+      }`);
+    assertTokenizedWinner(cascade, label, targets.empty, "color");
+    assertTokenizedWinner(cascade, label, targets.empty, "background-color");
+    assert.throws(() => assertEffectiveContrast(cascade, label, targets.empty, targets.empty), contrastFailure);
+  }
+
+  let result = assertHeaderContrastFailure(headerMutation("var(--color-text)", ":nth-child(2)"), 2, "middle-only header");
+  assert.doesNotThrow(() => assertEffectiveContrast(
+    result.cascade, "middle mutant first-column control", result.targets.kanbanColumns[0].title, result.targets.kanbanColumns[0].header
+  ));
+
+  result = assertHeaderContrastFailure(headerMutation("var(--color-text)", ":nth-child(4)"), 4, "final-only header");
+  result.targets.kanbanColumns.slice(0, -1).forEach((target, index) => {
+    assert.doesNotThrow(() => assertEffectiveContrast(
+      result.cascade, `final mutant earlier-column ${index + 1}`, target.title, target.header
+    ));
+  });
+
+  const emptyBoardFixture = (key, css) => {
+    const contract = OPERATION_CONTRACTS[key];
+    const targets = operationElements(key, "dark", { branch: "empty-board" });
+    const cascade = createCascade(ROOT, contract.page, {
+      viewportWidth: 390,
+      extraSources: [{ name: "tht-01-real-empty-branch-mutant.css", css }]
+    });
+    return { cascade, targets };
+  };
+
+  let emptyResult = emptyBoardFixture("ce", `
+    :root[data-theme="dark"] .ce-page.ce-ops-center #tickets > .ce-empty-state.cc-kanban__empty {
+      color: var(--color-primary);
+      background: var(--color-primary);
+    }`);
+  assert.equal(emptyResult.targets.wholeBoardEmpty.parent, emptyResult.targets.board, "CE mutant targets the direct board child");
+  assertTokenizedWinner(emptyResult.cascade, "CE whole-board mutant foreground", emptyResult.targets.wholeBoardEmpty, "color");
+  assertTokenizedWinner(emptyResult.cascade, "CE whole-board mutant background", emptyResult.targets.wholeBoardEmpty, "background-color");
+  assert.notEqual(
+    emptyResult.cascade.winner(emptyResult.targets.kanbanColumns[0].empty, "color").sourceName,
+    "tht-01-real-empty-branch-mutant.css",
+    "direct-child mutation does not match a per-column empty"
+  );
+  assert.throws(() => assertEffectiveContrast(
+    emptyResult.cascade, "CE whole-board container mutant", emptyResult.targets.wholeBoardEmpty, emptyResult.targets.wholeBoardEmpty
+  ), contrastFailure);
+  assert.throws(() => assertEffectiveContrast(
+    emptyResult.cascade, "CE whole-board strong mutant", emptyResult.targets.wholeBoardStrong, emptyResult.targets.wholeBoardEmpty
+  ), contrastFailure);
+
+  const shiftedMutation = (siblingIndex) => `
+    :root[data-theme="dark"] .ce-page.ce-ops-center #tickets > section.group.ce-column:nth-child(${siblingIndex}) .col-header-inner.cc-kanban__header {
+      background: linear-gradient(135deg, var(--color-text), var(--color-text));
+    }`;
+  let shiftedResult = emptyBoardFixture("ce", shiftedMutation(3));
+  assert.equal(shiftedResult.targets.kanbanColumns[1].siblingIndex, 3, "shifted middle mutant targets real child 3");
+  assert.equal(
+    assertTokenizedWinner(
+      shiftedResult.cascade, "shifted middle mutant header",
+      shiftedResult.targets.kanbanColumns[1].header, "background-color"
+    ).sourceName,
+    "tht-01-real-empty-branch-mutant.css"
+  );
+  assert.doesNotThrow(() => assertEffectiveContrast(
+    shiftedResult.cascade, "shifted middle first-column control",
+    shiftedResult.targets.kanbanColumns[0].title, shiftedResult.targets.kanbanColumns[0].header
+  ));
+  assert.throws(() => assertEffectiveContrast(
+    shiftedResult.cascade, "shifted middle header",
+    shiftedResult.targets.kanbanColumns[1].title, shiftedResult.targets.kanbanColumns[1].header
+  ), contrastFailure);
+
+  shiftedResult = emptyBoardFixture("ce", shiftedMutation(5));
+  assert.equal(shiftedResult.targets.kanbanColumns[3].siblingIndex, 5, "shifted final mutant targets real CE child 5");
+  assert.equal(
+    assertTokenizedWinner(
+      shiftedResult.cascade, "shifted final mutant header",
+      shiftedResult.targets.kanbanColumns[3].header, "background-color"
+    ).sourceName,
+    "tht-01-real-empty-branch-mutant.css"
+  );
+  shiftedResult.targets.kanbanColumns.slice(0, -1).forEach((target, index) => {
+    assert.doesNotThrow(() => assertEffectiveContrast(
+      shiftedResult.cascade, `shifted final earlier-column ${index + 1}`, target.title, target.header
+    ));
+  });
+  assert.throws(() => assertEffectiveContrast(
+    shiftedResult.cascade, "shifted CE final header",
+    shiftedResult.targets.kanbanColumns[3].title, shiftedResult.targets.kanbanColumns[3].header
+  ), contrastFailure);
+
+  emptyResult = emptyBoardFixture("free-orders", `
+    :root[data-theme="dark"] .free-orders-page.free-orders-ops-center #tickets > .free-orders-empty-state.cc-kanban__empty {
+      color: var(--color-primary);
+      background: var(--color-primary);
+    }`);
+  assert.equal(emptyResult.targets.kanbanColumns.length, 0, "Free Orders mutant uses the early-return whole-board-only branch");
+  assert.equal(
+    assertTokenizedWinner(
+      emptyResult.cascade, "Free Orders whole-board mutant foreground",
+      emptyResult.targets.wholeBoardEmpty, "color"
+    ).sourceName,
+    "tht-01-real-empty-branch-mutant.css"
+  );
+  assert.throws(() => assertEffectiveContrast(
+    emptyResult.cascade, "Free Orders whole-board container mutant",
+    emptyResult.targets.wholeBoardEmpty, emptyResult.targets.wholeBoardEmpty
+  ), contrastFailure);
+  assert.throws(() => assertEffectiveContrast(
+    emptyResult.cascade, "Free Orders whole-board strong mutant",
+    emptyResult.targets.wholeBoardStrong, emptyResult.targets.wholeBoardEmpty
+  ), contrastFailure);
 });
 
 test("actual winning status declarations meet WCAG AA in both themes", () => {

@@ -208,17 +208,19 @@ function workflowTargets(page, theme, viewportWidth = 1440, extraSources = []) {
   const statValue = cssElement("strong", {}, statCard);
   const toolbar = cssElement("section", { classes: ["toolbar"] }, container);
   const control = cssElement("input", { classes: ["control"] }, toolbar);
-  const board = cssElement("section", { classes: ["board"] }, container);
-  const column = cssElement("section", { classes: [isRequests ? "stage-column" : "share-column"] }, board);
-  const columnHead = cssElement("div", { classes: [isRequests ? "stage-head" : "column-head"] }, column);
-  const columnTitle = cssElement("h3", {}, columnHead);
-  const card = cssElement("article", { classes: [isRequests ? "request-card" : "share-card"] }, column);
+  const board = cssElement("section", { classes: ["board", "cc-kanban", "cc-kanban--workflow"] }, container);
+  const column = cssElement("section", { classes: [isRequests ? "stage-column" : "share-column", "cc-kanban__column"] }, board);
+  const columnHead = cssElement("div", { classes: [isRequests ? "stage-head" : "column-head", "cc-kanban__header"] }, column);
+  const columnTitle = cssElement("h2", { classes: ["cc-section-title", "cc-kanban__title"] }, columnHead);
+  const columnCount = cssElement("span", { classes: ["count-pill", "cc-kanban__count"] }, columnHead);
+  const stack = cssElement("div", { classes: ["cc-kanban__stack"] }, column);
+  const card = cssElement("article", { classes: [isRequests ? "request-card" : "share-card", "cc-card"] }, stack);
   const cardHead = cssElement("div", { classes: ["card-head"] }, card);
   const cardTitle = cssElement("h4", {}, cardHead);
   const status = cssElement("span", { classes: [isRequests ? "stage-badge" : "status-badge"] }, cardHead);
   const warning = cssElement("div", { classes: [isRequests ? "response-badge" : "share-note"] }, card);
   const secondaryAction = cssElement("button", { classes: ["small-btn"] }, card);
-  const empty = cssElement("div", { classes: ["empty-state"] }, column);
+  const empty = cssElement("div", { classes: ["empty-state", "cc-kanban__empty"] }, stack);
   const error = cssElement("div", { classes: ["message", "error"] }, container);
   const modal = cssElement("div", { classes: ["modal"] }, body);
   const modalPanel = cssElement("section", { classes: ["modal-panel"] }, modal);
@@ -230,7 +232,7 @@ function workflowTargets(page, theme, viewportWidth = 1440, extraSources = []) {
   return {
     cascade, body, shell, main, container, pageHeader, pageTitle, primaryAction,
     statCard, statLabel, statValue, toolbar, control, board, column, columnHead,
-    columnTitle, card, cardTitle, status, warning, secondaryAction, empty, error,
+    columnTitle, columnCount, stack, card, cardTitle, status, warning, secondaryAction, empty, error,
     modal, modalPanel, modalHeader, modalTitle, modalControl, modalBody, formControl
   };
 }
@@ -563,22 +565,21 @@ test("negative workflow fixtures detect descendant, warning, and specificity con
   expectFailure(targets, "fixture higher specificity status", targets.status);
 });
 
-test("workflow boards retain existing responsive geometry inside shrinkable shared content", () => {
-  for (const [page, desktopColumns] of [
-    ["free-order-requests.html", "repeat(4,minmax(0,1fr))"],
-    ["free-order-share.html", "repeat(3,minmax(0,1fr))"]
-  ]) {
-    for (const width of [1440, 1280]) {
-      const targets = workflowTargets(page, "light", width);
-      assert.equal(targets.cascade.winner(targets.board, "grid-template-columns").value.replaceAll(" ", ""), desktopColumns);
-    }
-    for (const width of [1024, 768, 390, 360, 320]) {
-      const targets = workflowTargets(page, "light", width);
-      assert.equal(targets.cascade.winner(targets.board, "grid-template-columns").value, "1fr");
+test("workflow boards retain horizontal Kanban geometry inside shrinkable shared content", () => {
+  for (const page of ["free-order-requests.html", "free-order-share.html"]) {
+    for (const theme of ["light", "dark"]) {
+      for (const width of [1440, 1280, 1024, 768, 390, 360, 320]) {
+        const targets = workflowTargets(page, theme, width);
+        assert.equal(targets.cascade.winner(targets.board, "display").value, "flex");
+        assert.equal(targets.cascade.winner(targets.board, "gap").value, "16px");
+        assert.equal(targets.cascade.winner(targets.board, "overflow-x").value, "auto");
+        assert.equal(targets.cascade.winner(targets.column, "min-width").value, "300px");
+        assert.equal(targets.cascade.winner(targets.column, "max-width").value, "340px");
+      }
     }
   }
   assert.match(read("app-shell.css"), /\.cc-shell-main\s*\{[\s\S]*?min-width:\s*0/);
-  assert.match(pages.requests, /@media \(max-width: 1040px\)[\s\S]*?\.board \{ grid-template-columns: 1fr; \}/);
+  assert.doesNotMatch(pages.requests + pages.share, /\.board\s*\{\s*grid-template-columns:\s*1fr/);
   assert.match(pages.share, /@media \(max-width: 680px\)[\s\S]*?\.form-grid,[\s\S]*?grid-template-columns: 1fr/);
 });
 

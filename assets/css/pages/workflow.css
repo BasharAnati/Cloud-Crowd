@@ -124,10 +124,6 @@
   box-shadow: var(--input-focus-ring);
 }
 
-.workflow-page .board {
-  min-width: 0;
-}
-
 .workflow-page :is(.stage-column, .share-column) {
   border-color: var(--color-border);
   color: var(--color-text);

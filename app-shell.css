@@ -1739,12 +1739,7 @@
   margin-top: 0;
 }
 
-.ce-ops-center #tickets {
-  gap: 10px;
-}
-
 .ce-ops-center section.group.ce-column {
-  min-width: 0;
   padding: 9px;
   border: 1px solid var(--ce-ops-line);
   border-radius: 8px;
@@ -3341,13 +3336,10 @@
 }
 
 .cctv-ops-center #tickets {
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 10px;
   transition: gap .28s ease;
 }
 
 .cctv-ops-center section.group.cctv-column {
-  min-width: 0;
   padding: 9px;
   border: 1px solid var(--cctv-ops-line);
   border-radius: 8px;
@@ -3888,9 +3880,6 @@ body.cctv-ops-center.drawer-open #tickets {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .cctv-ops-center #tickets {
-    grid-template-columns: 1fr !important;
-  }
 }
 
 @media (max-width: 640px) {
@@ -4456,12 +4445,7 @@ body.cctv-ops-center.drawer-open #tickets {
   margin-top: 0;
 }
 
-.complaints-ops-center #tickets {
-  gap: 10px;
-}
-
 .complaints-ops-center section.group.complaints-column {
-  min-width: 0;
   padding: 9px;
   border: 1px solid var(--complaints-ops-line);
   border-radius: 8px;
@@ -4741,8 +4725,7 @@ body.cctv-ops-center.drawer-open #tickets {
   }
 
   .complaints-ops-center .complaints-stats,
-  .complaints-ops-center .complaints-filters,
-  .complaints-ops-center #tickets {
+  .complaints-ops-center .complaints-filters {
     grid-template-columns: 1fr;
   }
 }
@@ -5287,12 +5270,7 @@ body.cctv-ops-center.drawer-open #tickets {
   margin-top: 0;
 }
 
-.free-orders-ops-center #tickets {
-  gap: 10px;
-}
-
 .free-orders-ops-center section.group.free-orders-column {
-  min-width: 0;
   padding: 9px;
   border: 1px solid var(--free-orders-ops-line);
   border-radius: 8px;
@@ -5345,6 +5323,12 @@ body.cctv-ops-center.drawer-open #tickets {
   border-radius: 8px;
   background: var(--color-primary-soft);
   color: var(--color-primary);
+}
+
+:root[data-theme="dark"]
+  :is(.ce-ops-center, .cctv-ops-center, .complaints-ops-center, .free-orders-ops-center)
+  .cc-kanban__empty {
+  color: var(--color-text);
 }
 
 .free-orders-ops-center .free-orders-empty-state {
@@ -5584,8 +5568,7 @@ body.cctv-ops-center.drawer-open #tickets {
   }
 
   .free-orders-ops-center .free-orders-stats,
-  .free-orders-ops-center .free-orders-filters,
-  .free-orders-ops-center #tickets {
+  .free-orders-ops-center .free-orders-filters {
     grid-template-columns: 1fr;
   }
 }
