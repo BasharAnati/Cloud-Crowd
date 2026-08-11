@@ -10,6 +10,7 @@
   <script src="assets/js/components/buttons.js"></script>
   <script src="assets/js/components/icons.js"></script>
   <script src="assets/js/components/feedback.js"></script>
+  <script src="assets/js/components/dialog.js"></script>
   <script src="assets/js/components/confirmation.js"></script>
   <script src="assets/js/components/status-registry.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
@@ -357,7 +358,7 @@
     .modal {
       position: fixed;
       inset: 0;
-      z-index: 1000;
+      z-index: var(--layer-modal-backdrop);
       display: none;
       align-items: center;
       justify-content: center;
@@ -528,6 +529,7 @@
   <link rel="stylesheet" href="assets/css/components/filters.css">
   <link rel="stylesheet" href="assets/css/components/cards.css">
   <link rel="stylesheet" href="assets/css/components/status.css">
+  <link rel="stylesheet" href="assets/css/components/dialogs.css">
 </head>
 <body class="workflow-page free-order-share-page" data-shell-module="free-order-share" data-shell-user-id="workflow-user" data-shell-role-id="workflow-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -576,7 +578,7 @@
     <button id="internal-nav-backdrop" class="cc-shell-nav-backdrop" type="button" aria-label="Close application navigation" tabindex="-1" hidden></button>
   </div>
 
-  <div class="modal" id="response-modal" role="dialog" aria-modal="true" aria-labelledby="response-modal-title">
+  <div class="modal" id="response-modal" role="dialog" aria-modal="true" aria-labelledby="response-modal-title" data-cc-dismiss-backdrop="false">
     <div class="modal-panel">
       <div class="modal-header">
         <div>
@@ -602,7 +604,7 @@
     </div>
   </div>
 
-  <div class="modal" id="view-modal" role="dialog" aria-modal="true" aria-labelledby="view-modal-title">
+  <div class="modal" id="view-modal" role="dialog" aria-modal="true" aria-labelledby="view-modal-title" data-cc-dismiss-backdrop="false">
     <div class="modal-panel">
       <div class="modal-header">
         <div>
@@ -709,11 +711,19 @@
     }
 
     function openModal(id) {
-      document.getElementById(id)?.classList.add('open');
+      if (window.CloudCrowdOverlay) window.CloudCrowdOverlay.open(id);
+      else {
+        document.getElementById(id)?.classList.add('open');
+        document.body.classList.add('cc-modal-lock');
+      }
     }
 
     function closeModal(id) {
-      document.getElementById(id)?.classList.remove('open');
+      if (window.CloudCrowdOverlay) window.CloudCrowdOverlay.close(id, { reason: 'page-close' });
+      else {
+        document.getElementById(id)?.classList.remove('open');
+        document.body.classList.remove('cc-modal-lock');
+      }
     }
 
     function itemById(id) {

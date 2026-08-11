@@ -5745,7 +5745,7 @@ body.cctv-ops-center.drawer-open #tickets {
 :is(.ce-ops-center, .cctv-ops-center, .complaints-ops-center, .free-orders-ops-center) .history-modal {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: var(--layer-modal-backdrop);
   display: none;
   align-items: center;
   justify-content: center;

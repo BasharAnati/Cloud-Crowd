@@ -9,6 +9,7 @@
   <script src="assets/js/components/buttons.js"></script>
   <script src="assets/js/components/icons.js"></script>
   <script src="assets/js/components/feedback.js"></script>
+  <script src="assets/js/components/dialog.js"></script>
   <script src="assets/js/components/confirmation.js"></script>
   <script src="assets/js/components/status-registry.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
@@ -191,7 +192,7 @@
     .modal{
       position:fixed;
       inset:0;
-      z-index:50;
+      z-index:var(--layer-modal-backdrop);
       display:none;
       align-items:center;
       justify-content:center;
@@ -306,6 +307,7 @@
   <link rel="stylesheet" href="assets/css/components/cards.css">
   <link rel="stylesheet" href="assets/css/components/status.css">
   <link rel="stylesheet" href="assets/css/components/tables.css">
+  <link rel="stylesheet" href="assets/css/components/dialogs.css">
 </head>
 <body class="employee-profiles-ops-center">
   <div class="profiles-shell cc-shell-layout">
@@ -625,13 +627,19 @@
     }
 
     function openModal(id) {
-      document.getElementById(id).classList.add('open');
-      document.body.style.overflow = 'hidden';
+      if (window.CloudCrowdOverlay) window.CloudCrowdOverlay.open(id);
+      else {
+        document.getElementById(id)?.classList.add('open');
+        document.body.classList.add('cc-modal-lock');
+      }
     }
 
     function closeModal(id) {
-      document.getElementById(id).classList.remove('open');
-      if (!document.querySelector('.modal.open')) document.body.style.overflow = '';
+      if (window.CloudCrowdOverlay) window.CloudCrowdOverlay.close(id, { reason: 'page-close' });
+      else {
+        document.getElementById(id)?.classList.remove('open');
+        document.body.classList.remove('cc-modal-lock');
+      }
     }
 
     function phoneRow(phone = {}) {

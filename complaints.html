@@ -10,6 +10,7 @@
   <script src="assets/js/components/buttons.js"></script>
   <script src="assets/js/components/icons.js"></script>
   <script src="assets/js/components/feedback.js"></script>
+  <script src="assets/js/components/dialog.js"></script>
   <script src="assets/js/components/confirmation.js"></script>
   <script src="assets/js/components/status-registry.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
@@ -91,6 +92,8 @@
   <link rel="stylesheet" href="assets/css/components/filters.css">
   <link rel="stylesheet" href="assets/css/components/cards.css">
   <link rel="stylesheet" href="assets/css/components/status.css">
+  <link rel="stylesheet" href="assets/css/components/dialogs.css">
+  <link rel="stylesheet" href="assets/css/components/drawers.css">
 </head>
 <body class="complaints-page complaints-ops-center">
   <div class="complaints-module-shell cc-shell-layout">
@@ -174,12 +177,12 @@
     </main>
   </div>
 
-  <div class="modal" id="modal">
-    <div class="modal-content">
-      <h2 class="cc-modal-title">Add New Ticket</h2>
+  <div class="modal cc-dialog" id="modal" aria-hidden="true">
+    <div class="modal-content cc-dialog__panel cc-dialog__panel--600" role="dialog" aria-modal="true" aria-labelledby="operations-modal-title" data-cc-overlay-panel>
+      <div class="cc-dialog__header"><h2 class="cc-modal-title cc-dialog__title" id="operations-modal-title">Add New Ticket</h2><button class="drawer-close cc-dialog__close" type="button" aria-label="Close Add New Ticket form" onclick="closeModal()">&times;</button></div>
       <form id="ticket-form" class="cc-form">
-        <div id="dynamic-form"></div>
-        <div class="form-actions cc-form-actions">
+        <div id="dynamic-form" class="cc-dialog__body"></div>
+        <div class="form-actions cc-form-actions cc-dialog__footer">
           <button type="submit" class="submit-btn">Submit</button>
           <button type="button" class="cancel-btn" onclick="closeModal()">Cancel</button>
         </div>
@@ -187,19 +190,19 @@
     </div>
   </div>
 
-  <div class="drawer" id="ticket-drawer" aria-hidden="true">
-    <div class="drawer-backdrop" onclick="closeTicketDrawer()"></div>
-    <aside class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
-      <div class="drawer-header">
+  <div class="drawer cc-drawer" id="ticket-drawer" aria-hidden="true">
+    <div class="drawer-backdrop cc-drawer__backdrop"></div>
+    <aside class="drawer-panel cc-drawer__panel" role="dialog" aria-modal="true" aria-labelledby="drawer-title" data-cc-overlay-panel>
+      <div class="drawer-header cc-drawer__header">
         <div>
           <div class="drawer-case">Order Number: <span id="drawer-caseNumber"></span></div>
           <h2 class="cc-modal-title" id="drawer-title">Details</h2>
         </div>
-        <button class="drawer-close" onclick="closeTicketDrawer()" aria-label="Close">x</button>
+        <button class="drawer-close" type="button" onclick="closeTicketDrawer()" aria-label="Close">x</button>
       </div>
       <div class="drawer-meta" id="drawer-meta"></div>
-      <div class="drawer-body" id="drawer-body"></div>
-      <div class="drawer-actions"><button class="edit-btn" id="drawer-edit-btn">Edit</button></div>
+      <div class="drawer-body cc-drawer__body" id="drawer-body"></div>
+      <div class="drawer-actions cc-drawer__footer"><button class="edit-btn" id="drawer-edit-btn" type="button">Edit</button></div>
     </aside>
   </div>
 

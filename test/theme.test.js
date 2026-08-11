@@ -721,7 +721,9 @@ test("integrated HTML determines the real linked and embedded stylesheet order",
     "assets/css/components/forms.css",
     "assets/css/components/filters.css",
     "assets/css/components/cards.css",
-    "assets/css/components/status.css"
+    "assets/css/components/status.css",
+    "assets/css/components/dialogs.css",
+    "assets/css/components/drawers.css"
   ];
   Object.values(OPERATION_CONTRACTS).forEach(({ page }) => {
     assert.deepEqual(extractPageSources(ROOT, page).map((source) => source.name), operationsOrder, `${page} stylesheet order`);
@@ -739,7 +741,8 @@ test("integrated HTML determines the real linked and embedded stylesheet order",
     "assets/css/components/filters.css",
     "assets/css/components/cards.css",
     "assets/css/components/status.css",
-    "assets/css/components/tables.css"
+    "assets/css/components/tables.css",
+    "assets/css/components/dialogs.css"
   ]);
 });
 
@@ -786,8 +789,8 @@ test("runtime history modal emits semantic classes without inline visual styling
   const generated = window.ensureHistoryModal();
   assert.equal(generated.id, "history-modal");
   assert.equal(generated.className, "history-modal");
-  assert.match(generated.innerHTML, /class="history-modal__panel"/);
-  assert.match(generated.innerHTML, /class="history-modal__close"/);
+  assert.match(generated.innerHTML, /class="history-modal__panel [^"]*"/);
+  assert.match(generated.innerHTML, /class="history-modal__close [^"]*"/);
   assert.equal(typeof closeControl.onclick, "function");
 });
 

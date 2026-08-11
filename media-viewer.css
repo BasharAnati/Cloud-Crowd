@@ -1,11 +1,7 @@
-.cc-media-viewer-open {
-  overflow: hidden !important;
-}
-
 .cc-media-viewer {
   position: fixed;
   inset: 0;
-  z-index: 3000;
+  z-index: var(--layer-modal-backdrop);
   display: none;
   background: rgba(1, 12, 24, .78);
   opacity: 0;

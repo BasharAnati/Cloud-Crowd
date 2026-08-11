@@ -74,6 +74,9 @@
   --layer-sidebar: 30;
   --layer-nav-backdrop: 50;
   --layer-navigation: 60;
+  --layer-drawer-backdrop: 70;
+  --layer-drawer: 80;
+  --layer-modal-backdrop: 90;
   --layer-modal: 90;
   --layer-toast: 100;
 
@@ -196,6 +199,9 @@
   --modal-width-lg: 880px;
   --modal-radius: var(--radius-xl);
   --modal-shadow: var(--shadow-lg);
+  --drawer-width-operations: 480px;
+  --overlay-viewport-gap: var(--space-6);
+  --overlay-viewport-gap-mobile: var(--space-3);
 }
 
 :root[data-theme="dark"] {

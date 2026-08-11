@@ -37,13 +37,7 @@
 }
 
 .cc-confirmation-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: var(--layer-modal);
-  display: grid;
-  place-items: center;
-  padding: var(--space-4);
-  background: var(--modal-overlay);
+  z-index: var(--layer-modal-backdrop);
 }
 
 .cc-confirmation {
@@ -67,8 +61,6 @@
 
 .cc-confirmation__message { margin: var(--space-3) 0 0; white-space: pre-line; color: var(--color-text-muted); }
 .cc-confirmation__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-6); }
-
-body.cc-confirmation-open { overflow: hidden; }
 
 @media (max-width: 620px) {
   .cc-toast-region { inset-block-start: var(--space-3); inset-inline: var(--space-3); width: auto; }

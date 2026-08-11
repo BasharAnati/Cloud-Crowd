@@ -2,6 +2,7 @@
   "use strict";
 
   let active = false;
+  let sequence = 0;
 
   function request(message, options) {
     if (active || typeof document === "undefined" || !document.body) return Promise.resolve(false);
@@ -11,11 +12,14 @@
     const previousFocus = document.activeElement;
 
     return new Promise((resolve) => {
+      const id = `cc-confirmation-overlay-${++sequence}`;
       const backdrop = document.createElement("div");
-      backdrop.className = "cc-confirmation-backdrop";
+      backdrop.id = id;
+      backdrop.className = "cc-confirmation-backdrop cc-dialog";
 
       const dialog = document.createElement("section");
-      dialog.className = "cc-confirmation";
+      dialog.className = "cc-confirmation cc-dialog__panel cc-dialog__panel--sm";
+      dialog.setAttribute("data-cc-overlay-panel", "");
       dialog.setAttribute("role", "dialog");
       dialog.setAttribute("aria-modal", "true");
       dialog.setAttribute("aria-labelledby", "cc-confirmation-title");
@@ -23,7 +27,7 @@
 
       const title = document.createElement("h2");
       title.id = "cc-confirmation-title";
-      title.className = "cc-confirmation__title";
+      title.className = "cc-confirmation__title cc-dialog__title";
       title.textContent = settings.title || "Please confirm";
 
       const copy = document.createElement("p");
@@ -48,52 +52,65 @@
       dialog.append(title, copy, actions);
       backdrop.appendChild(dialog);
       document.body.appendChild(backdrop);
-      document.body.classList.add("cc-confirmation-open");
 
       if (global.CloudCrowdIcons) {
         global.CloudCrowdIcons.leadingIcon(cancel, "x");
         global.CloudCrowdIcons.leadingIcon(confirm, destructive ? "trash-2" : "check");
       }
 
+      if (!global.CloudCrowdOverlay) {
+        let legacySettled = false;
+        function legacyFinish(value) {
+          if (legacySettled) return;
+          legacySettled = true;
+          document.removeEventListener("keydown", legacyKeydown);
+          backdrop.remove();
+          active = false;
+          if (previousFocus?.isConnected !== false) previousFocus?.focus?.();
+          resolve(value);
+        }
+        function legacyKeydown(event) {
+          if (event.key === "Escape") { event.preventDefault(); legacyFinish(false); return; }
+          if (event.key !== "Tab") return;
+          if (event.shiftKey && document.activeElement === cancel) { event.preventDefault(); confirm.focus(); }
+          else if (!event.shiftKey && document.activeElement === confirm) { event.preventDefault(); cancel.focus(); }
+        }
+        cancel.addEventListener("click", () => legacyFinish(false));
+        confirm.addEventListener("click", () => legacyFinish(true));
+        backdrop.addEventListener("click", (event) => { if (event.target === backdrop) legacyFinish(false); });
+        document.addEventListener("keydown", legacyKeydown);
+        global.setTimeout?.(() => cancel.focus(), 0);
+        return;
+      }
+
       let settled = false;
-      function finish(result) {
+      let result = false;
+      function finish(nextResult, reason) {
         if (settled) return;
-        settled = true;
-        document.removeEventListener("keydown", onKeydown);
-        backdrop.remove();
-        document.body.classList.remove("cc-confirmation-open");
-        active = false;
-        if (previousFocus && typeof previousFocus.focus === "function" && previousFocus.isConnected !== false) {
-          previousFocus.focus();
-        }
-        resolve(result);
+        result = nextResult;
+        global.CloudCrowdOverlay.close(id, { reason });
       }
 
-      function onKeydown(event) {
-        if (event.key === "Escape") {
-          event.preventDefault();
-          finish(false);
-          return;
+      global.CloudCrowdOverlay.register(backdrop, {
+        type: "confirmation",
+        panel: dialog,
+        dismissOnEscape: true,
+        dismissOnBackdrop: true,
+        initialFocus: cancel,
+        lockScroll: true,
+        onAfterClose() {
+          if (settled) return;
+          settled = true;
+          backdrop.remove();
+          global.CloudCrowdOverlay.unregister(id);
+          active = false;
+          resolve(result);
         }
-        if (event.key !== "Tab") return;
-        const first = cancel;
-        const last = confirm;
-        if (event.shiftKey && document.activeElement === first) {
-          event.preventDefault();
-          last.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first.focus();
-        }
-      }
-
-      cancel.addEventListener("click", () => finish(false));
-      confirm.addEventListener("click", () => finish(true));
-      backdrop.addEventListener("click", (event) => {
-        if (event.target === backdrop) finish(false);
       });
-      document.addEventListener("keydown", onKeydown);
-      global.setTimeout(() => cancel.focus(), 0);
+
+      cancel.addEventListener("click", () => finish(false, "cancel"));
+      confirm.addEventListener("click", () => finish(true, "confirm"));
+      global.CloudCrowdOverlay.open(id);
     });
   }
 

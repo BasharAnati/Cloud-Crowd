@@ -10,6 +10,7 @@
   <script src="assets/js/components/buttons.js"></script>
   <script src="assets/js/components/icons.js"></script>
   <script src="assets/js/components/feedback.js"></script>
+  <script src="assets/js/components/dialog.js"></script>
   <script src="assets/js/components/confirmation.js"></script>
   <script src="assets/js/components/status-registry.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
@@ -91,7 +92,7 @@
     .client-meta{display:grid;gap:8px;color:var(--muted);font-size:12px;font-weight:800}
     .card-actions{display:flex;flex-wrap:wrap;gap:8px;padding-top:3px;border-top:1px solid #edf6f8}
     .empty-state{grid-column:1/-1;padding:42px 20px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:18px;background:rgba(167,235,242,.08)}
-    .modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(1,28,64,.62);backdrop-filter:blur(8px)}
+    .modal{position:fixed;inset:0;z-index:var(--layer-modal-backdrop);display:none;align-items:center;justify-content:center;padding:22px;background:rgba(1,28,64,.62);backdrop-filter:blur(8px)}
     .modal.open{display:flex}
     .modal-panel{width:min(940px,100%);max-height:92vh;overflow:auto;border:1px solid rgba(167,235,242,.5);border-radius:24px;background:#fff;box-shadow:0 30px 90px rgba(1,28,64,.34)}
     #profile-modal .modal-panel{width:min(1120px,100%)}
@@ -181,6 +182,7 @@
   <link rel="stylesheet" href="assets/css/components/cards.css">
   <link rel="stylesheet" href="assets/css/components/status.css">
   <link rel="stylesheet" href="assets/css/components/tables.css">
+  <link rel="stylesheet" href="assets/css/components/dialogs.css">
 </head>
 <body class="business-quality-page client-profiles-page" data-shell-module="client-profiles" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -419,13 +421,19 @@
     }
 
     function openModal(id) {
-      document.getElementById(id).classList.add('open');
-      document.body.classList.add('cc-modal-lock');
+      if (window.CloudCrowdOverlay) window.CloudCrowdOverlay.open(id);
+      else {
+        document.getElementById(id)?.classList.add('open');
+        document.body.classList.add('cc-modal-lock');
+      }
     }
 
     function closeModal(id) {
-      document.getElementById(id).classList.remove('open');
-      if (!document.querySelector('.modal.open')) document.body.classList.remove('cc-modal-lock');
+      if (window.CloudCrowdOverlay) window.CloudCrowdOverlay.close(id, { reason: 'page-close' });
+      else {
+        document.getElementById(id)?.classList.remove('open');
+        document.body.classList.remove('cc-modal-lock');
+      }
     }
 
     function initials(name) {

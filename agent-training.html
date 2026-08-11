@@ -10,6 +10,7 @@
   <script src="assets/js/components/buttons.js"></script>
   <script src="assets/js/components/icons.js"></script>
   <script src="assets/js/components/feedback.js"></script>
+  <script src="assets/js/components/dialog.js"></script>
   <script src="assets/js/components/confirmation.js"></script>
   <script src="assets/js/components/status-registry.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
@@ -65,7 +66,7 @@
     .actions{display:flex;gap:6px;white-space:nowrap}
     .notes-cell{max-width:260px;white-space:normal}
     .empty-state{padding:36px 18px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:16px;background:rgba(167,235,242,.08)}
-    .modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(1,28,64,.62);backdrop-filter:blur(8px)}
+    .modal{position:fixed;inset:0;z-index:var(--layer-modal-backdrop);display:none;align-items:center;justify-content:center;padding:22px;background:rgba(1,28,64,.62);backdrop-filter:blur(8px)}
     .modal.open{display:flex}
     .modal-panel{width:min(760px,100%);max-height:92vh;overflow:auto;border:1px solid rgba(167,235,242,.5);border-radius:24px;background:#fff;box-shadow:0 30px 90px rgba(1,28,64,.34)}
     .modal-header{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 26px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.97)}
@@ -117,6 +118,7 @@
   <link rel="stylesheet" href="assets/css/components/cards.css">
   <link rel="stylesheet" href="assets/css/components/status.css">
   <link rel="stylesheet" href="assets/css/components/tables.css">
+  <link rel="stylesheet" href="assets/css/components/dialogs.css">
 </head>
 <body class="people-management-page agent-training-page" data-shell-module="agent-training" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -347,13 +349,19 @@
     }
 
     function openModal(id) {
-      document.getElementById(id).classList.add('open');
-      document.body.style.overflow = 'hidden';
+      if (window.CloudCrowdOverlay) window.CloudCrowdOverlay.open(id);
+      else {
+        document.getElementById(id)?.classList.add('open');
+        document.body.classList.add('cc-modal-lock');
+      }
     }
 
     function closeModal(id) {
-      document.getElementById(id).classList.remove('open');
-      if (!document.querySelector('.modal.open')) document.body.style.overflow = '';
+      if (window.CloudCrowdOverlay) window.CloudCrowdOverlay.close(id, { reason: 'page-close' });
+      else {
+        document.getElementById(id)?.classList.remove('open');
+        document.body.classList.remove('cc-modal-lock');
+      }
     }
 
     function statusClass(status) {

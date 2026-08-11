@@ -5,8 +5,11 @@
   let stage;
   let content;
   let closeButton;
-  let previousOverflow = '';
-  let lastFocused = null;
+
+  function cleanupMedia() {
+    if (content) content.innerHTML = '';
+    if (stage) stage.classList.remove('is-scrollable');
+  }
 
   function mediaTypeFromSource(src, explicitType) {
     const type = String(explicitType || '').toLowerCase();
@@ -23,6 +26,7 @@
     if (viewer) return;
 
     viewer = document.createElement('div');
+    viewer.id = 'cc-media-viewer';
     viewer.className = 'cc-media-viewer';
     viewer.setAttribute('role', 'dialog');
     viewer.setAttribute('aria-modal', 'true');
@@ -40,20 +44,16 @@
     content = viewer.querySelector('.cc-media-viewer__content');
 
     closeButton.addEventListener('click', close);
-    stage.addEventListener('click', (event) => {
-      if (event.target === stage) close();
+    window.CloudCrowdOverlay?.register(viewer, {
+      type: 'media',
+      panel: viewer,
+      backdrop: '[data-media-viewer-backdrop]',
+      dismissOnEscape: true,
+      dismissOnBackdrop: true,
+      initialFocus: closeButton,
+      lockScroll: true,
+      onAfterClose: cleanupMedia
     });
-  }
-
-  function lockBody() {
-    previousOverflow = document.body.style.overflow;
-    document.body.classList.add('cc-media-viewer-open');
-    document.body.style.overflow = 'hidden';
-  }
-
-  function unlockBody() {
-    document.body.classList.remove('cc-media-viewer-open');
-    document.body.style.overflow = previousOverflow;
   }
 
   function updateScrollableState(media) {
@@ -76,9 +76,7 @@
     }
 
     createViewer();
-    lastFocused = document.activeElement;
-    content.innerHTML = '';
-    stage.classList.remove('is-scrollable');
+    cleanupMedia();
 
     const media = document.createElement(type === 'video' ? 'video' : 'img');
     media.className = `cc-media-viewer__media cc-media-viewer__media--${type}`;
@@ -97,21 +95,12 @@
     media.addEventListener('click', (event) => event.stopPropagation());
     content.appendChild(media);
 
-    lockBody();
-    viewer.classList.add('is-open');
-    viewer.removeAttribute('hidden');
-    closeButton.focus({ preventScroll: true });
+    window.CloudCrowdOverlay.open(viewer.id, { initialFocus: closeButton });
   }
 
   function close() {
     if (!viewer || !viewer.classList.contains('is-open')) return;
-    viewer.classList.remove('is-open');
-    content.innerHTML = '';
-    stage.classList.remove('is-scrollable');
-    unlockBody();
-    if (lastFocused && typeof lastFocused.focus === 'function') {
-      lastFocused.focus({ preventScroll: true });
-    }
+    window.CloudCrowdOverlay.close(viewer.id, { reason: 'media-close' });
   }
 
   function mediaSourceFromElement(element) {
@@ -135,13 +124,6 @@
     event.stopPropagation();
     open(media);
   });
-
-  document.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape' || !viewer?.classList.contains('is-open')) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    close();
-  }, true);
 
   window.addEventListener('resize', () => {
     const media = content?.querySelector('.cc-media-viewer__media');

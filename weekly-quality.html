@@ -10,6 +10,7 @@
   <script src="assets/js/components/buttons.js"></script>
   <script src="assets/js/components/icons.js"></script>
   <script src="assets/js/components/feedback.js"></script>
+  <script src="assets/js/components/dialog.js"></script>
   <script src="assets/js/components/confirmation.js"></script>
   <script src="assets/js/components/status-registry.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
@@ -397,7 +398,7 @@
       padding: 24px;
       background: rgba(1, 28, 64, 0.58);
       backdrop-filter: blur(5px);
-      z-index: 100;
+      z-index: var(--layer-modal-backdrop);
     }
 
     .modal.open { display: flex; }
@@ -624,6 +625,7 @@
   <link rel="stylesheet" href="assets/css/components/cards.css">
   <link rel="stylesheet" href="assets/css/components/status.css">
   <link rel="stylesheet" href="assets/css/components/tables.css">
+  <link rel="stylesheet" href="assets/css/components/dialogs.css">
 </head>
 <body class="business-quality-page weekly-quality-page" data-shell-module="weekly-quality" data-shell-user-id="quality-user-name" data-shell-role-id="quality-role-badge">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -1458,14 +1460,20 @@
         </section>
       `;
 
-      document.getElementById('details-modal').classList.add('open');
-      document.body.classList.add('cc-modal-lock');
-      document.getElementById('details-modal-close').focus();
+      if (window.CloudCrowdOverlay) window.CloudCrowdOverlay.open('details-modal', { initialFocus: '#details-modal-close' });
+      else {
+        document.getElementById('details-modal').classList.add('open');
+        document.body.classList.add('cc-modal-lock');
+        document.getElementById('details-modal-close')?.focus();
+      }
     }
 
     function closeDetails() {
-      document.getElementById('details-modal').classList.remove('open');
-      document.body.classList.remove('cc-modal-lock');
+      if (window.CloudCrowdOverlay) window.CloudCrowdOverlay.close('details-modal', { reason: 'page-close' });
+      else {
+        document.getElementById('details-modal').classList.remove('open');
+        document.body.classList.remove('cc-modal-lock');
+      }
     }
 
     async function deleteRecord(id) {

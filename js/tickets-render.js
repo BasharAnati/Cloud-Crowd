@@ -616,6 +616,21 @@ function createFreeOrdersEmptyState(kind){
   return empty;
 }
 
+function makeTicketCardInteractive(card, activate) {
+  card.setAttribute('role', 'button');
+  card.tabIndex = 0;
+  card.addEventListener('click', (event) => {
+    if (event.target !== card && event.target.closest?.('button, a, input, select, textarea, [data-media-src]')) return;
+    activate(event);
+  });
+  card.addEventListener('keydown', (event) => {
+    if (event.target !== card || (event.key !== 'Enter' && event.key !== ' ')) return;
+    event.preventDefault();
+    activate(event);
+  });
+  return card;
+}
+
 function renderTickets(){
   const wrap = document.getElementById('tickets');
   if (!wrap) return;
@@ -762,7 +777,7 @@ function renderTickets(){
             : isFreeOrders
               ? getFreeOrderCardContent(ticket)
               : head + main;
-      card.addEventListener('click', ()=> openTicketDrawerByCase(getCaseDisplay(ticket)));
+      makeTicketCardInteractive(card, () => openTicketDrawerByCase(getCaseDisplay(ticket), card));
       col.appendChild(card);
     });
 

@@ -90,7 +90,7 @@ const staticTitleInventory = [
   { page: "weekly-quality.html", id: "details-modal-title", role: "modal" },
   { page: "employee-profiles.html", id: "employee-modal-title", role: "modal" },
   ...["cctv.html", "ce.html", "complaints.html", "free-orders.html"].flatMap((page) => [
-    { page, text: "Add New Ticket", parentClass: "modal-content", role: "operational modal" },
+    { page, text: "Add New Ticket", parentClass: "cc-dialog__header", role: "operational modal" },
     { page, id: "drawer-title", role: "operational drawer" }
   ])
 ];
@@ -453,7 +453,7 @@ test("missing title-role fixtures detect one removed role without relying on inv
       label: "operational Add Ticket semantic role",
       page: "cctv.html",
       contract: staticTitleInventory.find((item) => item.page === "cctv.html" && item.text === "Add New Ticket"),
-      mutate: (source) => source.replace('<h2 class="cc-modal-title">Add New Ticket</h2>', '<h2>Add New Ticket</h2>')
+      mutate: (source) => source.replace('<h2 class="cc-modal-title cc-dialog__title" id="operations-modal-title">Add New Ticket</h2>', '<h2 id="operations-modal-title">Add New Ticket</h2>')
     },
     {
       label: "operational Details drawer semantic role",
@@ -480,7 +480,7 @@ test("missing title-role fixtures detect one removed role without relying on inv
   });
 
   const historySource = fs.readFileSync(path.join(root, "js", "history.js"), "utf8");
-  const mutatedHistory = historySource.replace('class="history-modal__title cc-modal-title"', 'class="history-modal__title"');
+  const mutatedHistory = historySource.replace('class="history-modal__title cc-modal-title cc-dialog__title"', 'class="history-modal__title cc-dialog__title"');
   assert.notEqual(mutatedHistory, historySource, "Change History semantic role: fixture mutation applied");
   expectContractFailure("Change History semantic role", () => {
     assert.match(mutatedHistory, /<h3\b[^>]*class=["'][^"']*\bcc-modal-title\b[^"']*["'][^>]*>Change History<\/h3>/, "Change History semantic role");

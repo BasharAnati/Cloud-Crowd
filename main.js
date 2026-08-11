@@ -583,6 +583,49 @@ function saveTicketsToStorage(){
 // Drawer (read/edit)
 // ----------------------------
 let drawerIndex = null;
+
+function resetOperationalModal() {
+  const form = document.getElementById('ticket-form');
+  if (!form) return;
+  form.reset();
+  document.querySelectorAll('.multi-select').forEach(m=>{
+    m.querySelector('.cc-multi-select__values').innerHTML='';
+    m.querySelector('.cc-multi-select__values').hidden=true;
+    m.querySelector('.cc-multi-select__trigger').setAttribute('aria-expanded', 'false');
+    m.querySelectorAll('input').forEach(cb=> cb.checked=false);
+    m.classList.remove('open');
+  });
+  document.querySelectorAll('.file-preview').forEach(p=>{ p.src=''; p.style.display='none'; });
+}
+
+function registerOperationalOverlays() {
+  if (!window.CloudCrowdOverlay) return;
+  const modal = document.getElementById('modal');
+  const drawer = document.getElementById('ticket-drawer');
+  if (modal) {
+    window.CloudCrowdOverlay.register(modal, {
+      type: 'dialog',
+      panel: '.modal-content',
+      dismissOnEscape: true,
+      dismissOnBackdrop: false,
+      initialFocus: () => modal.querySelector('input:not([type="hidden"]), select, textarea, button'),
+      lockScroll: true,
+      onAfterClose: resetOperationalModal
+    });
+  }
+  if (drawer) {
+    window.CloudCrowdOverlay.register(drawer, {
+      type: 'drawer',
+      panel: '.drawer-panel',
+      backdrop: '.drawer-backdrop',
+      dismissOnEscape: true,
+      dismissOnBackdrop: true,
+      initialFocus: '.drawer-close',
+      lockScroll: true,
+      onAfterClose: () => { drawerIndex = null; }
+    });
+  }
+}
 const MUTATION_PERMISSION_KEYS = {
   create: 'canCreate',
   edit: 'canEdit',
@@ -761,11 +804,11 @@ function ensureDrawerActionsContainer(){
   return actions;
 }
 
-function openTicketDrawerByCase(caseNumber){
+function openTicketDrawerByCase(caseNumber, trigger){
   const idx = (tickets[_currentSection]||[]).findIndex(t =>
     getCaseDisplay(t)===caseNumber || t.caseNumber===caseNumber
   );
-  if (idx>=0) openTicketDrawer(idx);
+  if (idx>=0) openTicketDrawer(idx, trigger);
 }
 
 function normalizeCctvDetailValue(value){
@@ -1060,7 +1103,24 @@ function buildDrawerEditForm(ticket){
 
 
 
-function openTicketDrawer(index){
+function createDrawerHistoryTrigger(ticket) {
+  const historyButton = document.createElement('button');
+  historyButton.className = 'history-link';
+  historyButton.id = 'drawer-history-link';
+  historyButton.type = 'button';
+  historyButton.title = 'View change history';
+  historyButton.textContent = 'History';
+  historyButton.addEventListener('click', () => {
+    if (!ticket._id) {
+      showOperationalInline('No ticket id found.', 'error', document.querySelector('.drawer.open .drawer-body'));
+      return;
+    }
+    viewTicketHistory(ticket._id, historyButton);
+  });
+  return historyButton;
+}
+
+function openTicketDrawer(index, trigger){
   drawerIndex = index;
   const ticket = tickets[_currentSection][index];
   const drawer = document.getElementById('ticket-drawer');
@@ -1083,18 +1143,8 @@ function openTicketDrawer(index){
     <span class="meta-badge cc-status ${ticketStatusToneClass(ticket.status)}">
       ${escapeHtml(ticketStatusPresentation(ticket.status || 'Uncategorized').label)}
     </span>
-    <a class="history-link" id="drawer-history-link" title="View change history">History</a>
   `;
-
-
-  const histLink = document.getElementById('drawer-history-link');
-  if (histLink) {
-    histLink.onclick = (e) => {
-      e.preventDefault();
-      if (!ticket._id) { showOperationalInline('No ticket id found.', 'error', document.querySelector('.drawer.open .drawer-body')); return; }
-      viewTicketHistory(ticket._id);
-    };
-  }
+  metaEl.appendChild(createDrawerHistoryTrigger(ticket));
 
   // محتوى القراءة
   bodyEl.innerHTML = buildDrawerReadonly(ticket);
@@ -1125,9 +1175,12 @@ function openTicketDrawer(index){
     }
   }
 
-  drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden','false');
-  document.body.classList.add('drawer-open');
+  if (!window.CloudCrowdOverlay) {
+    drawer.classList.add('open');
+    document.body?.classList?.add('cc-modal-lock');
+  } else if (!window.CloudCrowdOverlay.isOpen(drawer.id)) {
+    window.CloudCrowdOverlay.open(drawer.id, { trigger });
+  }
 }
 
 
@@ -1357,14 +1410,14 @@ async function deleteTicket(idx, control) {
 function closeTicketDrawer(){
   const drawer = document.getElementById('ticket-drawer');
   if (!drawer) return;
-  drawer.classList.remove('open');
-  drawer.setAttribute('aria-hidden','true');
-  document.body.classList.remove('drawer-open');
-  drawerIndex = null;
+  if (window.CloudCrowdOverlay) window.CloudCrowdOverlay.close(drawer.id, { reason: 'page-close' });
+  else {
+    drawer.classList.remove('open');
+    document.body?.classList?.remove('cc-modal-lock');
+    drawerIndex = null;
+  }
 }
 window.closeTicketDrawer = closeTicketDrawer;
-
-document.addEventListener('keydown',e=>{ if (e.key==='Escape') closeTicketDrawer(); });
 
 // ----------------------------
 // Modal (single tidy version)
@@ -1577,7 +1630,11 @@ function openModal(section){
   document.getElementById('ticket-form').dataset.createdBy = CURRENT_USER;
 
   modal.querySelector('h2').textContent='Add New Ticket';
-  modal.style.display='flex';
+  if (window.CloudCrowdOverlay) window.CloudCrowdOverlay.open(modal.id);
+  else {
+    modal.classList.add('open');
+    document.body?.classList?.add('cc-modal-lock');
+  }
 }
 window.openModal = openModal;
 
@@ -1597,18 +1654,27 @@ function updateSelected(multi){
 }
 
 function closeModal(){
-  document.getElementById('modal').style.display='none';
-  document.getElementById('ticket-form').reset();
-  document.querySelectorAll('.multi-select').forEach(m=>{
-    m.querySelector('.cc-multi-select__values').innerHTML='';
-    m.querySelector('.cc-multi-select__values').hidden=true;
-    m.querySelector('.cc-multi-select__trigger').setAttribute('aria-expanded', 'false');
-    m.querySelectorAll('input').forEach(cb=> cb.checked=false);
-    m.classList.remove('open');
-  });
-  document.querySelectorAll('.file-preview').forEach(p=>{ p.src=''; p.style.display='none'; });
+  if (window.CloudCrowdOverlay) window.CloudCrowdOverlay.close('modal', { reason: 'page-close' });
+  else {
+    document.getElementById('modal')?.classList.remove('open');
+    document.body?.classList?.remove('cc-modal-lock');
+    if (typeof resetOperationalModal === 'function') resetOperationalModal();
+    else {
+      document.getElementById('ticket-form')?.reset();
+      document.querySelectorAll('.multi-select').forEach(m=>{
+        m.querySelector('.cc-multi-select__values').innerHTML='';
+        m.querySelector('.cc-multi-select__values').hidden=true;
+        m.querySelector('.cc-multi-select__trigger').setAttribute('aria-expanded', 'false');
+        m.querySelectorAll('input').forEach(cb=> cb.checked=false);
+        m.classList.remove('open');
+      });
+      document.querySelectorAll('.file-preview').forEach(p=>{ p.src=''; p.style.display='none'; });
+    }
+  }
 }
 window.closeModal = closeModal;
+
+registerOperationalOverlays();
 
 // ----------------------------
 // Add form handler  (POST to DB + refresh from DB + push to Sheets)
