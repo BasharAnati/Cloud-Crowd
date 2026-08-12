@@ -308,6 +308,8 @@
   <link rel="stylesheet" href="assets/css/components/status.css">
   <link rel="stylesheet" href="assets/css/components/tables.css">
   <link rel="stylesheet" href="assets/css/components/dialogs.css">
+  <link rel=stylesheet href=assets/css/components/master-detail.css>
+  <script src="assets/js/components/master-detail.js"></script>
 </head>
 <body class="employee-profiles-ops-center">
   <div class="profiles-shell cc-shell-layout">
@@ -342,8 +344,8 @@
         <article class="stat-card cc-metric-card stat-restaurants"><span class="stat-icon" aria-hidden="true">&#9670;</span><div><span>Assigned Restaurants</span><strong id="stat-restaurants">0</strong></div></article>
       </section>
 
-      <section class="employee-profiles-workspace-layout" aria-label="Employee directory and workspace">
-        <aside class="employee-directory-pane content-card" aria-labelledby="directory-title">
+      <section class="employee-profiles-workspace-layout cc-master-detail" id="employee-master-detail" data-view="list" aria-label="Employee directory and workspace">
+        <aside class="employee-directory-pane content-card cc-master-detail__list" id="employee-directory-view" aria-labelledby="directory-title">
           <div class="card-header">
             <div>
               <p class="directory-eyebrow">People directory</p>
@@ -359,12 +361,16 @@
               <option value="inactive">Archived employees</option>
             </select>
           </div>
+          <div class="cc-master-detail__notice" id="employee-hidden-selection-notice" role="status" hidden>
+            The selected employee is hidden by the current filters.
+            <button class="small-btn cc-master-detail__notice-action" type="button" data-cc-master-detail-reset>Clear filters</button>
+          </div>
           <div class="employee-grid" id="employee-grid">
             <div class="empty-state cc-empty-state">Loading employee profiles...</div>
           </div>
         </aside>
 
-        <section class="employee-workspace-pane" id="employee-workspace" aria-live="polite" aria-label="Employee workspace">
+        <section class="employee-workspace-pane cc-master-detail__detail" id="employee-workspace" aria-label="Employee workspace" tabindex="-1">
           <div class="workspace-empty-state">
             <span class="workspace-empty-icon" aria-hidden="true">&#9783;</span>
             <p class="workspace-kicker">Employee workspace</p>
@@ -373,6 +379,7 @@
           </div>
         </section>
       </section>
+      <p class="cc-master-detail__announcement" id="employee-detail-announcement" aria-live="polite" aria-atomic="true"></p>
       </main>
     </div>
   </div>
@@ -436,6 +443,7 @@
   </div>
 
   <script src="js/permissions.js"></script>
+  <script src="js/maintenance.js"></script>
   <script src="js/app-shell.js"></script>
   <script>
     window.CCPermissions?.requirePageAccess('employee_profiles');
@@ -446,6 +454,12 @@
     const WEEKLY_QUALITY_ENDPOINT = './.netlify/functions/weekly-quality';
     const WEEKLY_QUALITY_STORAGE_KEY = 'cc_weekly_quality_records_v1';
     const ATTENDANCE_STORAGE_KEY = 'cc_attendance_records_v1';
+    const EMPLOYEE_DEPENDENCY_KEYS = {
+      attendance: 'attendance',
+      training: 'agent_training',
+      deductions: 'employee_deductions',
+      quality: 'weekly_quality'
+    };
     const QUALITY_SCORE_LABELS = {
       greetings: 'Greetings',
       knowledge: 'Knowledge',
@@ -463,6 +477,8 @@
     let employees = [];
     let selectedEmployeeId = '';
     let workspaceRequestToken = 0;
+    let masterDetail = null;
+    let dependencyAccessPromise = null;
 
     function authHeaders(extra = {}) {
       return {
@@ -527,7 +543,9 @@
       if (handleAuthFailure(response)) throw new Error('Session expired');
       const data = await response.json().catch(() => ({}));
       if (!response.ok || data.ok === false) {
-        throw new Error(data.error || `Request failed (${response.status})`);
+        const error = new Error(data.error || `Request failed (${response.status})`);
+        error.status = response.status;
+        throw error;
       }
       return data;
     }
@@ -536,16 +554,33 @@
       try {
         const data = await apiRequest(`${EMPLOYEES_ENDPOINT}?status=all`);
         employees = Array.isArray(data.employees) ? data.employees : [];
-        renderEmployees();
-        renderStats();
         const requestedId = selectedEmployeeId || new URLSearchParams(window.location.search).get('employeeId') || '';
-        if (requestedId && employees.some((employee) => employee.employeeId === requestedId)) {
-          await selectEmployee(requestedId, { updateUrl: false, focusWorkspace: false });
+        const requestedEmployee = employees.find((employee) => employee.employeeId === requestedId);
+        globalThis.employeeMasterDetail?.syncInitial(requestedId, {
+          selectedId: requestedEmployee?.status === 'active' ? requestedId : ''
+        });
+        if (requestedEmployee?.status === 'active') {
+          selectedEmployeeId = requestedId;
+          renderEmployees();
+          renderStats();
+          await selectEmployee(requestedId, {
+            updateUrl: false,
+            focusWorkspace: globalThis.employeeMasterDetail?.isMobile(),
+            navigationSource: 'direct'
+          });
         } else if (requestedId) {
           selectedEmployeeId = '';
-          updateWorkspaceUrl('');
-          renderWorkspaceError('The requested employee record could not be found.', false);
+          renderEmployees();
+          renderStats();
+          renderUnavailableWorkspace(
+            requestedEmployee?.status === 'inactive'
+              ? 'This employee is archived and is unavailable for selection.'
+              : 'The requested employee record is missing or inaccessible.'
+          );
         } else {
+          selectedEmployeeId = '';
+          renderEmployees();
+          renderStats();
           renderEmptyWorkspace();
         }
       } catch (error) {
@@ -591,6 +626,12 @@
     function renderEmployees() {
       const filtered = getFilteredEmployees();
       const grid = document.getElementById('employee-grid');
+      const selectedEmployee = employees.find((employee) => employee.employeeId === selectedEmployeeId);
+      const selectionHidden = Boolean(
+        selectedEmployee?.status === 'active' &&
+        !filtered.some((employee) => employee.employeeId === selectedEmployeeId)
+      );
+      globalThis.employeeMasterDetail?.setSelectionHidden(selectionHidden);
       document.getElementById('record-count').textContent =
         `${filtered.length} ${filtered.length === 1 ? 'record' : 'records'}`;
 
@@ -611,7 +652,7 @@
           ? employee.assignedRestaurants.map((name) => `<span class="chip">${escapeHtml(name)}</span>`).join('')
           : '<span class="chip">No restaurants assigned</span>';
         return `
-          <article class="employee-card cc-card${employee.employeeId === selectedEmployeeId ? ' is-selected' : ''}" ${employee.employeeId === selectedEmployeeId ? 'aria-current="true"' : ''}>
+          <article class="employee-card cc-card${employee.employeeId === selectedEmployeeId ? ' is-selected' : ''}" ${employee.employeeId === selectedEmployeeId ? 'aria-current="true"' : ''} data-cc-master-item="${escapeHtml(employee.employeeId)}">
             <button class="employee-card-head employee-select" type="button" data-view-id="${escapeHtml(employee.employeeId)}" aria-label="Open ${escapeHtml(employee.fullName)} workspace">
               <span class="employee-avatar" aria-hidden="true">${escapeHtml(initials)}</span>
               <div class="employee-identity">
@@ -951,32 +992,32 @@
       }).format(date);
     }
 
-    function updateWorkspaceUrl(employeeId) {
+    function updateWorkspaceUrl(employeeId, mode = 'replace', metadata = {}) {
       const url = new URL(window.location.href);
       if (employeeId) url.searchParams.set('employeeId', employeeId);
       else url.searchParams.delete('employeeId');
-      window.history.replaceState(
-        { employeeId: employeeId || '' },
+      const method = mode === 'push' ? 'pushState' : 'replaceState';
+      window.history[method](
+        { ...(window.history.state || {}), ...metadata, employeeId: employeeId || '' },
         '',
         `${url.pathname}${url.search}${url.hash}`
       );
     }
 
     function renderEmptyWorkspace() {
-      document.getElementById('employee-workspace').innerHTML = `
-        <div class="workspace-empty-state">
-          <span class="workspace-empty-icon" aria-hidden="true">&#9783;</span>
-          <p class="workspace-kicker">Employee workspace</p>
-          <h2 class="cc-section-title">Select an employee</h2>
-          <p>Choose a record from the directory to review contact information, assignments, and operational summaries.</p>
-        </div>
-      `;
+      globalThis.employeeMasterDetail?.renderState({
+        state: 'empty-selection',
+        eyebrow: 'Employee workspace',
+        title: 'Select an employee',
+        message: 'Choose a record from the directory to review contact information, assignments, and operational summaries.'
+      });
+      if (!globalThis.employeeMasterDetail) document.getElementById('employee-workspace').innerHTML = '<div class="workspace-empty-state"><h2 class="cc-section-title">Select an employee</h2></div>';
     }
 
     function renderWorkspaceLoading(employeeId) {
       const employee = employees.find((item) => item.employeeId === employeeId);
       document.getElementById('employee-workspace').innerHTML = `
-        <div class="workspace-loading" aria-busy="true">
+        <div class="workspace-loading" aria-busy="true" tabindex="-1" data-cc-detail-focus>
           <div class="workspace-loading-copy">
             <span class="workspace-skeleton skeleton-avatar"></span>
             <div>
@@ -996,66 +1037,141 @@
     }
 
     function renderWorkspaceError(message, retry = true) {
-      document.getElementById('employee-workspace').innerHTML = `
-        <div class="workspace-empty-state workspace-error-state">
-          <span class="workspace-empty-icon" aria-hidden="true">!</span>
-          <p class="workspace-kicker">Workspace unavailable</p>
-          <h2 class="cc-section-title">Employee profile could not be loaded</h2>
-          <p>${escapeHtml(message)}</p>
-          ${retry && selectedEmployeeId
-            ? '<button class="small-btn" type="button" data-retry-workspace>Try again</button>'
-            : ''}
-        </div>
-      `;
+      const action = retry && selectedEmployeeId
+        ? '<button class="small-btn" type="button" data-retry-workspace>Try again</button>'
+        : '';
+      globalThis.employeeMasterDetail?.renderState({
+        state: 'error', eyebrow: 'Workspace error', title: 'Employee profile could not be loaded',
+        message: escapeHtml(message), action
+      });
+      globalThis.employeeMasterDetail?.announce('Employee profile could not be loaded.');
+    }
+
+    function renderUnavailableWorkspace(message, routeId = new URLSearchParams(window.location.search).get('employeeId') || '') {
+      globalThis.employeeMasterDetail?.renderState({
+        state: 'unavailable', eyebrow: 'Workspace unavailable', title: 'Employee is unavailable',
+        message: escapeHtml(message),
+        action: '<button class="small-btn cc-master-detail__back" type="button" data-back-to-directory>Back to directory</button>'
+      });
+      globalThis.employeeMasterDetail?.showDetail('', {
+        routeId,
+        updateHistory: false,
+        focus: globalThis.employeeMasterDetail.isMobile(),
+        rememberOrigin: false
+      });
+      globalThis.employeeMasterDetail?.setSelectionHidden(false);
+      globalThis.employeeMasterDetail?.announce('Employee is unavailable or inaccessible.');
     }
 
     function focusWorkspaceOnSmallScreen() {
-      if (!window.matchMedia('(max-width: 900px)').matches) return;
-      document.getElementById('employee-workspace').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      globalThis.employeeMasterDetail?.focusDetail();
+    }
+
+    function isPermissionDenied(error) {
+      return Number(error?.status) === 403 || /(?:^|\b)403(?:\b|$)|forbidden|not authorized|permission denied/i.test(String(error?.message || error || ''));
+    }
+
+    async function getEmployeeDependencyAccess() {
+      if (!dependencyAccessPromise) {
+        dependencyAccessPromise = Promise.all(Object.entries(EMPLOYEE_DEPENDENCY_KEYS).map(async ([name, key]) => {
+          try {
+            const access = await window.CCPermissions.getMyAccess(key);
+            return [name, access?.canView === true
+              ? 'allowed'
+              : access?.canView === false
+                ? 'denied'
+                : 'unavailable'];
+          } catch {
+            return [name, 'unavailable'];
+          }
+        })).then((entries) => Object.fromEntries(entries));
+      }
+      return dependencyAccessPromise;
     }
 
     async function selectEmployee(employeeId, options = {}) {
       if (!employeeId) return;
+      const directoryEmployee = employees.find((employee) => employee.employeeId === employeeId);
+      if (directoryEmployee?.status === 'inactive') {
+        selectedEmployeeId = '';
+        globalThis.employeeMasterDetail?.showDetail(employeeId, {
+          updateHistory: options.updateUrl !== false,
+          historyMode: options.historyMode
+        });
+        renderEmployees();
+        renderUnavailableWorkspace('This employee is archived and is unavailable for selection.');
+        return;
+      }
       selectedEmployeeId = employeeId;
       const requestToken = ++workspaceRequestToken;
       renderEmployees();
       renderWorkspaceLoading(employeeId);
-      if (options.updateUrl !== false) updateWorkspaceUrl(employeeId);
-      if (options.focusWorkspace !== false) focusWorkspaceOnSmallScreen();
+      if (globalThis.employeeMasterDetail) {
+        globalThis.employeeMasterDetail.showDetail(employeeId, {
+          updateHistory: options.updateUrl !== false,
+          historyMode: options.historyMode,
+          focus: options.focusWorkspace !== false
+        });
+      } else if (options.updateUrl !== false) {
+        updateWorkspaceUrl(employeeId, options.historyMode);
+      }
 
       try {
-        const employee = await getEmployeeProfile(employeeId);
+        const [employee, dependencyAccess] = await Promise.all([
+          getEmployeeProfile(employeeId),
+          getEmployeeDependencyAccess()
+        ]);
         let qualityRecords = [];
         let qualityError = '';
-        try {
-          qualityRecords = await getEmployeeQualityRecords(employee.employeeId);
-        } catch (error) {
-          qualityError = error.message || 'Weekly quality records could not be loaded.';
-          qualityRecords = getStoredQualityRecords(employee);
+        let qualityRestricted = dependencyAccess.quality === 'denied';
+        let qualityPermissionUnavailable = dependencyAccess.quality === 'unavailable';
+        if (dependencyAccess.quality === 'allowed') {
+          try {
+            qualityRecords = await getEmployeeQualityRecords(employee.employeeId);
+          } catch (error) {
+            qualityRestricted = isPermissionDenied(error);
+            qualityError = error.message || 'Weekly quality records could not be loaded.';
+            if (!qualityRestricted) qualityRecords = getStoredQualityRecords(employee);
+          }
         }
         const quality = getQualitySummary(employee, qualityRecords);
         let attendanceRecords = [];
         let attendanceError = '';
-        try {
-          attendanceRecords = await getEmployeeAttendance(employee.employeeId);
-        } catch (error) {
-          attendanceError = error.message || 'Attendance records could not be loaded.';
-          attendanceRecords = getStoredAttendanceRecords(employee);
+        let attendanceRestricted = dependencyAccess.attendance === 'denied';
+        let attendancePermissionUnavailable = dependencyAccess.attendance === 'unavailable';
+        if (dependencyAccess.attendance === 'allowed') {
+          try {
+            attendanceRecords = await getEmployeeAttendance(employee.employeeId);
+          } catch (error) {
+            attendanceRestricted = isPermissionDenied(error);
+            attendanceError = error.message || 'Attendance records could not be loaded.';
+            if (!attendanceRestricted) attendanceRecords = getStoredAttendanceRecords(employee);
+          }
         }
         const attendance = getAttendanceSummary(employee, attendanceRecords);
         let deductionRecords = [];
         let deductionsError = '';
+        let deductionsRestricted = dependencyAccess.deductions === 'denied';
+        let deductionsPermissionUnavailable = dependencyAccess.deductions === 'unavailable';
         let trainingRecords = [];
         let trainingError = '';
-        try {
-          deductionRecords = await getEmployeeDeductions(employee.employeeId);
-        } catch (error) {
-          deductionsError = error.message || 'Deductions could not be loaded.';
+        let trainingRestricted = dependencyAccess.training === 'denied';
+        let trainingPermissionUnavailable = dependencyAccess.training === 'unavailable';
+        if (dependencyAccess.deductions === 'allowed') {
+          try {
+            deductionRecords = await getEmployeeDeductions(employee.employeeId);
+          } catch (error) {
+            deductionsRestricted = isPermissionDenied(error);
+            deductionsError = error.message || 'Deductions could not be loaded.';
+          }
         }
-        try {
-          trainingRecords = await getEmployeeTraining(employee.employeeId);
-        } catch (error) {
-          trainingError = error.message || 'Training records could not be loaded.';
+        if (dependencyAccess.training === 'allowed') {
+          try {
+            trainingRecords = await getEmployeeTraining(employee.employeeId);
+          } catch (error) {
+            trainingRestricted = isPermissionDenied(error);
+            trainingError = error.message || 'Training records could not be loaded.';
+          }
         }
         if (requestToken !== workspaceRequestToken || employeeId !== selectedEmployeeId) return;
         const contacts = employee.emergencyContacts.length
@@ -1251,24 +1367,40 @@
               : ''}
           `
           : '';
-        const qualityValue = quality.records.length ? formatScore(quality.average) : '-';
-        const attendanceState = attendanceError
+        const qualityValue = qualityRestricted || qualityPermissionUnavailable ? '-' : quality.records.length ? formatScore(quality.average) : '-';
+        const attendanceState = attendanceRestricted
+          ? 'Restricted'
+          : attendancePermissionUnavailable
+          ? 'Permission unavailable'
+          : attendanceError
           ? attendance.records.length ? 'Browser fallback' : 'Unavailable'
           : `${attendance.records.length} linked record${attendance.records.length === 1 ? '' : 's'}`;
-        const qualityState = qualityError
+        const qualityState = qualityRestricted
+          ? 'Restricted'
+          : qualityPermissionUnavailable
+          ? 'Permission unavailable'
+          : qualityError
           ? quality.records.length ? 'Browser fallback' : 'Unavailable'
           : `${quality.records.length} evaluation${quality.records.length === 1 ? '' : 's'}`;
-        const trainingState = trainingError
+        const trainingState = trainingRestricted
+          ? 'Restricted'
+          : trainingPermissionUnavailable
+          ? 'Permission unavailable'
+          : trainingError
           ? 'Unavailable'
           : `${trainingRecords.length} linked record${trainingRecords.length === 1 ? '' : 's'}`;
-        const deductionsState = deductionsError
+        const deductionsState = deductionsRestricted
+          ? 'Restricted'
+          : deductionsPermissionUnavailable
+          ? 'Permission unavailable'
+          : deductionsError
           ? 'Unavailable'
           : `${deductionRecords.length} linked record${deductionRecords.length === 1 ? '' : 's'}`;
 
         document.getElementById('employee-workspace').innerHTML = `
           <button class="workspace-back-btn small-btn" type="button" data-back-to-directory>&larr; Back to directory</button>
 
-          <header class="workspace-profile-header">
+          <header class="workspace-profile-header" tabindex="-1" data-cc-detail-focus>
             <div class="workspace-profile-identity">
               <span class="workspace-avatar" aria-hidden="true">${escapeHtml(getEmployeeInitials(employee.fullName))}</span>
               <div>
@@ -1321,27 +1453,44 @@
           <section class="workspace-summary-section" aria-label="Employee operational summaries">
             <div class="workspace-card-heading"><div><p class="workspace-kicker">At a glance</p><h3>Operational Summary</h3></div></div>
             <div class="workspace-summary-grid">
-              <article><span>Attendance count</span><strong>${attendance.records.length}</strong><small>${escapeHtml(attendanceState)}</small></article>
+              <article><span>Attendance count</span><strong>${attendanceRestricted || attendancePermissionUnavailable ? '-' : attendance.records.length}</strong><small>${escapeHtml(attendanceState)}</small></article>
               <article><span>Quality score</span><strong>${escapeHtml(qualityValue)}</strong><small>${escapeHtml(qualityState)}</small></article>
-              <article><span>Training count</span><strong>${trainingRecords.length}</strong><small>${escapeHtml(trainingState)}</small></article>
-              <article><span>Deductions count</span><strong>${deductionRecords.length}</strong><small>${escapeHtml(deductionsState)}</small></article>
+              <article><span>Training count</span><strong>${trainingRestricted || trainingPermissionUnavailable ? '-' : trainingRecords.length}</strong><small>${escapeHtml(trainingState)}</small></article>
+              <article><span>Deductions count</span><strong>${deductionsRestricted || deductionsPermissionUnavailable ? '-' : deductionRecords.length}</strong><small>${escapeHtml(deductionsState)}</small></article>
             </div>
           </section>
 
           <section class="workspace-modules-section" aria-label="Linked employee modules">
             <div class="workspace-card-heading"><div><p class="workspace-kicker">Linked modules</p><h3>Detailed Workspaces</h3></div><span class="section-source">Phase 1</span></div>
             <div class="workspace-module-grid">
-              <article><span class="workspace-module-icon" aria-hidden="true">A</span><div><h5>Attendance</h5><p>${escapeHtml(attendanceState)}</p></div><small>Detailed workspace coming next</small></article>
-              <article><span class="workspace-module-icon" aria-hidden="true">Q</span><div><h5>Weekly Quality</h5><p>${escapeHtml(qualityState)}</p></div><small>Detailed workspace coming next</small></article>
-              <article><span class="workspace-module-icon" aria-hidden="true">T</span><div><h5>Training</h5><p>${escapeHtml(trainingState)}</p></div><small>Detailed workspace coming next</small></article>
-              <article><span class="workspace-module-icon" aria-hidden="true">D</span><div><h5>Deductions</h5><p>${escapeHtml(deductionsState)}</p></div><small>Detailed workspace coming next</small></article>
+              <article data-module-permission="attendance" data-state="${attendanceRestricted ? 'restricted' : attendancePermissionUnavailable ? 'permission-unavailable' : attendanceError ? attendance.records.length ? 'degraded' : 'error' : attendance.records.length ? 'success' : 'empty'}"><span class="workspace-module-icon" aria-hidden="true">A</span><div><h5>Attendance</h5><p>${escapeHtml(attendanceState)}</p></div><small>${attendanceRestricted ? 'Permission required' : attendancePermissionUnavailable ? 'Permission could not be verified' : 'Detailed workspace coming next'}</small></article>
+              <article data-module-permission="weekly_quality" data-state="${qualityRestricted ? 'restricted' : qualityPermissionUnavailable ? 'permission-unavailable' : qualityError ? quality.records.length ? 'degraded' : 'error' : quality.records.length ? 'success' : 'empty'}"><span class="workspace-module-icon" aria-hidden="true">Q</span><div><h5>Weekly Quality</h5><p>${escapeHtml(qualityState)}</p></div><small>${qualityRestricted ? 'Permission required' : qualityPermissionUnavailable ? 'Permission could not be verified' : 'Detailed workspace coming next'}</small></article>
+              <article data-module-permission="agent_training" data-state="${trainingRestricted ? 'restricted' : trainingPermissionUnavailable ? 'permission-unavailable' : trainingError ? 'error' : trainingRecords.length ? 'success' : 'empty'}"><span class="workspace-module-icon" aria-hidden="true">T</span><div><h5>Training</h5><p>${escapeHtml(trainingState)}</p></div><small>${trainingRestricted ? 'Permission required' : trainingPermissionUnavailable ? 'Permission could not be verified' : 'Detailed workspace coming next'}</small></article>
+              <article data-module-permission="employee_deductions" data-state="${deductionsRestricted ? 'restricted' : deductionsPermissionUnavailable ? 'permission-unavailable' : deductionsError ? 'error' : deductionRecords.length ? 'success' : 'empty'}"><span class="workspace-module-icon" aria-hidden="true">D</span><div><h5>Deductions</h5><p>${escapeHtml(deductionsState)}</p></div><small>${deductionsRestricted ? 'Permission required' : deductionsPermissionUnavailable ? 'Permission could not be verified' : 'Detailed workspace coming next'}</small></article>
             </div>
           </section>
         `;
         window.CCPermissions?.applyPermissionVisibility(window.CC_PAGE_ACCESS);
+        const partialDetail = [attendanceRestricted, attendancePermissionUnavailable, qualityRestricted, qualityPermissionUnavailable,
+          trainingRestricted, trainingPermissionUnavailable, deductionsRestricted, deductionsPermissionUnavailable,
+          Boolean(attendanceError), Boolean(qualityError), Boolean(trainingError), Boolean(deductionsError)].some(Boolean);
+        globalThis.employeeMasterDetail?.announce(partialDetail
+          ? `${employee.fullName} details updated. Some linked modules are restricted or unavailable.`
+          : `${employee.fullName} details updated.`);
+        if (options.focusWorkspace !== false) focusWorkspaceOnSmallScreen();
       } catch (error) {
         if (requestToken !== workspaceRequestToken || employeeId !== selectedEmployeeId) return;
-        renderWorkspaceError(error.message);
+        if (isPermissionDenied(error) || [404, 410].includes(Number(error?.status))) {
+          selectedEmployeeId = '';
+          renderEmployees();
+          renderUnavailableWorkspace(
+            isPermissionDenied(error) ? 'This employee record is inaccessible.' : 'This employee record is no longer available.',
+            employeeId
+          );
+        } else {
+          renderWorkspaceError(error.message);
+          if (options.focusWorkspace !== false) focusWorkspaceOnSmallScreen();
+        }
       }
     }
 
@@ -1440,6 +1589,63 @@
       });
     }
 
+    function resetEmployeeFilters() {
+      document.getElementById('employee-search').value = '';
+      document.getElementById('status-filter').value = 'all';
+      renderEmployees();
+      const selectedButton = Array.from(document.querySelectorAll('[data-cc-master-item]'))
+        .find((item) => item.dataset.ccMasterItem === selectedEmployeeId)
+        ?.querySelector('.employee-select');
+      (selectedButton || document.getElementById('employee-search')).focus({ preventScroll: true });
+    }
+
+    async function handleEmployeeHistoryNavigation(employeeId) {
+      if (!employeeId) {
+        selectedEmployeeId = '';
+        workspaceRequestToken += 1;
+        renderEmployees();
+        renderEmptyWorkspace();
+        return;
+      }
+      const employee = employees.find((item) => item.employeeId === employeeId);
+      if (!employee || employee.status !== 'active') {
+        selectedEmployeeId = '';
+        workspaceRequestToken += 1;
+        renderEmployees();
+        renderUnavailableWorkspace(employee?.status === 'inactive'
+          ? 'This employee is archived and is unavailable for selection.'
+          : 'The requested employee record is missing or inaccessible.');
+        return;
+      }
+      await selectEmployee(employeeId, { updateUrl: false, focusWorkspace: true, navigationSource: 'popstate' });
+    }
+
+    masterDetail = window.CloudCrowdMasterDetail.create({
+      root: document.getElementById('employee-master-detail'),
+      list: document.getElementById('employee-directory-view'),
+      detail: document.getElementById('employee-workspace'),
+      announcement: document.getElementById('employee-detail-announcement'),
+      hiddenNotice: document.getElementById('employee-hidden-selection-notice'),
+      history: {
+        read: () => new URLSearchParams(window.location.search).get('employeeId') || '',
+        readState: () => window.history.state,
+        write: (employeeId, mode, metadata) => updateWorkspaceUrl(employeeId, mode, metadata),
+        back: () => window.history.back()
+      },
+      historyKey: 'employee-profiles',
+      getItem: (employeeId) => Array.from(document.querySelectorAll('[data-cc-master-item]'))
+        .find((item) => item.dataset.ccMasterItem === employeeId)
+        ?.querySelector('.employee-select'),
+      getListFallback: () => document.getElementById('employee-search'),
+      getDetailFocus: () => document.querySelector('[data-cc-detail-focus]') || document.getElementById('employee-workspace'),
+      onNavigate: handleEmployeeHistoryNavigation,
+      onResetFilters: resetEmployeeFilters
+    });
+    globalThis.employeeMasterDetail = masterDetail;
+
+    const maintenance = window.CloudCrowdMaintenance.createLifecycle();
+    maintenance.startEnforcement();
+
     const activeModule = window.CloudCrowdAppShell.getModuleById('employee-profiles');
     window.CloudCrowdAppShell.buildSidebar(
       document.getElementById('employee-profiles-app-sidebar'),
@@ -1484,8 +1690,12 @@
       if (archiveButton) archiveEmployee(archiveButton.dataset.archiveId);
       if (retryButton && selectedEmployeeId) selectEmployee(selectedEmployeeId, { updateUrl: false });
       if (backButton) {
-        document.querySelector('.employee-directory-pane').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        document.getElementById('employee-search').focus({ preventScroll: true });
+        const restoreId = globalThis.employeeMasterDetail.getFocusOriginId();
+        selectedEmployeeId = '';
+        workspaceRequestToken += 1;
+        renderEmployees();
+        renderEmptyWorkspace();
+        globalThis.employeeMasterDetail.backToList({ restoreFocus: true, restoreId });
       }
     });
 
