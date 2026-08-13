@@ -47,6 +47,7 @@ class FakeElement {
     this.innerHTML = "";
     this.className = "";
     this.classList = new FakeClassList();
+    this.dataset = {};
     this.style = {};
     this.options = [];
     this.selectedIndex = 0;
@@ -55,6 +56,7 @@ class FakeElement {
   }
   addEventListener(type, listener) { this.listeners.set(type, listener); }
   setAttribute(name, value) { this[name] = String(value); }
+  removeAttribute(name) { delete this[name]; }
   querySelector() { return null; }
   querySelectorAll() { return []; }
   reset() {}
@@ -110,7 +112,12 @@ function loadBusiness(source, marker, exposure, options = {}) {
     clearTimeout() {},
     confirm: () => true,
     alert() {},
-    CCPermissions: { requirePageAccess: async () => ({ canView: true }) },
+    CCPermissions: {
+      requirePageAccess: async () => ({ canView: true }),
+      canAccessModule: async () => true,
+      getMyAccess: async () => ({ canView: true, legacyFallback: false }),
+      applyPermissionVisibility() {}
+    },
     fetch: async (url, requestOptions = {}) => {
       fetchCalls.push({ url, options: requestOptions });
       if (!context.fetchHandler) throw new Error("No fetch handler configured");
@@ -124,6 +131,22 @@ function loadBusiness(source, marker, exposure, options = {}) {
     inline(element, message) { element.textContent = message || ""; element.hidden = !message; return element; },
     banner(element, message) { element.textContent = message || ""; element.hidden = !message; return element; },
     clear(element) { element.textContent = ""; element.hidden = true; }
+  };
+  context.CloudCrowdMasterDetail = {
+    create() {
+      return {
+        announce(message) { document.getElementById("client-detail-announcement").textContent = message || ""; },
+        renderState({ title = "", message = "", action = "" } = {}) {
+          document.getElementById("client-workspace").innerHTML = `${title}${message}${action}`;
+        },
+        showDetail() {},
+        backToList() {},
+        setSelectionHidden() {},
+        syncInitial() {},
+        getFocusOriginId() { return ""; },
+        isMobile() { return false; }
+      };
+    }
   };
   vm.runInNewContext(`${script.slice(0, markerIndex)}\n${exposure}`, context);
   return { context, document, localStorage, fetchCalls, api: context.__api };
@@ -467,8 +490,9 @@ test("Client Profiles preserves role gates, fallback matching, integrations, cal
   assert.equal(JSON.parse(loaded.fetchCalls[0].options.body).brandName, "Cloud Kitchen");
   loaded.document.getElementById("restaurant-id").value = "restaurant-4";
   await loaded.api.saveClient({ preventDefault() {}, currentTarget: { reportValidity: () => true } });
-  assert.equal(loaded.fetchCalls[2].url, "/.netlify/functions/restaurants?id=restaurant-4");
-  assert.equal(loaded.fetchCalls[2].options.method, "PUT");
+  const updateCall = loaded.fetchCalls.find((call) => call.options.method === "PUT");
+  assert.equal(updateCall.url, "/.netlify/functions/restaurants?id=restaurant-4");
+  assert.equal(updateCall.options.method, "PUT");
 
   loaded.api.setRestaurants([
     { restaurantId: "r1", brandName: "Cloud Kitchen", status: "active", accountManagerName: "Alice" },
@@ -504,8 +528,7 @@ test("Client Profiles preserves role gates, fallback matching, integrations, cal
     "./.netlify/functions/restaurant-ratings?restaurantId=r1",
     "./.netlify/functions/weekly-quality?restaurantId=r1"
   ]);
-  assert.equal(loaded.document.getElementById("profile-modal").classList.contains("open"), true);
-  loaded.api.closeModal("profile-modal");
+  assert.match(loaded.document.getElementById("client-workspace").innerHTML, /Cloud Kitchen/);
   assert.equal(loaded.document.getElementById("profile-modal").classList.contains("open"), false);
 
   const source = pages["client-profiles.html"];
@@ -517,7 +540,8 @@ test("Client Profiles preserves role gates, fallback matching, integrations, cal
   assert.match(source, /WEEKLY_QUALITY_ENDPOINT.*restaurantId/);
   ["Complaints", "Free Orders", "Call Queue"].forEach((label) => assert.match(source, new RegExp(`'${label}'`)));
   assert.match(source, /id="stat-agents">0<\/strong>/);
-  assert.match(source, /#profile-modal \.modal-panel\{width:min\(1120px,100%\)\}/);
+  assert.match(source, /id="client-master-detail"/);
+  assert.match(source, /id="client-workspace"/);
   assert.match(source, /\.profile-table\{width:100%;min-width:680px/);
 });
 
@@ -743,7 +767,8 @@ test("wide tables retain horizontal access at desktop and narrow viewports", () 
     assert.match(pages[page], new RegExp(`min-width:\\s*${width}`));
   });
   assert.match(read("app-shell.css"), /\.cc-shell-main\s*\{[\s\S]*?min-width:\s*0/);
-  assert.match(pages["client-profiles.html"], /#profile-modal \.modal-panel\{width:min\(1120px,100%\)\}/);
+  assert.match(pages["client-profiles.html"], /id="client-workspace"/);
+  assert.doesNotMatch(pages["client-profiles.html"], /id="profile-modal"/);
   pageNames.forEach((page) => {
     assert.match(pages[page], /\.modal-panel\s*\{[\s\S]*?max-height:\s*[^;]+;[\s\S]*?overflow(?:-y)?:\s*auto/);
   });

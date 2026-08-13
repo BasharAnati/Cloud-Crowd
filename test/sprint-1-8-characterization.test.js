@@ -153,7 +153,7 @@ test("profile table ordering, limits, and containment remain page-owned", () => 
   assert.match(client, /latestAssignedRows[\s\S]*\.slice\(0, 6\)/);
   assert.match(client, /qualitySortTime\(b\) - qualitySortTime\(a\)[\s\S]*\.slice\(0, 5\)/);
   assert.match(client, /ratingSortTime\(b\) - ratingSortTime\(a\)[\s\S]*\.slice\(0, 5\)/);
-  assert.match(client, /id="profile-modal"[\s\S]*<details class="quality-details">[\s\S]*<summary>View Details<\/summary>/);
+  assert.match(client, /id="client-workspace"[\s\S]*<details class="quality-details">[\s\S]*<summary>View Details<\/summary>/);
 });
 
 test("row action order, button type, identifiers, and confirmation paths are frozen", () => {

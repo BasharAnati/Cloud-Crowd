@@ -464,8 +464,7 @@ test("responsive geometry and actual cascade keep panels reachable at seven view
     ["Weekly", "weekly-quality.html", "details-modal", ["modal-panel", "cc-dialog__panel"], 820],
     ["Employee", "employee-profiles.html", "employee-modal", ["modal-panel", "cc-dialog__panel"], 920],
     ["Deductions", "employee-deductions.html", "deduction-modal", ["modal-panel", "cc-dialog__panel"], 940],
-    ["Client", "client-profiles.html", "client-modal", ["modal-panel", "cc-dialog__panel"], 940],
-    ["Client Profile", "client-profiles.html", "profile-modal", ["modal-panel", "cc-dialog__panel", "cc-dialog__panel--1120"], 1120]
+    ["Client", "client-profiles.html", "client-modal", ["modal-panel", "cc-dialog__panel"], 940]
   ];
   for (const viewportWidth of widths) {
     for (const [name, page, id, classes, expected] of families) {

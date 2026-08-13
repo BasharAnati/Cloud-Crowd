@@ -151,10 +151,8 @@ function longTextTree(page, theme = "light") {
   }
 
   if (page === "client-profiles.html") {
-    const modal = element("div", { id: "profile-modal", classes: ["modal", "open"] }, body);
-    const panel = element("div", { classes: ["modal-panel"] }, modal);
-    const modalBody = element("div", { id: "profile-modal-body", classes: ["modal-body"] }, panel);
-    const section = element("section", { classes: ["detail-section"] }, modalBody);
+    const workspace = element("section", { id: "client-workspace", classes: ["client-workspace-pane"] }, body);
+    const section = element("section", { classes: ["detail-section"] }, workspace);
     const wrapper = element("div", { classes: ["profile-table-wrap", "cc-table-wrap"] }, section);
     const table = element("table", { classes: ["profile-table", "cc-table", "cc-table--compact"] }, wrapper);
     const tbody = element("tbody", {}, table);
@@ -459,14 +457,14 @@ test("responsive geometry preserves internal scrolling and final-column reachabi
   assert.equal(cascade.resolveValue(wrapper, cascade.winner(wrapper, "overflow-x").value), "auto");
 });
 
-test("profile and modal tables retain contained, single-owner horizontal scrolling", () => {
+test("profile tables retain contained, single-owner horizontal scrolling", () => {
   const employee = read("employee-profiles.html");
   assert.match(employee, /id="employee-workspace"[\s\S]*profile-table-wrap cc-table-wrap/);
   assert.equal((employee.match(/profile-table-wrap cc-table-wrap/g) || []).length, 3);
   const client = read("client-profiles.html");
-  assert.match(client, /id="profile-modal"[\s\S]*profile-table-wrap cc-table-wrap/);
+  assert.match(client, /id="client-workspace"[\s\S]*profile-table-wrap cc-table-wrap/);
   assert.equal((client.match(/profile-table-wrap cc-table-wrap/g) || []).length, 3);
-  assert.match(client, /#profile-modal \.modal-panel\{width:min\(1120px,100%\)\}/);
+  assert.doesNotMatch(client, /id="profile-modal"/);
   assert.match(read("assets/css/components/tables.css"), /overflow-y:\s*visible/);
 });
 
@@ -516,7 +514,7 @@ test("higher-specificity long-text clipping mutations win the cascade and fail t
     {
       page: "client-profiles.html",
       label: "Client quality details mutation",
-      css: `.business-quality-page.client-profiles-page #profile-modal .modal-panel .profile-table.cc-table td .quality-details div {
+      css: `.business-quality-page.client-profiles-page #client-workspace .profile-table.cc-table td .quality-details div {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;

@@ -18,12 +18,12 @@ const STATIC_DIALOGS = {
   "restaurant-ratings.html": ["rating-modal", "details-modal"],
   "weekly-quality.html": ["details-modal"],
   "employee-profiles.html": ["employee-modal"],
-  "client-profiles.html": ["profile-modal", "client-modal"],
+  "client-profiles.html": ["client-modal"],
   "free-order-requests.html": ["request-modal", "details-modal", "view-modal"],
   "free-order-share.html": ["response-modal", "view-modal"]
 };
 
-test("all eighteen static dialog roots retain their approved IDs and titles", () => {
+test("all seventeen static dialog roots retain their approved IDs and titles", () => {
   let count = 0;
   for (const [page, ids] of Object.entries(STATIC_DIALOGS)) {
     const source = read(page);
@@ -32,7 +32,7 @@ test("all eighteen static dialog roots retain their approved IDs and titles", ()
       count += 1;
     }
   }
-  assert.equal(count, 18);
+  assert.equal(count, 17);
   for (const page of ["cctv.html", "ce.html", "complaints.html", "free-orders.html"]) {
     assert.match(read(page), /<h2[^>]*class="[^"]*cc-modal-title[^"]*"[^>]*>Add New Ticket<\/h2>/);
   }
@@ -68,8 +68,7 @@ test("approved compatibility widths remain explicit", () => {
     ["weekly-quality.html", /width:\s*min\(820px,\s*100%\)/],
     ["employee-profiles.html", /width:min\(920px,100%\)/],
     ["employee-deductions.html", /width:min\(940px,100%\)/],
-    ["client-profiles.html", /width:min\(940px,100%\)/],
-    ["client-profiles.html", /width:min\(1120px,100%\)/]
+    ["client-profiles.html", /width:min\(940px,100%\)/]
   ];
   for (const [file, pattern] of contracts) assert.match(read(file), pattern, file);
 });

@@ -197,20 +197,36 @@ function employeeSelectionHarness(options = {}) {
 
 function clientViewHarness(options = {}) {
   const document = options.document || documentFixture({
-    "profile-modal-title": { textContent: "" },
-    "profile-modal-body": { innerHTML: "" }
+    "client-workspace": { innerHTML: "" }
   });
-  const opened = [];
+  const events = [];
   const messages = [];
+  const restaurants = options.restaurants || [restaurantFixture("r1")];
+  const masterDetail = options.masterDetail || {
+    showDetail: (...args) => events.push(["show-detail", ...args]),
+    announce: (message) => events.push(["announce", message]),
+    isMobile: () => false
+  };
   const context = {
     document,
-    window: options.window || {},
+    window: options.window || { CCPermissions: { applyPermissionVisibility() {} }, CC_PAGE_ACCESS: {} },
+    restaurants,
+    selectedRestaurantId: "",
+    workspaceRequestToken: 0,
+    clientMasterDetail: masterDetail,
+    renderRestaurants: () => events.push(["directory"]),
+    renderWorkspaceLoading: (id) => { document.getElementById("client-workspace").innerHTML = `loading:${id}`; events.push(["loading", id]); },
+    renderEmptyWorkspace: () => { document.getElementById("client-workspace").innerHTML = "empty-selection"; events.push(["empty-selection"]); },
+    renderUnavailableWorkspace: (message, id) => { document.getElementById("client-workspace").innerHTML = `unavailable:${id}:${message}`; events.push(["unavailable", id]); },
+    renderWorkspaceError: (message) => { document.getElementById("client-workspace").innerHTML = `error:${message}`; events.push(["error", message]); },
     getRestaurantProfile: options.getRestaurantProfile,
+    getClientDependencyAccess: options.getClientDependencyAccess || (async () => ({ training: "allowed", quality: "allowed", ratings: "allowed" })),
     getRestaurantTraining: options.getRestaurantTraining || (async () => []),
     getRestaurantRatings: options.getRestaurantRatings || (async () => []),
-    loadClientQualityRecords: options.loadClientQualityRecords || (async () => ({ records: [], error: "" })),
+    loadClientQualityRecords: options.loadClientQualityRecords || (async () => ({ records: [], error: "", degraded: false })),
     renderTrainingSection: options.renderTrainingSection || ((records, error) => `training:${records.length}:${error}`),
     renderDeliveryRatingsSection: options.renderDeliveryRatingsSection || ((records, error) => `ratings:${records.length}:${error}`),
+    renderDependencyState: options.renderDependencyState || ((label, state) => `${label}:${state}`),
     renderQualityFallbackNotice: options.renderQualityFallbackNotice || ((error) => `quality-error:${error}`),
     renderQualityPerformanceSection: options.renderQualityPerformanceSection || ((records) => `quality:${records.length}`),
     renderWeakAreasSection: options.renderWeakAreasSection || ((records) => `weak:${records.length}`),
@@ -218,11 +234,133 @@ function clientViewHarness(options = {}) {
     statusBadge: (status) => status,
     valueOrDash: (value) => String(value || "-"),
     escapeHtml: (value) => String(value ?? ""),
-    openModal: (id) => opened.push([id, document.getElementById("profile-modal-title").textContent]),
+    isPermissionDenied: options.isPermissionDenied || ((error) => Number(error?.status) === 403 || /403|forbidden|permission denied/i.test(String(error?.message || error || ""))),
     showMessage: (message) => messages.push(message)
   };
-  const api = evaluateFunctions(clientSource, ["viewRestaurant"], context);
-  return { ...api, document, opened, messages };
+  const api = evaluateFunctions(clientSource, ["viewRestaurant", "handleClientHistoryNavigation"], context);
+  return { ...api, context: api.sandbox, document, events, messages };
+}
+
+function integratedClientHistoryHarness(options = {}) {
+  const mobile = Boolean(options.mobile);
+  const initialUrl = options.initialUrl || "https://example.test/client-profiles.html?status=all#clients";
+  const listeners = new Map();
+  const focus = [];
+  const writes = [];
+  const profileCalls = [];
+  const announcements = [];
+  let activeElement = null;
+  let navigationPromise = Promise.resolve();
+  let profileResponder = options.getRestaurantProfile || (async (id) => options.restaurants.find((record) => record.restaurantId === id));
+  const element = (name) => ({
+    name, dataset: {}, hidden: false, innerHTML: "", textContent: "",
+    focus() { focus.push(name); activeElement = this; },
+    getClientRects: () => [1], querySelector: () => null,
+    contains(candidate) { return candidate === this; }
+  });
+  const root = element("root");
+  const list = element("list");
+  const detail = element("detail");
+  const heading = element("detail-heading");
+  const search = element("search");
+  const announcement = element("announcement");
+  const hiddenNotice = { ...element("hidden-notice"), hidden: true };
+  const items = new Map(options.restaurants.map((record) => [record.restaurantId, element(`item-${record.restaurantId}`)]));
+  const document = documentFixture({
+    "client-workspace": detail,
+    "client-detail-announcement": announcement
+  });
+  document.head = null;
+  Object.defineProperty(document, "activeElement", { get: () => activeElement });
+
+  const location = { href: initialUrl, search: new URL(initialUrl).search };
+  const stack = [{ href: initialUrl, state: {} }];
+  let index = 0;
+  function syncLocation(href) {
+    const url = new URL(href, location.href);
+    location.href = url.href;
+    location.search = url.search;
+  }
+  async function traverse(nextIndex) {
+    if (nextIndex < 0 || nextIndex >= stack.length || nextIndex === index) return;
+    index = nextIndex;
+    syncLocation(stack[index].href);
+    navigationPromise = Promise.resolve(listeners.get("popstate")?.());
+    await navigationPromise;
+  }
+  const history = {
+    get state() { return stack[index].state; },
+    replaceState(state, _title, href) {
+      writes.push(["replace", new URL(href, location.href).searchParams.get("restaurantId") || "", state]);
+      stack[index] = { href: new URL(href, location.href).href, state };
+      syncLocation(stack[index].href);
+    },
+    pushState(state, _title, href) {
+      writes.push(["push", new URL(href, location.href).searchParams.get("restaurantId") || "", state]);
+      stack.splice(index + 1);
+      stack.push({ href: new URL(href, location.href).href, state });
+      index += 1;
+      syncLocation(stack[index].href);
+    },
+    back() { void traverse(index - 1); }
+  };
+  const media = { matches: mobile, addEventListener() {} };
+  const window = {
+    document, location, history, window: null, CCPermissions: { applyPermissionVisibility() {} }, CC_PAGE_ACCESS: {},
+    matchMedia: () => media,
+    setTimeout(callback) { callback(); },
+    addEventListener(type, listener) { listeners.set(type, listener); }
+  };
+  window.window = window;
+  vm.runInNewContext(options.masterSource || masterDetailSource, { window });
+
+  const context = {
+    document, window, restaurants: options.restaurants, selectedRestaurantId: "", workspaceRequestToken: 0,
+    clientMasterDetail: null,
+    renderRestaurants() {},
+    getRestaurantProfile: async (id) => { profileCalls.push(id); return profileResponder(id); },
+    getClientDependencyAccess: async () => ({ training: "allowed", quality: "allowed", ratings: "allowed" }),
+    getRestaurantTraining: async () => [], getRestaurantRatings: async () => [],
+    loadClientQualityRecords: async () => ({ records: [], error: "", degraded: false }),
+    renderTrainingSection: () => "training", renderDeliveryRatingsSection: () => "ratings",
+    renderDependencyState: (label, state) => `${label}:${state}`,
+    renderQualityFallbackNotice: () => "", renderQualityPerformanceSection: () => "quality", renderWeakAreasSection: () => "weak",
+    logoMarkup: (restaurant) => `logo:${restaurant.restaurantId}`, statusBadge: String,
+    valueOrDash: (value) => String(value || "-"), escapeHtml: (value) => String(value ?? ""),
+    isPermissionDenied: (error) => [401, 403].includes(Number(error?.status)), showMessage() {}
+  };
+  const names = [
+    "updateClientUrl", "renderEmptyWorkspace", "renderWorkspaceLoading", "renderWorkspaceError",
+    "renderUnavailableWorkspace", "viewRestaurant", "handleClientHistoryNavigation", "backToClientDirectory"
+  ];
+  const api = evaluateFunctions(clientSource, names, context, options.clientOverrides || {});
+  const controller = window.CloudCrowdMasterDetail.create({
+    root, list, detail, announcement, hiddenNotice, mediaQuery: media,
+    history: {
+      read: () => new URLSearchParams(location.search).get("restaurantId") || "",
+      readState: () => history.state,
+      write: (id, mode, metadata) => api.updateClientUrl(id, mode, metadata),
+      back: () => history.back()
+    },
+    historyKey: "client-profiles",
+    getItem: (id) => items.get(id), getListFallback: () => search, getDetailFocus: () => heading,
+    onNavigate: api.handleClientHistoryNavigation
+  });
+  api.sandbox.clientMasterDetail = controller;
+  controller.syncInitial(new URLSearchParams(location.search).get("restaurantId") || "");
+  Object.defineProperty(announcement, "textContent", {
+    get() { return this._text || ""; },
+    set(value) { this._text = String(value); if (value) announcements.push(String(value)); }
+  });
+  return {
+    api, controller, detail, list, focus, writes, profileCalls, announcements,
+    ids: () => stack.map((entry) => new URL(entry.href).searchParams.get("restaurantId") || ""),
+    currentId: () => new URL(stack[index].href).searchParams.get("restaurantId") || "",
+    currentState: () => stack[index].state,
+    back: () => traverse(index - 1), forward: () => traverse(index + 1),
+    navigation: () => navigationPromise,
+    setProfileResponder(responder) { profileResponder = responder; }
+  };
 }
 
 function linkedStyles(source) {
@@ -269,10 +407,14 @@ function profileLayoutTargets(page, width) {
     return { cascade, layout, directory, workspace, card, select, back };
   }
   const body = cssElement("body", { classes: ["business-quality-page", "client-profiles-page"] }, html);
-  const grid = cssElement("div", { classes: ["client-grid"] }, body);
-  const modal = cssElement("div", { id: "profile-modal", classes: ["modal"] }, body);
-  const panel = cssElement("div", { classes: ["modal-panel"] }, modal);
-  return { cascade, grid, modal, panel };
+  const layout = cssElement("section", { classes: ["client-profiles-workspace-layout", "cc-master-detail"], attributes: { "data-view": "detail" } }, body);
+  const directory = cssElement("aside", { classes: ["client-directory-pane", "content-card", "cc-master-detail__list"] }, layout);
+  const workspace = cssElement("section", { classes: ["client-workspace-pane", "content-card", "cc-master-detail__detail"] }, layout);
+  const grid = cssElement("div", { classes: ["client-grid"] }, directory);
+  const card = cssElement("article", { classes: ["client-card", "cc-card", "is-selected"] }, grid);
+  const select = cssElement("button", { classes: ["small-btn", "client-select"], states: ["focus-visible"] }, card);
+  const back = cssElement("button", { classes: ["small-btn", "cc-master-detail__back"] }, workspace);
+  return { cascade, layout, directory, workspace, grid, card, select, back };
 }
 
 async function permissionRuntimeFixture(profileKey, deniedKeys, document) {
@@ -596,7 +738,7 @@ test("Employee URL adapter and shared history stack avoid duplicate mobile list 
   const desktop = sharedController(false);
   desktop.controller.showDetail("desktop", { focus: true });
   assert.deepEqual(desktop.writes.map(([id, mode]) => [id, mode]), [["desktop", "replace"]]);
-  assert.deepEqual(desktop.focus, [], "desktop selection does not move focus into detail");
+  assert.deepEqual(desktop.focus, ["item"], "desktop selection focuses the connected replacement item, not detail");
   assert.equal(desktop.list.hidden, false);
   assert.equal(desktop.detail.hidden, false);
 
@@ -628,6 +770,7 @@ test("Employee URL adapter and shared history stack avoid duplicate mobile list 
   assert.deepEqual(browserBack.focus, ["heading", "item"]);
 
   const direct = sharedController(true, "direct");
+  assert.deepEqual(direct.focus, [], "direct initial synchronization does not force focus");
   assert.equal(direct.controller.backToList({ restoreFocus: true }), "replace");
   assert.deepEqual(direct.ids(), [""]);
   assert.equal(direct.current().state.ccMasterDetail.view, "list");
@@ -1043,8 +1186,8 @@ test("Employee child rows render protected fields and primary-phone enforcement 
 });
 
 test("Client directory executes every search field, status, metric, state, and downstream management rendering", async () => {
-  const productionInitialGrid = clientSource.match(/<div class="client-grid" id="client-grid">([\s\S]*?)<\/div>\s*<\/section>/)[1].trim();
-  assert.equal(productionInitialGrid, '<div class="empty-state cc-empty-state">Loading client profiles...</div>');
+  const productionInitialGrid = clientSource.match(/<div class="client-grid" id="client-grid"[^>]*>([\s\S]*?)<\/div>\s*<\/aside>/)[1].trim();
+  assert.equal(productionInitialGrid, '<div class="empty-state cc-empty-state" role="status">Loading client profiles...</div>');
   const restaurants = [
     { ...restaurantFixture("brand", "Brand Needle"), status: "active" },
     { ...restaurantFixture("phone", "Phone Client"), callCenterNumber: "Phone Needle", status: "inactive" },
@@ -1052,16 +1195,21 @@ test("Client directory executes every search field, status, metric, state, and d
     { ...restaurantFixture("account", "Account Client"), accountManagerName: "Account Needle", status: "active" },
     { ...restaurantFixture("manager", "Manager Client"), restaurantManagerName: "Manager Needle", status: "active" }
   ];
-  function directory(canManageClients, records = restaurants) {
+  function gridElement(innerHTML = productionInitialGrid) {
+    return { innerHTML, dataset: {}, setAttribute() {}, removeAttribute() {} };
+  }
+  function directory(canManageClients, records = restaurants, selectedRestaurantId = "") {
     const document = documentFixture({
-      "client-search": "", "status-filter": "all", "client-grid": { innerHTML: productionInitialGrid },
+      "client-search": "", "status-filter": "all", "client-grid": gridElement(),
       "record-count": { textContent: "" }, "stat-total": {}, "stat-active": {}, "stat-archived": {}, "stat-agents": {}
     });
+    let selectionHidden = false;
     const api = evaluateFunctions(clientSource, ["getFilteredRestaurants", "renderStats", "renderRestaurants"], {
-      document, restaurants: records, canManageClients, escapeHtml: String,
+      document, restaurants: records, selectedRestaurantId, canManageClients, escapeHtml: String,
+      clientMasterDetail: { setSelectionHidden(value) { selectionHidden = value; } },
       logoMarkup: (restaurant) => `logo:${restaurant.restaurantId}`, valueOrDash: String, statusBadge: String
     });
-    return { document, api };
+    return { document, api, selectionHidden: () => selectionHidden };
   }
   const characterized = directory(true);
   const search = characterized.document.getElementById("client-search");
@@ -1098,28 +1246,54 @@ test("Client directory executes every search field, status, metric, state, and d
   assert.doesNotMatch(readOnly.document.getElementById("client-grid").innerHTML, /data-edit-id|data-archive-id|is-selected|aria-current/);
   readOnly.api.renderRestaurants();
   assert.doesNotMatch(readOnly.document.getElementById("client-grid").innerHTML, /is-selected|aria-current/, "rendering does not persist a selected-card state");
+  const selected = directory(false, [restaurants[0]], "brand");
+  selected.api.renderRestaurants();
+  assert.match(selected.document.getElementById("client-grid").innerHTML, /is-selected[\s\S]*aria-current="true"[\s\S]*data-cc-master-item="brand"[\s\S]*client-select[\s\S]*aria-current="true"/);
+  selected.document.getElementById("client-search").value = "absent";
+  selected.api.renderRestaurants();
+  assert.equal(selected.selectionHidden(), true, "filtering preserves valid selection ownership and reveals recovery notice");
 
-  async function loadWith(result) {
+  let restoredFocus = 0;
+  const resetDocument = documentFixture({ "client-search": "hidden", "status-filter": "inactive" });
+  resetDocument.querySelectorAll = () => [{
+    dataset: { ccMasterItem: "brand" },
+    querySelector: () => ({ focus() { restoredFocus += 1; } })
+  }];
+  const reset = evaluateFunctions(clientSource, ["resetClientFilters"], {
+    document: resetDocument, selectedRestaurantId: "brand", renderRestaurants() {}
+  });
+  reset.resetClientFilters();
+  assert.equal(resetDocument.getElementById("client-search").value, "");
+  assert.equal(resetDocument.getElementById("status-filter").value, "all");
+  assert.equal(restoredFocus, 1, "Clear Filters restores the selected directory trigger when visible");
+
+  async function loadWith(result, search = "") {
     const document = documentFixture({
-      "client-search": "", "status-filter": "all", "client-grid": { innerHTML: productionInitialGrid },
+      "client-search": "", "status-filter": "all", "client-grid": gridElement(),
       "record-count": {}, "stat-total": {}, "stat-active": {}, "stat-archived": {}, "stat-agents": {}
     });
     let profileSelections = 0;
+    let workspaceState = "";
     const api = evaluateFunctions(clientSource, ["getFilteredRestaurants", "renderStats", "renderRestaurants", "loadRestaurants"], {
-      document, RESTAURANTS_ENDPOINT: "/restaurants", restaurants: [], canManageClients: false,
+      document, window: { location: { search } }, RESTAURANTS_ENDPOINT: "/restaurants", restaurants: [], selectedRestaurantId: "", workspaceRequestToken: 0, canManageClients: false,
+      clientMasterDetail: { setSelectionHidden() {}, syncInitial() {}, isMobile: () => false },
       apiRequest: () => result, viewRestaurant: () => { profileSelections += 1; }, escapeHtml: String,
-      logoMarkup: () => "logo", valueOrDash: String, statusBadge: String
+      logoMarkup: () => "logo", valueOrDash: String, statusBadge: String,
+      renderEmptyWorkspace() { workspaceState = "empty"; }, renderUnavailableWorkspace() { workspaceState = "unavailable"; },
+      renderWorkspaceError() { workspaceState = "error"; }
     });
     const pending = api.loadRestaurants();
     await flush();
-    return { api, document, pending, selections: () => profileSelections };
+    return { api, document, pending, selections: () => profileSelections, workspaceState: () => workspaceState };
   }
   const deferredLoad = deferred();
   const loading = await loadWith(deferredLoad.promise);
   assert.equal(loading.document.getElementById("client-grid").innerHTML, productionInitialGrid);
+  assert.equal(loading.api.sandbox.workspaceRequestToken, 1, "directory reload invalidates pending workspace ownership immediately");
   deferredLoad.resolve({ restaurants: [] });
   await loading.pending;
-  assert.match(loading.document.getElementById("client-grid").innerHTML, /No client profiles match this view/);
+  assert.match(loading.document.getElementById("client-grid").innerHTML, /No client profiles are available/);
+  assert.equal(loading.document.getElementById("client-grid").dataset.state, "empty-collection");
   assert.deepEqual(["stat-total", "stat-active", "stat-archived", "stat-agents"].map((id) => loading.document.getElementById(id).textContent), [0, 0, 0, "0"]);
   assert.equal(loading.selections(), 0, "loading an empty collection performs no automatic selection");
 
@@ -1130,40 +1304,366 @@ test("Client directory executes every search field, status, metric, state, and d
 
   const failed = await loadWith(Promise.reject(new Error("directory offline")));
   await failed.pending;
-  assert.equal(failed.document.getElementById("client-grid").innerHTML, '<div class="empty-state">directory offline</div>');
+  assert.match(failed.document.getElementById("client-grid").innerHTML, /data-state="error"[\s\S]*Client directory could not be loaded[\s\S]*directory offline/);
   assert.deepEqual(["stat-total", "stat-active", "stat-archived", "stat-agents"].map((id) => failed.document.getElementById(id).textContent), [0, 0, 0, "0"]);
+  const failedRoute = await loadWith(Promise.reject(new Error("directory offline")), "?restaurantId=routed");
+  await failedRoute.pending;
+  assert.equal(failedRoute.workspaceState(), "error", "directory failure does not falsely classify a routed Client as missing");
 });
 
-test("Client Profile modal waits for profile success, opens afterward, and reports profile failure", async () => {
+test("Client inline workspace renders loading, populated, and generic error states without modal ownership", async () => {
   const profile = deferred();
   const harness = clientViewHarness({ getRestaurantProfile: () => profile.promise });
   const pending = harness.viewRestaurant("r1");
   await flush();
-  assert.deepEqual(harness.opened, []);
+  assert.equal(harness.document.getElementById("client-workspace").innerHTML, "loading:r1");
   profile.resolve(restaurantFixture("r1", "Resolved Client"));
   await pending;
-  assert.deepEqual(harness.opened, [["profile-modal", "Resolved Client"]]);
+  assert.match(harness.document.getElementById("client-workspace").innerHTML, /data-cc-detail-focus>Resolved Client<[\s\S]*Brand Overview/);
+  assert.doesNotMatch(clientSource, /id="profile-modal"|openModal\('profile-modal'\)/);
 
   const failed = clientViewHarness({ getRestaurantProfile: async () => { throw new Error("profile denied"); } });
   await failed.viewRestaurant("r1");
-  assert.deepEqual(failed.opened, []);
-  assert.deepEqual(failed.messages, ["profile denied"]);
+  assert.equal(failed.document.getElementById("client-workspace").innerHTML, "error:profile denied");
 });
 
-test("KNOWN GAP: controlled rapid Client selections allow obsolete A to overwrite newer B", async () => {
+test("Client request ownership rejects stale primary success and stale primary error", async () => {
   const a = deferred();
   const b = deferred();
-  const harness = clientViewHarness({ getRestaurantProfile: (id) => id === "A" ? a.promise : b.promise });
+  const records = [restaurantFixture("A", "Obsolete A"), restaurantFixture("B", "Current B")];
+  const harness = clientViewHarness({ restaurants: records, getRestaurantProfile: (id) => id === "A" ? a.promise : b.promise });
   const pendingA = harness.viewRestaurant("A");
   const pendingB = harness.viewRestaurant("B");
   b.resolve(restaurantFixture("B", "Current B"));
   await pendingB;
-  assert.equal(harness.document.getElementById("profile-modal-title").textContent, "Current B");
+  assert.match(harness.document.getElementById("client-workspace").innerHTML, /Current B/);
   a.resolve(restaurantFixture("A", "Obsolete A"));
   await pendingA;
-  assert.deepEqual(harness.opened, [["profile-modal", "Current B"], ["profile-modal", "Obsolete A"]]);
-  assert.equal(harness.document.getElementById("profile-modal-title").textContent, "Obsolete A");
-  assert.doesNotMatch(functionSource(clientSource, "viewRestaurant"), /requestToken|AbortController/);
+  assert.match(harness.document.getElementById("client-workspace").innerHTML, /Current B/);
+  assert.doesNotMatch(harness.document.getElementById("client-workspace").innerHTML, /Obsolete A/);
+
+  const staleError = deferred();
+  const current = deferred();
+  const errors = clientViewHarness({ restaurants: records, getRestaurantProfile: (id) => id === "A" ? staleError.promise : current.promise });
+  const oldPending = errors.viewRestaurant("A");
+  const currentPending = errors.viewRestaurant("B");
+  current.resolve(restaurantFixture("B", "Current B"));
+  await currentPending;
+  staleError.reject(new Error("obsolete error"));
+  await oldPending;
+  assert.match(errors.document.getElementById("client-workspace").innerHTML, /Current B/);
+  assert.doesNotMatch(errors.document.getElementById("client-workspace").innerHTML, /obsolete error/);
+  assert.match(functionSource(clientSource, "viewRestaurant"), /requestToken !== workspaceRequestToken \|\| restaurantId !== selectedRestaurantId/);
+});
+
+test("Client request ownership rejects stale dependencies and Back invalidates pending work", async () => {
+  const trainingA = deferred();
+  const records = [restaurantFixture("A", "Client A"), restaurantFixture("B", "Client B")];
+  const harness = clientViewHarness({
+    restaurants: records,
+    getRestaurantProfile: async (id) => records.find((record) => record.restaurantId === id),
+    getRestaurantTraining: (id) => id === "A" ? trainingA.promise : Promise.resolve([{ employeeNameSnapshot: "Current Agent" }]),
+    renderTrainingSection: (rows) => rows.map((row) => row.employeeNameSnapshot).join(',')
+  });
+  const pendingA = harness.viewRestaurant("A");
+  await flush();
+  const pendingB = harness.viewRestaurant("B");
+  await pendingB;
+  assert.match(harness.document.getElementById("client-workspace").innerHTML, /Client B[\s\S]*Current Agent/);
+  trainingA.resolve([{ employeeNameSnapshot: "Obsolete Agent" }]);
+  await pendingA;
+  assert.doesNotMatch(harness.document.getElementById("client-workspace").innerHTML, /Obsolete Agent/);
+
+  const ratingsA = deferred();
+  const dependencyErrors = clientViewHarness({
+    restaurants: records,
+    getRestaurantProfile: async (id) => records.find((record) => record.restaurantId === id),
+    getRestaurantRatings: (id) => id === "A" ? ratingsA.promise : Promise.resolve([])
+  });
+  const obsoleteDependency = dependencyErrors.viewRestaurant("A");
+  await flush();
+  await dependencyErrors.viewRestaurant("B");
+  ratingsA.reject(new Error("obsolete ratings error"));
+  await obsoleteDependency;
+  assert.match(dependencyErrors.document.getElementById("client-workspace").innerHTML, /Client B/);
+  assert.doesNotMatch(dependencyErrors.document.getElementById("client-workspace").innerHTML, /obsolete ratings error/);
+
+  const profile = deferred();
+  const back = clientViewHarness({ restaurants: [records[0]], getRestaurantProfile: () => profile.promise });
+  const pending = back.viewRestaurant("A");
+  await flush();
+  await back.handleClientHistoryNavigation("");
+  profile.resolve(records[0]);
+  await pending;
+  assert.equal(back.document.getElementById("client-workspace").innerHTML, "empty-selection");
+  assert.equal(back.context.selectedRestaurantId, "");
+
+  const archiveRequest = deferred();
+  const archive = evaluateFunctions(clientSource, ["archiveRestaurant"], {
+    canManageClients: true,
+    restaurants: records,
+    selectedRestaurantId: "A",
+    workspaceRequestToken: 7,
+    window: { CloudCrowdConfirmation: { request: async () => true } },
+    RESTAURANTS_ENDPOINT: "/restaurants",
+    apiRequest: () => archiveRequest.promise,
+    showMessage() {},
+    loadRestaurants: async () => {}
+  });
+  const archivedPending = archive.archiveRestaurant("A");
+  await flush();
+  assert.equal(archive.sandbox.workspaceRequestToken, 8, "archive invalidates pending workspace ownership before its request completes");
+  archiveRequest.resolve({ ok: true });
+  await archivedPending;
+});
+
+test("Client uses restrained announcements for success, partial detail, errors, and unavailable routes", async () => {
+  const success = clientViewHarness({ getRestaurantProfile: async () => restaurantFixture("r1", "Complete Client") });
+  await success.viewRestaurant("r1");
+  assert.deepEqual(plain(success.events.filter(([type]) => type === "announce")), [["announce", "Complete Client details updated."]]);
+
+  const partial = clientViewHarness({
+    getRestaurantProfile: async () => restaurantFixture("r1", "Partial Client"),
+    getClientDependencyAccess: async () => ({ training: "denied", quality: "unavailable", ratings: "allowed" })
+  });
+  await partial.viewRestaurant("r1");
+  assert.deepEqual(plain(partial.events.filter(([type]) => type === "announce")), [["announce", "Partial Client details updated. Some linked modules are restricted or unavailable."]]);
+
+  const events = [];
+  const document = documentFixture({ "client-workspace": { innerHTML: "" } });
+  const masterDetail = {
+    renderState(settings) { events.push(["state", settings.state, settings.title, settings.role]); },
+    announce(message) { events.push(["announce", message]); },
+    showDetail() {}, setSelectionHidden() {}, isMobile: () => false
+  };
+  const states = evaluateFunctions(clientSource, ["renderWorkspaceError", "renderUnavailableWorkspace"], {
+    document, selectedRestaurantId: "r1", clientMasterDetail: masterDetail, escapeHtml: String
+  });
+  states.renderWorkspaceError("network unavailable");
+  states.renderUnavailableWorkspace("missing", "r1");
+  assert.deepEqual(events, [
+    ["state", "error", "Client profile could not be loaded", "alert"],
+    ["state", "unavailable", "Client is unavailable", "alert"]
+  ]);
+  assert.doesNotMatch(clientSource.match(/id="client-workspace"[^>]*>/)[0], /aria-live/);
+  assert.match(clientSource, /id="client-detail-announcement"[^>]*aria-live="polite"/);
+});
+
+test("Client primary workspace renderers execute one intentional semantic announcement path per state", async () => {
+  const root = { dataset: {} };
+  const list = { hidden: false, contains: () => false };
+  const detail = { hidden: false, contains: () => false, innerHTML: "" };
+  const announcement = { textContent: "" };
+  const document = documentFixture({
+    "client-workspace": detail,
+    "client-detail-announcement": announcement
+  });
+  document.head = null;
+  const sharedWindow = {
+    document, window: null, matchMedia: () => ({ matches: false, addEventListener() {} }),
+    setTimeout(callback) { callback(); }, addEventListener() {},
+    location: { search: "" }
+  };
+  sharedWindow.window = sharedWindow;
+  vm.runInNewContext(masterDetailSource, { window: sharedWindow });
+  const controller = sharedWindow.CloudCrowdMasterDetail.create({
+    root, list, detail, announcement,
+    getListFallback: () => null, getDetailFocus: () => null
+  });
+  const renderers = evaluateFunctions(clientSource, [
+    "renderEmptyWorkspace", "renderWorkspaceLoading", "renderWorkspaceError",
+    "renderUnavailableWorkspace", "renderDependencyState"
+  ], {
+    document, window: sharedWindow, restaurants: [restaurantFixture("r1", "Semantic Client")],
+    selectedRestaurantId: "r1", clientMasterDetail: controller, escapeHtml: String
+  });
+
+  renderers.renderWorkspaceLoading("r1");
+  assert.match(detail.innerHTML, /class="client-workspace-loading" role="status" aria-busy="true" tabindex="-1" data-cc-detail-focus/);
+  assert.match(detail.innerHTML, /<h2 class="cc-section-title">Loading Client profile<\/h2>/);
+
+  renderers.renderEmptyWorkspace();
+  assert.match(detail.innerHTML, /data-state="empty-selection" role="status"/);
+  assert.match(detail.innerHTML, /<h2 class="cc-section-title" tabindex="-1" data-cc-detail-focus>Select a Client<\/h2>/);
+
+  controller.announce("Previous populated detail announcement.");
+  assert.equal(announcement.textContent, "Previous populated detail announcement.");
+  renderers.renderWorkspaceError("network offline");
+  assert.match(detail.innerHTML, /data-state="error" role="alert"/);
+  assert.match(detail.innerHTML, /data-cc-detail-focus>Client profile could not be loaded<\/h2>/);
+  assert.equal(announcement.textContent, "", "the alert state clears, rather than duplicates, the dedicated announcement");
+
+  controller.announce("Previous populated detail announcement.");
+  renderers.renderUnavailableWorkspace("missing", "r1");
+  assert.match(detail.innerHTML, /data-state="unavailable" role="alert"/);
+  assert.match(detail.innerHTML, /data-cc-detail-focus>Client is unavailable<\/h2>/);
+  assert.equal(announcement.textContent, "", "the unavailable alert is the only announcement path for that transition");
+
+  const initialState = clientSource.match(/<div class="cc-master-detail__state" data-state="empty-selection"[^>]*>/)[0];
+  assert.match(initialState, /role="status"/);
+  const workspaceTag = clientSource.match(/id="client-workspace"[^>]*>/)[0];
+  assert.doesNotMatch(workspaceTag, /aria-live/);
+  assert.match(clientSource, /id="client-detail-announcement"[^>]*aria-live="polite"[^>]*aria-atomic="true"/);
+  assert.doesNotMatch(functionSource(clientSource, "renderWorkspaceError"), /\.announce\(/);
+  assert.doesNotMatch(functionSource(clientSource, "renderUnavailableWorkspace"), /\.announce\(/);
+
+  const populated = clientViewHarness({ getRestaurantProfile: async () => restaurantFixture("r1", "Quiet Populated Client") });
+  await populated.viewRestaurant("r1");
+  assert.doesNotMatch(populated.document.getElementById("client-workspace").innerHTML, /aria-live|role="(?:status|alert)"/);
+  assert.match(renderers.renderDependencyState("Training", "denied"), /data-state="restricted" role="status"/);
+  assert.match(renderers.renderDependencyState("Training", "unavailable"), /data-state="permission-unavailable" role="status"/);
+
+  function requirePrimarySemanticContract(source) {
+    assert.doesNotMatch(source.match(/id="client-workspace"[^>]*>/)[0], /aria-live/);
+    assert.match(functionSource(source, "renderWorkspaceLoading"), /role="status"[\s\S]*aria-busy="true"/);
+    assert.match(functionSource(source, "renderWorkspaceError"), /role: 'alert'/);
+    assert.match(functionSource(source, "renderUnavailableWorkspace"), /role: 'alert'/);
+    assert.doesNotMatch(functionSource(source, "renderWorkspaceError"), /\.announce\(/);
+    assert.match(source, /id="client-detail-announcement"[^>]*aria-live="polite"/);
+  }
+  requirePrimarySemanticContract(clientSource);
+  assert.throws(() => requirePrimarySemanticContract(clientSource.replace('id="client-workspace" aria-label=', 'id="client-workspace" aria-live="polite" aria-label=')));
+  assert.throws(() => requirePrimarySemanticContract(clientSource.replace('role="status" aria-busy="true"', 'aria-busy="true"')));
+  assert.throws(() => requirePrimarySemanticContract(clientSource.replace("role: 'alert',\n        eyebrow: 'Workspace error'", "eyebrow: 'Workspace error'")));
+  assert.throws(() => requirePrimarySemanticContract(clientSource.replace(
+    "document.getElementById('client-detail-announcement').textContent = '';",
+    "clientMasterDetail?.announce('Client profile could not be loaded.');"
+  )));
+});
+
+test("Client URL adapter preserves restaurantId and unavailable history navigation never substitutes", async () => {
+  const replacements = [];
+  const pushes = [];
+  const window = {
+    location: { href: "https://example.test/client-profiles.html?status=all#clients" },
+    history: { state: {}, replaceState: (...args) => replacements.push(args), pushState: (...args) => pushes.push(args) }
+  };
+  const { updateClientUrl } = evaluateFunctions(clientSource, ["updateClientUrl"], { window });
+  updateClientUrl("r 1");
+  updateClientUrl("r 2", "push");
+  updateClientUrl("");
+  assert.equal(replacements[0][2], "/client-profiles.html?status=all&restaurantId=r+1#clients");
+  assert.equal(pushes[0][2], "/client-profiles.html?status=all&restaurantId=r+2#clients");
+  assert.equal(replacements[1][2], "/client-profiles.html?status=all#clients");
+
+  const archived = { ...restaurantFixture("archived", "Archived"), status: "inactive" };
+  const harness = clientViewHarness({ restaurants: [archived], getRestaurantProfile: async () => { throw new Error("must not request archived"); } });
+  await harness.handleClientHistoryNavigation("archived");
+  assert.equal(harness.context.selectedRestaurantId, "");
+  assert.match(harness.document.getElementById("client-workspace").innerHTML, /unavailable:archived:[\s\S]*archived/);
+  await harness.handleClientHistoryNavigation("missing");
+  assert.equal(harness.context.selectedRestaurantId, "");
+  assert.match(harness.document.getElementById("client-workspace").innerHTML, /unavailable:missing:[\s\S]*missing or inaccessible/);
+});
+
+test("Client history integration executes real adapters, onNavigate, ownership, Back, Forward, and unavailable routes", async () => {
+  const records = [restaurantFixture("A", "Client A")];
+  const desktop = integratedClientHistoryHarness({ mobile: false, restaurants: records });
+  await desktop.api.viewRestaurant("A");
+  assert.deepEqual(desktop.ids(), ["A"]);
+  assert.deepEqual(desktop.writes.map(([mode, id]) => [mode, id]), [["replace", "A"]]);
+  assert.match(desktop.detail.innerHTML, /Client A[\s\S]*Brand Overview/);
+  assert.deepEqual(desktop.focus, ["item-A"], "desktop user selection focuses the connected replacement card");
+  assert.equal(desktop.controller.getSelectedId(), "A");
+
+  const mobile = integratedClientHistoryHarness({ mobile: true, restaurants: records });
+  await mobile.api.viewRestaurant("A");
+  assert.deepEqual(mobile.ids(), ["", "A"], "mobile selection establishes exactly [list, detail]");
+  assert.deepEqual(mobile.writes.map(([mode, id]) => [mode, id]), [["replace", ""], ["push", "A"]]);
+  assert.equal(mobile.currentState().ccMasterDetail.key, "client-profiles");
+  assert.equal(mobile.currentState().ccMasterDetail.fromList, true);
+  assert.match(mobile.detail.innerHTML, /Client A[\s\S]*Brand Overview/);
+  assert.equal(mobile.focus.at(-1), "detail-heading");
+
+  const tokenBeforeBack = mobile.api.sandbox.workspaceRequestToken;
+  assert.equal(mobile.api.backToClientDirectory(), "history");
+  await mobile.navigation();
+  assert.deepEqual(mobile.ids(), ["", "A"], "Internal Back traverses owned history without creating another list entry");
+  assert.equal(mobile.currentId(), "");
+  assert.equal(mobile.api.sandbox.selectedRestaurantId, "");
+  assert.ok(mobile.api.sandbox.workspaceRequestToken > tokenBeforeBack, "Internal Back invalidates pending workspace ownership");
+  assert.match(mobile.detail.innerHTML, /data-state="empty-selection" role="status"[\s\S]*Select a Client/);
+  assert.equal(mobile.focus.at(-1), "item-A", "Internal Back restores the valid originating card");
+
+  await mobile.forward();
+  assert.equal(mobile.currentId(), "A");
+  assert.equal(mobile.api.sandbox.selectedRestaurantId, "A");
+  assert.equal(mobile.controller.getSelectedId(), "A");
+  assert.match(mobile.detail.innerHTML, /Client A[\s\S]*Brand Overview/);
+  assert.deepEqual(mobile.profileCalls, ["A", "A"], "Browser Forward reaches the real Client onNavigate adapter and re-fetches the route");
+  assert.equal(mobile.announcements.at(-1), "Client A details updated.");
+  assert.equal(mobile.focus.at(-1), "detail-heading");
+
+  await mobile.back();
+  const staleProfile = deferred();
+  mobile.setProfileResponder(() => staleProfile.promise);
+  const staleForward = mobile.forward();
+  await flush();
+  assert.equal(mobile.currentId(), "A");
+  await mobile.back();
+  staleProfile.resolve(records[0]);
+  await staleForward;
+  assert.equal(mobile.currentId(), "");
+  assert.equal(mobile.api.sandbox.selectedRestaurantId, "");
+  assert.match(mobile.detail.innerHTML, /data-state="empty-selection"/);
+  assert.doesNotMatch(mobile.detail.innerHTML, /Brand Overview/, "an old Forward result cannot repaint after later Back ownership");
+
+  mobile.setProfileResponder(async (id) => records.find((record) => record.restaurantId === id));
+  mobile.api.updateClientUrl("missing", "push", { ccMasterDetail: { key: "client-profiles", view: "detail", fromList: true } });
+  await mobile.back();
+  await mobile.forward();
+  assert.equal(mobile.currentId(), "missing", "missing route remains present");
+  assert.equal(mobile.api.sandbox.selectedRestaurantId, "");
+  assert.equal(mobile.controller.getSelectedId(), "");
+  assert.match(mobile.detail.innerHTML, /data-state="unavailable" role="alert"[\s\S]*Client is unavailable/);
+  assert.doesNotMatch(mobile.detail.innerHTML, /Client A[\s\S]*Brand Overview/);
+
+  const archived = { ...restaurantFixture("archived", "Archived Client"), status: "inactive" };
+  const unavailable = integratedClientHistoryHarness({ mobile: true, restaurants: [records[0], archived] });
+  unavailable.api.updateClientUrl("archived", "push", { ccMasterDetail: { key: "client-profiles", view: "detail", fromList: true } });
+  await unavailable.back();
+  await unavailable.forward();
+  assert.equal(unavailable.currentId(), "archived");
+  assert.equal(unavailable.api.sandbox.selectedRestaurantId, "");
+  assert.match(unavailable.detail.innerHTML, /data-state="unavailable" role="alert"[\s\S]*archived/);
+  assert.deepEqual(unavailable.profileCalls, [], "archived navigation never requests or substitutes a profile");
+
+  const direct = integratedClientHistoryHarness({
+    mobile: true, restaurants: records,
+    initialUrl: "https://example.test/client-profiles.html?restaurantId=A"
+  });
+  await direct.api.viewRestaurant("A", { updateUrl: false, focusWorkspace: true, navigationSource: "direct" });
+  assert.equal(direct.api.backToClientDirectory(), "replace");
+  assert.deepEqual(direct.ids(), [""]);
+  assert.equal(direct.currentId(), "");
+  assert.equal(direct.currentState().ccMasterDetail.view, "list");
+  assert.equal(direct.api.sandbox.selectedRestaurantId, "");
+
+  const duplicateListMutation = masterDetailSource.replace(
+    "writeHistory('', 'replace', historyMarker('list'), true)",
+    "writeHistory('', 'push', historyMarker('list'), true)"
+  );
+  assert.notEqual(duplicateListMutation, masterDetailSource);
+  await assert.rejects(async () => {
+    const mutated = integratedClientHistoryHarness({ mobile: true, restaurants: records, masterSource: duplicateListMutation });
+    await mutated.api.viewRestaurant("A");
+    assert.deepEqual(mutated.ids(), ["", "A"], "single list entry invariant");
+  }, /single list entry invariant/);
+
+  const adapterSource = functionSource(clientSource, "updateClientUrl");
+  const pushOnlyAdapterMutation = adapterSource.replace(
+    "mode === 'push' ? 'pushState' : 'replaceState'",
+    "'pushState'"
+  );
+  assert.notEqual(pushOnlyAdapterMutation, adapterSource);
+  await assert.rejects(async () => {
+    const mutated = integratedClientHistoryHarness({
+      mobile: false, restaurants: records,
+      clientOverrides: { updateClientUrl: pushOnlyAdapterMutation }
+    });
+    await mutated.api.viewRestaurant("A");
+    assert.deepEqual(mutated.writes.map(([mode, id]) => [mode, id]), [["replace", "A"]], "desktop Client adapter replacement invariant");
+  }, /desktop Client adapter replacement invariant/);
 });
 
 test("Client Training renderer executes success, empty, error, metrics, ordering, and six-row limit", () => {
@@ -1239,7 +1739,14 @@ test("Client Restaurant Ratings executes success, empty, error, latest metrics, 
   assert.doesNotMatch(output, /Rating-0/);
 });
 
-test("Client integration adapters propagate Training and Ratings 403 while Weekly Quality falls back locally", async () => {
+test("Client integration adapters propagate dependency 403 and permit only non-authorization Quality fallback", async () => {
+  const request = evaluateFunctions(clientSource, ["apiRequest"], {
+    fetch: async () => ({ status: 403, ok: false, json: async () => ({ error: "neutral denial" }) }),
+    authHeaders: (headers) => headers,
+    logout() {}
+  });
+  await assert.rejects(request.apiRequest("/protected"), (error) => error.message === "neutral denial" && error.status === 403);
+
   for (const [name, key, endpoint] of [
     ["getRestaurantTraining", "training", "TRAINING_ENDPOINT"],
     ["getRestaurantRatings", "ratings", "RESTAURANT_RATINGS_ENDPOINT"]
@@ -1257,24 +1764,28 @@ test("Client integration adapters propagate Training and Ratings 403 while Weekl
   const local = [{ restaurantId: "r1", totalScore: 77 }];
   const api = evaluateFunctions(clientSource, [
     "normalizeName", "getQualityRestaurantName", "readWeeklyQualityRecords", "getClientQualityRecords",
-    "getClientQualityRecordsFromApi", "loadClientQualityRecords"
+    "isPermissionDenied", "getClientQualityRecordsFromApi", "loadClientQualityRecords"
   ], {
     WEEKLY_QUALITY_ENDPOINT: "/quality", WEEKLY_QUALITY_STORAGE_KEY: "quality",
     localStorage: { getItem: () => JSON.stringify(local) },
-    apiRequest: async () => { throw new Error("403 Forbidden"); },
+    apiRequest: async () => { const error = new Error("neutral denial"); error.status = 403; throw error; },
     console: { warn() {} }
   });
+  await assert.rejects(api.loadClientQualityRecords(restaurantFixture("r1", "North")), /neutral denial/);
+
+  api.sandbox.apiRequest = async () => { throw new Error("network offline"); };
   const result = await api.loadClientQualityRecords(restaurantFixture("r1", "North"));
   assert.deepEqual(plain(result.records), local);
-  assert.equal(result.error, "403 Forbidden");
+  assert.equal(result.error, "network offline");
+  assert.equal(result.degraded, true);
 });
 
-test("KNOWN GAP DL-010: Client Weekly Quality API lifecycle executes success, empty, errors, and local compatibility fallback", async () => {
+test("Client Weekly Quality lifecycle preserves compatible fallback but suppresses authorization failures", async () => {
   function qualityApi(responder, localRecords = []) {
     const calls = [];
     const api = evaluateFunctions(clientSource, [
       "normalizeName", "getQualityRestaurantName", "readWeeklyQualityRecords", "getClientQualityRecords",
-      "getClientQualityRecordsFromApi", "loadClientQualityRecords"
+      "isPermissionDenied", "getClientQualityRecordsFromApi", "loadClientQualityRecords"
     ], {
       WEEKLY_QUALITY_ENDPOINT: "/quality", WEEKLY_QUALITY_STORAGE_KEY: "quality",
       localStorage: { getItem: () => JSON.stringify(localRecords) },
@@ -1287,12 +1798,12 @@ test("KNOWN GAP DL-010: Client Weekly Quality API lifecycle executes success, em
   assert.deepEqual(plain(await success.api.getClientQualityRecordsFromApi("r 1")), [{ id: "api", restaurantId: "r 1" }]);
   assert.equal(success.calls[0], "/quality?restaurantId=r%201");
   const successLoad = await success.api.loadClientQualityRecords(restaurant);
-  assert.deepEqual(plain(successLoad), { records: [{ id: "api", restaurantId: "r 1" }], error: "" });
+  assert.deepEqual(plain(successLoad), { records: [{ id: "api", restaurantId: "r 1" }], error: "", degraded: false });
 
   const empty = qualityApi(() => ({ records: [] }), [{ id: "must-not-fallback", restaurantId: "r 1" }]);
-  assert.deepEqual(plain(await empty.api.loadClientQualityRecords(restaurant)), { records: [], error: "" });
+  assert.deepEqual(plain(await empty.api.loadClientQualityRecords(restaurant)), { records: [], error: "", degraded: false });
 
-  for (const message of ["network offline", "403 Forbidden"]) {
+  for (const message of ["network offline", "service unavailable"]) {
     const local = [
       { id: "wrong-id", restaurantId: "other", restaurantNameSnapshot: "Unique Legacy" },
       { id: "legacy", restaurantNameSnapshot: " unique legacy " },
@@ -1302,27 +1813,143 @@ test("KNOWN GAP DL-010: Client Weekly Quality API lifecycle executes success, em
     const result = await failed.api.loadClientQualityRecords(restaurant);
     assert.deepEqual(plain(result.records.map((record) => record.id)), ["legacy", "id-first"]);
     assert.equal(result.error, message);
+    assert.equal(result.degraded, true);
   }
-  const noLocal = qualityApi(() => { throw new Error("403 Forbidden"); }, []);
-  assert.deepEqual(plain(await noLocal.api.loadClientQualityRecords(restaurant)), { records: [], error: "403 Forbidden" });
+  const denied = qualityApi(() => { const error = new Error("neutral authorization failure"); error.status = 403; throw error; }, [{ id: "must-not-leak", restaurantId: "r 1" }]);
+  await assert.rejects(denied.api.loadClientQualityRecords(restaurant), /neutral authorization failure/);
 });
 
-test("Client Profile isolates dependency 403 states while exposing the known Quality fallback gap", async () => {
+test("Client HTTP 401 preserves status and fails closed before Weekly Quality compatibility data can render", async () => {
+  const names = [
+    "apiRequest", "normalizeName", "getQualityRestaurantName", "readWeeklyQualityRecords",
+    "getClientQualityRecords", "isPermissionDenied", "getClientQualityRecordsFromApi", "loadClientQualityRecords"
+  ];
+  function httpLifecycle(response, localRecords = [], overrides = {}) {
+    let logoutCalls = 0;
+    let fallbackReads = 0;
+    const api = evaluateFunctions(clientSource, names, {
+      fetch: async () => response,
+      authHeaders: (headers) => headers,
+      logout: () => { logoutCalls += 1; },
+      WEEKLY_QUALITY_ENDPOINT: "/quality", WEEKLY_QUALITY_STORAGE_KEY: "quality",
+      localStorage: { getItem: () => { fallbackReads += 1; return JSON.stringify(localRecords); } },
+      console: { warn() {} }
+    }, overrides);
+    return { api, logoutCalls: () => logoutCalls, fallbackReads: () => fallbackReads };
+  }
+  async function capture(promise) {
+    try { return { value: await promise, error: null }; }
+    catch (error) { return { value: undefined, error }; }
+  }
+  const restaurant = restaurantFixture("r1", "Secret Client");
+  const cached = [{
+    id: "cached-secret", restaurantId: "r1", totalScore: 99,
+    callDateTime: "2026-08-13", campaignName: "Secret Campaign", agentName: "Secret Agent"
+  }];
+
+  const unauthorized = httpLifecycle({
+    status: 401, ok: false, json: async () => ({ error: "neutral response" })
+  }, cached);
+  const unauthorizedResult = await capture(unauthorized.api.loadClientQualityRecords(restaurant));
+  assert.equal(unauthorized.logoutCalls(), 1);
+  assert.equal(unauthorizedResult.error?.message, "Session expired");
+  assert.equal(unauthorizedResult.error?.status, 401);
+  assert.equal(unauthorizedResult.value, undefined, "401 never returns a degraded compatibility result");
+  assert.equal(unauthorized.fallbackReads(), 0, "401 never calls the local fallback accessor");
+
+  const rendered = clientViewHarness({
+    getRestaurantProfile: async () => restaurant,
+    loadClientQualityRecords: unauthorized.api.loadClientQualityRecords,
+    isPermissionDenied: unauthorized.api.isPermissionDenied
+  });
+  await rendered.viewRestaurant("r1");
+  const renderedOutput = rendered.document.getElementById("client-workspace").innerHTML;
+  assert.match(renderedOutput, /data-module-permission="weekly_quality" data-state="restricted"/);
+  assert.doesNotMatch(renderedOutput, /cached-secret|99|2026-08-13|Secret Campaign|Secret Agent|local browser records|fallback/i);
+  assert.equal(unauthorized.fallbackReads(), 0);
+
+  const forbidden = httpLifecycle({
+    status: 403, ok: false, json: async () => ({ error: "neutral response" })
+  }, cached);
+  const forbiddenResult = await capture(forbidden.api.loadClientQualityRecords(restaurant));
+  assert.equal(forbiddenResult.error?.status, 403);
+  assert.equal(forbidden.fallbackReads(), 0);
+
+  let wordingFallbackReads = 0;
+  const wording = evaluateFunctions(clientSource, [
+    "normalizeName", "getQualityRestaurantName", "readWeeklyQualityRecords", "getClientQualityRecords",
+    "isPermissionDenied", "getClientQualityRecordsFromApi", "loadClientQualityRecords"
+  ], {
+    WEEKLY_QUALITY_ENDPOINT: "/quality", WEEKLY_QUALITY_STORAGE_KEY: "quality",
+    localStorage: { getItem: () => { wordingFallbackReads += 1; return JSON.stringify(cached); } },
+    apiRequest: async () => { throw new Error("not authorized to view Weekly Quality"); },
+    console: { warn() {} }
+  });
+  await assert.rejects(wording.loadClientQualityRecords(restaurant), /not authorized/);
+  assert.equal(wordingFallbackReads, 0, "authorization wording remains fail-closed without a numeric status");
+
+  const fallbackRecords = [
+    { id: "wrong-id", restaurantId: "other", restaurantNameSnapshot: "Secret Client" },
+    { id: "legacy", restaurantNameSnapshot: " secret client " },
+    { id: "id-first", restaurantId: "r1", restaurantNameSnapshot: "Other Name" }
+  ];
+  const serviceFailure = httpLifecycle({
+    status: 503, ok: false, json: async () => ({ error: "neutral service failure" })
+  }, fallbackRecords);
+  const degraded = await serviceFailure.api.loadClientQualityRecords(restaurant);
+  assert.deepEqual(plain(degraded.records.map((record) => record.id)), ["legacy", "id-first"]);
+  assert.equal(degraded.error, "neutral service failure");
+  assert.equal(degraded.degraded, true);
+  assert.equal(serviceFailure.fallbackReads(), 1);
+
+  for (const records of [[{ id: "api", restaurantId: "r1" }], []]) {
+    const success = httpLifecycle({ status: 200, ok: true, json: async () => ({ records }) }, cached);
+    assert.deepEqual(plain(await success.api.loadClientQualityRecords(restaurant)), { records, error: "", degraded: false });
+    assert.equal(success.fallbackReads(), 0, "successful and authoritative-empty responses never read fallback");
+  }
+
+  async function require401FailClosed(overrides = {}) {
+    const lifecycle = httpLifecycle({ status: 401, ok: false, json: async () => ({ error: "neutral" }) }, cached, overrides);
+    const result = await capture(lifecycle.api.loadClientQualityRecords(restaurant));
+    assert.ok(result.error, "401 must reject rather than return cached data");
+    assert.equal(result.error.status, 401, "401 status must survive apiRequest");
+    assert.equal(result.value, undefined);
+    assert.equal(lifecycle.fallbackReads(), 0, "401 must not reach local fallback");
+  }
+  await require401FailClosed();
+  const apiRequestSource = functionSource(clientSource, "apiRequest");
+  const discardedStatusMutation = apiRequestSource.replace(
+    "const error = new Error('Session expired');\n        error.status = response.status;\n        throw error;",
+    "throw new Error('Session expired');"
+  );
+  assert.notEqual(discardedStatusMutation, apiRequestSource);
+  await assert.rejects(() => require401FailClosed({ apiRequest: discardedStatusMutation }), /401 status must survive apiRequest/);
+
+  const classifierSource = functionSource(clientSource, "isPermissionDenied");
+  const fallbackLeakMutation = classifierSource.replace(
+    "[401, 403].includes(Number(error?.status)) || /(?:^|\\b)(?:401|403)(?:\\b|$)|unauthorized|session expired|forbidden|not authorized|permission denied/i",
+    "Number(error?.status) === 403 || /(?:^|\\b)403(?:\\b|$)|forbidden|not authorized|permission denied/i"
+  );
+  assert.notEqual(fallbackLeakMutation, classifierSource);
+  await assert.rejects(() => require401FailClosed({ isPermissionDenied: fallbackLeakMutation }), /401 must reject rather than return cached data/);
+});
+
+test("Client Profile isolates dependency 403 states without exposing Quality fallback", async () => {
   const harness = clientViewHarness({
     getRestaurantProfile: async () => restaurantFixture("r1", "Restricted Client"),
     getRestaurantTraining: async () => { throw new Error("403 Training"); },
     getRestaurantRatings: async () => { throw new Error("403 Ratings"); },
-    loadClientQualityRecords: async () => ({ records: [{ totalScore: 91 }], error: "403 Quality" })
+    loadClientQualityRecords: async () => { const error = new Error("neutral Quality denial"); error.status = 403; throw error; }
   });
   await harness.viewRestaurant("r1");
-  const output = harness.document.getElementById("profile-modal-body").innerHTML;
-  assert.match(output, /training:0:403 Training/);
-  assert.match(output, /ratings:0:403 Ratings/);
-  assert.match(output, /quality-error:403 Quality[\s\S]*quality:1/);
-  assert.deepEqual(harness.opened, [["profile-modal", "Restricted Client"]]);
+  const output = harness.document.getElementById("client-workspace").innerHTML;
+  assert.match(output, /data-module-permission="agent_training" data-state="restricted"/);
+  assert.match(output, /data-module-permission="restaurant_ratings" data-state="restricted"/);
+  assert.match(output, /data-module-permission="weekly_quality" data-state="restricted"/);
+  assert.doesNotMatch(output, /91|local browser records|neutral Quality denial/);
 });
 
-test("Employee enforces independent dependency permissions while the unchanged Client gap remains characterized", async () => {
+test("Employee and Client enforce independent dependency permissions with strict Client tri-state ownership", async () => {
   const moduleKeys = ["attendance", "weekly_quality", "agent_training", "employee_deductions", "restaurant_ratings"];
   for (const key of moduleKeys) assert.match(appShellSource, new RegExp(`permissionKey: '${key}'`));
   const permissionHookPattern = /data-permission(?:-view)?(?:\s|=)|data-module-permission|aria-hidden|\shidden(?:\s|=|>)/;
@@ -1445,9 +2072,7 @@ test("Employee enforces independent dependency permissions while the unchanged C
   assert.notEqual(permissiveMutation, dependencySource, "Mutation must restore the fail-open policy");
   await assert.rejects(() => requireFailClosedPermissions(permissiveMutation), /Only explicit boolean true may authorize a dependency/);
 
-  const clientDocument = documentFixture({
-    "profile-modal-title": { textContent: "" }, "profile-modal-body": { innerHTML: "" }
-  });
+  const clientDocument = documentFixture({ "client-workspace": { innerHTML: "" } });
   const clientVisibilitySelectors = [];
   clientDocument.querySelectorAll = (selector) => { clientVisibilitySelectors.push(selector); return []; };
   const clientWindow = await permissionRuntimeFixture(
@@ -1463,7 +2088,7 @@ test("Employee enforces independent dependency permissions while the unchanged C
     "getQualityAgentName", "getQualityAuditorName", "getQualityDateTime", "getQualityScore", "getQualityTotal",
     "formatScore", "formatRating", "ratingSortTime", "latestRatingByPlatform", "ratingValue", "qualitySortTime",
     "renderQualityDetails", "renderTrainingSection", "renderQualityPerformanceSection", "renderWeakAreasSection",
-    "renderQualityFallbackNotice", "renderDeliveryRatingsSection"
+    "renderDependencyState", "renderQualityFallbackNotice", "renderDeliveryRatingsSection"
   ], {
     QUALITY_SCORE_FIELDS: QUALITY_FIELDS, QUALITY_SCORE_LABELS: QUALITY_LABELS,
     escapeHtml: String, trainingStatusBadge: String
@@ -1472,31 +2097,52 @@ test("Employee enforces independent dependency permissions while the unchanged C
   const clientHarness = clientViewHarness({
     document: clientDocument, window: clientWindow,
     getRestaurantProfile: async () => restaurantFixture("r1", "Restricted Client"),
+    getClientDependencyAccess: async () => ({ training: "denied", quality: "denied", ratings: "denied" }),
     getRestaurantTraining: async () => { clientCalls.push("agent_training"); throw new Error("403 training"); },
     getRestaurantRatings: async () => { clientCalls.push("restaurant_ratings"); throw new Error("403 ratings"); },
-    loadClientQualityRecords: async () => { clientCalls.push("weekly_quality"); return { records: [{ totalScore: 93, createdAt: "2026-08-11" }], error: "403 quality" }; },
+    loadClientQualityRecords: async () => { clientCalls.push("weekly_quality"); return { records: [{ totalScore: 93, createdAt: "2026-08-11" }], error: "403 quality", degraded: true }; },
     renderTrainingSection: renderers.renderTrainingSection,
     renderDeliveryRatingsSection: renderers.renderDeliveryRatingsSection,
+    renderDependencyState: renderers.renderDependencyState,
     renderQualityFallbackNotice: renderers.renderQualityFallbackNotice,
     renderQualityPerformanceSection: renderers.renderQualityPerformanceSection,
     renderWeakAreasSection: renderers.renderWeakAreasSection
   });
   await clientHarness.viewRestaurant("r1");
   clientWindow.CCPermissions.applyPermissionVisibility(clientWindow.CC_PAGE_ACCESS);
-  assert.deepEqual(clientCalls, ["agent_training", "restaurant_ratings", "weekly_quality"]);
-  assert.deepEqual(clientPermissionLookups, []);
+  assert.deepEqual(clientCalls, [], "denied Client dependencies are not requested");
   assert.equal(clientHarness.document, clientDocument);
   assert.ok(clientVisibilitySelectors.includes("[data-permission-create]"));
   assert.ok(clientVisibilitySelectors.includes("[data-permission-edit]"));
   assert.ok(clientVisibilitySelectors.includes("[data-permission-delete]"));
-  const clientOutput = clientHarness.document.getElementById("profile-modal-body").innerHTML;
-  assert.match(clientOutput, /Training records could not be loaded[\s\S]*403 training/);
-  assert.match(clientOutput, /Delivery platform ratings could not be loaded[\s\S]*403 ratings/);
-  assert.match(clientOutput, /local browser records as a fallback[\s\S]*403 quality/);
-  assert.match(clientOutput, /Average Quality Score<\/span><strong>93%/);
-  const clientPanelScopes = ["Assigned Agents &amp; Training", "Weekly Quality Performance", "Quality Weak Areas", "Delivery Platform Ratings"]
-    .map((heading) => clientOutput.match(new RegExp(`<section class="detail-section">\\s*<h4>${heading}</h4>([\\s\\S]*?)</section>`))[0]);
-  requireIndependentGap(clientSource, "viewRestaurant", clientPanelScopes);
+  const clientOutput = clientHarness.document.getElementById("client-workspace").innerHTML;
+  for (const key of ["agent_training", "weekly_quality", "restaurant_ratings"]) {
+    assert.match(clientOutput, new RegExp(`data-module-permission="${key}" data-state="restricted"`));
+  }
+  assert.doesNotMatch(clientOutput, /93%|local browser records|403 quality/);
+
+  async function clientAccessResult(accessByKey) {
+    const access = evaluateFunctions(clientSource, ["getClientDependencyAccess"], {
+      window: { CCPermissions: { getMyAccess: async (key) => {
+        const result = accessByKey[key];
+        if (result instanceof Error) throw result;
+        return result;
+      } } }, dependencyAccessPromise: null,
+      CLIENT_DEPENDENCY_KEYS: { training: "agent_training", quality: "weekly_quality", ratings: "restaurant_ratings" }
+    });
+    return plain(await access.getClientDependencyAccess());
+  }
+  assert.deepEqual(await clientAccessResult({
+    agent_training: { canView: true, legacyFallback: false },
+    weekly_quality: { canView: false, legacyFallback: false },
+    restaurant_ratings: { canView: true, legacyFallback: true }
+  }), { training: "allowed", quality: "denied", ratings: "unavailable" });
+  assert.deepEqual(await clientAccessResult({
+    agent_training: null,
+    weekly_quality: { canView: "yes" },
+    restaurant_ratings: new Error("permission service offline")
+  }), { training: "unavailable", quality: "unavailable", ratings: "unavailable" });
+  assert.match(functionSource(clientSource, "viewRestaurant"), /dependencyAccess\.training === 'allowed'[\s\S]*dependencyAccess\.ratings === 'allowed'[\s\S]*dependencyAccess\.quality === 'allowed'/);
 
   assert.throws(() => requireEmployeePermissionContract(
     employeeSource.replace(/dependencyAccess\.attendance === 'allowed'/g, "true"), employeePanelScope
@@ -1504,14 +2150,13 @@ test("Employee enforces independent dependency permissions while the unchanged C
   assert.throws(() => requireEmployeePermissionContract(
     employeeSource, employeePanelScope.replace('data-module-permission="attendance"', 'data-domain="attendance"')
   ));
-  assert.throws(() => requireIndependentGap(clientSource, "viewRestaurant", [clientPanelScopes[0].replace("<section", "<section data-permission-view=\"agent_training\"")]));
 });
 
 test("Client planned modules render labels and non-interactive Coming soon cards", async () => {
   const harness = clientViewHarness({ getRestaurantProfile: async () => restaurantFixture("r1", "Planned Client") });
   await harness.viewRestaurant("r1");
-  const output = harness.document.getElementById("profile-modal-body").innerHTML;
-  const scope = output.match(/<section class="detail-section">\s*<h4>Future Modules<\/h4>([\s\S]*?)<\/section>/)[1];
+  const output = harness.document.getElementById("client-workspace").innerHTML;
+  const scope = output.match(/<section class="detail-section">\s*<h3>Future Modules<\/h3>([\s\S]*?)<\/section>/)[1];
   for (const label of ["Complaints", "Free Orders", "Call Queue"]) assert.match(scope, new RegExp(`<strong>${label}</strong>[\\s\\S]*<span>Coming soon</span>`));
   assert.equal((scope.match(/cc-planned-card/g) || []).length, 3);
   assert.doesNotMatch(scope, /<(?:a|button)\b|href=|data-(?:view|edit|manage)-id/);
@@ -1547,6 +2192,7 @@ test("Client archive and Edit-driven reactivation execute DELETE, form populatio
   const archiveRequests = [];
   const archive = evaluateFunctions(clientSource, ["archiveRestaurant"], {
     canManageClients: true, restaurants: [restaurantFixture("r1", "Archived Client")], RESTAURANTS_ENDPOINT: "/restaurants",
+    selectedRestaurantId: "", workspaceRequestToken: 0,
     window: { CloudCrowdConfirmation: { request: async () => true } },
     apiRequest: async (...args) => archiveRequests.push(args), showMessage() {}, loadRestaurants: async () => {}
   });
@@ -1794,7 +2440,7 @@ test("Profile stylesheet order and Light/Dark cascade winners remain determinist
     "assets/css/pages/business-quality.css", "assets/css/layouts/page-layout.css", "assets/css/components/buttons.css",
     "assets/css/components/icons.css", "assets/css/components/feedback.css", "assets/css/components/forms.css",
     "assets/css/components/filters.css", "assets/css/components/cards.css", "assets/css/components/status.css",
-    "assets/css/components/tables.css", "assets/css/components/dialogs.css"
+    "assets/css/components/tables.css", "assets/css/components/dialogs.css", "assets/css/components/master-detail.css"
   ]);
   assert.match(employeeSource, /assets\/js\/components\/master-detail\.js/);
   assert.match(employeeSource, /<link rel=stylesheet href=assets\/css\/components\/master-detail\.css>/);
@@ -1828,7 +2474,7 @@ test("Exact supported widths retain table horizontal reachability declarations",
   }
 });
 
-test("Profile layout cascade executes Employee two-pane/stacked sizing, Client grid/modal ownership, and selection-focus hooks", () => {
+test("Profile layout cascade executes shared two-pane/stacked sizing and selection-focus hooks", () => {
   const employeeWide = profileLayoutTargets(EMPLOYEE_FILE, 1440);
   assert.equal(employeeWide.cascade.winner(employeeWide.layout, "display").value, "grid");
   assert.equal(employeeWide.cascade.winner(employeeWide.layout, "grid-template-columns").value, "minmax(300px, 360px) minmax(0, 1fr)");
@@ -1868,25 +2514,37 @@ test("Profile layout cascade executes Employee two-pane/stacked sizing, Client g
   }
 
   const clientWide = profileLayoutTargets(CLIENT_FILE, 1440);
+  assert.equal(clientWide.cascade.winner(clientWide.layout, "display").value, "grid");
+  assert.equal(clientWide.cascade.winner(clientWide.layout, "grid-template-columns").value, "minmax(300px, 360px) minmax(0, 1fr)");
+  assert.equal(clientWide.cascade.winner(clientWide.directory, "position").value, "sticky");
+  assert.equal(clientWide.cascade.winner(clientWide.directory, "max-height").value, "calc(100vh - 96px)");
+  assert.equal(clientWide.cascade.winner(clientWide.workspace, "min-height").value, "640px");
   assert.equal(clientWide.cascade.winner(clientWide.grid, "display").value, "grid");
-  assert.equal(clientWide.cascade.winner(clientWide.grid, "grid-template-columns").value, "repeat(2,minmax(0,1fr))");
-  assert.equal(clientWide.cascade.winner(clientWide.panel, "width").value, "min(1120px,100%)");
+  assert.equal(clientWide.cascade.winner(clientWide.grid, "grid-template-columns").value, "1fr");
+  assert.equal(clientWide.cascade.winner(clientWide.back, "display").value, "none");
+  assert.equal(clientWide.cascade.winner(clientWide.select, "outline").value, "2px solid var(--color-border)");
   const clientMobile = profileLayoutTargets(CLIENT_FILE, 390);
   assert.equal(clientMobile.cascade.winner(clientMobile.grid, "grid-template-columns").value, "1fr");
-  assert.equal(clientMobile.cascade.winner(clientMobile.modal, "padding").value, "10px");
+  assert.equal(clientMobile.cascade.winner(clientMobile.layout, "grid-template-columns").value, "1fr");
+  assert.equal(clientMobile.cascade.winner(clientMobile.directory, "max-height").value, "480px");
+  assert.equal(clientMobile.cascade.winner(clientMobile.directory, "display").value, "none");
+  assert.equal(clientMobile.cascade.winner(clientMobile.back, "display").value, "inline-flex");
 
   const employeeMarkup = employeeSource.match(/<section class="employee-profiles-workspace-layout cc-master-detail"[\s\S]*?<\/section>\s*<p class="cc-master-detail__announcement"/)[0];
   assert.match(employeeMarkup, /cc-master-detail__list[\s\S]*cc-master-detail__notice[\s\S]*cc-master-detail__detail/);
-  const clientModal = clientSource.match(/<div class="modal" id="profile-modal"[\s\S]*?<div class="modal" id="client-modal"/)[0];
-  assert.match(clientModal, /role="dialog" aria-modal="true"[\s\S]*profile-modal-body/);
+  const clientMarkup = clientSource.match(/<section class="client-profiles-workspace-layout cc-master-detail"[\s\S]*?<p class="cc-master-detail__announcement"/)[0];
+  assert.match(clientMarkup, /cc-master-detail__list[\s\S]*cc-master-detail__notice[\s\S]*cc-master-detail__detail/);
 });
 
-test("Profile presentation and maintenance gaps are narrowly characterized without normalizing policy", () => {
+test("Profile presentation, Client history, and maintenance contracts are implemented without scope expansion", () => {
   const employeeWorkspace = employeeSource.match(/<section class="employee-profiles-workspace-layout cc-master-detail"[\s\S]*?<\/section>\s*<p class="cc-master-detail__announcement"/)[0];
   assert.match(employeeWorkspace, /employee-directory-pane[\s\S]*employee-workspace-pane/);
-  const clientProfileModal = clientSource.match(/<div class="modal" id="profile-modal"[\s\S]*?<div class="modal" id="client-modal"/)[0];
-  assert.match(clientProfileModal, /role="dialog" aria-modal="true"[\s\S]*profile-modal-body/);
-  assert.doesNotMatch(clientSource, /searchParams\.(?:get|set)\(['"]restaurantId|history\.replaceState|addEventListener\(['"]popstate/);
+  const clientWorkspace = clientSource.match(/<section class="client-profiles-workspace-layout cc-master-detail"[\s\S]*?<p class="cc-master-detail__announcement"/)[0];
+  assert.match(clientWorkspace, /client-directory-pane[\s\S]*client-workspace-pane/);
+  assert.doesNotMatch(clientSource, /id="profile-modal"|openModal\('profile-modal'\)/);
+  assert.match(functionSource(clientSource, "updateClientUrl"), /searchParams\.set\('restaurantId'[\s\S]*searchParams\.delete\('restaurantId'[\s\S]*pushState[\s\S]*replaceState/);
+  assert.match(clientSource, /historyKey: 'client-profiles'[\s\S]*onNavigate: handleClientHistoryNavigation/);
+  assert.match(masterDetailSource, /addEventListener\?\.\('popstate', handlePopState\)/);
 
   const employeeScripts = [...employeeSource.matchAll(/<script\s+src="([^"]+)"/g)].map((match) => match[1]);
   const clientScripts = [...clientSource.matchAll(/<script\s+src="([^"]+)"/g)].map((match) => match[1]);

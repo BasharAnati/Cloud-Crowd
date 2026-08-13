@@ -80,7 +80,6 @@ const staticTitleInventory = [
   { page: "agent-training.html", id: "details-modal-title", role: "modal" },
   { page: "restaurant-ratings.html", id: "rating-modal-title", role: "modal" },
   { page: "restaurant-ratings.html", id: "details-modal-title", role: "modal" },
-  { page: "client-profiles.html", id: "profile-modal-title", role: "modal" },
   { page: "client-profiles.html", id: "client-modal-title", role: "modal" },
   { page: "free-order-requests.html", id: "request-modal-title", role: "modal" },
   { page: "free-order-requests.html", id: "details-modal-title", role: "modal" },
@@ -301,7 +300,7 @@ test("workflow, Admin, and Call Queue real containers remain effectively full wi
 });
 
 test("the complete static modal and drawer title inventory is frozen in Light and Dark", () => {
-  assert.equal(staticTitleInventory.length, 22, "static title inventory count");
+  assert.equal(staticTitleInventory.length, 21, "static title inventory count");
   const inventoryPages = [...new Set(staticTitleInventory.map(({ page }) => page))];
   inventoryPages.forEach((page) => {
     const expectedCount = staticTitleInventory.filter((contract) => contract.page === page).length;
@@ -385,8 +384,8 @@ test("wide child contracts retain their minimum widths and reachable overflow", 
     let wrap = actualTargetsByClass(page, tableClass === "profile-table" ? "profile-table-wrap" : "table-wrap")[0];
     let table = tableClass ? actualTargetsByClass(page, tableClass)[0] : actualTableWithinClass(page, "table-wrap");
     if (page === "client-profiles.html") {
-      const modalBody = actualTargetById(page, "profile-modal-body");
-      wrap = element("div", { classes: ["profile-table-wrap"] }, modalBody);
+      const workspace = actualTargetById(page, "client-workspace");
+      wrap = element("div", { classes: ["profile-table-wrap"] }, workspace);
       table = element("table", { classes: ["profile-table"] }, wrap);
     }
     assert.equal(resolved(cascade, table, "min-width"), width, `${page}@${viewportWidth}: table width`);

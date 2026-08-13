@@ -101,7 +101,10 @@
         writeHistory(routeId, settings.updateHistory === false ? 'none' : historyMode, historyMarker('detail'));
       }
       applyView('detail');
-      if (settings.focus === true) focusDetail();
+      if (settings.focus === true) {
+        if (isMobile()) focusDetail();
+        else focusList(selectedId);
+      }
     }
 
     function showList(settings = {}) {
@@ -134,8 +137,9 @@
 
     function renderState(settings = {}) {
       const state = String(settings.state || 'empty-selection');
+      const semanticRole = ['status', 'alert'].includes(settings.role) ? ` role="${settings.role}"` : '';
       detail.innerHTML = `
-        <div class="cc-master-detail__state" data-state="${state}">
+        <div class="cc-master-detail__state" data-state="${state}"${semanticRole}>
           ${settings.eyebrow ? `<p>${settings.eyebrow}</p>` : ''}
           <h2 class="cc-section-title" tabindex="-1" data-cc-detail-focus>${settings.title || ''}</h2>
           ${settings.message ? `<p>${settings.message}</p>` : ''}

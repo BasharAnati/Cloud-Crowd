@@ -11,6 +11,7 @@
   <script src="assets/js/components/icons.js"></script>
   <script src="assets/js/components/feedback.js"></script>
   <script src="assets/js/components/dialog.js"></script>
+  <script src="assets/js/components/master-detail.js"></script>
   <script src="assets/js/components/confirmation.js"></script>
   <script src="assets/js/components/status-registry.js"></script>
   <link rel="stylesheet" href="assets/css/design-tokens.css">
@@ -95,7 +96,6 @@
     .modal{position:fixed;inset:0;z-index:var(--layer-modal-backdrop);display:none;align-items:center;justify-content:center;padding:22px;background:rgba(1,28,64,.62);backdrop-filter:blur(8px)}
     .modal.open{display:flex}
     .modal-panel{width:min(940px,100%);max-height:92vh;overflow:auto;border:1px solid rgba(167,235,242,.5);border-radius:24px;background:#fff;box-shadow:0 30px 90px rgba(1,28,64,.34)}
-    #profile-modal .modal-panel{width:min(1120px,100%)}
     .modal-header{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 26px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.96)}
     .modal-header h3{margin:0;color:var(--navy);font-size:24px;font-weight:950}
     .icon-btn{width:38px;height:38px;border:1px solid var(--line);border-radius:50%;color:var(--deep);background:#fff;font-size:20px;font-weight:950}
@@ -110,7 +110,7 @@
     .logo-preview img{width:100%;height:100%;object-fit:contain;background:#fff}
     .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
     .detail-section{margin-bottom:20px;padding:19px;border:1px solid var(--line);border-radius:18px;background:#fbfeff}
-    .detail-section h4{margin:0 0 14px;color:var(--navy);font-size:17px;font-weight:950}
+    .detail-section h3,.detail-section h4{margin:0 0 14px;color:var(--navy);font-size:17px;font-weight:950}
     .detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
     .detail-item{padding:12px;border-radius:12px;background:#fff;border:1px solid #e8f4f6}
     .detail-item.full{grid-column:1/-1}
@@ -144,6 +144,22 @@
     .future-card{min-height:94px;padding:13px;border:1px dashed #b8dce4;border-radius:13px;background:#f4fafc;color:var(--muted)}
     .future-card strong{display:block;color:#47677a;font-size:13px}
     .future-card span{display:block;margin-top:8px;font-size:11px;font-weight:800}
+    .client-directory-pane{display:flex;flex-direction:column}
+    .client-directory-pane .card-header,.client-directory-pane .filters{flex:0 0 auto}
+    .client-directory-pane .filters{grid-template-columns:1fr;padding:14px}
+    .client-directory-pane .client-grid{grid-template-columns:1fr;align-content:start;overflow-y:auto;padding:0 14px 14px}
+    .client-directory-pane .client-card{padding:14px}
+    .client-select:focus-visible{border-radius:10px;outline:2px solid var(--color-border);outline-offset:3px}
+    .client-card.is-selected{border-color:var(--color-border);background:linear-gradient(115deg,var(--color-primary-soft),var(--color-primary-soft));box-shadow:inset 3px 0 0 var(--color-shadow),0 8px 24px var(--color-shadow)}
+    .client-workspace-pane{background:var(--color-surface)}
+    .client-workspace-content{padding:22px}
+    .client-workspace-header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px}
+    .client-workspace-header h2{margin:3px 0 0;color:var(--navy);font-size:26px;font-weight:950}
+    .client-workspace-kicker{margin:0;color:var(--muted);font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+    .client-workspace-loading{min-height:638px;display:grid;place-items:center;padding:40px;text-align:center;color:var(--muted)}
+    .client-workspace-loading h2{margin:10px 0 4px;color:var(--navy)}
+    .dependency-state[data-state="restricted"],.dependency-state[data-state="permission-unavailable"]{color:var(--muted);border-style:dashed}
+    .dependency-state[data-state="restricted"] strong{color:var(--color-danger-text)}
     @media (max-width:850px){
       .stats-grid,.client-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
       .metrics-grid,.future-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -159,6 +175,8 @@
       .modal-body{padding:18px}
       .modal-actions{flex-direction:column-reverse}
       .modal-actions button{width:100%}
+      .client-workspace-content{padding:16px}
+      .client-workspace-header{align-items:stretch;flex-direction:column}
     }
   </style>
   <link rel="stylesheet" href="assets/css/pages/business-quality.css">
@@ -183,6 +201,7 @@
   <link rel="stylesheet" href="assets/css/components/status.css">
   <link rel="stylesheet" href="assets/css/components/tables.css">
   <link rel="stylesheet" href="assets/css/components/dialogs.css">
+  <link rel="stylesheet" href="assets/css/components/master-detail.css">
 </head>
 <body class="business-quality-page client-profiles-page" data-shell-module="client-profiles" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -214,39 +233,43 @@
         <article class="stat-card cc-metric-card"><span>Assigned Agents</span><strong id="stat-agents">0</strong></article>
       </section>
 
-      <section class="content-card" aria-labelledby="directory-title">
-        <div class="card-header">
-          <div>
-            <h2 class="cc-section-title" id="directory-title">Client Directory</h2>
-            <p>Search restaurants and open the full operational profile.</p>
+      <section class="client-profiles-workspace-layout cc-master-detail" id="client-master-detail" data-view="list" aria-label="Client directory and workspace">
+        <aside class="client-directory-pane content-card cc-master-detail__list" id="client-directory-view" aria-labelledby="directory-title">
+          <div class="card-header">
+            <div>
+              <h2 class="cc-section-title" id="directory-title">Client Directory</h2>
+              <p>Search restaurants and open the full operational profile.</p>
+            </div>
+            <span class="role-pill" id="record-count">0 records</span>
           </div>
-          <span class="role-pill" id="record-count">0 records</span>
-        </div>
-        <div class="filters cc-filter-bar cc-filter-bar--compact" aria-label="Client directory filters">
-          <input class="control cc-control" id="client-search" type="search" placeholder="Search brand, owner, or number" aria-label="Search clients by brand, owner, or number">
-          <select class="control" id="status-filter" aria-label="Filter clients by status">
-            <option value="all">All clients</option>
-            <option value="active">Active clients</option>
-            <option value="inactive">Archived clients</option>
-          </select>
-        </div>
-        <div class="client-grid" id="client-grid">
-          <div class="empty-state cc-empty-state">Loading client profiles...</div>
-        </div>
+          <div class="filters cc-filter-bar cc-filter-bar--compact" aria-label="Client directory filters">
+            <input class="control cc-control" id="client-search" type="search" placeholder="Search brand, owner, or number" aria-label="Search clients by brand, owner, or number">
+            <select class="control" id="status-filter" aria-label="Filter clients by status">
+              <option value="all">All clients</option>
+              <option value="active">Active clients</option>
+              <option value="inactive">Archived clients</option>
+            </select>
+          </div>
+          <div class="cc-master-detail__notice" id="client-hidden-selection-notice" role="status" hidden>
+            The selected Client is hidden by the current filters.
+            <button class="small-btn cc-master-detail__notice-action" type="button" data-cc-master-detail-reset>Clear Filters</button>
+          </div>
+          <div class="client-grid" id="client-grid" data-state="loading" aria-busy="true">
+            <div class="empty-state cc-empty-state" role="status">Loading client profiles...</div>
+          </div>
+        </aside>
+        <section class="client-workspace-pane content-card cc-master-detail__detail" id="client-workspace" aria-label="Client workspace" tabindex="-1">
+          <div class="cc-master-detail__state" data-state="empty-selection" role="status">
+            <p>Client workspace</p>
+            <h2 class="cc-section-title" tabindex="-1" data-cc-detail-focus>Select a Client</h2>
+            <p>Choose a record from the directory to review brand information and operational summaries.</p>
+          </div>
+        </section>
       </section>
+      <p class="cc-master-detail__announcement" id="client-detail-announcement" aria-live="polite" aria-atomic="true"></p>
       </div>
     </main>
     <button id="internal-nav-backdrop" class="cc-shell-nav-backdrop" type="button" aria-label="Close application navigation" tabindex="-1" hidden></button>
-  </div>
-
-  <div class="modal" id="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
-    <div class="modal-panel">
-      <div class="modal-header">
-        <h3 class="cc-modal-title" id="profile-modal-title">Client Profile</h3>
-        <button class="icon-btn" type="button" data-close-modal="profile-modal" aria-label="Close client profile">&times;</button>
-      </div>
-      <div class="modal-body" id="profile-modal-body"></div>
-    </div>
   </div>
 
   <div class="modal" id="client-modal" role="dialog" aria-modal="true" aria-labelledby="client-modal-title">
@@ -351,9 +374,18 @@
       aat: 'AAT'
     };
     const MAX_LOGO_BYTES = 750 * 1024;
+    const CLIENT_DEPENDENCY_KEYS = {
+      training: 'agent_training',
+      quality: 'weekly_quality',
+      ratings: 'restaurant_ratings'
+    };
     const currentRole = (sessionStorage.getItem('cc_role') || '').toLowerCase();
     const canManageClients = ['admin', 'manager'].includes(currentRole);
     let restaurants = [];
+    let selectedRestaurantId = '';
+    let workspaceRequestToken = 0;
+    let dependencyAccessPromise = null;
+    let clientMasterDetail = null;
 
     function authHeaders(extra = {}) {
       return {
@@ -396,11 +428,15 @@
       });
       if (response.status === 401) {
         logout(false);
-        throw new Error('Session expired');
+        const error = new Error('Session expired');
+        error.status = response.status;
+        throw error;
       }
       const data = await response.json().catch(() => ({}));
       if (!response.ok || data.ok === false) {
-        throw new Error(data.error || `Request failed (${response.status})`);
+        const error = new Error(data.error || `Request failed (${response.status})`);
+        error.status = response.status;
+        throw error;
       }
       return data;
     }
@@ -558,6 +594,27 @@
       });
     }
 
+    function isPermissionDenied(error) {
+      return [401, 403].includes(Number(error?.status)) || /(?:^|\b)(?:401|403)(?:\b|$)|unauthorized|session expired|forbidden|not authorized|permission denied/i.test(String(error?.message || error || ''));
+    }
+
+    async function getClientDependencyAccess() {
+      if (!dependencyAccessPromise) {
+        dependencyAccessPromise = Promise.all(Object.entries(CLIENT_DEPENDENCY_KEYS).map(async ([name, key]) => {
+          try {
+            const access = await window.CCPermissions?.getMyAccess(key);
+            if (!access || access.legacyFallback === true || typeof access.canView !== 'boolean') {
+              return [name, 'unavailable'];
+            }
+            return [name, access.canView === true ? 'allowed' : 'denied'];
+          } catch {
+            return [name, 'unavailable'];
+          }
+        })).then((entries) => Object.fromEntries(entries));
+      }
+      return dependencyAccessPromise;
+    }
+
     async function getClientQualityRecordsFromApi(restaurantId) {
       const data = await apiRequest(
         `${WEEKLY_QUALITY_ENDPOINT}?restaurantId=${encodeURIComponent(restaurantId)}`
@@ -569,13 +626,16 @@
       try {
         return {
           records: await getClientQualityRecordsFromApi(String(restaurant.restaurantId || '')),
-          error: ''
+          error: '',
+          degraded: false
         };
       } catch (error) {
+        if (isPermissionDenied(error)) throw error;
         console.warn('Weekly quality API could not be loaded for Client Profiles.', error);
         return {
           records: getClientQualityRecords(restaurant),
-          error: error.message || 'Weekly Quality API could not be loaded.'
+          error: error.message || 'Weekly Quality API could not be loaded.',
+          degraded: true
         };
       }
     }
@@ -600,16 +660,58 @@
     }
 
     async function loadRestaurants() {
+      const grid = document.getElementById('client-grid');
+      workspaceRequestToken += 1;
+      grid.dataset.state = 'loading';
+      grid.setAttribute('aria-busy', 'true');
+      grid.innerHTML = '<div class="empty-state cc-empty-state" role="status">Loading client profiles...</div>';
       try {
         const data = await apiRequest(`${RESTAURANTS_ENDPOINT}?status=all`);
         restaurants = Array.isArray(data.restaurants) ? data.restaurants : [];
         renderStats();
         renderRestaurants();
+        const requestedId = selectedRestaurantId || new URLSearchParams(window.location.search).get('restaurantId') || '';
+        const requestedRestaurant = restaurants.find((restaurant) => restaurant.restaurantId === requestedId);
+        clientMasterDetail?.syncInitial(requestedId, {
+          selectedId: requestedRestaurant?.status === 'active' ? requestedId : ''
+        });
+        if (requestedRestaurant?.status === 'active') {
+          selectedRestaurantId = requestedId;
+          renderRestaurants();
+          await viewRestaurant(requestedId, {
+            updateUrl: false,
+            focusWorkspace: clientMasterDetail?.isMobile(),
+            navigationSource: 'direct'
+          });
+        } else if (requestedId) {
+          selectedRestaurantId = '';
+          workspaceRequestToken += 1;
+          renderRestaurants();
+          renderUnavailableWorkspace(
+            requestedRestaurant?.status === 'inactive'
+              ? 'This Client is archived and is unavailable for selection.'
+              : 'The requested Client record is missing or inaccessible.',
+            requestedId
+          );
+        } else {
+          selectedRestaurantId = '';
+          renderRestaurants();
+          renderEmptyWorkspace();
+        }
       } catch (error) {
         restaurants = [];
-        document.getElementById('client-grid').innerHTML =
-          `<div class="empty-state">${escapeHtml(error.message)}</div>`;
+        grid.dataset.state = 'error';
+        grid.removeAttribute('aria-busy');
+        grid.innerHTML = `<div class="empty-state cc-table-state" data-state="error" role="alert">Client directory could not be loaded. ${escapeHtml(error.message)}</div>`;
+        document.getElementById('record-count').textContent = '0 records';
         renderStats();
+        const routedId = new URLSearchParams(window.location.search).get('restaurantId') || '';
+        if (routedId) {
+          clientMasterDetail?.syncInitial(routedId, { selectedId: '' });
+          renderWorkspaceError('The Client directory could not be loaded. Try again to resolve this link.', false, true);
+        } else {
+          renderEmptyWorkspace();
+        }
       }
     }
 
@@ -639,16 +741,28 @@
     function renderRestaurants() {
       const filtered = getFilteredRestaurants();
       const grid = document.getElementById('client-grid');
+      grid.removeAttribute('aria-busy');
+      const selectedRestaurant = restaurants.find((restaurant) => restaurant.restaurantId === selectedRestaurantId);
+      const selectionHidden = Boolean(
+        selectedRestaurant?.status === 'active' &&
+        !filtered.some((restaurant) => restaurant.restaurantId === selectedRestaurantId)
+      );
+      clientMasterDetail?.setSelectionHidden(selectionHidden);
       if (!filtered.length) {
-        grid.innerHTML = '<div class="empty-state">No client profiles match this view.</div>';
+        const emptyCollection = restaurants.length === 0;
+        grid.dataset.state = emptyCollection ? 'empty-collection' : 'filtered-empty';
+        grid.innerHTML = emptyCollection
+          ? '<div class="empty-state cc-table-state" data-state="empty" role="status">No client profiles are available.</div>'
+          : '<div class="empty-state cc-table-state" data-state="empty" role="status">No client profiles match this view.</div>';
       } else {
+        grid.dataset.state = 'populated';
         grid.innerHTML = filtered.map((restaurant) => {
           const managementActions = canManageClients ? `
             <button class="small-btn" type="button" data-edit-id="${escapeHtml(restaurant.restaurantId)}" data-permission-edit>Edit</button>
             <button class="small-btn danger-btn" type="button" data-archive-id="${escapeHtml(restaurant.restaurantId)}" data-permission-delete>Archive</button>
           ` : '';
           return `
-            <article class="client-card cc-card">
+            <article class="client-card cc-card${restaurant.restaurantId === selectedRestaurantId ? ' is-selected' : ''}" ${restaurant.restaurantId === selectedRestaurantId ? 'aria-current="true"' : ''} data-cc-master-item="${escapeHtml(restaurant.restaurantId)}">
               <div class="client-card-head">
                 ${logoMarkup(restaurant)}
                 <div>
@@ -662,7 +776,7 @@
                 <span>Account Manager: ${valueOrDash(restaurant.accountManagerName)}</span>
               </div>
               <div class="card-actions">
-                <button class="small-btn" type="button" data-view-id="${escapeHtml(restaurant.restaurantId)}">View Profile</button>
+                <button class="small-btn client-select" type="button" data-view-id="${escapeHtml(restaurant.restaurantId)}" aria-label="Open ${escapeHtml(restaurant.brandName)} workspace" ${restaurant.restaurantId === selectedRestaurantId ? 'aria-current="true"' : ''}>View Profile</button>
                 ${managementActions}
               </div>
             </article>
@@ -777,7 +891,74 @@
       return Array.isArray(data.ratings) ? data.ratings : [];
     }
 
-    function renderTrainingSection(trainingRecords, trainingError) {
+    function renderEmptyWorkspace() {
+      clientMasterDetail?.renderState({
+        state: 'empty-selection',
+        role: 'status',
+        eyebrow: 'Client workspace',
+        title: 'Select a Client',
+        message: 'Choose a record from the directory to review brand information and operational summaries.'
+      });
+    }
+
+    function renderWorkspaceLoading(restaurantId) {
+      const restaurant = restaurants.find((item) => item.restaurantId === restaurantId);
+      document.getElementById('client-workspace').innerHTML = `
+        <div class="client-workspace-loading" role="status" aria-busy="true" tabindex="-1" data-cc-detail-focus>
+          <div>
+            <button class="small-btn cc-master-detail__back" type="button" data-back-to-directory>Back to directory</button>
+            <h2 class="cc-section-title">Loading Client profile</h2>
+            <p>Loading ${escapeHtml(restaurant?.brandName || 'Client')} workspace...</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderWorkspaceError(message, retry = true, retryDirectory = false) {
+      document.getElementById('client-detail-announcement').textContent = '';
+      const action = `
+        ${retry && selectedRestaurantId ? '<button class="small-btn" type="button" data-retry-workspace>Try again</button>' : ''}
+        ${retryDirectory ? '<button class="small-btn" type="button" data-retry-directory>Retry directory</button>' : ''}
+        <button class="small-btn cc-master-detail__back" type="button" data-back-to-directory>Back to directory</button>
+      `;
+      clientMasterDetail?.renderState({
+        state: 'error',
+        role: 'alert',
+        eyebrow: 'Workspace error',
+        title: 'Client profile could not be loaded',
+        message: escapeHtml(message),
+        action
+      });
+    }
+
+    function renderUnavailableWorkspace(message, routeId = new URLSearchParams(window.location.search).get('restaurantId') || '') {
+      document.getElementById('client-detail-announcement').textContent = '';
+      clientMasterDetail?.renderState({
+        state: 'unavailable',
+        role: 'alert',
+        eyebrow: 'Workspace unavailable',
+        title: 'Client is unavailable',
+        message: escapeHtml(message),
+        action: '<button class="small-btn cc-master-detail__back" type="button" data-back-to-directory>Back to directory</button>'
+      });
+      clientMasterDetail?.showDetail('', {
+        routeId,
+        updateHistory: false,
+        focus: clientMasterDetail.isMobile(),
+        rememberOrigin: false
+      });
+      clientMasterDetail?.setSelectionHidden(false);
+    }
+
+    function renderDependencyState(label, state) {
+      if (state === 'denied') {
+        return `<div class="empty-state cc-table-state dependency-state" data-state="restricted" role="status"><strong>${escapeHtml(label)} is restricted.</strong> Permission is required to view this content.</div>`;
+      }
+      return `<div class="empty-state cc-table-state dependency-state" data-state="permission-unavailable" role="status"><strong>${escapeHtml(label)} permission could not be verified.</strong> No protected data was loaded.</div>`;
+    }
+
+    function renderTrainingSection(trainingRecords, trainingError, permissionState = 'allowed') {
+      if (permissionState !== 'allowed') return renderDependencyState('Training', permissionState);
       if (trainingError) {
         return `<div class="empty-state cc-table-state" data-state="error" role="alert">Training records could not be loaded. ${escapeHtml(trainingError)}</div>`;
       }
@@ -945,7 +1126,8 @@
       return `<div class="empty-state">Weekly Quality API could not be loaded. Showing local browser records as a fallback. ${escapeHtml(qualityError)}</div>`;
     }
 
-    function renderDeliveryRatingsSection(ratingRecords, ratingError) {
+    function renderDeliveryRatingsSection(ratingRecords, ratingError, permissionState = 'allowed') {
+      if (permissionState !== 'allowed') return renderDependencyState('Restaurant Ratings', permissionState);
       if (ratingError) {
         return `<div class="empty-state cc-table-state" data-state="error" role="alert">Delivery platform ratings could not be loaded. ${escapeHtml(ratingError)}</div>`;
       }
@@ -991,32 +1173,85 @@
       `;
     }
 
-    async function viewRestaurant(restaurantId) {
+    async function viewRestaurant(restaurantId, options = {}) {
+      if (!restaurantId) return;
+      const directoryRestaurant = restaurants.find((restaurant) => restaurant.restaurantId === restaurantId);
+      if (directoryRestaurant?.status === 'inactive') {
+        selectedRestaurantId = '';
+        workspaceRequestToken += 1;
+        clientMasterDetail?.showDetail(restaurantId, {
+          updateHistory: options.updateUrl !== false,
+          historyMode: options.historyMode
+        });
+        renderRestaurants();
+        renderUnavailableWorkspace('This Client is archived and is unavailable for selection.', restaurantId);
+        return;
+      }
+
+      selectedRestaurantId = restaurantId;
+      const requestToken = ++workspaceRequestToken;
+      renderRestaurants();
+      renderWorkspaceLoading(restaurantId);
+      clientMasterDetail?.showDetail(restaurantId, {
+        updateHistory: options.updateUrl !== false,
+        historyMode: options.historyMode,
+        focus: options.focusWorkspace !== false
+      });
+
       try {
-        const restaurant = await getRestaurantProfile(restaurantId);
-        let trainingRecords = [];
-        let trainingError = '';
-        let ratingRecords = [];
-        let ratingError = '';
-        try {
-          trainingRecords = await getRestaurantTraining(restaurant.restaurantId);
-        } catch (error) {
-          trainingError = error.message || 'Training records could not be loaded.';
+        const [restaurant, dependencyAccess] = await Promise.all([
+          getRestaurantProfile(restaurantId),
+          getClientDependencyAccess()
+        ]);
+        if (requestToken !== workspaceRequestToken || restaurantId !== selectedRestaurantId) return;
+        if (!restaurant || restaurant.status !== 'active') {
+          selectedRestaurantId = '';
+          workspaceRequestToken += 1;
+          renderRestaurants();
+          renderUnavailableWorkspace(
+            restaurant?.status === 'inactive'
+              ? 'This Client is archived and is unavailable for selection.'
+              : 'This Client record is no longer available.',
+            restaurantId
+          );
+          return;
         }
-        try {
-          ratingRecords = await getRestaurantRatings(restaurant.restaurantId);
-        } catch (error) {
-          ratingError = error.message || 'Delivery platform ratings could not be loaded.';
-        }
-        const trainingSection = renderTrainingSection(trainingRecords, trainingError);
-        const deliveryRatingsSection = renderDeliveryRatingsSection(ratingRecords, ratingError);
-        const {
-          records: qualityRecords,
-          error: qualityError
-        } = await loadClientQualityRecords(restaurant);
-        const qualityFallbackNotice = renderQualityFallbackNotice(qualityError);
-        const qualityPerformanceSection = renderQualityPerformanceSection(qualityRecords);
-        const weakAreasSection = renderWeakAreasSection(qualityRecords);
+
+        const trainingPromise = dependencyAccess.training === 'allowed'
+          ? getRestaurantTraining(restaurant.restaurantId)
+            .then((records) => ({ records, error: '', restricted: false }))
+            .catch((error) => ({ records: [], error: error.message || 'Training records could not be loaded.', restricted: isPermissionDenied(error) }))
+          : Promise.resolve({ records: [], error: '', restricted: false });
+        const ratingsPromise = dependencyAccess.ratings === 'allowed'
+          ? getRestaurantRatings(restaurant.restaurantId)
+            .then((records) => ({ records, error: '', restricted: false }))
+            .catch((error) => ({ records: [], error: error.message || 'Delivery platform ratings could not be loaded.', restricted: isPermissionDenied(error) }))
+          : Promise.resolve({ records: [], error: '', restricted: false });
+        const qualityPromise = dependencyAccess.quality === 'allowed'
+          ? loadClientQualityRecords(restaurant)
+            .then((result) => ({ ...result, restricted: false }))
+            .catch((error) => ({ records: [], error: error.message || 'Weekly Quality records could not be loaded.', degraded: false, restricted: isPermissionDenied(error) }))
+          : Promise.resolve({ records: [], error: '', degraded: false, restricted: false });
+
+        const [trainingResult, ratingsResult, qualityResult] = await Promise.all([
+          trainingPromise,
+          ratingsPromise,
+          qualityPromise
+        ]);
+        if (requestToken !== workspaceRequestToken || restaurantId !== selectedRestaurantId) return;
+
+        const trainingState = trainingResult.restricted ? 'denied' : dependencyAccess.training;
+        const ratingsState = ratingsResult.restricted ? 'denied' : dependencyAccess.ratings;
+        const qualityState = qualityResult.restricted ? 'denied' : dependencyAccess.quality;
+        const trainingSection = renderTrainingSection(trainingResult.records, trainingResult.error, trainingState);
+        const deliveryRatingsSection = renderDeliveryRatingsSection(ratingsResult.records, ratingsResult.error, ratingsState);
+        const qualityFallbackNotice = qualityState === 'allowed' ? renderQualityFallbackNotice(qualityResult.error) : '';
+        const qualityPerformanceSection = qualityState === 'allowed'
+          ? renderQualityPerformanceSection(qualityResult.records)
+          : renderDependencyState('Weekly Quality', qualityState);
+        const weakAreasSection = qualityState === 'allowed'
+          ? renderWeakAreasSection(qualityResult.records)
+          : renderDependencyState('Weekly Quality', qualityState);
         const futureModules = [
           'Complaints',
           'Free Orders',
@@ -1028,51 +1263,75 @@
           </div>
         `).join('');
 
-        document.getElementById('profile-modal-title').textContent = restaurant.brandName;
-        document.getElementById('profile-modal-body').innerHTML = `
-          <section class="detail-section">
-            <h4>Brand Overview</h4>
-            <div class="profile-brand">
-              ${logoMarkup(restaurant)}
-              <div class="detail-grid">
-                <div class="detail-item"><span>Brand Name</span><strong>${escapeHtml(restaurant.brandName)}</strong></div>
-                <div class="detail-item"><span>Status</span><strong>${statusBadge(restaurant.status)}</strong></div>
-                <div class="detail-item"><span>Call Center Number</span><strong>${valueOrDash(restaurant.callCenterNumber)}</strong></div>
-                <div class="detail-item"><span>Original Restaurant Number</span><strong>${valueOrDash(restaurant.originalRestaurantNumber)}</strong></div>
-                <div class="detail-item"><span>Forwarded Number</span><strong>${valueOrDash(restaurant.forwardedNumber)}</strong></div>
-                <div class="detail-item"><span>Brand Owner</span><strong>${valueOrDash(restaurant.brandOwnerName)}</strong></div>
-                <div class="detail-item"><span>Account Manager</span><strong>${valueOrDash(restaurant.accountManagerName)}</strong></div>
-                <div class="detail-item"><span>Restaurant Manager</span><strong>${valueOrDash(restaurant.restaurantManagerName)}</strong></div>
-                <div class="detail-item full"><span>Notes</span><strong>${valueOrDash(restaurant.notes)}</strong></div>
+        document.getElementById('client-workspace').innerHTML = `
+          <div class="client-workspace-content">
+            <header class="client-workspace-header">
+              <div>
+                <p class="client-workspace-kicker">Client profile</p>
+                <h2 class="cc-section-title" tabindex="-1" data-cc-detail-focus>${escapeHtml(restaurant.brandName)}</h2>
               </div>
-            </div>
-          </section>
-          <section class="detail-section">
-            <h4>Assigned Agents &amp; Training</h4>
-            ${trainingSection}
-          </section>
-          <section class="detail-section">
-            <h4>Weekly Quality Performance</h4>
-            ${qualityFallbackNotice}
-            ${qualityPerformanceSection}
-          </section>
-          <section class="detail-section">
-            <h4>Quality Weak Areas</h4>
-            ${qualityFallbackNotice}
-            ${weakAreasSection}
-          </section>
-          <section class="detail-section">
-            <h4>Delivery Platform Ratings</h4>
-            ${deliveryRatingsSection}
-          </section>
-          <section class="detail-section">
-            <h4>Future Modules</h4>
-            <div class="future-grid">${futureModules}</div>
-          </section>
+              <button class="small-btn cc-master-detail__back" type="button" data-back-to-directory>Back to directory</button>
+            </header>
+            <section class="detail-section">
+              <h3>Brand Overview</h3>
+              <div class="profile-brand">
+                ${logoMarkup(restaurant)}
+                <div class="detail-grid">
+                  <div class="detail-item"><span>Brand Name</span><strong>${escapeHtml(restaurant.brandName)}</strong></div>
+                  <div class="detail-item"><span>Status</span><strong>${statusBadge(restaurant.status)}</strong></div>
+                  <div class="detail-item"><span>Call Center Number</span><strong>${valueOrDash(restaurant.callCenterNumber)}</strong></div>
+                  <div class="detail-item"><span>Original Restaurant Number</span><strong>${valueOrDash(restaurant.originalRestaurantNumber)}</strong></div>
+                  <div class="detail-item"><span>Forwarded Number</span><strong>${valueOrDash(restaurant.forwardedNumber)}</strong></div>
+                  <div class="detail-item"><span>Brand Owner</span><strong>${valueOrDash(restaurant.brandOwnerName)}</strong></div>
+                  <div class="detail-item"><span>Account Manager</span><strong>${valueOrDash(restaurant.accountManagerName)}</strong></div>
+                  <div class="detail-item"><span>Restaurant Manager</span><strong>${valueOrDash(restaurant.restaurantManagerName)}</strong></div>
+                  <div class="detail-item full"><span>Notes</span><strong>${valueOrDash(restaurant.notes)}</strong></div>
+                </div>
+              </div>
+            </section>
+            <section class="detail-section" data-module-permission="agent_training" data-state="${trainingState === 'denied' ? 'restricted' : trainingState === 'unavailable' ? 'permission-unavailable' : trainingResult.error ? 'error' : trainingResult.records.length ? 'success' : 'empty'}">
+              <h3>Assigned Agents &amp; Training</h3>
+              ${trainingSection}
+            </section>
+            <section class="detail-section" data-module-permission="weekly_quality" data-state="${qualityState === 'denied' ? 'restricted' : qualityState === 'unavailable' ? 'permission-unavailable' : qualityResult.degraded ? 'degraded' : qualityResult.records.length ? 'success' : 'empty'}">
+              <h3>Weekly Quality Performance</h3>
+              ${qualityFallbackNotice}
+              ${qualityPerformanceSection}
+            </section>
+            <section class="detail-section" data-module-permission="weekly_quality" data-state="${qualityState === 'denied' ? 'restricted' : qualityState === 'unavailable' ? 'permission-unavailable' : qualityResult.degraded ? 'degraded' : qualityResult.records.length ? 'success' : 'empty'}">
+              <h3>Quality Weak Areas</h3>
+              ${qualityFallbackNotice}
+              ${weakAreasSection}
+            </section>
+            <section class="detail-section" data-module-permission="restaurant_ratings" data-state="${ratingsState === 'denied' ? 'restricted' : ratingsState === 'unavailable' ? 'permission-unavailable' : ratingsResult.error ? 'error' : ratingsResult.records.length ? 'success' : 'empty'}">
+              <h3>Delivery Platform Ratings</h3>
+              ${deliveryRatingsSection}
+            </section>
+            <section class="detail-section">
+              <h3>Future Modules</h3>
+              <div class="future-grid">${futureModules}</div>
+            </section>
+          </div>
         `;
-        openModal('profile-modal');
+        window.CCPermissions?.applyPermissionVisibility(window.CC_PAGE_ACCESS);
+        const partialDetail = [trainingState !== 'allowed', ratingsState !== 'allowed', qualityState !== 'allowed',
+          Boolean(trainingResult.error), Boolean(ratingsResult.error), Boolean(qualityResult.error)].some(Boolean);
+        clientMasterDetail?.announce(partialDetail
+          ? `${restaurant.brandName} details updated. Some linked modules are restricted or unavailable.`
+          : `${restaurant.brandName} details updated.`);
       } catch (error) {
-        showMessage(error.message);
+        if (requestToken !== workspaceRequestToken || restaurantId !== selectedRestaurantId) return;
+        if (isPermissionDenied(error) || [404, 410].includes(Number(error?.status))) {
+          selectedRestaurantId = '';
+          workspaceRequestToken += 1;
+          renderRestaurants();
+          renderUnavailableWorkspace(
+            isPermissionDenied(error) ? 'This Client record is inaccessible.' : 'This Client record is no longer available.',
+            restaurantId
+          );
+        } else {
+          renderWorkspaceError(error.message);
+        }
       }
     }
 
@@ -1112,6 +1371,7 @@
       })) return;
 
       try {
+        if (restaurantId === selectedRestaurantId) workspaceRequestToken += 1;
         await apiRequest(
           `${RESTAURANTS_ENDPOINT}?id=${encodeURIComponent(restaurantId)}`,
           { method: 'DELETE' }
@@ -1122,6 +1382,88 @@
         showMessage(error.message);
       }
     }
+
+    function updateClientUrl(restaurantId, mode = 'replace', metadata = {}) {
+      const url = new URL(window.location.href);
+      if (restaurantId) url.searchParams.set('restaurantId', restaurantId);
+      else url.searchParams.delete('restaurantId');
+      const method = mode === 'push' ? 'pushState' : 'replaceState';
+      window.history[method](
+        { ...(window.history.state || {}), ...metadata, restaurantId: restaurantId || '' },
+        '',
+        `${url.pathname}${url.search}${url.hash}`
+      );
+    }
+
+    function resetClientFilters() {
+      document.getElementById('client-search').value = '';
+      document.getElementById('status-filter').value = 'all';
+      renderRestaurants();
+      const selectedButton = Array.from(document.querySelectorAll('[data-cc-master-item]'))
+        .find((item) => item.dataset.ccMasterItem === selectedRestaurantId)
+        ?.querySelector('.client-select');
+      (selectedButton || document.getElementById('client-search')).focus({ preventScroll: true });
+    }
+
+    async function handleClientHistoryNavigation(restaurantId) {
+      if (!restaurantId) {
+        selectedRestaurantId = '';
+        workspaceRequestToken += 1;
+        renderRestaurants();
+        renderEmptyWorkspace();
+        return;
+      }
+      const restaurant = restaurants.find((item) => item.restaurantId === restaurantId);
+      if (!restaurant || restaurant.status !== 'active') {
+        selectedRestaurantId = '';
+        workspaceRequestToken += 1;
+        renderRestaurants();
+        renderUnavailableWorkspace(
+          restaurant?.status === 'inactive'
+            ? 'This Client is archived and is unavailable for selection.'
+            : 'The requested Client record is missing or inaccessible.',
+          restaurantId
+        );
+        return;
+      }
+      await viewRestaurant(restaurantId, {
+        updateUrl: false,
+        focusWorkspace: true,
+        navigationSource: 'popstate'
+      });
+    }
+
+    function backToClientDirectory() {
+      const restoreId = clientMasterDetail.getFocusOriginId();
+      selectedRestaurantId = '';
+      workspaceRequestToken += 1;
+      renderRestaurants();
+      renderEmptyWorkspace();
+      return clientMasterDetail.backToList({ restoreFocus: true, restoreId });
+    }
+
+    clientMasterDetail = window.CloudCrowdMasterDetail.create({
+      root: document.getElementById('client-master-detail'),
+      list: document.getElementById('client-directory-view'),
+      detail: document.getElementById('client-workspace'),
+      announcement: document.getElementById('client-detail-announcement'),
+      hiddenNotice: document.getElementById('client-hidden-selection-notice'),
+      history: {
+        read: () => new URLSearchParams(window.location.search).get('restaurantId') || '',
+        readState: () => window.history.state,
+        write: (restaurantId, mode, metadata) => updateClientUrl(restaurantId, mode, metadata),
+        back: () => window.history.back()
+      },
+      historyKey: 'client-profiles',
+      getItem: (restaurantId) => Array.from(document.querySelectorAll('[data-cc-master-item]'))
+        .find((item) => item.dataset.ccMasterItem === restaurantId)
+        ?.querySelector('.client-select'),
+      getListFallback: () => document.getElementById('client-search'),
+      getDetailFocus: () => document.querySelector('[data-cc-detail-focus]') || document.getElementById('client-workspace'),
+      onNavigate: handleClientHistoryNavigation,
+      onResetFilters: resetClientFilters
+    });
+    globalThis.clientMasterDetail = clientMasterDetail;
 
     document.querySelectorAll('.management-control').forEach((element) => {
       element.hidden = !canManageClients;
@@ -1154,10 +1496,16 @@
       const viewButton = event.target.closest('[data-view-id]');
       const editButton = event.target.closest('[data-edit-id]');
       const archiveButton = event.target.closest('[data-archive-id]');
+      const retryButton = event.target.closest('[data-retry-workspace]');
+      const retryDirectoryButton = event.target.closest('[data-retry-directory]');
+      const backButton = event.target.closest('[data-back-to-directory]');
       if (closeButton) closeModal(closeButton.dataset.closeModal);
       if (viewButton) viewRestaurant(viewButton.dataset.viewId);
       if (editButton) editRestaurant(editButton.dataset.editId);
       if (archiveButton) archiveRestaurant(archiveButton.dataset.archiveId);
+      if (retryButton && selectedRestaurantId) viewRestaurant(selectedRestaurantId, { updateUrl: false });
+      if (retryDirectoryButton) loadRestaurants();
+      if (backButton) backToClientDirectory();
     });
     document.querySelectorAll('.modal').forEach((modal) => {
       modal.addEventListener('click', (event) => {
