@@ -1,20 +1,24 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr" data-theme="light">
+<html lang="en" dir="ltr" data-theme="light" hidden>
 <head>
   <meta charset="UTF-8">
+  <style>html { display: none !important; }</style>
+  <script data-call-queue-shutdown>
+    window.location.replace('dashboard.html');
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+  <link rel="icon" type="image/x-icon" data-call-queue-dormant-href="assets/icons/favicon.ico">
   <title>Call Queue - Cloud Crowd</title>
-  <script src="assets/js/theme.js"></script>
-  <script src="assets/vendor/lucide/lucide-subset.js"></script>
-  <script src="assets/js/components/buttons.js"></script>
-  <script src="assets/js/components/icons.js"></script>
-  <script src="assets/js/components/feedback.js"></script>
-  <script src="assets/js/components/confirmation.js"></script>
-  <script src="assets/js/components/status-registry.js"></script>
-  <link rel="stylesheet" href="assets/css/design-tokens.css">
-  <link rel="stylesheet" href="app-shell.css">
-  <link rel="stylesheet" href="assets/css/theme-base.css">
+  <script type="application/x-call-queue-dormant" src="assets/js/theme.js"></script>
+  <script type="application/x-call-queue-dormant" src="assets/vendor/lucide/lucide-subset.js"></script>
+  <script type="application/x-call-queue-dormant" src="assets/js/components/buttons.js"></script>
+  <script type="application/x-call-queue-dormant" src="assets/js/components/icons.js"></script>
+  <script type="application/x-call-queue-dormant" src="assets/js/components/feedback.js"></script>
+  <script type="application/x-call-queue-dormant" src="assets/js/components/confirmation.js"></script>
+  <script type="application/x-call-queue-dormant" src="assets/js/components/status-registry.js"></script>
+  <link rel="stylesheet" data-call-queue-dormant-href="assets/css/design-tokens.css">
+  <link rel="stylesheet" data-call-queue-dormant-href="app-shell.css">
+  <link rel="stylesheet" data-call-queue-dormant-href="assets/css/theme-base.css">
   <style>
     *{box-sizing:border-box}
     button,input,textarea{font:inherit}
@@ -246,22 +250,22 @@
       .status-badge{display:inline-flex;margin-top:12px}
     }
   </style>
-  <link rel="stylesheet" href="assets/css/pages/admin-call-queue.css">
-  <script src="js/auth.js"></script>
-  <script src="js/permissions.js"></script>
-  <script src="js/maintenance.js" defer></script>
-  <script src="js/app-shell.js" defer></script>
-  <script src="js/internal-page-shell.js" defer></script>
-  <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
-  <link rel="stylesheet" href="assets/css/components/buttons.css">
-  <link rel="stylesheet" href="assets/css/components/icons.css">
-  <link rel="stylesheet" href="assets/css/components/feedback.css">
-  <link rel="stylesheet" href="assets/css/components/cards.css">
-  <link rel="stylesheet" href="assets/css/components/status.css">
-  <link rel="stylesheet" href="assets/css/components/forms.css">
+  <link rel="stylesheet" data-call-queue-dormant-href="assets/css/pages/admin-call-queue.css">
+  <script type="application/x-call-queue-dormant" src="js/auth.js"></script>
+  <script type="application/x-call-queue-dormant" src="js/permissions.js"></script>
+  <script type="application/x-call-queue-dormant" src="js/maintenance.js" defer></script>
+  <script type="application/x-call-queue-dormant" src="js/app-shell.js" defer></script>
+  <script type="application/x-call-queue-dormant" src="js/internal-page-shell.js" defer></script>
+  <link rel="stylesheet" data-call-queue-dormant-href="assets/css/layouts/page-layout.css">
+  <link rel="stylesheet" data-call-queue-dormant-href="assets/css/components/buttons.css">
+  <link rel="stylesheet" data-call-queue-dormant-href="assets/css/components/icons.css">
+  <link rel="stylesheet" data-call-queue-dormant-href="assets/css/components/feedback.css">
+  <link rel="stylesheet" data-call-queue-dormant-href="assets/css/components/cards.css">
+  <link rel="stylesheet" data-call-queue-dormant-href="assets/css/components/status.css">
+  <link rel="stylesheet" data-call-queue-dormant-href="assets/css/components/forms.css">
 </head>
 <body class="admin-call-queue-page call-queue-page" data-shell-module="call-queue" data-shell-user-id="call-queue-shell-user" data-shell-role-id="call-queue-shell-role">
-  <script>
+  <script type="application/x-call-queue-dormant">
     if (readSessionValue('cc_auth') !== '1' || !readSessionValue('cc_token') || !readSessionValue('cc_role')) {
       clearStoredSession();
       window.location.href = 'login.html';
@@ -303,7 +307,7 @@
     <button id="internal-nav-backdrop" class="cc-shell-nav-backdrop" type="button" aria-label="Close application navigation" tabindex="-1" hidden></button>
   </div>
 
-  <script>
+  <script type="application/x-call-queue-dormant">
     const STORAGE_KEY = 'cc_call_queue_tickets_v1';
     const STATUSES = ['Need Call', 'In Call', 'Called', 'Pending', 'Done'];
     let tickets = loadTickets();
@@ -587,6 +591,6 @@
 
     render();
   </script>
-  <script src="idle-logout.js"></script>
+  <script type="application/x-call-queue-dormant" src="idle-logout.js"></script>
 </body>
 </html>

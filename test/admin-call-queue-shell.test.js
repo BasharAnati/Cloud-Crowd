@@ -107,6 +107,212 @@ function inlineScripts(source) {
     .filter((script) => script.trim());
 }
 
+function scriptRecords(source) {
+  return [...source.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/gi)].map((match) => {
+    const attributes = match[1] || "";
+    return {
+      attributes,
+      body: match[2],
+      index: match.index,
+      src: attributes.match(/\bsrc=["']([^"']+)["']/i)?.[1] || "",
+      type: attributes.match(/\btype=["']([^"']+)["']/i)?.[1].toLowerCase() || ""
+    };
+  });
+}
+
+function isExecutableScript(record) {
+  return !record.type || record.type === "module" ||
+    /^(?:application|text)\/(?:java|ecma)script$/.test(record.type);
+}
+
+function parseHtmlAttributes(source) {
+  const attributes = new Map();
+  const pattern = /([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+  for (const match of source.matchAll(pattern)) {
+    attributes.set(match[1].toLowerCase(), match[2] ?? match[3] ?? match[4] ?? "");
+  }
+  return attributes;
+}
+
+function assertNoActiveResourceOrExecutionVectors(source) {
+  const withoutScriptBodies = source.replace(
+    /(<script\b[^>]*>)[\s\S]*?(<\/script>)/gi,
+    "$1$2"
+  );
+  const resourceAttributes = {
+    link: ["href"], img: ["src", "srcset"], source: ["src", "srcset"],
+    audio: ["src"], video: ["src", "poster"], track: ["src"], iframe: ["src", "srcdoc"],
+    object: ["data"], embed: ["src"], image: ["href", "xlink:href"], input: ["src"]
+  };
+
+  for (const match of withoutScriptBodies.matchAll(/<([a-z][\w:-]*)\b([^>]*)>/gi)) {
+    const tag = match[1].toLowerCase();
+    const attributes = parseHtmlAttributes(match[2]);
+    for (const name of attributes.keys()) {
+      assert.doesNotMatch(name, /^on/i, `${tag} must not register an inline event handler`);
+    }
+    for (const name of ["href", "src", "action", "formaction", "data", "xlink:href"]) {
+      if (attributes.has(name)) {
+        assert.doesNotMatch(attributes.get(name).trim(), /^javascript\s*:/i,
+          `${tag} must not use a javascript URL`);
+      }
+    }
+    for (const name of resourceAttributes[tag] || []) {
+      assert.equal(attributes.has(name), false, `${tag} must not have an active ${name}`);
+    }
+    if (tag === "meta" && (attributes.get("http-equiv") || "").toLowerCase() === "refresh") {
+      assert.fail("meta refresh must remain absent");
+    }
+  }
+
+  const activeCss = withoutScriptBodies.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, (style) => style);
+  assert.doesNotMatch(activeCss, /@import\b|url\s*\(/i,
+    "active CSS must not load external resources");
+}
+
+function executeCallQueueShutdown(source, identity = {}) {
+  const activity = {
+    replacements: [], hrefWrites: [], storageReads: [], storageWrites: [],
+    prototypeSeeds: [], requests: [], renders: [], timeouts: [], intervals: [],
+    eventRegistrations: [], externalScripts: []
+  };
+  function monitoredStorage(name, values = {}) {
+    return {
+      getItem(key) {
+        activity.storageReads.push(`${name}:${key}`);
+        return Object.prototype.hasOwnProperty.call(values, key) ? values[key] : null;
+      },
+      setItem(key, value) {
+        activity.storageWrites.push(`${name}:${key}:${value}`);
+        if (name === "local" && key === "cc_call_queue_tickets_v1") {
+          try {
+            const tickets = JSON.parse(String(value));
+            if (Array.isArray(tickets) && tickets.length) activity.prototypeSeeds.push(tickets);
+          } catch {}
+        }
+      },
+      removeItem(key) { activity.storageWrites.push(`${name}:${key}:removed`); }
+    };
+  }
+  const location = {
+    replace(value) { activity.replacements.push(value); },
+    set href(value) { activity.hrefWrites.push(value); }
+  };
+  const context = {
+    location,
+    sessionStorage: monitoredStorage("session", {
+      cc_auth: identity.authenticated === false ? "" : "1",
+      cc_token: identity.authenticated === false ? "" : "token",
+      cc_user: identity.username || "Reviewer",
+      cc_role: identity.role || "agent"
+    }),
+    localStorage: monitoredStorage("local"),
+    fetch(...args) {
+      activity.requests.push(args);
+      return jsonResponse(identity.permissionResponse || { ok: true });
+    },
+    addEventListener(...args) { activity.eventRegistrations.push(args); },
+    setTimeout(...args) { activity.timeouts.push(args); return 1; },
+    clearTimeout() {},
+    setInterval(...args) { activity.intervals.push(args); return 1; },
+    clearInterval() {},
+    document: {
+      addEventListener(...args) { activity.eventRegistrations.push(args); },
+      getElementById(...args) { activity.renders.push(args); return new FakeElement(); },
+      querySelectorAll(...args) { activity.renders.push(args); return []; }
+    },
+    console: { warn() {}, error() {}, log() {} }
+  };
+  context.window = context;
+
+  for (const record of scriptRecords(source).filter(isExecutableScript)) {
+    if (record.src) {
+      activity.externalScripts.push(record.src);
+      continue;
+    }
+    vm.runInNewContext(record.body, context, { filename: "call-queue.html#shutdown" });
+  }
+  return activity;
+}
+
+function assertNoCallQueueActivity(activity) {
+  assert.deepEqual(activity.hrefWrites, [], "history-pushing navigation detected");
+  assert.deepEqual(activity.prototypeSeeds, [], "prohibited Call Queue prototype seed detected");
+  assert.deepEqual(activity.storageReads, [], "prohibited browser-storage read detected");
+  assert.deepEqual(activity.storageWrites, [], "prohibited browser-storage write detected");
+  assert.deepEqual(activity.requests, [], "prohibited network request detected");
+  assert.deepEqual(activity.renders, [], "prohibited render activity detected");
+  assert.deepEqual(activity.timeouts, [], "prohibited timeout activity detected");
+  assert.deepEqual(activity.intervals, [], "prohibited interval activity detected");
+  assert.deepEqual(activity.eventRegistrations, [], "prohibited listener registration detected");
+  assert.deepEqual(activity.externalScripts, [], "prohibited external script execution detected");
+  assert.deepEqual(activity.replacements, ["dashboard.html"],
+    "shutdown must perform exactly one dashboard replacement");
+}
+
+function assertCallQueueShutdown(source) {
+  const records = scriptRecords(source);
+  const executable = records.filter(isExecutableScript);
+  const dormantResourcePaths = [
+    "assets/icons/favicon.ico",
+    "assets/css/design-tokens.css",
+    "app-shell.css",
+    "assets/css/theme-base.css",
+    "assets/css/pages/admin-call-queue.css",
+    "assets/css/layouts/page-layout.css",
+    "assets/css/components/buttons.css",
+    "assets/css/components/icons.css",
+    "assets/css/components/feedback.css",
+    "assets/css/components/cards.css",
+    "assets/css/components/status.css",
+    "assets/css/components/forms.css"
+  ];
+  assert.match(source, /<html[^>]*\shidden(?:\s|>)/);
+  assert.match(source, /<style>html \{ display: none !important; \}<\/style>/);
+  assert.equal(executable.length, 1, "only the shutdown redirect may remain executable");
+  assert.equal(records[0], executable[0], "the shutdown redirect must be the first script");
+  assert.match(executable[0].attributes, /\bdata-call-queue-shutdown\b/);
+  assert.equal(executable[0].src, "");
+  assert.ok(executable[0].index < source.indexOf("const STORAGE_KEY"));
+  records.slice(1).forEach((record) => {
+    assert.equal(record.type, "application/x-call-queue-dormant");
+  });
+  assert.equal((source.match(/\bdata-call-queue-dormant-href=/g) || []).length,
+    dormantResourcePaths.length);
+  dormantResourcePaths.forEach((resourcePath) => {
+    assert.equal(source.includes(`data-call-queue-dormant-href="${resourcePath}"`), true,
+      `${resourcePath} must remain recoverable`);
+  });
+  assertNoActiveResourceOrExecutionVectors(source);
+
+  for (const identity of [
+    { username: "Anati", role: "admin" },
+    { username: "Other Admin", role: "admin" },
+    { username: "Mai", role: "manager" },
+    { username: "Agent", role: "agent" },
+    {
+      username: "Granted User",
+      role: "agent",
+      permissionResponse: {
+        ok: true,
+        legacyFallback: false,
+        hasConfiguredAccess: true,
+        access: [{
+          moduleKey: "call_queue",
+          canView: true,
+          canCreate: false,
+          canEdit: false,
+          canDelete: false
+        }]
+      }
+    },
+    { username: "", role: "", authenticated: false }
+  ]) {
+    const activity = executeCallQueueShutdown(source, identity);
+    assertNoCallQueueActivity(activity);
+  }
+}
+
 function pageScript(source) {
   return inlineScripts(source).sort((a, b) => b.length - a.length)[0];
 }
@@ -481,7 +687,7 @@ function renderedButtonDisabled(loaded, id) {
   return /\sdisabled(?:\s|>)/.test(button);
 }
 
-test("approved Admin and Call Queue access matrices are frozen before migration", async () => {
+test("Admin access stays frozen while Call Queue is shut down for every identity", async () => {
   assert.equal(runAccessGuard("admin", "admin", "Anati"), "");
   assert.equal(runAccessGuard("admin", "manager", "Anati"), "dashboard.html");
   assert.equal(runAccessGuard("admin", "admin", "Other Admin"), "dashboard.html");
@@ -490,12 +696,7 @@ test("approved Admin and Call Queue access matrices are frozen before migration"
   assert.deepEqual(runAccessGuard("admin", "admin", "Anati", { invalidSession: true, returnDetails: true }), {
     href: "dashboard.html", redirects: ["login.html", "dashboard.html"], token: null
   });
-  assert.equal(runAccessGuard("callQueue", "admin", "Other Admin"), "");
-  assert.equal(runAccessGuard("callQueue", "manager", "Manager"), "");
-  assert.equal(runAccessGuard("callQueue", "agent", "Agent"), "dashboard.html");
-  assert.deepEqual(runAccessGuard("callQueue", "manager", "Manager", { invalidSession: true, returnDetails: true }), {
-    href: "dashboard.html", redirects: ["login.html", "dashboard.html"], token: null
-  });
+  assertCallQueueShutdown(pages.callQueue);
 
   const configured = [{ moduleKey: "call_queue", canView: true }];
   for (const [role, username] of [["admin", "Other Admin"], ["manager", "Manager"], ["agent", "Agent"]]) {
@@ -748,7 +949,7 @@ test("Sprint 1.3E pages consume the shared shell, theme, Page Header, and mainte
   assert.match(maintenanceRuntime, /const POLL_INTERVAL = 3000/);
 });
 
-test("approved registry boundaries and direct-route enforcement stay distinct", async () => {
+test("registry keeps Call Queue hidden while the route has one unconditional shutdown", async () => {
   const adminShell = loadRegistry("admin", "Anati");
   const adminModule = adminShell.getModuleById("anati-admin");
   const queueModule = adminShell.getModuleById("call-queue");
@@ -761,77 +962,166 @@ test("approved registry boundaries and direct-route enforcement stay distinct", 
   assert.match(pages.admin, /requirePageAccess\('anati_admin'\)/);
   assert.equal((pages.admin.match(/requirePageAccess\(/g) || []).length, 1);
   assertNoCallQueueRoutePermissionWiring(pages.callQueue);
+  assertCallQueueShutdown(pages.callQueue);
   assert.match(pages.callQueue, /const allowedCallQueueRoles = \['admin', 'manager'\]/);
 });
 
-test("Call Queue complete route and navigation lifecycle ignores configured and fallback permission state", async () => {
-  for (const [role, permissionMode] of [
-    ["admin", "allow"], ["admin", "deny"],
-    ["manager", "allow"], ["manager", "deny"],
-    ["agent", "allow"], ["agent", "deny"],
-    ["manager", "legacy"], ["agent", "legacy"]
-  ]) {
-    assertApprovedCallQueuePolicy(await evaluateCallQueueLifecycle(role, permissionMode));
-  }
-  assertNoCallQueueRoutePermissionWiring(pages.callQueue);
+test("Call Queue shutdown executes before all dormant initialization and browser activity", () => {
+  assertCallQueueShutdown(pages.callQueue);
+  assert.ok(pages.callQueue.indexOf("window.location.replace('dashboard.html')") <
+    pages.callQueue.indexOf("assets/js/theme.js"));
+  assert.ok(pages.callQueue.indexOf("window.location.replace('dashboard.html')") <
+    pages.callQueue.indexOf("const STORAGE_KEY"));
+  assert.match(pages.callQueue, /function seedTickets\(\)/);
+  assert.match(pages.callQueue, /function loadTickets\(\)/);
+  assert.match(pages.callQueue, /function renderWorkspace\(\)/);
+  assert.match(pages.callQueue, /function render\(\)/);
+  assert.match(pages.callQueue, /const STATUSES = \['Need Call', 'In Call', 'Called', 'Pending', 'Done'\]/);
 });
 
-test("shared internal-page lifecycle permission-gate mutant fails Call Queue route policy", async () => {
-  const mutantRuntime = permissionGatedInternalShellRuntime();
+test("Call Queue shutdown contract rejects removal, history pushes, delays, and role exceptions", () => {
+  const removed = pages.callQueue.replace("window.location.replace('dashboard.html');", "");
+  assert.throws(() => assertCallQueueShutdown(removed),
+    /shutdown must perform exactly one dashboard replacement/);
 
-  const managerDeny = await executeCompleteCallQueueLifecycle("manager", "deny", {
-    internalShellRuntime: mutantRuntime,
-    mutantName: "fixture-internal-page-shell-permission-gate.js"
-  });
-  assert.deepEqual(managerDeny.permissionCalls.requirePageAccess.map(([moduleKey]) => moduleKey), ["call_queue"]);
-  assert.deepEqual(managerDeny.redirects, ["dashboard.html"]);
-  assert.equal(managerDeny.navigationVisible, false);
-  assert.throws(() => assertApprovedCallQueuePolicy(managerDeny),
-    /Call Queue route policy: manager\/deny/);
-
-  const agentAllow = await executeCompleteCallQueueLifecycle("agent", "allow", {
-    internalShellRuntime: mutantRuntime,
-    mutantName: "fixture-internal-page-shell-permission-gate.js"
-  });
-  assert.equal(agentAllow.routeAllowed, false, "the local Agent role denial remains authoritative");
-  assert.equal(agentAllow.navigationVisible, false);
-  assert.deepEqual(agentAllow.permissionCalls.requirePageAccess.map(([moduleKey]) => moduleKey), ["call_queue"]);
-  assert.throws(() => assertApprovedCallQueuePolicy(agentAllow),
-    /must not call requirePageAccess: agent\/allow/);
-});
-
-test("negative Call Queue policy fixtures detect permission-driven routes, visibility, and alternate syntax", async () => {
-  const managerDeny = await evaluateCallQueueLifecycle("manager", "deny");
-  const managerAccess = await managerDeny.permissionRuntime.getMyAccess("call_queue");
-  await assert.rejects(async () => assertApprovedCallQueuePolicy({
-    ...managerDeny,
-    routeAllowed: managerAccess.canView
-  }), /Call Queue route policy/);
-
-  const agentAllow = await evaluateCallQueueLifecycle("agent", "allow");
-  const agentAccess = await agentAllow.permissionRuntime.getMyAccess("call_queue");
-  await assert.rejects(async () => assertApprovedCallQueuePolicy({
-    ...agentAllow,
-    routeAllowed: agentAccess.canView
-  }), /Call Queue route policy/);
-
-  const managerAllow = await evaluateCallQueueLifecycle("manager", "allow");
-  const accidentallyVisibleModules = managerAllow.appShell.getAllModules().map((module) =>
-    module.id === "call-queue" ? { ...module, hidden: false } : module
+  const historyPush = pages.callQueue.replace(
+    "window.location.replace('dashboard.html');",
+    "window.location.href = 'dashboard.html';"
   );
-  const visible = await managerAllow.appShell.filterPermittedModules(accidentallyVisibleModules, { fallbackMode: "legacy" });
-  await assert.rejects(async () => assertApprovedCallQueuePolicy({
-    ...managerAllow,
-    navigationVisible: visible.some((module) => module.id === "call-queue")
-  }), /Call Queue navigation policy/);
+  assert.throws(() => assertCallQueueShutdown(historyPush), /history-pushing navigation detected/);
 
-  const doubleQuotedWiring = pages.callQueue.replace("</body>", `
-    <script>window.CCPermissions.requirePageAccess(
-      "call_queue"
-    );</script>
-  </body>`);
-  assert.throws(() => assertNoCallQueueRoutePermissionWiring(doubleQuotedWiring),
-    /must not invoke configured permission APIs/);
+  const delayedUntilPrototype = pages.callQueue.replace(
+    '<script type="application/x-call-queue-dormant">\n    const STORAGE_KEY',
+    '<script>\n    const STORAGE_KEY'
+  );
+  assert.throws(() => assertCallQueueShutdown(delayedUntilPrototype),
+    /only the shutdown redirect may remain executable/);
+
+  const managerException = pages.callQueue.replace(
+    "window.location.replace('dashboard.html');",
+    "if ((sessionStorage.getItem('cc_role') || '') !== 'manager') window.location.replace('dashboard.html');"
+  );
+  assert.throws(() => assertCallQueueShutdown(managerException),
+    /prohibited browser-storage read detected/);
+
+  const executableDependency = pages.callQueue.replace(
+    '<script type="application/x-call-queue-dormant" src="js/auth.js">',
+    '<script src="js/auth.js">'
+  );
+  assert.throws(() => assertCallQueueShutdown(executableDependency),
+    /only the shutdown redirect may remain executable/);
+});
+
+test("Call Queue shutdown rejects browser-loadable resources and non-script execution vectors", () => {
+  const beforeHeadEnd = (markup) => pages.callQueue.replace("</head>", `${markup}\n</head>`);
+  const beforeBodyEnd = (markup) => pages.callQueue.replace("</body>", `${markup}\n</body>`);
+  const mutations = [
+    ["stylesheet href", pages.callQueue.replace(
+      '<link rel="stylesheet" data-call-queue-dormant-href="assets/css/design-tokens.css">',
+      '<link rel="stylesheet" data-call-queue-dormant-href="assets/css/design-tokens.css" href="assets/css/design-tokens.css">'
+    ), /link must not have an active href/],
+    ["favicon href", pages.callQueue.replace(
+      '<link rel="icon" type="image/x-icon" data-call-queue-dormant-href="assets/icons/favicon.ico">',
+      '<link rel="icon" type="image/x-icon" data-call-queue-dormant-href="assets/icons/favicon.ico" href="assets/icons/favicon.ico">'
+    ), /link must not have an active href/],
+    ["preload", beforeHeadEnd('<link rel="preload" href="preview.css" as="style">'),
+      /link must not have an active href/],
+    ["modulepreload", beforeHeadEnd('<link rel="modulepreload" href="preview.js">'),
+      /link must not have an active href/],
+    ["image src", beforeBodyEnd('<img src="preview.png" alt="">'),
+      /img must not have an active src/],
+    ["source srcset", beforeBodyEnd('<picture><source srcset="preview.webp"></picture>'),
+      /source must not have an active srcset/],
+    ["audio src", beforeBodyEnd('<audio src="preview.mp3"></audio>'),
+      /audio must not have an active src/],
+    ["video poster", beforeBodyEnd('<video poster="preview.jpg"></video>'),
+      /video must not have an active poster/],
+    ["iframe src", beforeBodyEnd('<iframe src="preview.html"></iframe>'),
+      /iframe must not have an active src/],
+    ["object data", beforeBodyEnd('<object data="preview.pdf"></object>'),
+      /object must not have an active data/],
+    ["embed src", beforeBodyEnd('<embed src="preview.pdf">'),
+      /embed must not have an active src/],
+    ["manifest", beforeHeadEnd('<link rel="manifest" href="preview.webmanifest">'),
+      /link must not have an active href/],
+    ["meta refresh", beforeHeadEnd('<meta http-equiv="refresh" content="0;url=preview.html">'),
+      /meta refresh must remain absent/],
+    ["event handler", pages.callQueue.replace("<body ", '<body onload="seedTickets()" '),
+      /body must not register an inline event handler/],
+    ["javascript URL", beforeBodyEnd('<a href="javascript:seedTickets()">Open</a>'),
+      /a must not use a javascript URL/],
+    ["classic script", beforeBodyEnd('<script src="preview.js"></script>'),
+      /only the shutdown redirect may remain executable/],
+    ["module script", beforeBodyEnd('<script type="module">seedTickets();</script>'),
+      /only the shutdown redirect may remain executable/],
+    ["dormant dependency", pages.callQueue.replace(
+      '<script type="application/x-call-queue-dormant" src="js/auth.js">',
+      '<script src="js/auth.js">'
+    ), /only the shutdown redirect may remain executable/],
+    ["CSS URL", beforeHeadEnd('<style>html { background-image: url("preview.png"); }</style>'),
+      /active CSS must not load external resources/]
+  ];
+
+  const dormantResourceCount = (pages.callQueue.match(/\bdata-call-queue-dormant-href=/g) || []).length;
+  mutations.forEach(([name, mutant, expectedFailure]) => {
+    assert.notEqual(mutant, pages.callQueue, `${name} must change production HTML`);
+    if (name === "stylesheet href" || name === "favicon href") {
+      assert.equal((mutant.match(/\bdata-call-queue-dormant-href=/g) || []).length,
+        dormantResourceCount, `${name} must retain dormant resource metadata`);
+    }
+    assert.throws(() => assertCallQueueShutdown(mutant), expectedFailure, name);
+  });
+});
+
+test("Call Queue shutdown rejects each prohibited activity before replacement", () => {
+  const beforeReplacement = (statement) => pages.callQueue.replace(
+    "    window.location.replace('dashboard.html');",
+    `    ${statement}\n    window.location.replace('dashboard.html');`
+  );
+  const seededTickets = JSON.stringify([{
+    id: "CQ-MUTANT",
+    customerName: "Preview Fixture",
+    phone: "",
+    branch: "",
+    restaurant: "",
+    orderNumber: "ORD-MUTANT",
+    callReason: "Shutdown mutation",
+    orderImage: "",
+    assignedTo: "",
+    status: "Need Call",
+    notes: [],
+    negativeReason: "",
+    lastUpdated: "mutation"
+  }]);
+  const mutations = [
+    ["storage read", beforeReplacement("localStorage.getItem('cc_call_queue_tickets_v1');"),
+      /prohibited browser-storage read detected/],
+    ["storage write", beforeReplacement(
+      "localStorage.setItem('cc_call_queue_tickets_v1', 'invalid-review-probe');"
+    ), /prohibited browser-storage write detected/],
+    ["network request", beforeReplacement(
+      "fetch('/.netlify/functions/admin-users?my-access=1');"
+    ), /prohibited network request detected/],
+    ["render activity", beforeReplacement(
+      "document.getElementById('queue-list').textContent = 'Initializing';"
+    ), /prohibited render activity detected/],
+    ["prototype seed", beforeReplacement(
+      `localStorage.setItem('cc_call_queue_tickets_v1', ${JSON.stringify(seededTickets)});`
+    ), /prohibited Call Queue prototype seed detected/],
+    ["timeout", beforeReplacement("setTimeout(() => {}, 0);"),
+      /prohibited timeout activity detected/],
+    ["interval", beforeReplacement("setInterval(() => {}, 1000);"),
+      /prohibited interval activity detected/],
+    ["event registration", beforeReplacement("window.addEventListener('load', () => {});"),
+      /prohibited listener registration detected/]
+  ];
+
+  mutations.forEach(([name, mutant, expectedFailure]) => {
+    assert.notEqual(mutant, pages.callQueue, `${name} must change production HTML`);
+    assert.match(mutant, /window\.location\.replace\('dashboard\.html'\)/,
+      `${name} must preserve replacement navigation`);
+    assert.throws(() => assertCallQueueShutdown(mutant), expectedFailure, name);
+  });
 });
 
 test("one memoized permission model supports Admin route access and both shared shells", async () => {
@@ -866,7 +1156,7 @@ test("one memoized permission model supports Admin route access and both shared 
   );
   assert.equal(queuePermitted.some((module) => module.id === "call-queue"), false);
   assert.equal(queue.fetchCalls.length, 1);
-  assert.equal(runAccessGuard("callQueue", "manager", "Manager"), "");
+  assertCallQueueShutdown(pages.callQueue);
 });
 
 function cssNode(tag, classes, parent, options = {}) {
