@@ -151,7 +151,7 @@
     }
     input,select{
       width:100%;
-      min-height:42px;
+      min-height:44px;
       margin-top:6px;
       padding:10px 12px;
       border:1px solid rgba(167,235,242,.22);
@@ -189,7 +189,7 @@
       margin-top:14px;
     }
     .btn{
-      min-height:40px;
+      min-height:44px;
       padding:9px 13px;
       border:0;
       border-radius:12px;
@@ -218,6 +218,16 @@
       font-weight:800;
     }
     .message.error{color:var(--bad)}
+    .field-error{
+      display:block;
+      min-height:18px;
+      margin-top:4px;
+      color:var(--bad);
+      font-size:12px;
+      font-weight:700;
+      text-transform:none;
+    }
+    [aria-invalid="true"]{border-color:var(--bad)}
     .module-tools{
       display:grid;
       grid-template-columns:minmax(260px,420px) 1fr;
@@ -239,6 +249,7 @@
       min-height:120px;
       padding:18px;
       border-radius:16px;
+      opacity:.72;
     }
     .placeholder h3{margin:0;font-size:18px}
     .placeholder p{margin:8px 0 0;color:var(--muted);font-size:13px}
@@ -274,9 +285,6 @@
       window.location.href = "login.html";
     }
 
-    if (sessionStorage.getItem("cc_user") !== "Anati" || sessionStorage.getItem("cc_role") !== "admin") {
-      window.location.href = "dashboard.html";
-    }
   </script>
 
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
@@ -292,11 +300,11 @@
           <div class="cc-page-header-content">
             <p class="cc-page-header-context">Administration</p>
             <h1 class="cc-page-header-title" id="page-title">Anati Admin Center</h1>
-            <p class="cc-page-header-description">Manage users, roles, module access, and future workflow permissions.</p>
+            <p class="cc-page-header-description">Manage user accounts and enforced module access.</p>
           </div>
         </header>
 
-        <div class="notice cc-feedback cc-feedback--banner cc-feedback--warning" role="status" aria-live="polite" aria-atomic="true">Phase 2 supports database-backed login with legacy fallback. Temporary passwords can be set here, but forced password change screens come in a later phase.</div>
+        <div class="notice cc-feedback cc-feedback--banner cc-feedback--info" role="status" aria-live="polite" aria-atomic="true">Admin-set passwords are temporary. Users must create a new password before entering the application.</div>
 
       <section class="stats cc-metric-grid" aria-label="Admin Center stats">
         <div class="stat cc-metric-card"><span>Total Users</span><strong id="stat-total">0</strong></div>
@@ -347,12 +355,13 @@
 
           <form id="user-form" class="cc-form">
             <input type="hidden" id="user-id">
+            <input type="hidden" id="user-version">
             <p class="cc-form__required-note"><strong>*</strong> indicates a required field.</p>
             <div class="form-grid cc-form-grid">
               <section class="cc-form-section cc-form-grid__full" aria-labelledby="admin-identity-title">
                 <h3 class="cc-form-section__title" id="admin-identity-title">Account Identity</h3>
                 <div class="cc-form-grid">
-                  <label class="cc-field__label--required">Username<input id="username" autocomplete="off" required></label>
+                  <label class="cc-field__label--required">Username<input id="username" autocomplete="off" required aria-describedby="username-error"><span class="field-error" id="username-error"></span></label>
                   <label>Display Name<input id="display-name" autocomplete="off"></label>
                   <label>Email<input id="email" type="email" autocomplete="off"></label>
                 </div>
@@ -360,7 +369,7 @@
               <section class="cc-form-section cc-form-grid__full" aria-labelledby="admin-linkage-title">
                 <h3 class="cc-form-section__title" id="admin-linkage-title">Account Linkage</h3>
                 <div class="cc-form-grid">
-                  <label>Account Type<select id="account-type"><option value="employee">Employee</option><option value="external">External</option><option value="system">System Admin</option><option value="client" disabled>Client - coming later</option></select></label>
+                  <label>Account Type<select id="account-type"><option value="employee">Employee</option><option value="external">External</option><option value="system" disabled>Existing System</option><option value="client" disabled>Existing Client - login deferred</option></select></label>
                   <label id="employee-link-field">Linked Employee<select id="employee-id"></select></label>
                 </div>
               </section>
@@ -374,8 +383,7 @@
               <section class="cc-form-section cc-form-grid__full" aria-labelledby="admin-security-title">
                 <h3 class="cc-form-section__title" id="admin-security-title">Access and Security</h3>
                 <div class="cc-form-grid">
-                  <label>Temporary Password<input id="temporary-password" type="password" autocomplete="new-password" placeholder="Leave blank to keep current password"></label>
-                  <label class="check-row cc-checkbox"><input id="must-reset-password" type="checkbox">Must reset password later</label>
+                  <label>Temporary Password<input id="temporary-password" type="password" minlength="12" autocomplete="new-password" placeholder="Leave blank to keep current password" aria-describedby="temporary-password-help temporary-password-error"><span id="temporary-password-help">At least 12 characters. A password entered here always requires reset at next sign-in.</span><span class="field-error" id="temporary-password-error"></span></label>
                   <label class="check-row cc-checkbox" id="system-account-row" hidden><input id="is-system-account" type="checkbox">Confirm system/admin account</label>
                 </div>
               </section>
@@ -384,7 +392,7 @@
               <button class="btn" type="submit" id="save-user-btn">Create User Profile</button>
               <button class="btn secondary" type="button" id="reset-form-btn">Clear</button>
             </div>
-            <div class="message" id="user-message"></div>
+            <div class="message" id="user-message" role="status" aria-live="polite" aria-atomic="true"></div>
           </form>
         </div>
       </section>
@@ -393,7 +401,7 @@
         <div class="panel-head">
           <div>
             <h2 class="cc-section-title" id="access-table-title">Module Access</h2>
-            <p>Store future access rules for each user. These permissions are not enforced on dashboard/pages yet.</p>
+            <p>Set the enforced View, Create, Edit, and Delete permissions for every available module.</p>
           </div>
         </div>
 
@@ -424,21 +432,21 @@
             </tbody>
           </table>
         </div>
-        <div class="message" id="access-message"></div>
+        <div class="message" id="access-message" role="status" aria-live="polite" aria-atomic="true"></div>
       </section>
 
       <section class="placeholder-grid" aria-label="Future admin sections">
         <div class="placeholder cc-planned-card">
           <h2 class="cc-section-title">Workflow Permissions</h2>
-          <p>Future controls for workflow-specific approvals, transitions, and ownership rules.</p>
+          <p>Coming soon. Workflow-specific approval and transition controls remain deferred.</p>
         </div>
         <div class="placeholder cc-planned-card">
           <h2 class="cc-section-title">Maintenance Control</h2>
-          <p>Future centralized controls for maintenance mode and operational access windows.</p>
+          <p>Maintenance remains controlled only by Anati from the existing application topbar.</p>
         </div>
         <div class="placeholder cc-planned-card">
           <h2 class="cc-section-title">Audit Logs</h2>
-          <p>Future searchable review surface for admin actions and access changes.</p>
+          <p>Coming soon. Audit records are captured, but an in-app viewer remains deferred.</p>
         </div>
       </section>
       </div>
@@ -447,13 +455,17 @@
   </div>
 
   <script>
-    window.CCPermissions?.requirePageAccess('anati_admin');
+    (async function initializeAuthorizedAdminCenter() {
+    const initialAccess = await window.CCPermissions?.requirePageAccess("anati_admin", { force: true });
+    if (!initialAccess || initialAccess.unavailable || initialAccess.canView !== true) return;
     const ADMIN_USERS_ENDPOINT = "/.netlify/functions/admin-users";
     const EMPLOYEES_ENDPOINT = "./.netlify/functions/employees";
     let adminUsers = [];
     let activeEmployees = [];
     let moduleRegistry = [];
     let moduleAccess = [];
+    let lastEditTrigger = null;
+    let mutationPending = false;
 
     function authHeaders(extra = {}) {
       const token = readSessionValue("cc_token") || "";
@@ -510,8 +522,12 @@
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok || data.ok === false) {
-        throw new Error(data.error || `Request failed: ${response.status}`);
+        const error = new Error(data.error || `Request failed: ${response.status}`);
+        error.status = response.status;
+        error.fieldErrors = data.fieldErrors || {};
+        throw error;
       }
+      if (options.method && options.method !== "GET") window.CCPermissions?.invalidateAccessModel();
       return data;
     }
 
@@ -573,6 +589,29 @@
       if (isSystem) {
         document.getElementById("role").value = "admin";
       }
+      document.getElementById("account-type").disabled = Boolean(userId) && (accountType === "system" || accountType === "client");
+    }
+
+    function setMutationBusy(busy, buttons = []) {
+      mutationPending = busy;
+      document.getElementById("user-form").setAttribute("aria-busy", String(busy));
+      buttons.forEach((button) => { if (button) button.disabled = busy; });
+    }
+
+    function clearFieldErrors() {
+      ["username", "temporary-password"].forEach((id) => {
+        document.getElementById(id)?.removeAttribute("aria-invalid");
+        const error = document.getElementById(`${id}-error`);
+        if (error) error.textContent = "";
+      });
+    }
+
+    function showFieldError(id, message) {
+      const input = document.getElementById(id);
+      const error = document.getElementById(`${id}-error`);
+      if (!input || !error) return;
+      input.setAttribute("aria-invalid", "true");
+      error.textContent = message;
     }
 
     function renderStats() {
@@ -628,7 +667,9 @@
           <td>
             <div class="actions cc-table__actions" style="margin-top:0">
               <button class="btn secondary" type="button" data-edit-user="${escapeHtml(user.userId)}">Edit</button>
-              <button class="btn danger" type="button" data-disable-user="${escapeHtml(user.userId)}" ${user.status === "disabled" || user.username.toLowerCase() === "anati" ? "disabled" : ""}>Disable</button>
+              ${user.status === "disabled"
+                ? `<button class="btn" type="button" data-reactivate-user="${escapeHtml(user.userId)}" ${user.username.toLowerCase() === "anati" ? "disabled" : ""}>Reactivate</button>`
+                : `<button class="btn danger" type="button" data-disable-user="${escapeHtml(user.userId)}" ${user.username.toLowerCase() === "anati" ? "disabled" : ""}>Disable</button>`}
             </div>
           </td>
         </tr>
@@ -636,10 +677,13 @@
       }).join("");
 
       body.querySelectorAll("[data-edit-user]").forEach((button) => {
-        button.addEventListener("click", () => editUser(button.dataset.editUser));
+        button.addEventListener("click", () => editUser(button.dataset.editUser, button));
       });
       body.querySelectorAll("[data-disable-user]").forEach((button) => {
-        button.addEventListener("click", () => disableUser(button.dataset.disableUser));
+        button.addEventListener("click", () => disableUser(button.dataset.disableUser, button));
+      });
+      body.querySelectorAll("[data-reactivate-user]").forEach((button) => {
+        button.addEventListener("click", () => reactivateUser(button.dataset.reactivateUser, button));
       });
     }
 
@@ -651,7 +695,7 @@
     }
 
     function accessFor(username, moduleKey) {
-      return moduleAccess.find((record) => record.username === username && record.moduleKey === moduleKey) || {};
+      return moduleAccess.find((record) => record.username.toLowerCase() === username.toLowerCase() && record.moduleKey === moduleKey) || {};
     }
 
     function renderModules() {
@@ -676,12 +720,13 @@
       }).join("");
     }
 
-    function editUser(userId) {
+    function editUser(userId, trigger) {
       const user = adminUsers.find((entry) => entry.userId === userId);
       if (!user) return;
       document.getElementById("form-title").textContent = "Edit User";
       document.getElementById("save-user-btn").textContent = "Save User";
       document.getElementById("user-id").value = user.userId;
+      document.getElementById("user-version").value = user.version;
       document.getElementById("username").value = user.username;
       document.getElementById("username").disabled = true;
       document.getElementById("display-name").value = user.displayName || "";
@@ -691,9 +736,12 @@
       document.getElementById("is-system-account").checked = user.isSystemAccount === true;
       document.getElementById("role").value = user.role || "agent";
       document.getElementById("status").value = user.status || "active";
-      document.getElementById("must-reset-password").checked = user.mustResetPassword === true;
       document.getElementById("temporary-password").value = "";
       updateAccountFields();
+      lastEditTrigger = trigger || document.activeElement;
+      document.getElementById("form-title").setAttribute("tabindex", "-1");
+      document.getElementById("form-title").focus();
+      clearFieldErrors();
       showMessage("user-message", "");
     }
 
@@ -701,6 +749,7 @@
       document.getElementById("form-title").textContent = "Create User Profile";
       document.getElementById("save-user-btn").textContent = "Create User Profile";
       document.getElementById("user-id").value = "";
+      document.getElementById("user-version").value = "";
       document.getElementById("username").value = "";
       document.getElementById("username").disabled = false;
       document.getElementById("display-name").value = "";
@@ -710,14 +759,19 @@
       document.getElementById("is-system-account").checked = false;
       document.getElementById("role").value = "agent";
       document.getElementById("status").value = "active";
-      document.getElementById("must-reset-password").checked = false;
       document.getElementById("temporary-password").value = "";
+      document.getElementById("account-type").disabled = false;
       updateAccountFields();
+      clearFieldErrors();
       showMessage("user-message", "");
+      if (lastEditTrigger?.isConnected) lastEditTrigger.focus();
+      lastEditTrigger = null;
     }
 
     async function saveUser(event) {
       event.preventDefault();
+      if (mutationPending) return;
+      clearFieldErrors();
       const userId = document.getElementById("user-id").value;
       const payload = {
         username: document.getElementById("username").value.trim(),
@@ -727,18 +781,27 @@
         status: document.getElementById("status").value,
         accountType: document.getElementById("account-type").value,
         employeeId: document.getElementById("employee-id").value,
-        isSystemAccount: document.getElementById("is-system-account").checked,
-        mustResetPassword: document.getElementById("must-reset-password").checked
+        isSystemAccount: document.getElementById("is-system-account").checked
       };
+      if (userId) payload.expectedVersion = Number(document.getElementById("user-version").value);
       if (payload.accountType === "employee" && payload.employeeId && !payload.displayName) {
         payload.displayName = employeeName(payload.employeeId);
       }
       const temporaryPassword = document.getElementById("temporary-password").value;
       if (temporaryPassword) {
+        if (!temporaryPassword.trim()) {
+          showFieldError("temporary-password", "Enter a password that is not only whitespace.");
+          return;
+        }
+        if (temporaryPassword.length < 12) {
+          showFieldError("temporary-password", "Use at least 12 characters.");
+          return;
+        }
         payload.temporaryPassword = temporaryPassword;
-        payload.mustResetPassword = true;
       }
 
+      const saveButton = document.getElementById("save-user-btn");
+      setMutationBusy(true, [saveButton, document.getElementById("reset-form-btn")]);
       try {
         if (userId) {
           await apiRequest(`?id=${encodeURIComponent(userId)}`, {
@@ -756,24 +819,73 @@
         resetUserForm();
         await loadAdminCenter();
       } catch (error) {
-        showMessage("user-message", error.message, true);
+        Object.entries(error.fieldErrors || {}).forEach(([field, message]) => {
+          if (field === "temporaryPassword") showFieldError("temporary-password", message);
+          else showFieldError(field, message);
+        });
+        showMessage("user-message", error.status === 409
+          ? "This account changed since it was loaded. Refresh and review the latest values before retrying."
+          : error.message, true);
+      } finally {
+        setMutationBusy(false, [saveButton, document.getElementById("reset-form-btn")]);
       }
     }
 
-    async function disableUser(userId) {
+    async function disableUser(userId, trigger) {
       const user = adminUsers.find((entry) => entry.userId === userId);
+      if (mutationPending) return;
       if (!user || !await window.CloudCrowdConfirmation.request(`Disable ${user.username}?`, {
         title: 'Disable user',
         confirmLabel: 'Disable',
         intent: 'danger'
       })) return;
 
+      setMutationBusy(true, [trigger]);
       try {
-        await apiRequest(`?id=${encodeURIComponent(userId)}`, { method: "DELETE" });
+        await apiRequest(`?id=${encodeURIComponent(userId)}&version=${encodeURIComponent(user.version)}`, { method: "DELETE" });
         showMessage("user-message", "User disabled.");
         await loadAdminCenter();
       } catch (error) {
-        showMessage("user-message", error.message, true);
+        showMessage("user-message", error.status === 409
+          ? "This account changed since it was loaded. Refresh before retrying."
+          : error.message, true);
+      } finally {
+        setMutationBusy(false, [trigger]);
+      }
+    }
+
+    async function reactivateUser(userId, trigger) {
+      const user = adminUsers.find((entry) => entry.userId === userId);
+      if (!user || mutationPending || !await window.CloudCrowdConfirmation.request(`Reactivate ${user.username}?`, {
+        title: "Reactivate user",
+        confirmLabel: "Reactivate"
+      })) return;
+
+      setMutationBusy(true, [trigger]);
+      try {
+        await apiRequest(`?id=${encodeURIComponent(userId)}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            username: user.username,
+            displayName: user.displayName || "",
+            email: user.email || "",
+            role: user.role,
+            status: "active",
+            accountType: user.accountType,
+            employeeId: user.employeeId || "",
+            restaurantId: user.restaurantId || "",
+            isSystemAccount: user.isSystemAccount === true,
+            expectedVersion: user.version
+          })
+        });
+        await loadAdminCenter();
+        showMessage("user-message", `${user.username} reactivated.`);
+      } catch (error) {
+        showMessage("user-message", error.status === 409
+          ? "This account changed since it was loaded. Refresh before retrying."
+          : error.message, true);
+      } finally {
+        setMutationBusy(false, [trigger]);
       }
     }
 
@@ -792,26 +904,35 @@
         });
         return record;
       });
-      return { username, access };
+      const user = typeof adminUsers === "undefined"
+        ? null
+        : adminUsers.find((entry) => entry.username.toLowerCase() === username.toLowerCase());
+      return { username, access, expectedAccessVersion: user?.accessVersion };
     }
 
     async function saveAccess() {
+      if (mutationPending) return;
       const payload = collectAccessPayload();
       if (!payload.username) {
         showMessage("access-message", "Select a user first.", true);
         return;
       }
 
+      const saveButton = document.getElementById("save-access-btn");
+      setMutationBusy(true, [saveButton, document.getElementById("clear-access-btn"), document.getElementById("access-user")]);
       try {
-        const data = await apiRequest("?action=module-access", {
+        await apiRequest("?action=module-access", {
           method: "PUT",
           body: JSON.stringify(payload)
         });
-        moduleAccess = data.access || [];
-        renderModules();
+        await loadAdminCenter(payload.username);
         showMessage("access-message", "Module access saved.");
       } catch (error) {
-        showMessage("access-message", error.message, true);
+        showMessage("access-message", error.status === 409
+          ? "These permissions changed since they were loaded. Refresh and review before retrying."
+          : error.message, true);
+      } finally {
+        setMutationBusy(false, [saveButton, document.getElementById("clear-access-btn"), document.getElementById("access-user")]);
       }
     }
 
@@ -822,9 +943,10 @@
       showMessage("access-message", "");
     }
 
-    async function loadAdminCenter() {
+    async function loadAdminCenter(selectedUsername = document.getElementById("access-user").value) {
+      const container = document.querySelector(".admin-center-container");
+      container.setAttribute("aria-busy", "true");
       try {
-        showMessage("user-message", "Loading...");
         const [usersData, modulesData, employeesData] = await Promise.all([
           apiRequest(""),
           apiRequest("?modules=1"),
@@ -839,11 +961,18 @@
         renderStats();
         renderUsers();
         renderAccessUsers();
+        if (selectedUsername && adminUsers.some((user) => user.username === selectedUsername)) {
+          document.getElementById("access-user").value = selectedUsername;
+        }
         renderModules();
         showMessage("user-message", usersData.seeded ? "Anati system admin profile ensured." : "");
       } catch (error) {
+        document.getElementById("users-body").innerHTML = '<tr><td class="cc-table__state" colspan="9" data-state="error" role="status">Admin data is unavailable. Retry when the service is available.</td></tr>';
+        document.getElementById("modules-body").innerHTML = '<tr><td class="cc-table__state" colspan="5" data-state="error" role="status">Module access is unavailable.</td></tr>';
         showMessage("user-message", error.message, true);
         showMessage("access-message", error.message, true);
+      } finally {
+        container.setAttribute("aria-busy", "false");
       }
     }
 
@@ -854,7 +983,8 @@
     document.getElementById("access-user").addEventListener("change", renderModules);
     document.getElementById("save-access-btn").addEventListener("click", saveAccess);
     document.getElementById("clear-access-btn").addEventListener("click", clearAccessChecks);
-    loadAdminCenter();
+    await loadAdminCenter();
+    })();
   </script>
   <script src="idle-logout.js"></script>
 </body>

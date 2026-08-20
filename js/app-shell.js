@@ -205,14 +205,8 @@
   function currentUser() {
     return {
       username: readSessionValue('cc_user'),
-      role: readSessionValue('cc_role').trim().toLowerCase(),
-      token: readSessionValue('cc_token')
+      role: readSessionValue('cc_role').trim().toLowerCase()
     };
-  }
-
-  function isAnatiAdmin() {
-    const user = currentUser();
-    return user.username.trim().toLowerCase() === 'anati' && user.role === 'admin';
   }
 
   function cloneModule(module) {
@@ -253,22 +247,18 @@
   }
 
   function fallbackModules(modules, fallbackMode) {
-    if (fallbackMode === 'legacy') {
-      return modules.filter((module) => module.anatiOnly !== true || isAnatiAdmin());
-    }
-    return modules.filter((module) => module.id === 'dashboard' || (module.anatiOnly === true && isAnatiAdmin()));
+    return [];
   }
 
   function canViewModule(module, accessModel) {
-    if (module.anatiOnly === true) return isAnatiAdmin();
     if (!module.permissionKey) return true;
     if (!window.CCPermissions || typeof window.CCPermissions.getModuleAccess !== 'function') {
       throw new Error('Permissions helper unavailable');
     }
 
     const access = window.CCPermissions.getModuleAccess(accessModel, module.permissionKey);
-    if (access?.legacyFallback) throw new Error('Permission state unavailable');
-    return access?.canView !== false;
+    if (access?.unavailable) throw new Error('Permission state unavailable');
+    return access?.canView === true;
   }
 
   async function filterPermittedModules(modules, options = {}) {
@@ -281,7 +271,7 @@
 
     try {
       const accessModel = options.accessModel || await window.CCPermissions.getMyAccessModel();
-      if (accessModel?.legacyFallback) throw new Error('Permission state unavailable');
+      if (accessModel?.available !== true) throw new Error('Permission state unavailable');
       return candidates.filter((module) => canViewModule(module, accessModel)).map(cloneModule);
     } catch (error) {
       console.warn('App shell permission filtering failed.', error);

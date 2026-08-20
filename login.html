@@ -304,9 +304,10 @@
     .input input::placeholder{color:rgba(238,252,255,.42)}
     .eye{
       flex:0 0 auto;
-      width:20px;
-      height:20px;
-      margin-top:5px;
+      width:44px;
+      height:44px;
+      border:0;
+      background:transparent;
       color:rgba(167,235,242,.76);
       cursor:pointer;
       transition:color .22s ease, transform .22s ease, filter .22s ease;
@@ -319,6 +320,9 @@
     .eye:active{
       transform:scale(.96);
     }
+    .field-error{display:none;margin:6px 0 0;color:var(--err);font-size:13px}
+    .field-error.is-visible{display:block}
+    [hidden]{display:none !important}
     .row{
       display:flex;
       align-items:center;
@@ -548,101 +552,215 @@
         <h2 class="title">Sign in</h2>
         <p class="subtitle">Access your account to continue</p>
 
-        <form id="form">
-          <label for="username">Username</label>
-          <div class="input"><input id="username" name="username" autocomplete="username" required placeholder="Enter your username"></div>
+        <form id="form" aria-busy="false">
+          <div id="login-fields">
+            <label for="username">Username</label>
+            <div class="input"><input id="username" name="username" autocomplete="username" required placeholder="Enter your username"></div>
 
-          <label for="password">Password</label>
-          <div class="input">
-            <input id="password" name="password" type="password" autocomplete="current-password" required>
-            <svg id="togglePwd" class="eye" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" stroke="currentColor" stroke-width="1.5"/>
-              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
-            </svg>
+            <label for="password">Password</label>
+            <div class="input">
+              <input id="password" name="password" type="password" autocomplete="current-password" required>
+              <button class="eye" type="button" data-password-toggle="password" aria-label="Show password">Show</button>
+            </div>
           </div>
 
-          <div class="row">
+          <div id="reset-fields" hidden>
+            <p>Create a password with at least 12 characters. You will sign in again after it is saved.</p>
+            <label for="new-password">New password</label>
+            <div class="input">
+              <input id="new-password" name="new-password" type="password" autocomplete="new-password" minlength="12" aria-describedby="new-password-error">
+              <button class="eye" type="button" data-password-toggle="new-password" aria-label="Show new password">Show</button>
+            </div>
+            <p id="new-password-error" class="field-error"></p>
+            <label for="confirm-password">Confirm new password</label>
+            <div class="input">
+              <input id="confirm-password" name="confirm-password" type="password" autocomplete="new-password" minlength="12" aria-describedby="confirm-password-error">
+              <button class="eye" type="button" data-password-toggle="confirm-password" aria-label="Show confirmed password">Show</button>
+            </div>
+            <p id="confirm-password-error" class="field-error"></p>
+          </div>
+
+          <div class="row" id="login-options">
             <label class="checkbox"><input type="checkbox" id="remember"> Remember me</label>
             <a class="home" href="index.html">Back</a>
           </div>
 
-          <button class="btn" type="submit">Sign in</button>
-          <div id="error" class="err">Invalid credentials</div>
-          <div id="ok" class="success">Success! Redirecting…</div>
+          <button class="btn" id="submit-btn" type="submit">Sign in</button>
+          <button class="home" id="reset-cancel" type="button" hidden>Return to sign in</button>
+          <div id="error" class="err" role="alert" aria-live="assertive">Invalid credentials</div>
+          <div id="ok" class="success" role="status" aria-live="polite">Success! Redirecting…</div>
           <p class="authorized-note">Authorized team members only</p>
         </form>
       </div>
     </section>
   </main>
 <script>
-  // Show / hide password
-  document.getElementById('togglePwd').addEventListener('click', () => {
-    const i = document.getElementById('password');
-    i.type = i.type === 'password' ? 'text' : 'password';
-  });
-
-  /* ===========================
-     ✅ OLD LOGIN FLOW (ENABLED)
-     =========================== */
   const form = document.getElementById('form');
-  const expired = new URLSearchParams(window.location.search).get('expired') === '1';
-  if (expired) {
-    const err = document.getElementById('error');
-    err.textContent = 'Your session expired. Please sign in again.';
-    err.style.display = 'block';
+  const submitButton = document.getElementById('submit-btn');
+  const errorRegion = document.getElementById('error');
+  const successRegion = document.getElementById('ok');
+  let resetToken = '';
+
+  function clearNormalSession() {
+    for (const storage of [localStorage, sessionStorage]) {
+      for (const key of ['cc_auth', 'cc_user', 'cc_role', 'cc_token']) storage.removeItem(key);
+    }
   }
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  function setBusy(busy, label) {
+    form.setAttribute('aria-busy', String(busy));
+    submitButton.disabled = busy;
+    submitButton.textContent = label;
+  }
 
-    const err = document.getElementById('error');
-    const ok  = document.getElementById('ok');
-    err.style.display = 'none';
-    ok.style.display  = 'none';
+  function showMessage(element, message) {
+    element.textContent = message;
+    element.style.display = message ? 'block' : 'none';
+  }
+
+  function clearFieldErrors() {
+    for (const id of ['new-password', 'confirm-password']) {
+      const input = document.getElementById(id);
+      const error = document.getElementById(`${id}-error`);
+      input.removeAttribute('aria-invalid');
+      error.textContent = '';
+      error.classList.remove('is-visible');
+    }
+  }
+
+  function showFieldError(field, message) {
+    const input = document.getElementById(field);
+    const error = document.getElementById(`${field}-error`);
+    if (!input || !error) return;
+    input.setAttribute('aria-invalid', 'true');
+    error.textContent = message;
+    error.classList.add('is-visible');
+  }
+
+  function setResetMode(enabled) {
+    document.getElementById('login-fields').hidden = enabled;
+    document.getElementById('login-options').hidden = enabled;
+    document.getElementById('reset-fields').hidden = !enabled;
+    document.getElementById('reset-cancel').hidden = !enabled;
+    document.getElementById('username').required = !enabled;
+    document.getElementById('password').required = !enabled;
+    document.getElementById('new-password').required = enabled;
+    document.getElementById('confirm-password').required = enabled;
+    document.querySelector('.title').textContent = enabled ? 'Create a new password' : 'Sign in';
+    document.querySelector('.subtitle').textContent = enabled
+      ? 'Your temporary password must be replaced before continuing'
+      : 'Access your account to continue';
+    submitButton.textContent = enabled ? 'Save new password' : 'Sign in';
+    if (enabled) document.getElementById('new-password').focus();
+    else document.getElementById('username').focus();
+  }
+
+  document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const input = document.getElementById(button.dataset.passwordToggle);
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      button.textContent = show ? 'Hide' : 'Show';
+      button.setAttribute('aria-label', `${show ? 'Hide' : 'Show'} ${input.id.replaceAll('-', ' ')}`);
+    });
+  });
+
+  document.getElementById('reset-cancel').addEventListener('click', () => {
+    resetToken = '';
+    form.reset();
+    clearFieldErrors();
+    showMessage(errorRegion, '');
+    showMessage(successRegion, '');
+    setResetMode(false);
+  });
+
+  if (new URLSearchParams(window.location.search).get('expired') === '1') {
+    showMessage(errorRegion, 'Your session expired. Please sign in again.');
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (submitButton.disabled) return;
+    showMessage(errorRegion, '');
+    showMessage(successRegion, '');
+    clearFieldErrors();
+
+    if (resetToken) {
+      const newPassword = document.getElementById('new-password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+      if (!newPassword.trim()) { showFieldError('new-password', 'Enter a new password.'); return; }
+      if (newPassword.length < 12) { showFieldError('new-password', 'Use at least 12 characters.'); return; }
+      if (newPassword !== confirmPassword) { showFieldError('confirm-password', 'Passwords do not match.'); return; }
+      setBusy(true, 'Saving…');
+      try {
+        const response = await fetch('/.netlify/functions/complete-password-reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resetToken}` },
+          body: JSON.stringify({ newPassword, confirmPassword })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.ok !== true) {
+          Object.entries(data.fieldErrors || {}).forEach(([field, message]) => showFieldError({
+            newPassword: 'new-password',
+            confirmPassword: 'confirm-password'
+          }[field] || field, message));
+          showMessage(errorRegion, data.error || 'Password reset authorization is invalid or expired.');
+          if (response.status === 401) {
+            resetToken = '';
+            form.reset();
+            setResetMode(false);
+          }
+          return;
+        }
+        resetToken = '';
+        form.reset();
+        setResetMode(false);
+        showMessage(successRegion, 'Password updated. Sign in with your new password.');
+      } catch {
+        showMessage(errorRegion, 'Network error. Try again.');
+      } finally {
+        setBusy(false, resetToken ? 'Save new password' : 'Sign in');
+      }
+      return;
+    }
 
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
-
+    resetToken = '';
+    clearNormalSession();
+    setBusy(true, 'Signing in…');
     try {
-      const res = await fetch('/.netlify/functions/login', {
+      const response = await fetch('/.netlify/functions/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
       });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (res.ok && data?.success && data?.sessionToken) {
-        ['cc_auth', 'cc_user', 'cc_role', 'cc_token'].forEach((key) => {
-          localStorage.removeItem(key);
-        });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.resetRequired === true && data.resetToken) {
+        clearNormalSession();
+        resetToken = data.resetToken;
+        document.getElementById('password').value = '';
+        setResetMode(true);
+        return;
+      }
+      if (response.ok && data.success === true && data.sessionToken) {
+        ['cc_auth', 'cc_user', 'cc_role', 'cc_token'].forEach((key) => localStorage.removeItem(key));
         sessionStorage.setItem('cc_auth', '1');
         sessionStorage.setItem('cc_user', data.username || username);
         sessionStorage.setItem('cc_role', data.role || 'agent');
         sessionStorage.setItem('cc_token', data.sessionToken);
-
-        ok.textContent = 'Success! Redirecting…';
-        ok.style.display = 'block';
-
-        setTimeout(() => { window.location.href = "dashboard.html"; }, 700);
-      } else {
-        err.textContent = data?.message || 'Invalid credentials';
-        err.style.display = 'block';
+        showMessage(successRegion, 'Success! Redirecting…');
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 700);
+        return;
       }
+      showMessage(errorRegion, data.message || 'Invalid credentials');
     } catch {
-      err.textContent = 'Network error — try again';
-      err.style.display = 'block';
+      showMessage(errorRegion, 'Network error. Try again.');
+    } finally {
+      setBusy(false, resetToken ? 'Save new password' : 'Sign in');
     }
   });
-
-  /* ===========================
-     🛠 Maintenance Mode (DISABLED)
-     ===========================
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    window.location.href = "system-update.html";
-  });
-  */
+  window.addEventListener('pagehide', () => { resetToken = ''; });
 </script>
 </body>
 </html>

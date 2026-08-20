@@ -263,7 +263,9 @@
   </div>
 
   <script>
-    window.CCPermissions?.requirePageAccess('employee_deductions');
+    (async function initializeAuthorizedEmployeeDeductions() {
+    const access = await window.CCPermissions?.requirePageAccess('employee_deductions', { force: true });
+    if (!access || access.unavailable || access.canView !== true) return;
     const EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
     const DEDUCTIONS_ENDPOINT = '/.netlify/functions/deductions';
     const DISCOUNT_PERCENTAGE = 10;
@@ -665,6 +667,7 @@
     });
 
     Promise.allSettled([loadEmployees(), loadDeductions()]);
+    })();
   </script>
   <script src="idle-logout.js"></script>
 </body>

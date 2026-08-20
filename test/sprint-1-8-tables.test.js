@@ -354,11 +354,11 @@ test("renderUsers connects each eligible Admin Disable control to its exact user
   ];
   const rendered = renderAdminDisableActions(read("anati-admin.html"), users);
 
-  assert.equal(rendered.disableButtons.length, 4);
+  assert.equal(rendered.disableButtons.length, 3);
   assert.deepEqual(rendered.disableButtons.map((button) => button.dataset.disableUser),
-    ["user-one", "user-two", "anati-id", "disabled-id"]);
+    ["user-one", "user-two", "anati-id"]);
   assert.deepEqual(rendered.disableButtons.map((button) => button.label),
-    ["Disable", "Disable", "Disable", "Disable"]);
+    ["Disable", "Disable", "Disable"]);
 
   rendered.disableButtons[1].click();
   assert.deepEqual(rendered.dispatchedIds, ["user-two"], "the second row dispatches its own ID");
@@ -366,15 +366,14 @@ test("renderUsers connects each eligible Admin Disable control to its exact user
   assert.deepEqual(rendered.dispatchedIds, ["user-two", "user-one"], "an ordinary row dispatches its exact ID");
 
   assert.equal(rendered.disableButtons[2].disabled, true, "Anati remains protected");
-  assert.equal(rendered.disableButtons[3].disabled, true, "an already-disabled user remains non-actionable");
   rendered.disableButtons[2].click();
-  rendered.disableButtons[3].click();
   assert.deepEqual(rendered.dispatchedIds, ["user-two", "user-one"], "disabled controls do not dispatch");
+  assert.match(read("anati-admin.html"), /data-reactivate-user=/, "disabled users receive an explicit Reactivate action");
 });
 
 test("an executable Admin mutation catches a rendered Disable control disconnected from dispatch", () => {
   const source = read("anati-admin.html");
-  const mutated = source.replace("disableUser(button.dataset.disableUser)", "void 0");
+  const mutated = source.replace("disableUser(button.dataset.disableUser, button)", "void 0");
   assert.notEqual(mutated, source, "disconnect mutation applied");
   assert.doesNotThrow(() => new vm.Script(functionSource(mutated, "renderUsers")), "mutated renderer compiles");
 

@@ -342,18 +342,18 @@ This section retains the stable Volume 3 `DL-*` sequence for traceability. Recor
 
 ### DL-005 — Forced Password Reset Behavior
 
-- **Status:** `OPEN`
+- **Status:** `ACCEPTED`
 - **Area:** Authentication
-- **Decision/question:** What must happen when `must_reset_password` is true?
-- **Product-owner intent:** Unresolved.
-- **Current repository behavior:** `netlify/functions/login.js` reads the field but issues a normal session without enforcing reset.
+- **Decision:** Correct temporary credentials issue only a short-lived, purpose-limited reset authorization. The user must set a password of at least 12 characters and then sign in again; no normal session is issued before completion.
+- **Product-owner intent:** Enforce a restricted reset-only path without composition rules or plaintext secret exposure.
+- **Current repository behavior:** `login.js` and `complete-password-reset.js` implement the reset-only flow with scrypt compatibility, atomic version invalidation, and safe audit metadata.
 - **Why in ledger:** A dormant database flag does not define the required user or security flow.
 - **Provenance:** `UNRESOLVED`; `REPOSITORY-EVIDENCED CURRENT BEHAVIOR`
 - **Consequences:** Options: block login pending reset; issue restricted reset-only session; warn but allow; retire the field. Security and UX differ materially.
 - **Explicit non-goals:** Authentication redesign in Sprint 1.11.
 - **Related:** Volume 3 `DL-005`, `V3-R013`; `login.js`.
 - **Target sprint/workstream:** Authentication/security redesign.
-- **Implementation state:** Schema field exists; policy is unenforced.
+- **Implementation state:** Accepted decision implemented in the uncommitted Sprint 1.13 remediation and covered by deterministic handler tests; pending independent approval. The original disposable-Neon suite completed with 16 passed, 0 failed, 0 skipped across all 21 named PostgreSQL scenarios, and the PostgreSQL-enabled canonical run completed with 809 tests, 808 passed, 0 failed, and one unrelated existing opt-in skip. Independent review found incomplete rollback-path and early-cleanup evidence. The corrected dedicated TAP accounts for its total exactly: 19 child PostgreSQL test results cover the 21 numbered production scenarios because grouped children combine scenarios 6–7, 8–9, 11–14, and 18–19 while scenario 10 expands into five mutation-specific children 10a–10e; one parent PostgreSQL test result records completion of the PostgreSQL parent; and two top-level deterministic lifecycle/mutation-resistance test results complete the total. Therefore the corrected user-run disposable-PostgreSQL summary was 22 tests, 22 passed, 0 failed, and 0 skipped; the corrected PostgreSQL-enabled canonical run completed with 816 tests, 815 passed, 0 failed, and one unrelated existing opt-in adapter skip. Manual real-browser acceptance, deployment, and production migration remain deferred; no production or staging database was used.
 - **Required characterization/verification:** Login/token/password-reset flows, account-link types, audit, expiry, recovery, and live schema.
 - **Revisit trigger:** Before password-reset functionality or security release.
 - **Recommended decision deadline:** Before authentication redesign begins.
@@ -382,18 +382,18 @@ This section retains the stable Volume 3 `DL-*` sequence for traceability. Recor
 
 ### DL-007 — Admin Center Delivery Phases
 
-- **Status:** `OPEN`
+- **Status:** `ACCEPTED`
 - **Area:** Administration roadmap
-- **Decision/question:** Which accepted Admin capabilities belong in the first completion sprint, and what are the later phases?
-- **Product-owner intent:** The eventual capability set is confirmed by DEC-007; phasing is unresolved.
-- **Current repository behavior:** Users/module access are functional foundations; workflow permissions, audit, maintenance, and configuration have mixed partial/planned states.
+- **Decision:** Sprint 1.13 completes Users and Module Access only. Workflow Permissions and the Audit viewer remain visibly deferred and noninteractive; Maintenance stays in the existing topbar.
+- **Product-owner intent:** Ship the production user/access boundary as one coherent unit without implying that later Admin capabilities exist.
+- **Current repository behavior:** Users and Module Access implement lifecycle, concurrency, audit, and fail-closed authorization contracts; planned sections state their deferred status.
 - **Why in ledger:** Future direction does not determine release boundaries.
 - **Provenance:** `UNRESOLVED`; `PROJECT-OWNER CONFIRMED` for future scope; `REPOSITORY-EVIDENCED CURRENT BEHAVIOR`
 - **Consequences:** Options include users/access first, workflow controls first, or a broader integrated release; each changes schema, testing, and rollout risk.
 - **Explicit non-goals:** Admin work in Sprint 1.11.
 - **Related:** Volume 3 `DL-007`; DEC-007; UI Architecture §23/Sprint 1.13.
 - **Target sprint/workstream:** Admin Center planning.
-- **Implementation state:** Foundation partial; phases open.
+- **Implementation state:** Option A is implemented in the uncommitted Sprint 1.13 remediation with deterministic handler evidence, pending independent approval. The original disposable-Neon suite completed with 16 passed, 0 failed, 0 skipped across all 21 named PostgreSQL scenarios, and its PostgreSQL-enabled canonical run completed with 809 tests, 808 passed, 0 failed, and one unrelated existing opt-in skip. Independent review then found that part of the audit-rollback evidence could accept the wrong failure path and that early setup was outside reliable cleanup. The corrected dedicated TAP accounts for its total exactly: 19 child PostgreSQL test results cover the 21 numbered production scenarios because grouped children combine scenarios 6–7, 8–9, 11–14, and 18–19 while scenario 10 expands into five mutation-specific children 10a–10e; one parent PostgreSQL test result records completion of the PostgreSQL parent; and two top-level deterministic lifecycle/mutation-resistance test results complete the total. Therefore the corrected user-run disposable-PostgreSQL summary was 22 tests, 22 passed, 0 failed, and 0 skipped; the corrected PostgreSQL-enabled canonical run completed with 816 tests, 815 passed, 0 failed, and one unrelated existing opt-in adapter skip. Workflow Permissions, Audit Viewer, real-browser acceptance, deployment, and production migration remain deferred. Sprint 1.12 Call Queue remains disabled and deferred, and no production or staging database was used.
 - **Required characterization/verification:** Current Admin behavior, permission dependencies, audit, workflow assignment requirements, and operational priority.
 - **Revisit trigger:** Before Admin Center completion planning.
 - **Recommended decision deadline:** Sprint 1.13 inception or earlier roadmap commitment.
@@ -502,18 +502,18 @@ This section retains the stable Volume 3 `DL-*` sequence for traceability. Recor
 
 ### DL-013 — Legacy Permission Fallback
 
-- **Status:** `OPEN`
+- **Status:** `ACCEPTED`
 - **Area:** Authorization compatibility
-- **Decision/question:** Must legacy frontend permission fallback remain, and under what conditions?
-- **Product-owner intent:** Unresolved.
-- **Current repository behavior:** `js/permissions.js` can synthesize legacy access when configured access is unavailable/unconfigured; backend enforcement can fail closed, creating asymmetry.
+- **Decision:** Remove synthesized legacy/full access. Explicit allow is allowed; explicit deny, no assignment, partial/malformed data, and permission-service failure are denied, with unavailable distinguished from denied.
+- **Product-owner intent:** Permissions fail closed on every route and request.
+- **Current repository behavior:** `js/permissions.js`, `js/app-shell.js`, and protected Netlify Functions use authoritative fail-closed permission resolution.
 - **Why in ledger:** Compatibility code cannot reveal its approved lifespan or failure policy.
 - **Provenance:** `UNRESOLVED`; `REPOSITORY-EVIDENCED CURRENT BEHAVIOR`
 - **Consequences:** Options: remove fallback; retain only for truly unconfigured legacy users; retain by deployment flag; replace with explicit migration state. Security and availability tradeoffs differ.
 - **Explicit non-goals:** Permission redesign in Sprint 1.11.
 - **Related:** Volume 3 `DL-013`, `V3-R011`; `permissions.js`; `_auth.js`.
 - **Target sprint/workstream:** Authorization hardening/migration.
-- **Implementation state:** Fallback active in frontend.
+- **Implementation state:** Implemented in the uncommitted Sprint 1.13 remediation with deterministic handler evidence. Original disposable PostgreSQL evidence passed, but independent review found incomplete rollback-path and early-cleanup proof. The corrected dedicated TAP accounts for its total exactly: 19 child PostgreSQL test results cover the 21 numbered production scenarios because grouped children combine scenarios 6–7, 8–9, 11–14, and 18–19 while scenario 10 expands into five mutation-specific children 10a–10e; one parent PostgreSQL test result records completion of the PostgreSQL parent; and two top-level deterministic lifecycle/mutation-resistance test results complete the total. Therefore the corrected user-run disposable-PostgreSQL summary was 22 tests, 22 passed, 0 failed, and 0 skipped; the corrected PostgreSQL-enabled canonical run completed with 816 tests, 815 passed, 0 failed, and one unrelated existing opt-in adapter skip. Independent approval remains pending. Real-browser acceptance, deployment, and production migration remain deferred, and no production or staging database was used.
 - **Required characterization/verification:** Configured/unconfigured/error/Anati cases, direct routes, navigation, actions, and backend outcomes.
 - **Revisit trigger:** Permission migration completion, access incident, or Admin expansion.
 - **Recommended decision deadline:** Before authorization redesign; Profile work should preserve current behavior.
@@ -641,18 +641,18 @@ This section retains the stable Volume 3 `DL-*` sequence for traceability. Recor
 
 ### DEC-012 — Disabled-Session Revocation
 
-- **Status:** `OPEN`
+- **Status:** `ACCEPTED`
 - **Area:** Authentication and account disablement
-- **Decision/question:** Should disabling a user revoke already issued sessions immediately, at the next request, through a revocation/version check, or only at token expiry?
-- **Product-owner intent:** Unresolved.
-- **Current repository behavior:** Login denies disabled accounts, but `_auth.js` validates signed token content/expiry without querying current user status, so earlier tokens can remain valid.
+- **Decision:** Every authenticated backend request revalidates the active database account, current role, identity, token purpose, and session version. Authority-invalidating changes revoke existing sessions on the next request.
+- **Product-owner intent:** Disablement, role changes, Admin password replacement, and reset completion invalidate existing sessions across devices.
+- **Current repository behavior:** Versioned application tokens and `_auth.js` database checks enforce the decision; old unversioned tokens require fresh login.
 - **Why in ledger:** Session invalidation is a security/product policy not encoded by the disable control.
 - **Provenance:** `UNRESOLVED`; `REPOSITORY-EVIDENCED CURRENT BEHAVIOR`
 - **Consequences:** Options include short expiry only, database status check per request, token/session versioning, or revocation store. Each changes latency, reliability, and security.
 - **Explicit non-goals:** Authentication redesign in Sprint 1.11.
 - **Related:** Volume 3 `V3-R012`; `admin-users.js`; `_auth.js`; `login.js`.
 - **Target sprint/workstream:** Authentication/security redesign.
-- **Implementation state:** Immediate revocation not implemented.
+- **Implementation state:** Implemented in the uncommitted Sprint 1.13 remediation with deterministic handler evidence. Original disposable PostgreSQL evidence passed, but independent review found incomplete rollback-path and early-cleanup proof. The corrected dedicated TAP accounts for its total exactly: 19 child PostgreSQL test results cover the 21 numbered production scenarios because grouped children combine scenarios 6–7, 8–9, 11–14, and 18–19 while scenario 10 expands into five mutation-specific children 10a–10e; one parent PostgreSQL test result records completion of the PostgreSQL parent; and two top-level deterministic lifecycle/mutation-resistance test results complete the total. Therefore the corrected user-run disposable-PostgreSQL summary was 22 tests, 22 passed, 0 failed, and 0 skipped; the corrected PostgreSQL-enabled canonical run completed with 816 tests, 815 passed, 0 failed, and one unrelated existing opt-in adapter skip. Independent approval remains pending. Real-browser acceptance, deployment, and production migration remain deferred, and no production or staging database was used.
 - **Required characterization/verification:** Disable while active, route/API access, token expiry, multi-device sessions, restore, and audit.
 - **Revisit trigger:** Before account-security hardening or external-user rollout.
 - **Recommended decision deadline:** Authentication redesign inception or security-priority escalation.
@@ -779,22 +779,22 @@ DL-011, DL-012, DL-013, the long-term retirement remainder of DL-014, DL-018/DEC
 | DEC-009 | Call Queue direction | `ACCEPTED FUTURE REQUIREMENT` | No |
 | DEC-010 | Client logo storage choice | `DEFERRED` | No |
 | DEC-011 | System Update automatic return | `OPEN` | No |
-| DEC-012 | Disabled-session revocation | `OPEN` | No |
+| DEC-012 | Disabled-session revocation | `ACCEPTED` | No |
 | DEC-013 | Profile selection/focus contract | `ACCEPTED` | No |
 | DEC-014 | Bulk-delete scope/safeguards | `OPEN` | No |
 | DL-001 | Operations authority | `OPEN` | No |
 | DL-002 | Operations Sheet role | `OPEN` | No |
 | DL-003 | Maintenance authority question | `SUPERSEDED` | No |
 | DL-004 | Employee maintenance question | `SUPERSEDED` | No |
-| DL-005 | Forced password reset | `OPEN` | No |
+| DL-005 | Forced password reset | `ACCEPTED` | No |
 | DL-006 | Call Queue durable design | `OPEN` | No |
-| DL-007 | Admin delivery phases | `OPEN` | No |
+| DL-007 | Admin delivery phases | `ACCEPTED` | No |
 | DL-008 | Employee URL/history contract | `ACCEPTED` | No |
 | DL-009 | Client URL/history/dialog contract | `ACCEPTED` | No |
 | DL-010 | Dependency permission model | `ACCEPTED` | No |
 | DL-011 | Employee restoration | `OPEN` | No if preserved |
 | DL-012 | Archive/delete semantics | `OPEN` | No |
-| DL-013 | Legacy permission fallback | `OPEN` | No if preserved |
+| DL-013 | Legacy permission fallback | `ACCEPTED` | No |
 | DL-014 | Sprint compatibility preservation; later retirement open | `ACCEPTED` | No |
 | DL-015 | Client selection shareability | `ACCEPTED` | No |
 | DL-016 | Default profile selection | `ACCEPTED` | No |

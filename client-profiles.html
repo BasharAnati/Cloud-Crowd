@@ -343,7 +343,9 @@
   </div>
 
   <script>
-    window.CCPermissions?.requirePageAccess('client_profiles');
+    (async function initializeAuthorizedClientProfiles() {
+    const access = await window.CCPermissions?.requirePageAccess('client_profiles', { force: true });
+    if (!access || access.unavailable || access.canView !== true) return;
     const RESTAURANTS_ENDPOINT = '/.netlify/functions/restaurants';
     const TRAINING_ENDPOINT = '/.netlify/functions/training';
     const RESTAURANT_RATINGS_ENDPOINT = './.netlify/functions/restaurant-ratings';
@@ -1519,6 +1521,7 @@
     });
 
     loadRestaurants();
+    })();
   </script>
   <script src="js/media-viewer.js"></script>
   <script src="idle-logout.js"></script>

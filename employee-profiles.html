@@ -446,7 +446,9 @@
   <script src="js/maintenance.js"></script>
   <script src="js/app-shell.js"></script>
   <script>
-    window.CCPermissions?.requirePageAccess('employee_profiles');
+    (async function initializeAuthorizedEmployeeProfiles() {
+    const access = await window.CCPermissions?.requirePageAccess('employee_profiles', { force: true });
+    if (!access || access.unavailable || access.canView !== true) return;
     const EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
     const DEDUCTIONS_ENDPOINT = '/.netlify/functions/deductions';
     const TRAINING_ENDPOINT = '/.netlify/functions/training';
@@ -1711,6 +1713,7 @@
     });
 
     loadEmployees();
+    })();
   </script>
   <script src="idle-logout.js"></script>
 </body>

@@ -484,7 +484,9 @@
   </div>
 
   <script>
-    window.CCPermissions?.requirePageAccess('attendance');
+    (async function initializeAuthorizedAttendance() {
+    const access = await window.CCPermissions?.requirePageAccess('attendance', { force: true });
+    if (!access || access.unavailable || access.canView !== true) return;
     const ATTENDANCE_STORAGE_KEY = 'cc_attendance_records_v1';
     const ATTENDANCE_MIGRATION_FLAG = 'cc_attendance_migration_v1_done';
     const ATTENDANCE_ENDPOINT = '/.netlify/functions/attendance';
@@ -950,6 +952,7 @@
     });
     document.getElementById('agent-search')?.addEventListener('input', renderAttendanceRecords);
     document.getElementById('date-filter')?.addEventListener('change', renderAttendanceRecords);
+    })();
   </script>
   <script src="idle-logout.js"></script>
 </body>

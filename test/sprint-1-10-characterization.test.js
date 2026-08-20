@@ -152,8 +152,12 @@ function workflowRuntime(kind, role = "manager") {
     ? `window.__api={STAGE_COLUMNS,requestDisplayStage,getFilteredRequests,updateStats,renderCard,renderBoard,saveDetails,archiveRequest,setRecords(v){requests=v;}};`
     : `window.__api={SHARE_COLUMNS,shareStage,getFilteredItems,updateStats,renderCard,renderBoard,saveResponse,markDone,setRecords(v){shareItems=v;}};`;
   const original = inlinePageScript(page);
-  const script = original.replace(marker, exposure);
-  assert.notEqual(script, original, `${kind} exposure installed`);
+  const authorized = original.replace(
+    /const access = await[^;]+;\s*if \(!access[^\n]+return;/,
+    "const access = { canView: true, unavailable: false };"
+  );
+  const script = authorized.replace(marker, exposure);
+  assert.notEqual(script, authorized, `${kind} exposure installed`);
   vm.runInNewContext(script, context, { filename: page });
   return { api: context.__api, context, document, calls };
 }

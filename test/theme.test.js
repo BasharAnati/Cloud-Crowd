@@ -748,7 +748,7 @@ test("shared-shell navigation and topbar still build with the reusable theme tog
     },
     CCPermissions: {
       async getMyAccessModel() {
-        return { legacyFallback: false, hasConfiguredAccess: true, fullAccess: true, access: [] };
+        return { available: true, hasConfiguredAccess: true, access: [] };
       },
       getModuleAccess(_accessModel, moduleKey) {
         return { moduleKey, canView: true, canCreate: true, canEdit: true, canDelete: false };

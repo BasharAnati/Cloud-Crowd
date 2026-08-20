@@ -533,9 +533,9 @@ exports.handler = async (event) => {
     let session = null;
     try {
       if (event.httpMethod === "DELETE") {
-        session = requireAdminSession(event);
+        session = await requireAdminSession(event);
       } else if (["GET", "POST", "PUT"].includes(event.httpMethod)) {
-        session = requireValidSession(event);
+        session = await requireValidSession(event);
       }
     } catch (authErr) {
       if (!authErr.statusCode) throw authErr;

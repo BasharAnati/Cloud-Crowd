@@ -285,7 +285,7 @@ exports.handler = async (event) => {
 
   let session;
   try {
-    session = requireValidSession(event);
+    session = await requireValidSession(event);
     const moduleAction =
       event.httpMethod === "GET"
         ? "view"

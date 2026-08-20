@@ -166,9 +166,9 @@ exports.handler = async (event) => {
 
     try {
       if (event.httpMethod === 'DELETE') {
-        requireAdminSession(event);
+        await requireAdminSession(event);
       } else if (['GET', 'POST', 'PUT'].includes(event.httpMethod)) {
-        requireValidSession(event);
+        await requireValidSession(event);
       }
     } catch (authErr) {
       if (!authErr.statusCode) throw authErr;

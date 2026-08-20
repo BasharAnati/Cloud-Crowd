@@ -147,8 +147,12 @@ function loadPage(kind, role = "manager") {
     : `window.__api = { shareStage, getFilteredItems, updateStats, renderCard,
         loadShareItems, saveResponse, markDone, detailItem, openModal, closeModal,
         setRecords(value) { shareItems = value; }, state() { return shareItems; } };`;
-  const script = pageScript(pages[kind]).replace(marker, exposure);
-  assert.notEqual(script, pageScript(pages[kind]), `${kind} test exposure was installed`);
+  const authorizedScript = pageScript(pages[kind]).replace(
+    /const access = await[^;]+;\s*if \(!access[^\n]+return;/,
+    "const access = { canView: true, unavailable: false };"
+  );
+  const script = authorizedScript.replace(marker, exposure);
+  assert.notEqual(script, authorizedScript, `${kind} test exposure was installed`);
   vm.runInNewContext(script, context, { filename: `${kind}-workflow-inline.js` });
   return { api: context.__api, context, document };
 }
@@ -249,8 +253,8 @@ function actualContrast(targets, label, foregroundTarget, backgroundTarget = for
 test("legacy workflow routes, fields, stages, permissions, and storage boundaries are frozen", () => {
   const requests = pages.requests;
   const share = pages.share;
-  assert.match(requests, /requirePageAccess\('free_order_requests'\)/);
-  assert.match(share, /requirePageAccess\('free_order_share'\)/);
+  assert.match(requests, /await[^\n]*requirePageAccess\('free_order_requests', \{ force: true \}\)/);
+  assert.match(share, /await[^\n]*requirePageAccess\('free_order_share', \{ force: true \}\)/);
   assert.match(requests, /const API_ENDPOINT = '\/\.netlify\/functions\/free-order-requests'/);
   assert.match(share, /const API_ENDPOINT = '\/\.netlify\/functions\/free-order-requests'/);
 
@@ -466,7 +470,7 @@ test("Sprint 1.3D pages consume the shared shell, theme, Page Header, and no loc
     assert.match(source, /src="js\/app-shell\.js" defer/);
     assert.match(source, /src="js\/internal-page-shell\.js" defer/);
     assert.match(source, new RegExp(`data-shell-module="${moduleId}"`));
-    assert.match(source, new RegExp(`requirePageAccess\\('${permissionKey}'\\)`));
+    assert.match(source, new RegExp(`await[^\\n]*requirePageAccess\\('${permissionKey}', \\{ force: true \\}\\)`));
     assert.match(source, /class="cc-shell-layout has-responsive-navigation"/);
     assert.match(source, /<aside id="internal-app-sidebar" aria-label="Application navigation"><\/aside>/);
     assert.match(source, /<header id="internal-app-topbar" role="banner">/);

@@ -113,7 +113,10 @@ function businessScript(source) {
 }
 
 function loadBusiness(source, marker, exposure, options = {}) {
-  const script = businessScript(source);
+  const script = businessScript(source).replace(
+    /const access = await[^;]+;\s*if \(!access[^\n]+return;/,
+    "const access = { canView: true, unavailable: false };"
+  );
   const markerIndex = script.indexOf(marker);
   assert.ok(markerIndex > -1, `missing business initialization marker ${marker}`);
   const document = new FakeDocument();
@@ -148,7 +151,7 @@ function loadBusiness(source, marker, exposure, options = {}) {
     banner(element, message) { element.textContent = message || ""; element.hidden = !message; return element; },
     clear(element) { element.textContent = ""; element.hidden = true; }
   };
-  vm.runInNewContext(`${script.slice(0, markerIndex)}\n${exposure}`, context);
+  vm.runInNewContext(`${script.slice(0, markerIndex)}\n${exposure}\n})();`, context);
   return { context, document, sessionStorage, localStorage, fetchCalls, api: context.__api };
 }
 
@@ -224,7 +227,7 @@ test("one resolved permission model drives route access, actions, and shell filt
     denied.context.CloudCrowdAppShell.filterPermittedModules(modules, { fallbackMode: "legacy" })
   ]);
   assert.equal(denied.fetchCalls.length, 1);
-  assert.equal(denied.context.location.href, "dashboard.html");
+  assert.equal(denied.context.location.href, "dashboard.html?access=denied");
 
   const fallback = loadPermissions({
     response: { ok: true, legacyFallback: true, hasConfiguredAccess: false, access: [] }
@@ -234,15 +237,15 @@ test("one resolved permission model drives route access, actions, and shell filt
     fallback.context.CloudCrowdAppShell.filterPermittedModules(modules, { fallbackMode: "legacy" })
   ]);
   assert.equal(fallback.fetchCalls.length, 1);
-  assert.equal(fallbackResults[0].legacyFallback, true);
-  assert.equal(fallbackResults[1].length, 1);
+  assert.equal(fallbackResults[0].unavailable, true);
+  assert.equal(fallbackResults[1].length, 0);
 
   const anati = loadPermissions({ user: "Anati", role: "admin" });
   const anatiResults = await Promise.all([
     anati.context.CCPermissions.requirePageAccess("attendance"),
     anati.context.CloudCrowdAppShell.filterPermittedModules(modules, { fallbackMode: "legacy" })
   ]);
-  assert.equal(anati.fetchCalls.length, 0);
+  assert.equal(anati.fetchCalls.length, 1);
   assert.equal(anatiResults[0].canView, true);
   assert.equal(anatiResults[1].length, 1);
 });
@@ -306,6 +309,52 @@ test("shared maintenance lifecycle preserves enforcement, polling, authorization
   );
   await lifecycle.updateMaintenanceToggleButton();
   assert.equal(button.textContent, "ON");
+
+  for (const failure of [
+    async () => { throw new Error("network unavailable"); },
+    async () => jsonResponse({}, { ok: false, status: 500 }),
+    async () => jsonResponse({ maintenance: "off", admin: false }),
+  ]) {
+    context.location.href = "attendance.html";
+    context.fetch = failure;
+    await lifecycle.enforceMaintenanceMode();
+    assert.equal(context.location.href, "system-update.html", "unverified state and actor fail closed");
+    assert.equal(button.hidden, true, "unverified Admin authority hides the toggle");
+  }
+
+  context.location.href = "attendance.html";
+  context.fetch = async () => jsonResponse({ maintenance: false, admin: false });
+  await lifecycle.enforceMaintenanceMode();
+  assert.equal(context.location.href, "attendance.html", "authoritative OFF recovers normal navigation");
+});
+
+test("System Update remains stable through failure and returns only on authoritative recovery", async () => {
+  const source = read("system-update.html");
+  const script = [...source.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
+    .map((match) => match[1]).sort((a, b) => b.length - a.length)[0];
+  const checks = [];
+  const replacements = [];
+  const responses = [
+    Promise.reject(new Error("network")),
+    Promise.resolve(jsonResponse({}, { ok: false, status: 500 })),
+    Promise.resolve(jsonResponse({ maintenance: true, admin: false })),
+    Promise.resolve(jsonResponse({ maintenance: false, admin: false })),
+  ];
+  const context = {
+    sessionStorage: { getItem() { return "token"; } },
+    fetch() { return responses.shift(); },
+    setInterval(callback, delay) { checks.push({ callback, delay }); return 1; },
+    location: { replace(value) { replacements.push(value); } },
+  };
+  context.window = context;
+  vm.runInNewContext(script, context);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(checks[0].delay, 3000);
+  await checks[0].callback();
+  await checks[0].callback();
+  assert.deepEqual(replacements, [], "failure and authoritative ON remain on System Update");
+  await checks[0].callback();
+  assert.deepEqual(replacements, ["dashboard.html"], "authoritative OFF permits recovery");
 });
 
 test("Dashboard and HR runtimes consume the same maintenance implementation", () => {

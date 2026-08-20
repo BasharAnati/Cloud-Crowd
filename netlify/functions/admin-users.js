@@ -1,6 +1,6 @@
 const crypto = require("crypto");
 const { Pool } = require("pg");
-const { requireValidSession, requireModuleAccess } = require("./_auth");
+const { requireValidSession, requireAnatiSession, requireModuleAccess } = require("./_auth");
 
 const CONNECTION_STRING =
   process.env.NETLIFY_DATABASE_URL ||
@@ -8,7 +8,7 @@ const CONNECTION_STRING =
   process.env.NEON_DATABASE_URL ||
   process.env.DATABASE_URL;
 
-const pool = new Pool({ connectionString: CONNECTION_STRING });
+let pool = new Pool({ connectionString: CONNECTION_STRING });
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -19,7 +19,7 @@ const JSON_HEADERS = { "Content-Type": "application/json", ...CORS };
 
 const ROLES = new Set(["admin", "manager", "agent"]);
 const STATUSES = new Set(["active", "disabled"]);
-const ACCOUNT_TYPES = new Set(["employee", "external", "client", "system"]);
+const ACCOUNT_TYPES = new Set(["employee", "external", "system"]);
 const MODULES = [
   { moduleKey: "dashboard", moduleName: "Dashboard", route: "dashboard.html" },
   { moduleKey: "cctv", moduleName: "CCTV", route: "cctv.html" },
@@ -28,7 +28,7 @@ const MODULES = [
   { moduleKey: "complimentary_orders", moduleName: "Complimentary Orders", route: "free-orders.html" },
   { moduleKey: "free_order_requests", moduleName: "Free Order Requests", route: "free-order-requests.html" },
   { moduleKey: "free_order_share", moduleName: "Free Order Share", route: "free-order-share.html" },
-  { moduleKey: "call_queue", moduleName: "Call Queue", route: "call-queue.html" },
+  { moduleKey: "call_queue", moduleName: "Call Queue", route: "call-queue.html", administrable: false },
   { moduleKey: "attendance", moduleName: "Attendance", route: "attendance.html" },
   { moduleKey: "weekly_quality", moduleName: "Weekly Quality", route: "weekly-quality.html" },
   { moduleKey: "employee_profiles", moduleName: "Employee Profiles", route: "employee-profiles.html" },
@@ -36,7 +36,7 @@ const MODULES = [
   { moduleKey: "agent_training", moduleName: "Agent Training", route: "agent-training.html" },
   { moduleKey: "client_profiles", moduleName: "Client Profiles", route: "client-profiles.html" },
   { moduleKey: "restaurant_ratings", moduleName: "Restaurant Ratings", route: "restaurant-ratings.html" },
-  { moduleKey: "anati_admin", moduleName: "Anati Admin Center", route: "anati-admin.html" },
+  { moduleKey: "anati_admin", moduleName: "Anati Admin Center", route: "anati-admin.html", administrable: false },
 ];
 const MODULE_KEYS = new Set(MODULES.map((module) => module.moduleKey));
 const MODULE_KEY_ALIASES = {
@@ -54,8 +54,17 @@ const MODULE_KEY_ALIASES = {
   "restaurant-ratings": "restaurant_ratings",
   "anati-admin-center": "anati_admin",
 };
+const RESERVED_MODULE_KEYS = new Set(["call_queue", "anati_admin"]);
+const RESERVED_STORED_MODULE_KEYS = Object.freeze([
+  "call_queue", "call-queue", "anati_admin", "anati-admin-center",
+]);
+function isReservedModuleKey(value) {
+  return RESERVED_MODULE_KEYS.has(normalizeModuleKey(value));
+}
+const ADMINISTRABLE_MODULES = MODULES.filter((module) => module.administrable !== false && !isReservedModuleKey(module.moduleKey));
+const ADMINISTRABLE_MODULE_KEYS = new Set(ADMINISTRABLE_MODULES.map((module) => module.moduleKey));
 const ANATI_SYSTEM_USER = { username: "Anati", displayName: "Anati", role: "admin" };
-const MIN_TEMP_PASSWORD_LENGTH = 6;
+const MIN_TEMP_PASSWORD_LENGTH = 12;
 
 function json(statusCode, body) {
   return {
@@ -99,9 +108,9 @@ function normalizeStatus(value) {
   return status;
 }
 
-function normalizeAccountType(value) {
+function normalizeAccountType(value, options = {}) {
   const accountType = cleanText(value || "external", 40).toLowerCase();
-  if (!ACCOUNT_TYPES.has(accountType)) {
+  if (!ACCOUNT_TYPES.has(accountType) && !(options.allowExistingClient && accountType === "client")) {
     const error = new Error("Invalid accountType");
     error.statusCode = 400;
     throw error;
@@ -115,8 +124,27 @@ function normalizeBoolean(value) {
   return text === "1" || text === "true" || text === "yes";
 }
 
+function requiredBoolean(value, field) {
+  if (typeof value !== "boolean") {
+    const error = new Error(`${field} must be a boolean`);
+    error.statusCode = 400;
+    throw error;
+  }
+  return value;
+}
+
+function requiredVersion(value, field) {
+  const version = Number(value);
+  if (!Number.isSafeInteger(version) || version < 1) {
+    const error = new Error(`${field} is required`);
+    error.statusCode = 400;
+    throw error;
+  }
+  return version;
+}
+
 function normalizeModuleKey(value) {
-  const moduleKey = cleanText(value, 120);
+  const moduleKey = cleanText(value, 120).toLowerCase();
   return MODULE_KEY_ALIASES[moduleKey] || moduleKey;
 }
 
@@ -134,6 +162,11 @@ function hashPassword(password) {
 function normalizeTemporaryPassword(value) {
   const password = String(value ?? "");
   if (!password) return "";
+  if (!password.trim()) {
+    const error = new Error("temporaryPassword cannot be blank");
+    error.statusCode = 400;
+    throw error;
+  }
   if (password.length < MIN_TEMP_PASSWORD_LENGTH) {
     const error = new Error(`temporaryPassword must be at least ${MIN_TEMP_PASSWORD_LENGTH} characters`);
     error.statusCode = 400;
@@ -152,7 +185,7 @@ function normalizeUserBody(body, options = {}) {
     email: cleanText(body?.email, 320),
     role: normalizeRole(body?.role),
     status: normalizeStatus(body?.status),
-    accountType: normalizeAccountType(body?.accountType ?? body?.account_type),
+    accountType: normalizeAccountType(body?.accountType ?? body?.account_type, options),
     employeeId: cleanText(body?.employeeId ?? body?.employee_id, 100),
     restaurantId: cleanText(body?.restaurantId ?? body?.restaurant_id, 100),
     isSystemAccount: normalizeBoolean(body?.isSystemAccount ?? body?.is_system_account),
@@ -170,41 +203,51 @@ function normalizeAccessBody(body) {
     throw error;
   }
 
-  return {
-    username,
-    access: records.map((record) => {
+  const seen = new Set();
+  const access = records.map((record) => {
       const moduleKey = normalizeModuleKey(requiredText(
         record?.moduleKey || record?.module_key,
         "moduleKey",
         120
       ));
-      if (!MODULE_KEYS.has(moduleKey)) {
+      if (isReservedModuleKey(moduleKey) || !ADMINISTRABLE_MODULE_KEYS.has(moduleKey)) {
         const error = new Error(`Invalid moduleKey: ${moduleKey}`);
         error.statusCode = 400;
         throw error;
       }
-
+      if (seen.has(moduleKey)) {
+        const error = new Error(`Duplicate moduleKey: ${moduleKey}`);
+        error.statusCode = 400;
+        throw error;
+      }
+      seen.add(moduleKey);
       return {
         moduleKey,
-        canView: normalizeBoolean(record?.canView ?? record?.can_view),
-        canCreate: normalizeBoolean(record?.canCreate ?? record?.can_create),
-        canEdit: normalizeBoolean(record?.canEdit ?? record?.can_edit),
-        canDelete: normalizeBoolean(record?.canDelete ?? record?.can_delete),
+        canView: requiredBoolean(record?.canView ?? record?.can_view, `${moduleKey}.canView`),
+        canCreate: requiredBoolean(record?.canCreate ?? record?.can_create, `${moduleKey}.canCreate`),
+        canEdit: requiredBoolean(record?.canEdit ?? record?.can_edit, `${moduleKey}.canEdit`),
+        canDelete: requiredBoolean(record?.canDelete ?? record?.can_delete, `${moduleKey}.canDelete`),
       };
-    }),
+    });
+  if (seen.size !== ADMINISTRABLE_MODULES.length) {
+    const error = new Error("A complete administrable module access set is required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return {
+    username,
+    expectedAccessVersion: requiredVersion(body?.expectedAccessVersion, "expectedAccessVersion"),
+    access,
   };
 }
 
-function requireAnatiAdmin(event) {
-  const session = requireValidSession(event);
-  const username = cleanText(session.username, 80);
-  const role = cleanText(session.role, 40).toLowerCase();
-  if (username.toLowerCase() !== "anati" || role !== "admin") {
-    const error = new Error("Anati admin access required");
-    error.statusCode = 403;
+function assertPreservedAccountType(before, nextAccountType) {
+  if (before && (before.accountType === "system" || before.accountType === "client") && nextAccountType !== before.accountType) {
+    const error = new Error(`${before.accountType} account type cannot be changed`);
+    error.statusCode = 400;
     throw error;
   }
-  return session;
 }
 
 async function ensureTables() {
@@ -218,6 +261,9 @@ async function ensureTables() {
       status TEXT NOT NULL DEFAULT 'active',
       must_reset_password BOOLEAN DEFAULT false,
       password_hash TEXT,
+      session_version BIGINT NOT NULL DEFAULT 1,
+      row_version BIGINT NOT NULL DEFAULT 1,
+      access_version BIGINT NOT NULL DEFAULT 1,
       created_at TIMESTAMPTZ DEFAULT now(),
       updated_at TIMESTAMPTZ DEFAULT now(),
       disabled_at TIMESTAMPTZ,
@@ -255,7 +301,10 @@ async function ensureTables() {
       ADD COLUMN IF NOT EXISTS restaurant_id UUID,
       ADD COLUMN IF NOT EXISTS is_system_account BOOLEAN NOT NULL DEFAULT false,
       ADD COLUMN IF NOT EXISTS linked_at TIMESTAMPTZ,
-      ADD COLUMN IF NOT EXISTS linked_by TEXT;
+      ADD COLUMN IF NOT EXISTS linked_by TEXT,
+      ADD COLUMN IF NOT EXISTS session_version BIGINT NOT NULL DEFAULT 1,
+      ADD COLUMN IF NOT EXISTS row_version BIGINT NOT NULL DEFAULT 1,
+      ADD COLUMN IF NOT EXISTS access_version BIGINT NOT NULL DEFAULT 1;
 
     DO $$
     BEGIN
@@ -274,7 +323,7 @@ async function ensureTables() {
           CHECK (account_type IN ('employee', 'external', 'client', 'system')) NOT VALID;
       END IF;
 
-      IF to_regclass('public.employees') IS NOT NULL
+      IF to_regclass('employees') IS NOT NULL
          AND NOT EXISTS (
            SELECT 1
              FROM pg_constraint
@@ -286,7 +335,7 @@ async function ensureTables() {
           FOREIGN KEY (employee_id) REFERENCES employees(employee_id) NOT VALID;
       END IF;
 
-      IF to_regclass('public.restaurants') IS NOT NULL
+      IF to_regclass('restaurants') IS NOT NULL
          AND NOT EXISTS (
            SELECT 1
              FROM pg_constraint
@@ -308,17 +357,6 @@ async function ensureTables() {
      WHERE lower(username) = 'anati';
 
     UPDATE admin_users
-       SET account_type = 'external',
-           employee_id = NULL,
-           restaurant_id = NULL,
-           is_system_account = false,
-           linked_at = NULL,
-           linked_by = NULL
-     WHERE lower(username) <> 'anati'
-       AND COALESCE(account_type, 'external') = 'employee'
-       AND employee_id IS NULL;
-
-    UPDATE admin_users
        SET account_type = 'external'
      WHERE account_type IS NULL;
 
@@ -326,11 +364,24 @@ async function ensureTables() {
       ALTER COLUMN account_type SET DEFAULT 'external',
       ALTER COLUMN account_type SET NOT NULL;
 
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_admin_module_access_username_module
-      ON admin_module_access(username, module_key);
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+          FROM admin_module_access
+         GROUP BY username, module_key
+        HAVING count(*) > 1
+      ) THEN
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_admin_module_access_username_module
+          ON admin_module_access(username, module_key);
+      END IF;
+    END $$;
 
     CREATE INDEX IF NOT EXISTS idx_admin_users_username
       ON admin_users(username);
+
+    CREATE INDEX IF NOT EXISTS idx_admin_users_username_lower
+      ON admin_users(lower(username));
 
     CREATE INDEX IF NOT EXISTS idx_admin_users_status
       ON admin_users(status);
@@ -349,9 +400,24 @@ async function ensureTables() {
   `);
 }
 
-async function tableExists(tableName) {
-  const result = await pool.query("SELECT to_regclass($1) AS table_name", [`public.${tableName}`]);
+async function tableExists(tableName, client = pool) {
+  const result = await client.query("SELECT to_regclass($1) AS table_name", [tableName]);
   return Boolean(result.rows[0]?.table_name);
+}
+
+async function assertNoIdentityCollisions() {
+  const result = await pool.query(
+    `SELECT lower(username) AS canonical_username
+       FROM admin_users
+      GROUP BY lower(username)
+     HAVING count(*) > 1
+      LIMIT 1`
+  );
+  if (result.rows.length) {
+    const error = new Error("Case-colliding user identities require administrator resolution");
+    error.statusCode = 409;
+    throw error;
+  }
 }
 
 function mapUser(row) {
@@ -385,6 +451,8 @@ function mapUser(row) {
     isSystemAccount,
     linkStatus,
     mustResetPassword: row.must_reset_password === true,
+    version: Number(row.row_version || 1),
+    accessVersion: Number(row.access_version || 1),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     disabledAt: row.disabled_at,
@@ -467,7 +535,11 @@ async function ensureAnatiSystemUser(actor) {
     } else {
       await client.query(
         `UPDATE admin_users
-            SET role = 'admin',
+            SET session_version = session_version + CASE
+                  WHEN role <> 'admin' OR status <> 'active' THEN 1 ELSE 0 END,
+                row_version = row_version + CASE
+                  WHEN role <> 'admin' OR status <> 'active' THEN 1 ELSE 0 END,
+                role = 'admin',
                 status = 'active',
                 account_type = 'system',
                 employee_id = NULL,
@@ -525,7 +597,9 @@ async function listAccess() {
   const result = await pool.query(
     `SELECT *
        FROM admin_module_access
-      ORDER BY username ASC, module_key ASC`
+      WHERE lower(btrim(module_key)) <> ALL($1::text[])
+      ORDER BY username ASC, module_key ASC`,
+    [RESERVED_STORED_MODULE_KEYS]
   );
   return result.rows.map(mapAccess);
 }
@@ -534,16 +608,17 @@ async function listAccessForUser(username) {
   const result = await pool.query(
     `SELECT *
        FROM admin_module_access
-      WHERE username = $1
+      WHERE lower(username) = lower($1)
+        AND lower(btrim(module_key)) <> ALL($2::text[])
       ORDER BY module_key ASC`,
-    [username]
+    [username, RESERVED_STORED_MODULE_KEYS]
   );
   return result.rows.map(mapAccess);
 }
 
 async function getUser(userId, client = pool) {
-  const hasEmployees = await tableExists("employees");
-  const hasRestaurants = await tableExists("restaurants");
+  const hasEmployees = await tableExists("employees", client);
+  const hasRestaurants = await tableExists("restaurants", client);
   const employeeJoin = hasEmployees
     ? "LEFT JOIN employees e ON e.employee_id = u.employee_id"
     : "";
@@ -567,20 +642,21 @@ async function getUser(userId, client = pool) {
   return result.rows.length ? mapUser(result.rows[0]) : null;
 }
 
-async function validateEmployeeLink(employeeId) {
+async function validateEmployeeLink(employeeId, client) {
   if (!employeeId) return null;
-  if (!(await tableExists("employees"))) {
+  if (!(await tableExists("employees", client))) {
     const error = new Error("Employee profiles are not initialized");
     error.statusCode = 400;
     throw error;
   }
 
-  const result = await pool.query(
+  const result = await client.query(
     `SELECT employee_id, full_name
        FROM employees
       WHERE employee_id = $1::uuid
         AND status = 'active'
-      LIMIT 1`,
+      LIMIT 1
+      FOR UPDATE`,
     [employeeId]
   );
   if (!result.rows.length) {
@@ -591,20 +667,21 @@ async function validateEmployeeLink(employeeId) {
   return result.rows[0];
 }
 
-async function validateRestaurantLink(restaurantId) {
+async function validateRestaurantLink(restaurantId, client) {
   if (!restaurantId) return null;
-  if (!(await tableExists("restaurants"))) {
+  if (!(await tableExists("restaurants", client))) {
     const error = new Error("Client profiles are not initialized");
     error.statusCode = 400;
     throw error;
   }
 
-  const result = await pool.query(
+  const result = await client.query(
     `SELECT restaurant_id, brand_name
        FROM restaurants
       WHERE restaurant_id = $1::uuid
         AND status = 'active'
-      LIMIT 1`,
+      LIMIT 1
+      FOR UPDATE`,
     [restaurantId]
   );
   if (!result.rows.length) {
@@ -615,7 +692,7 @@ async function validateRestaurantLink(restaurantId) {
   return result.rows[0];
 }
 
-async function prepareUserLink(body, options = {}) {
+async function prepareUserLink(body, options = {}, client = pool) {
   if (body.accountType === "system") {
     if (!body.isSystemAccount) {
       const error = new Error("System accounts require explicit confirmation");
@@ -638,7 +715,7 @@ async function prepareUserLink(body, options = {}) {
       error.statusCode = 400;
       throw error;
     }
-    const restaurant = body.restaurantId ? await validateRestaurantLink(body.restaurantId) : null;
+    const restaurant = body.restaurantId ? await validateRestaurantLink(body.restaurantId, client) : null;
     return {
       accountType: "client",
       employeeId: null,
@@ -665,7 +742,7 @@ async function prepareUserLink(body, options = {}) {
     error.statusCode = 400;
     throw error;
   }
-  const employee = body.employeeId ? await validateEmployeeLink(body.employeeId) : null;
+  const employee = body.employeeId ? await validateEmployeeLink(body.employeeId, client) : null;
   return {
     accountType: "employee",
     employeeId: employee?.employee_id || null,
@@ -677,7 +754,7 @@ async function prepareUserLink(body, options = {}) {
 }
 
 function allModuleAccessFor(username) {
-  return MODULES.map((module) => ({
+  return [...ADMINISTRABLE_MODULES, MODULES.find((module) => module.moduleKey === "anati_admin")].map((module) => ({
     accessId: "",
     username,
     moduleKey: module.moduleKey,
@@ -697,10 +774,11 @@ exports.handler = async (event) => {
 
   let session;
   try {
-    session =
+    session = await (
       event.httpMethod === "GET" && event.queryStringParameters?.["my-access"] === "1"
         ? requireValidSession(event)
-        : requireAnatiAdmin(event);
+        : requireAnatiSession(event)
+    );
     if (!(event.httpMethod === "GET" && event.queryStringParameters?.["my-access"] === "1")) {
       const moduleAction =
         event.httpMethod === "GET"
@@ -725,10 +803,11 @@ exports.handler = async (event) => {
     if (event.httpMethod === "GET" && event.queryStringParameters?.["my-access"] === "1") {
       return json(200, {
         ok: true,
-        modules: MODULES,
+        modules: ADMINISTRABLE_MODULES,
         access: [],
         hasConfiguredAccess: false,
-        legacyFallback: true,
+        legacyFallback: false,
+        unavailable: true,
       });
     }
     return json(500, { ok: false, error: "Database is not configured" });
@@ -738,6 +817,7 @@ exports.handler = async (event) => {
 
   try {
     await ensureTables();
+    await assertNoIdentityCollisions();
 
     if (event.httpMethod === "GET") {
       if (event.queryStringParameters?.["my-access"] === "1") {
@@ -750,17 +830,18 @@ exports.handler = async (event) => {
 
         return json(200, {
           ok: true,
-          modules: MODULES,
+          modules: ADMINISTRABLE_MODULES,
           access,
           hasConfiguredAccess: isAnatiAdmin || access.length > 0,
-          legacyFallback: !isAnatiAdmin && access.length === 0,
+          legacyFallback: false,
+          unavailable: false,
         });
       }
 
       if (event.queryStringParameters?.modules === "1") {
         return json(200, {
           ok: true,
-          modules: MODULES,
+          modules: ADMINISTRABLE_MODULES,
           access: await listAccess(),
         });
       }
@@ -778,60 +859,53 @@ exports.handler = async (event) => {
 
     if (event.httpMethod === "POST") {
       const body = normalizeUserBody(JSON.parse(event.body || "{}"));
-      const link = await prepareUserLink(body, { requireLink: true });
+      if (body.accountType === "system") {
+        return json(400, { ok: false, error: "New system accounts are not supported" });
+      }
       const userId = crypto.randomUUID();
-
-      await pool.query(
-        `INSERT INTO admin_users (
-           user_id,
-           username,
-           display_name,
-           email,
-           role,
-           status,
-           account_type,
-           employee_id,
-           restaurant_id,
-           is_system_account,
-           linked_at,
-           linked_by,
-           must_reset_password,
-           password_hash,
-           created_by,
-           updated_by
-         ) VALUES (
-           $1, $2, $3, $4, $5, $6, $7, $8::uuid, $9::uuid, $10,
-           ${link.linkedAtExpression}, $11, $12, $13, $11, $11
-         )`,
-        [
-          userId,
-          body.username,
-          body.displayName || link.displayNameFallback || null,
-          body.email || null,
-          body.role,
-          body.status,
-          link.accountType,
-          link.employeeId,
-          link.restaurantId,
-          link.isSystemAccount,
-          actor,
-          body.mustResetPassword,
-          body.temporaryPassword ? hashPassword(body.temporaryPassword) : null,
-        ]
-      );
-
-      const user = await getUser(userId);
       const client = await pool.connect();
       try {
+        await client.query("BEGIN");
+        await client.query("SELECT pg_advisory_xact_lock(hashtext(lower($1)))", [body.username]);
+        const collision = await client.query(
+          "SELECT username FROM admin_users WHERE lower(username) = lower($1) LIMIT 2",
+          [body.username]
+        );
+        if (collision.rows.length) {
+          const error = new Error("Username already exists");
+          error.statusCode = 409;
+          throw error;
+        }
+        const link = await prepareUserLink(body, { requireLink: true }, client);
+        await client.query(
+          `INSERT INTO admin_users (
+             user_id, username, display_name, email, role, status, account_type,
+             employee_id, restaurant_id, is_system_account, linked_at, linked_by,
+             must_reset_password, password_hash, created_by, updated_by
+           ) VALUES (
+             $1, $2, $3, $4, $5, $6, $7, $8::uuid, $9::uuid, $10,
+             ${link.linkedAtExpression}, $11, $12, $13, $11, $11
+           )`,
+          [
+            userId, body.username, body.displayName || link.displayNameFallback || null,
+            body.email || null, body.role, body.status, link.accountType, link.employeeId,
+            link.restaurantId, link.isSystemAccount, actor, Boolean(body.temporaryPassword),
+            body.temporaryPassword ? hashPassword(body.temporaryPassword) : null,
+          ]
+        );
+        const user = await getUser(userId, client);
         await writeAudit(client, actor, "create_user_profile", "admin_user", userId, null, {
           ...user,
           passwordSet: Boolean(body.temporaryPassword),
         });
+        await client.query("COMMIT");
+        return json(201, { ok: true, user });
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
       } finally {
         client.release();
       }
-
-      return json(201, { ok: true, user });
     }
 
     if (event.httpMethod === "PUT") {
@@ -839,22 +913,44 @@ exports.handler = async (event) => {
 
       if (action === "module-access") {
         const body = normalizeAccessBody(JSON.parse(event.body || "{}"));
-        const userCheck = await pool.query(
-          "SELECT username FROM admin_users WHERE username = $1 LIMIT 1",
-          [body.username]
-        );
-        if (!userCheck.rows.length) {
-          return json(404, { ok: false, error: "User not found" });
-        }
-
-        const before = await pool.query(
-          "SELECT * FROM admin_module_access WHERE username = $1 ORDER BY module_key ASC",
-          [body.username]
-        );
-
         const client = await pool.connect();
         try {
           await client.query("BEGIN");
+          const userCheck = await client.query(
+            `SELECT user_id, username, access_version
+               FROM admin_users
+              WHERE lower(username) = lower($1)
+              ORDER BY username ASC
+              LIMIT 2
+              FOR UPDATE`,
+            [body.username]
+          );
+          if (!userCheck.rows.length) {
+            await client.query("ROLLBACK");
+            return json(404, { ok: false, error: "User not found" });
+          }
+          if (userCheck.rows.length > 1) {
+            await client.query("ROLLBACK");
+            return json(409, { ok: false, error: "Username identity conflict" });
+          }
+          const target = userCheck.rows[0];
+          if (Number(target.access_version) !== body.expectedAccessVersion) {
+            await client.query("ROLLBACK");
+            return json(409, { ok: false, error: "Module access changed. Reload before saving." });
+          }
+          const before = await client.query(
+            `SELECT * FROM admin_module_access
+              WHERE lower(username) = lower($1)
+                AND lower(btrim(module_key)) <> ALL($2::text[])
+              ORDER BY module_key ASC`,
+            [target.username, RESERVED_STORED_MODULE_KEYS]
+          );
+          await client.query(
+            `DELETE FROM admin_module_access
+              WHERE lower(username) = lower($1)
+                AND lower(btrim(module_key)) <> ALL($2::text[])`,
+            [target.username, RESERVED_STORED_MODULE_KEYS]
+          );
           for (const record of body.access) {
             await client.query(
               `INSERT INTO admin_module_access (
@@ -866,18 +962,10 @@ exports.handler = async (event) => {
                  can_edit,
                  can_delete,
                  updated_by
-               ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-               ON CONFLICT (username, module_key)
-               DO UPDATE SET
-                 can_view = EXCLUDED.can_view,
-                 can_create = EXCLUDED.can_create,
-                 can_edit = EXCLUDED.can_edit,
-                 can_delete = EXCLUDED.can_delete,
-                 updated_at = now(),
-                 updated_by = EXCLUDED.updated_by`,
+               ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
               [
                 crypto.randomUUID(),
-                body.username,
+                target.username,
                 record.moduleKey,
                 record.canView,
                 record.canCreate,
@@ -889,31 +977,45 @@ exports.handler = async (event) => {
           }
 
           const after = await client.query(
-            "SELECT * FROM admin_module_access WHERE username = $1 ORDER BY module_key ASC",
-            [body.username]
+            `SELECT * FROM admin_module_access
+              WHERE username = $1
+                AND lower(btrim(module_key)) <> ALL($2::text[])
+              ORDER BY module_key ASC`,
+            [target.username, RESERVED_STORED_MODULE_KEYS]
           );
+          const versionResult = await client.query(
+            `UPDATE admin_users
+                SET access_version = access_version + 1,
+                    updated_at = now(),
+                    updated_by = $2
+              WHERE user_id = $1::uuid
+                AND access_version = $3
+              RETURNING access_version`,
+            [target.user_id, actor, body.expectedAccessVersion]
+          );
+          if (versionResult.rows.length !== 1) throw new Error("Module access version conflict");
           await writeAudit(
             client,
             actor,
             "update_module_access",
             "admin_module_access",
-            body.username,
+            target.username,
             before.rows,
             after.rows
           );
           await client.query("COMMIT");
+          return json(200, {
+            ok: true,
+            username: target.username,
+            accessVersion: Number(versionResult.rows[0].access_version),
+            access: after.rows.map(mapAccess),
+          });
         } catch (error) {
           await client.query("ROLLBACK");
           throw error;
         } finally {
           client.release();
         }
-
-        return json(200, {
-          ok: true,
-          username: body.username,
-          access: await listAccess(),
-        });
       }
 
       const userId = cleanText(event.queryStringParameters?.id, 100);
@@ -921,9 +1023,12 @@ exports.handler = async (event) => {
         return json(400, { ok: false, error: "User id is required" });
       }
 
-      const body = normalizeUserBody(JSON.parse(event.body || "{}"), {
+      const requestBody = JSON.parse(event.body || "{}");
+      const body = normalizeUserBody(requestBody, {
         requireUsername: false,
+        allowExistingClient: true,
       });
+      const expectedVersion = requiredVersion(requestBody.expectedVersion, "expectedVersion");
 
       const client = await pool.connect();
       try {
@@ -933,8 +1038,28 @@ exports.handler = async (event) => {
           await client.query("ROLLBACK");
           return json(404, { ok: false, error: "User not found" });
         }
+        if (before.version !== expectedVersion) {
+          await client.query("ROLLBACK");
+          return json(409, { ok: false, error: "User changed. Reload before saving." });
+        }
 
         const isAnati = before.username.toLowerCase() === "anati";
+        if (!isAnati) {
+          try {
+            assertPreservedAccountType(before, body.accountType);
+          } catch (error) {
+            await client.query("ROLLBACK");
+            return json(error.statusCode, { ok: false, error: error.message });
+          }
+        }
+        if (!isAnati && body.accountType === "system" && before.accountType !== "system") {
+          await client.query("ROLLBACK");
+          return json(400, { ok: false, error: "New system accounts are not supported" });
+        }
+        if (body.accountType === "client" && before.accountType !== "client") {
+          await client.query("ROLLBACK");
+          return json(400, { ok: false, error: "Client login is not supported" });
+        }
         const link = isAnati
           ? {
               accountType: "system",
@@ -944,10 +1069,30 @@ exports.handler = async (event) => {
               linkedAtExpression: "COALESCE(linked_at, now())",
               displayNameFallback: "Anati",
             }
-          : await prepareUserLink(body, { requireLink: false });
+          : before.accountType === "client" && body.accountType === "client"
+            ? {
+                accountType: "client",
+                employeeId: null,
+                restaurantId: before.restaurantId || null,
+                isSystemAccount: false,
+                linkedAtExpression: "linked_at",
+                displayNameFallback: before.restaurantNameSnapshot || "",
+              }
+          : before.accountType === "system" && body.accountType === "system"
+            ? {
+                accountType: "system",
+                employeeId: null,
+                restaurantId: null,
+                isSystemAccount: true,
+                linkedAtExpression: "COALESCE(linked_at, now())",
+                displayNameFallback: before.displayName || "",
+              }
+          : await prepareUserLink(body, { requireLink: false }, client);
         const nextRole = isAnati ? "admin" : body.role;
         const nextStatus = isAnati ? "active" : body.status;
         const nextDisplayName = body.displayName || link.displayNameFallback || null;
+        const authorityChanged = before.role !== nextRole || before.status !== nextStatus || Boolean(body.temporaryPassword);
+        const mustResetPassword = body.temporaryPassword ? true : before.mustResetPassword;
 
         const result = await client.query(
           `UPDATE admin_users
@@ -974,9 +1119,12 @@ exports.handler = async (event) => {
                     WHEN $5 = 'active' THEN NULL
                     ELSE disabled_at
                   END,
+                  session_version = session_version + CASE WHEN $13 THEN 1 ELSE 0 END,
+                  row_version = row_version + 1,
                   updated_at = now(),
                   updated_by = $10
             WHERE user_id = $1::uuid
+              AND row_version = $14
             RETURNING user_id`,
           [
             userId,
@@ -989,13 +1137,26 @@ exports.handler = async (event) => {
             link.restaurantId,
             link.isSystemAccount,
             actor,
-            body.mustResetPassword,
+            mustResetPassword,
             body.temporaryPassword ? hashPassword(body.temporaryPassword) : null,
+            authorityChanged,
+            expectedVersion,
           ]
         );
 
-        const user = result.rows.length ? await getUser(userId, client) : null;
-        await writeAudit(client, actor, "update_user_profile", "admin_user", userId, before, {
+        if (!result.rows.length) {
+          await client.query("ROLLBACK");
+          return json(409, { ok: false, error: "User changed. Reload before saving." });
+        }
+        const user = await getUser(userId, client);
+        const auditAction = before.status === "disabled" && user.status === "active"
+          ? "reactivate_user_profile"
+          : before.status === "active" && user.status === "disabled"
+            ? "disable_user_profile"
+            : body.temporaryPassword
+              ? "replace_temporary_password"
+              : "update_user_profile";
+        await writeAudit(client, actor, auditAction, "admin_user", userId, before, {
           ...user,
           passwordUpdated: Boolean(body.temporaryPassword),
         });
@@ -1014,6 +1175,7 @@ exports.handler = async (event) => {
       if (!userId) {
         return json(400, { ok: false, error: "User id is required" });
       }
+      const expectedVersion = requiredVersion(event.queryStringParameters?.version, "version");
 
       const client = await pool.connect();
       try {
@@ -1027,16 +1189,32 @@ exports.handler = async (event) => {
           await client.query("ROLLBACK");
           return json(400, { ok: false, error: "Anati cannot be disabled" });
         }
+        if (before.version !== expectedVersion) {
+          await client.query("ROLLBACK");
+          return json(409, { ok: false, error: "User changed. Reload before disabling." });
+        }
+        if (before.status === "disabled") {
+          await client.query("ROLLBACK");
+          return json(409, { ok: false, error: "User is already disabled" });
+        }
 
-        await client.query(
+        const result = await client.query(
           `UPDATE admin_users
               SET status = 'disabled',
                   disabled_at = COALESCE(disabled_at, now()),
+                  session_version = session_version + 1,
+                  row_version = row_version + 1,
                   updated_at = now(),
                   updated_by = $2
-            WHERE user_id = $1::uuid`,
-          [userId, actor]
+            WHERE user_id = $1::uuid
+              AND row_version = $3
+            RETURNING user_id`,
+          [userId, actor, expectedVersion]
         );
+        if (!result.rows.length) {
+          await client.query("ROLLBACK");
+          return json(409, { ok: false, error: "User changed. Reload before disabling." });
+        }
 
         const user = await getUser(userId, client);
         await writeAudit(client, actor, "disable_user_profile", "admin_user", userId, before, user);
@@ -1056,17 +1234,21 @@ exports.handler = async (event) => {
     if (event.httpMethod === "GET" && event.queryStringParameters?.["my-access"] === "1") {
       return json(200, {
         ok: true,
-        modules: MODULES,
+        modules: ADMINISTRABLE_MODULES,
         access: [],
         hasConfiguredAccess: false,
-        legacyFallback: true,
+        legacyFallback: false,
+        unavailable: true,
       });
     }
     if (error.code === "22P02") {
       return json(400, { ok: false, error: "Invalid user id" });
     }
     if (error.code === "23505") {
-      return json(400, { ok: false, error: "Username already exists" });
+      return json(409, { ok: false, error: "Username already exists" });
+    }
+    if (error instanceof SyntaxError) {
+      return json(400, { ok: false, error: "Invalid request" });
     }
     return json(error.statusCode || 500, {
       ok: false,
@@ -1076,4 +1258,18 @@ exports.handler = async (event) => {
           : "Internal Server Error",
     });
   }
+};
+
+module.exports._test = {
+  normalizeUserBody,
+  normalizeAccessBody,
+  normalizeTemporaryPassword,
+  mapUser,
+  administrableModules: ADMINISTRABLE_MODULES,
+  reservedStoredModuleKeys: RESERVED_STORED_MODULE_KEYS,
+  isReservedModuleKey,
+  assertPreservedAccountType,
+  prepareUserLink,
+  ensureTables,
+  setPool(nextPool) { pool = nextPool; },
 };

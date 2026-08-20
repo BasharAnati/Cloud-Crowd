@@ -293,7 +293,9 @@
   </div>
 
   <script>
-    window.CCPermissions?.requirePageAccess('restaurant_ratings');
+    (async function initializeAuthorizedRestaurantRatings() {
+    const access = await window.CCPermissions?.requirePageAccess('restaurant_ratings', { force: true });
+    if (!access || access.unavailable || access.canView !== true) return;
     const RESTAURANTS_ENDPOINT = '/.netlify/functions/restaurants';
     const RATINGS_ENDPOINT = '/.netlify/functions/restaurant-ratings';
     const MONTHS = [
@@ -764,6 +766,7 @@
     });
 
     Promise.allSettled([loadRestaurants(), loadRatings()]);
+    })();
   </script>
   <script src="idle-logout.js"></script>
 </body>

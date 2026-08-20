@@ -93,7 +93,10 @@ function businessScript(source) {
 }
 
 function loadBusiness(source, marker, exposure, options = {}) {
-  const script = businessScript(source);
+  const script = businessScript(source).replace(
+    /const access = await[^;]+;\s*if \(!access[^\n]+return;/,
+    "const access = { canView: true, unavailable: false };"
+  );
   const markerIndex = script.indexOf(marker);
   assert.ok(markerIndex > -1, `missing initialization marker: ${marker}`);
   const document = new FakeDocument();
@@ -148,7 +151,7 @@ function loadBusiness(source, marker, exposure, options = {}) {
       };
     }
   };
-  vm.runInNewContext(`${script.slice(0, markerIndex)}\n${exposure}`, context);
+  vm.runInNewContext(`${script.slice(0, markerIndex)}\n${exposure}\n})();`, context);
   return { context, document, localStorage, fetchCalls, api: context.__api };
 }
 
@@ -220,9 +223,9 @@ test("Sprint 1.3C pages use registry IDs, permission keys, and only shared maint
   assert.match(pages["restaurant-ratings.html"], /data-shell-module="restaurant-ratings"/);
   assert.match(pages["weekly-quality.html"], /data-shell-module="weekly-quality"/);
   assert.match(pages["client-profiles.html"], /data-shell-module="client-profiles"/);
-  assert.match(pages["restaurant-ratings.html"], /requirePageAccess\('restaurant_ratings'\)/);
-  assert.match(pages["weekly-quality.html"], /requirePageAccess\('weekly_quality'\)/);
-  assert.match(pages["client-profiles.html"], /requirePageAccess\('client_profiles'\)/);
+  assert.match(pages["restaurant-ratings.html"], /await[^\n]*requirePageAccess\('restaurant_ratings', \{ force: true \}\)/);
+  assert.match(pages["weekly-quality.html"], /await[^\n]*requirePageAccess\('weekly_quality', \{ force: true \}\)/);
+  assert.match(pages["client-profiles.html"], /await[^\n]*requirePageAccess\('client_profiles', \{ force: true \}\)/);
   assert.doesNotMatch(pages["weekly-quality.html"], /WEEKLY_QUALITY_MAINTENANCE_ENDPOINT|enforceWeeklyQualityMaintenanceMode/);
   assert.match(maintenanceRuntime, /const POLL_INTERVAL = 3000/);
   assert.match(shellRuntime, /CloudCrowdMaintenance\.createLifecycle/);

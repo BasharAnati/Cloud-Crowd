@@ -53,7 +53,7 @@ const preservedHeaderText = {
   "client-profiles.html": ["Client Operations", "Client Profiles", "Manage restaurants, brands, ownership information and operational details.", "+ Add Client"],
   "free-order-requests.html": ["Free Order Workflow", "Free Order Requests", "Manage immediate free order compensation requests from entry to sharing readiness.", "Track immediate compensation orders through Pending Details, Ready to Share, and Done without touching the existing Complimentary Orders workflow.", "+ New Request"],
   "free-order-share.html": ["Free Order Workflow", "Free Order Share", "Review ready free order requests, request clarifications, and mark completed shares.", "Work from the same Free Order Requests records. Items completed here immediately become Done in the requests workflow.", "Requests"],
-  "anati-admin.html": ["Administration", "Anati Admin Center", "Manage users, roles, module access, and future workflow permissions."],
+  "anati-admin.html": ["Administration", "Anati Admin Center", "Manage user accounts and enforced module access."],
   "call-queue.html": ["Call Operations", "Call Queue", "Dedicated customer follow-up workspace for moving calls from Need Call through In Call, Called, Pending, and Done."]
 };
 const headerSlots = {

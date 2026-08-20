@@ -612,7 +612,9 @@
   </div>
 
   <script>
-    window.CCPermissions?.requirePageAccess('free_order_share');
+    (async function initializeAuthorizedFreeOrderShare() {
+    const access = await window.CCPermissions?.requirePageAccess('free_order_share', { force: true });
+    if (!access || access.unavailable || access.canView !== true) return;
     const API_ENDPOINT = '/.netlify/functions/free-order-requests';
     const SHARE_COLUMNS = [
       { key: 'received', label: 'Received' },
@@ -994,6 +996,7 @@
 
     renderBoard();
     loadShareItems();
+    })();
   </script>
   <script src="js/media-viewer.js"></script>
   <script src="idle-logout.js"></script>

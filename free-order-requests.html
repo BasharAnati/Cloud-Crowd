@@ -655,7 +655,9 @@
   </div>
 
   <script>
-    window.CCPermissions?.requirePageAccess('free_order_requests');
+    (async function initializeAuthorizedFreeOrderRequests() {
+    const access = await window.CCPermissions?.requirePageAccess('free_order_requests', { force: true });
+    if (!access || access.unavailable || access.canView !== true) return;
     const API_ENDPOINT = '/.netlify/functions/free-order-requests';
     const STAGE_COLUMNS = [
       { key: 'pending_details', label: 'Pending Details' },
@@ -1092,6 +1094,7 @@
 
     renderBoard();
     loadRequests();
+    })();
   </script>
   <script src="js/media-viewer.js"></script>
   <script src="idle-logout.js"></script>

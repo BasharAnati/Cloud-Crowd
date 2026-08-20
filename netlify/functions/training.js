@@ -33,8 +33,8 @@ function json(statusCode, body) {
   };
 }
 
-function requireWriteSession(event) {
-  const session = requireValidSession(event);
+async function requireWriteSession(event) {
+  const session = await requireValidSession(event);
   if (!WRITE_ROLES.has(String(session.role || "").toLowerCase())) {
     const error = new Error("Admin or manager role required");
     error.statusCode = 403;
@@ -255,8 +255,8 @@ exports.handler = async (event) => {
               : "view";
     session =
       event.httpMethod === "GET"
-        ? requireValidSession(event)
-        : requireWriteSession(event);
+        ? await requireValidSession(event)
+        : await requireWriteSession(event);
     await requireModuleAccess(event, "agent_training", moduleAction);
   } catch (authError) {
     return json(authError.statusCode || 500, {

@@ -813,7 +813,9 @@
   </div>
 
   <script>
-    window.CCPermissions?.requirePageAccess('weekly_quality');
+    (async function initializeAuthorizedWeeklyQuality() {
+    const access = await window.CCPermissions?.requirePageAccess('weekly_quality', { force: true });
+    if (!access || access.unavailable || access.canView !== true) return;
     const WEEKLY_QUALITY_STORAGE_KEY = 'cc_weekly_quality_records_v1';
     const WEEKLY_QUALITY_MIGRATION_DONE_KEY = 'cc_weekly_quality_migration_v1_done';
     const WEEKLY_QUALITY_API_ENDPOINT = '/.netlify/functions/weekly-quality';
@@ -1582,6 +1584,7 @@
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') closeDetails();
     });
+    })();
   </script>
   <script src="js/media-viewer.js"></script>
   <script src="idle-logout.js"></script>

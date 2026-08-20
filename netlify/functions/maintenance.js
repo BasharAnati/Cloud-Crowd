@@ -2,7 +2,8 @@
 // Global maintenance mode API backed by Postgres/Neon.
 
 const { Pool } = require("pg");
-const { requireAdminSession } = require("./_auth");
+const { requireAnatiSession } = require("./_auth");
+const { requireJsonPost } = require("./_http");
 
 const CONNECTION_STRING =
   process.env.NETLIFY_DATABASE_URL ||
@@ -10,7 +11,7 @@ const CONNECTION_STRING =
   process.env.NEON_DATABASE_URL ||
   process.env.DATABASE_URL;
 
-const pool = CONNECTION_STRING ? new Pool({ connectionString: CONNECTION_STRING }) : null;
+let pool = CONNECTION_STRING ? new Pool({ connectionString: CONNECTION_STRING }) : null;
 
 const SETTINGS_KEY = "maintenance";
 
@@ -57,13 +58,15 @@ exports.handler = async (event) => {
   }
 
   try {
-    await ensureSettingsTable();
+    if (!(await ensureSettingsTable())) {
+      return { statusCode: 503, headers: JSON_HEADERS, body: JSON.stringify({ error: "Maintenance service unavailable" }) };
+    }
 
     if (event.httpMethod === "GET") {
       const maintenance = await getMaintenanceState();
       let admin = false;
       try {
-        requireAdminSession(event);
+        await requireAnatiSession(event);
         admin = true;
       } catch (authErr) {
         if (!authErr.statusCode) throw authErr;
@@ -81,7 +84,7 @@ exports.handler = async (event) => {
 
     if (event.httpMethod === "POST") {
       try {
-        requireAdminSession(event);
+        await requireAnatiSession(event);
       } catch (authErr) {
         if (!authErr.statusCode) throw authErr;
         return {
@@ -91,8 +94,20 @@ exports.handler = async (event) => {
         };
       }
 
-      const body = JSON.parse(event.body || "{}");
-      const maintenance = body.maintenance === true;
+      let body;
+      try {
+        body = requireJsonPost(event);
+      } catch (error) {
+        return {
+          statusCode: error.statusCode || 400,
+          headers: { ...JSON_HEADERS, ...(error.headers || {}) },
+          body: JSON.stringify({ error: error.message }),
+        };
+      }
+      if (typeof body.maintenance !== "boolean") {
+        return { statusCode: 400, headers: JSON_HEADERS, body: JSON.stringify({ error: "maintenance must be a boolean" }) };
+      }
+      const maintenance = body.maintenance;
       await setMaintenanceState(maintenance);
 
       return {
@@ -104,15 +119,19 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 405,
-      headers: JSON_HEADERS,
+      headers: { ...JSON_HEADERS, Allow: "GET, POST, OPTIONS" },
       body: JSON.stringify({ error: "Method Not Allowed" }),
     };
   } catch (err) {
-    console.error("maintenance function error:", err);
+    console.error("maintenance function error:", err?.code || "MAINTENANCE_FAILURE");
     return {
       statusCode: 500,
       headers: JSON_HEADERS,
       body: JSON.stringify({ error: "Internal Server Error" }),
     };
   }
+};
+
+module.exports._test = {
+  setPool(nextPool) { pool = nextPool; },
 };

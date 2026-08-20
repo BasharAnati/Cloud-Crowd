@@ -277,7 +277,9 @@
   </div>
 
   <script>
-    window.CCPermissions?.requirePageAccess('agent_training');
+    (async function initializeAuthorizedAgentTraining() {
+    const access = await window.CCPermissions?.requirePageAccess('agent_training', { force: true });
+    if (!access || access.unavailable || access.canView !== true) return;
     const EMPLOYEES_ENDPOINT = '/.netlify/functions/employees';
     const TRAINING_ENDPOINT = '/.netlify/functions/training';
     const RESTAURANTS_ENDPOINT = '/.netlify/functions/restaurants';
@@ -757,6 +759,7 @@
     });
 
     Promise.allSettled([loadEmployees(), loadRestaurants(), loadTraining()]);
+    })();
   </script>
   <script src="idle-logout.js"></script>
 </body>

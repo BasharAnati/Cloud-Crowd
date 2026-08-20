@@ -1802,7 +1802,7 @@ function rowToTicket(row) {
 // ----------------------------
 // Page load + polling (موحد)
 // ----------------------------
-window.addEventListener('load', async () => {
+async function initializeAuthorizedTicketsPage() {
   // تحميل محلي مبدئي
   const saved = localStorage.getItem('cloudCrowdTickets');
   if (saved) tickets = JSON.parse(saved);
@@ -1834,7 +1834,9 @@ window.addEventListener('load', async () => {
     await autoSeedSheetTickets(window.currentSection || 'cctv');
   };
   window.__ticketsPoller = setInterval(poll, 15000); // كل 15 ثانية
-});
+}
+if (document.readyState === 'complete') initializeAuthorizedTicketsPage();
+else window.addEventListener('load', initializeAuthorizedTicketsPage, { once: true });
 
 // === DB refresh (hydrate + تحديث جزئي للـDOM) ===
 async function hydrateFromDB(section) {

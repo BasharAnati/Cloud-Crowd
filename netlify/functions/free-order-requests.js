@@ -104,8 +104,8 @@ function getRequestId(event) {
   return cleanText(event.queryStringParameters?.id, 100);
 }
 
-function requireDeleteSession(event) {
-  const session = requireValidSession(event);
+async function requireDeleteSession(event) {
+  const session = await requireValidSession(event);
   if (!DELETE_ROLES.has(String(session.role || "").toLowerCase())) {
     const error = new Error("Admin or manager role required");
     error.statusCode = 403;
@@ -294,8 +294,8 @@ exports.handler = async (event) => {
               : "view";
     session =
       event.httpMethod === "DELETE"
-        ? requireDeleteSession(event)
-        : requireValidSession(event);
+        ? await requireDeleteSession(event)
+        : await requireValidSession(event);
     await requireModuleAccess(event, moduleKey, moduleAction);
   } catch (authError) {
     return json(authError.statusCode || 500, {

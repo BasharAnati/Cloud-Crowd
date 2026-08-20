@@ -174,7 +174,9 @@ function loadShell(options = {}) {
           hasConfiguredAccess: true,
           access: PERMISSION_KEYS.map((moduleKey) => ({
             moduleKey,
-            canView: !(options.denied || []).includes(moduleKey),
+            canView: moduleKey !== "anati_admin"
+              ? !(options.denied || []).includes(moduleKey)
+              : values.cc_user.toLowerCase() === "anati" && values.cc_role === "admin",
             canCreate: true,
             canEdit: true,
             canDelete: false
@@ -278,7 +280,7 @@ test("One permission result synchronizes sidebar and Dashboard module visibility
   assert.equal(fetchCalls.length, 1);
 });
 
-test("Shared page access keeps configured, legacy fallback, and Anati behavior", async () => {
+test("Shared page access honors configured records and fails closed without local Anati authority", async () => {
   const configured = loadShell({ denied: ["attendance"] });
   const denied = await configured.window.CCPermissions.getMyAccess("attendance");
   assert.equal(denied.canView, false);
@@ -287,15 +289,15 @@ test("Shared page access keeps configured, legacy fallback, and Anati behavior",
 
   const legacy = loadShell({ legacyFallback: true });
   const legacyAccess = await legacy.window.CCPermissions.getMyAccess("attendance");
-  assert.equal(legacyAccess.canView, true);
-  assert.equal(legacyAccess.legacyFallback, true);
+  assert.equal(legacyAccess.canView, false);
+  assert.equal(legacyAccess.unavailable, true);
   assert.equal(legacy.fetchCalls.length, 1);
 
   const anati = loadShell({ username: "Anati", role: "admin" });
   const anatiAccess = await anati.window.CCPermissions.getMyAccess("anati_admin");
   assert.equal(anatiAccess.canView, true);
-  assert.equal(anatiAccess.legacyFallback, false);
-  assert.equal(anati.fetchCalls.length, 0);
+  assert.notEqual(anatiAccess.unavailable, true);
+  assert.equal(anati.fetchCalls.length, 1);
 });
 
 test("Dashboard route lifecycle builds shell, topbar, and cards from one permission retrieval", async () => {
@@ -341,10 +343,10 @@ test("The shared shell lifecycle is page-neutral and Dashboard keeps page render
   );
 });
 
-test("Legacy permission fallback and Anati behavior remain unchanged", async () => {
+test("Permission-service fallback is empty while authoritative Anati access remains available", async () => {
   const regular = loadShell({ legacyFallback: true });
   const regularModules = await regular.api.filterPermittedModules(regular.api.getAllModules(), { fallbackMode: "legacy" });
-  assert.equal(regularModules.some((module) => module.id === "cctv"), true);
+  assert.equal(regularModules.some((module) => module.id === "cctv"), false);
   assert.equal(regularModules.some((module) => module.id === "anati-admin"), false);
   assert.equal(regularModules.some((module) => module.id === "call-queue"), false);
 

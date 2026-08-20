@@ -1,17 +1,11 @@
 (function () {
-  const MAINTENANCE_ADMIN = 'Anati';
   const MAINTENANCE_ENDPOINT = '/.netlify/functions/maintenance';
   const POLL_INTERVAL = 3000;
 
   function createLifecycle(options = {}) {
     const button = options.button || null;
     let latestMaintenanceState = false;
-
-    function isMaintenanceAdmin() {
-      return readSessionValue('cc_auth') === '1' &&
-        readSessionValue('cc_role').trim().toLowerCase() === 'admin' &&
-        readSessionValue('cc_user').trim().toLowerCase() === MAINTENANCE_ADMIN.toLowerCase();
-    }
+    let latestAdminAuthority = false;
 
     async function fetchMaintenanceStatus() {
       try {
@@ -23,32 +17,39 @@
         });
         if (!response.ok) throw new Error(`Maintenance check failed: ${response.status}`);
         const data = await response.json();
-        return {
+        if (!data || typeof data.maintenance !== 'boolean' || typeof data.admin !== 'boolean') {
+          throw new Error('Maintenance response is malformed');
+        }
+        const status = {
           maintenance: data.maintenance === true,
           admin: data.admin === true
         };
+        latestMaintenanceState = status.maintenance;
+        latestAdminAuthority = status.admin;
+        return status;
       } catch (error) {
+        latestAdminAuthority = false;
         console.warn('Maintenance check failed.', error);
-        return null;
+        return { maintenance: latestMaintenanceState === true ? true : null, admin: false, unavailable: true };
       }
     }
 
     async function enforceMaintenanceMode() {
       const status = await fetchMaintenanceStatus();
-      if (status?.maintenance === true && status.admin !== true && !isMaintenanceAdmin()) {
+      if (status?.unavailable === true && button) button.hidden = true;
+      if (status?.admin !== true && (status?.maintenance === true || status?.unavailable === true)) {
         window.location.href = 'system-update.html';
       }
     }
 
     async function updateMaintenanceToggleButton() {
       if (!button) return;
-      if (!isMaintenanceAdmin()) {
+      const status = await fetchMaintenanceStatus();
+      if (!status || status.unavailable === true || status.admin !== true) {
         button.hidden = true;
         return;
       }
-
-      const status = await fetchMaintenanceStatus();
-      if (status !== null) latestMaintenanceState = status.maintenance;
+      latestMaintenanceState = status.maintenance;
       button.hidden = false;
       button.textContent = latestMaintenanceState ? 'ON' : 'OFF';
       button.classList.toggle('is-active', latestMaintenanceState);
@@ -57,7 +58,10 @@
     }
 
     async function toggleMaintenanceMode() {
-      if (!isMaintenanceAdmin()) return;
+      if (latestAdminAuthority !== true) {
+        if (button) button.hidden = true;
+        return;
+      }
       const message = latestMaintenanceState
         ? 'Maintenance mode is currently ON.\nEmployees currently cannot access the internal system.\nIf you turn it OFF, employees will be able to access the system normally again.\nDo you want to continue?'
         : 'Maintenance mode is currently OFF.\nIf you turn it ON, all employee accounts will be redirected to the system update page and will not be able to access the internal system.\nDo you want to continue?';

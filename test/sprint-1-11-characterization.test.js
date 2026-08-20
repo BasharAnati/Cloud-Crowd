@@ -2420,7 +2420,7 @@ test("Employee maintenance parity executes polling enforcement and preserves the
   const employee = await lifecycle({ user: "agent", role: "agent", maintenance: true });
   assert.equal(employee.window.location.href, "system-update.html");
   assert.equal(employee.intervals[0][1], 3000);
-  const anati = await lifecycle({ user: "Anati", role: "admin", maintenance: true });
+  const anati = await lifecycle({ user: "Anati", role: "admin", maintenance: true, admin: true });
   assert.equal(anati.window.location.href, "employee-profiles.html");
   const disabled = await lifecycle({ user: "agent", role: "agent", maintenance: false });
   assert.equal(disabled.window.location.href, "employee-profiles.html");

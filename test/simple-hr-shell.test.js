@@ -90,9 +90,9 @@ test('Authentication, permissions, idle logout, and maintenance contracts are pr
     assert.match(source, /readSessionValue\('cc_role'\)/);
     assert.match(source, /src="idle-logout\.js"/);
   });
-  assert.match(pages['attendance.html'], /requirePageAccess\('attendance'\)/);
-  assert.match(pages['employee-deductions.html'], /requirePageAccess\('employee_deductions'\)/);
-  assert.match(pages['agent-training.html'], /requirePageAccess\('agent_training'\)/);
+  assert.match(pages['attendance.html'], /await[^\n]*requirePageAccess\('attendance', \{ force: true \}\)/);
+  assert.match(pages['employee-deductions.html'], /await[^\n]*requirePageAccess\('employee_deductions', \{ force: true \}\)/);
+  assert.match(pages['agent-training.html'], /await[^\n]*requirePageAccess\('agent_training', \{ force: true \}\)/);
   assert.match(maintenanceRuntime, /const MAINTENANCE_ENDPOINT = '\/\.netlify\/functions\/maintenance'/);
   assert.match(maintenanceRuntime, /const POLL_INTERVAL = 3000/);
   assert.match(maintenanceRuntime, /window\.location\.href = 'system-update\.html'/);

@@ -80,6 +80,7 @@ class FakeElement {
   querySelectorAll(selector) { return this.selectorResults.get(selector) || []; }
   querySelector(selector) { return this.querySelectorAll(selector)[0] || null; }
   setAttribute(name, value) { this[name] = String(value); }
+  removeAttribute(name) { delete this[name]; }
   getAttribute(name) { return this[name] ?? null; }
   focus() {}
 }
@@ -331,7 +332,7 @@ function session(role, username = "Reviewer") {
 
 function runAccessGuard(kind, role, username, extra = {}) {
   const source = inlineScripts(pages[kind]).find((script) =>
-    kind === "admin" ? script.includes('sessionStorage.getItem("cc_user")') : script.includes("allowedCallQueueRoles")
+    kind === "admin" ? script.includes('readSessionValue("cc_auth")') : script.includes("allowedCallQueueRoles")
   );
   const sessionStorage = session(role, username);
   if (extra.invalidSession) sessionStorage.removeItem("cc_token");
@@ -370,7 +371,7 @@ function loadRegistry(role, username, configuredAccess = []) {
     document: new FakeDocument(),
     CCPermissions: {
       async getMyAccessModel() {
-        return { legacyFallback: false, fullAccess: false, access: configuredAccess };
+        return { available: true, hasConfiguredAccess: true, access: configuredAccess };
       },
       getModuleAccess(model, moduleKey) {
         return model.access.find((record) => record.moduleKey === moduleKey) || {
@@ -583,6 +584,7 @@ function replaceLast(source, marker, replacement) {
 
 function loadAdmin() {
   const document = new FakeDocument();
+  document.selectorResults.set(".admin-center-container", [new FakeElement("admin-center-container")]);
   const sessionStorage = session("admin", "Anati");
   const localStorage = new MemoryStorage();
   const calls = [];
@@ -597,7 +599,7 @@ function loadAdmin() {
     confirm(message) { confirmations.push(message); return true; },
     readSessionValue(key) { return sessionStorage.getItem(key) || ""; },
     clearStoredSession() {},
-    CCPermissions: { requirePageAccess() {} },
+    CCPermissions: { requirePageAccess: async () => ({ canView: true, unavailable: false }) },
     fetchHandler: async () => jsonResponse({ ok: true }),
     fetch(url, options = {}) {
       calls.push({ url, options });
@@ -611,11 +613,13 @@ function loadAdmin() {
   };
   const exposure = `window.__api = {
     apiRequest, dataRequest, renderStats, renderUsers, renderModules, updateAccountFields,
-    saveUser, disableUser, collectAccessPayload, saveAccess, loadAdminCenter,
+    saveUser, disableUser, reactivateUser, collectAccessPayload, saveAccess, loadAdminCenter,
     setUsers(value) { adminUsers = value; }, setEmployees(value) { activeEmployees = value; },
     setModules(value) { moduleRegistry = value; }, setAccess(value) { moduleAccess = value; }
   };`;
-  const script = replaceLast(pageScript(pages.admin), "    loadAdminCenter();", `    ${exposure}`);
+  const authorizedScript = pageScript(pages.admin)
+    .replace(/const initialAccess = await[^;]+;\s*if \(!initialAccess[^\n]+return;/, "const initialAccess = { canView: true, unavailable: false };");
+  const script = replaceLast(authorizedScript, "    await loadAdminCenter();", `    ${exposure}`);
   vm.runInNewContext(script, context, { filename: "admin-business.js" });
   return { api: context.__api, context, document, calls, confirmations };
 }
@@ -687,14 +691,14 @@ function renderedButtonDisabled(loaded, id) {
   return /\sdisabled(?:\s|>)/.test(button);
 }
 
-test("Admin access stays frozen while Call Queue is shut down for every identity", async () => {
+test("Admin direct route defers identity authority to the server while Call Queue stays shut down", async () => {
   assert.equal(runAccessGuard("admin", "admin", "Anati"), "");
-  assert.equal(runAccessGuard("admin", "manager", "Anati"), "dashboard.html");
-  assert.equal(runAccessGuard("admin", "admin", "Other Admin"), "dashboard.html");
-  assert.equal(runAccessGuard("admin", "manager", "Manager"), "dashboard.html");
-  assert.equal(runAccessGuard("admin", "agent", "Agent"), "dashboard.html");
+  assert.equal(runAccessGuard("admin", "manager", "Anati"), "");
+  assert.equal(runAccessGuard("admin", "admin", "Other Admin"), "");
+  assert.equal(runAccessGuard("admin", "manager", "Manager"), "");
+  assert.equal(runAccessGuard("admin", "agent", "Agent"), "");
   assert.deepEqual(runAccessGuard("admin", "admin", "Anati", { invalidSession: true, returnDetails: true }), {
-    href: "dashboard.html", redirects: ["login.html", "dashboard.html"], token: null
+    href: "login.html", redirects: ["login.html"], token: null
   });
   assertCallQueueShutdown(pages.callQueue);
 
@@ -704,10 +708,14 @@ test("Admin access stays frozen while Call Queue is shut down for every identity
     const visible = await shell.filterPermittedModules(shell.getAllModules(), { fallbackMode: "legacy" });
     assert.equal(visible.some((module) => module.id === "call-queue"), false);
   }
-  const otherAdminShell = loadRegistry("admin", "Other Admin", [{ moduleKey: "anati_admin", canView: true }]);
+  const otherAdminShell = loadRegistry("admin", "Other Admin", [{
+    moduleKey: "anati_admin", canView: false, canCreate: false, canEdit: false, canDelete: false
+  }]);
   assert.equal((await otherAdminShell.filterPermittedModules(otherAdminShell.getAllModules(), { fallbackMode: "legacy" }))
     .some((module) => module.id === "anati-admin"), false);
-  const anatiShell = loadRegistry("admin", "Anati");
+  const anatiShell = loadRegistry("admin", "Anati", [{
+    moduleKey: "anati_admin", canView: true, canCreate: true, canEdit: true, canDelete: true
+  }]);
   assert.equal((await anatiShell.filterPermittedModules(anatiShell.getAllModules(), { fallbackMode: "legacy" }))
     .some((module) => module.id === "anati-admin"), true);
 });
@@ -731,37 +739,39 @@ test("Admin executes exact create, update, disable, access, statistics, and degr
     role: "manager", status: "active", "account-type": "external", "employee-id": "",
     "temporary-password": "temporary-secret"
   });
-  loaded.document.getElementById("must-reset-password").checked = false;
   await loaded.api.saveUser({ preventDefault() {} });
   assert.equal(loaded.calls[0].url, "/.netlify/functions/admin-users");
   assert.equal(loaded.calls[0].options.method, "POST");
   assert.deepEqual(JSON.parse(loaded.calls[0].options.body), {
     username: "new-user", displayName: "New User", email: "new@example.test", role: "manager",
     status: "active", accountType: "external", employeeId: "", isSystemAccount: false,
-    mustResetPassword: true, temporaryPassword: "temporary-secret"
+    temporaryPassword: "temporary-secret"
   });
 
   loaded.calls.length = 0;
   loaded.document.getElementById("user-id").value = "user-id-1";
+  loaded.document.getElementById("user-version").value = "3";
   loaded.document.getElementById("temporary-password").value = "";
   await loaded.api.saveUser({ preventDefault() {} });
   assert.equal(loaded.calls[0].url, "/.netlify/functions/admin-users?id=user-id-1");
   assert.equal(loaded.calls[0].options.method, "PUT");
+  assert.equal(JSON.parse(loaded.calls[0].options.body).expectedVersion, 3);
   assert.equal(Object.hasOwn(JSON.parse(loaded.calls[0].options.body), "temporaryPassword"), false);
 
   loaded.calls.length = 0;
-  loaded.api.setUsers([{ userId: "user-id-1", username: "worker", role: "agent", status: "active" }]);
+  loaded.api.setUsers([{ userId: "user-id-1", username: "worker", role: "agent", status: "active", version: 4 }]);
   loaded.context.confirm = (message) => { loaded.confirmations.push(message); return false; };
   await loaded.api.disableUser("user-id-1");
   assert.equal(loaded.calls.length, 0, "Disable cancellation performs no DELETE");
   loaded.context.confirm = (message) => { loaded.confirmations.push(message); return true; };
   await loaded.api.disableUser("user-id-1");
-  assert.equal(loaded.calls[0].url, "/.netlify/functions/admin-users?id=user-id-1");
+  assert.equal(loaded.calls[0].url, "/.netlify/functions/admin-users?id=user-id-1&version=4");
   assert.equal(loaded.calls[0].options.method, "DELETE");
   assert.deepEqual(loaded.confirmations, ["Disable worker?", "Disable worker?"]);
 
   loaded.calls.length = 0;
   loaded.document.getElementById("access-user").value = "worker";
+  loaded.api.setUsers([{ userId: "user-id-1", username: "worker", role: "agent", status: "active", version: 4, accessVersion: 7 }]);
   const row = new FakeElement("module-row");
   row.dataset.moduleKey = "attendance";
   const view = new FakeElement("view");
@@ -778,7 +788,8 @@ test("Admin executes exact create, update, disable, access, statistics, and degr
   assert.equal(loaded.calls[0].options.method, "PUT");
   assert.deepEqual(JSON.parse(loaded.calls[0].options.body), {
     username: "worker",
-    access: [{ moduleKey: "attendance", canView: true, canCreate: false, canEdit: true, canDelete: false }]
+    access: [{ moduleKey: "attendance", canView: true, canCreate: false, canEdit: true, canDelete: false }],
+    expectedAccessVersion: 7
   });
 
   loaded.api.setUsers([
@@ -799,11 +810,11 @@ test("Admin source preserves account, endpoint, Anati, and incomplete-section bo
   assert.match(pages.admin, /option value="employee"/);
   assert.match(pages.admin, /option value="external"/);
   assert.match(pages.admin, /option value="system"/);
-  assert.match(pages.admin, /option value="client" disabled>Client - coming later/);
+  assert.match(pages.admin, /option value="client" disabled>Existing Client - login deferred/);
   assert.match(pages.admin, /Workflow Permissions/);
   assert.match(pages.admin, /Maintenance Control/);
   assert.match(pages.admin, /Audit Logs/);
-  assert.match(pages.admin, /forced password change screens come in a later phase/);
+  assert.match(pages.admin, /Users must create a new password before entering the application/);
   assert.match(pages.admin, /GET|ADMIN_USERS_ENDPOINT/);
   assert.match(pages.admin, /EMPLOYEES_ENDPOINT = "\.\/\.netlify\/functions\/employees"/);
   assert.match(adminBackend, /Anati cannot be disabled/);
@@ -959,7 +970,7 @@ test("registry keeps Call Queue hidden while the route has one unconditional shu
   assert.equal(queueModule.permissionKey, "call_queue");
   assert.equal(adminShell.getSidebarModules().some((module) => module.id === "call-queue"), false);
   assert.equal(adminShell.getDashboardModules().some((module) => module.id === "call-queue"), false);
-  assert.match(pages.admin, /requirePageAccess\('anati_admin'\)/);
+  assert.match(pages.admin, /requirePageAccess\("anati_admin", \{ force: true \}\)/);
   assert.equal((pages.admin.match(/requirePageAccess\(/g) || []).length, 1);
   assertNoCallQueueRoutePermissionWiring(pages.callQueue);
   assertCallQueueShutdown(pages.callQueue);
@@ -1140,7 +1151,7 @@ test("one memoized permission model supports Admin route access and both shared 
   ]);
   assert.equal(routeAccess.canView, true);
   assert.equal(permitted.some((module) => module.id === "anati-admin"), true);
-  assert.equal(admin.fetchCalls.length, 0, "Anati full access resolves locally without broadening access");
+  assert.equal(admin.fetchCalls.length, 1, "Anati access is resolved authoritatively");
 
   const queue = loadPermissionIntegration("manager", "Manager", [
     { moduleKey: "call_queue", canView: false, canCreate: false, canEdit: false, canDelete: false }

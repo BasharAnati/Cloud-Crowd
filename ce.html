@@ -73,7 +73,16 @@
   </script>
   <script src="js/permissions.js"></script>
   <script>
-    window.CCPermissions?.requirePageAccess('customer_experience');
+    window.CC_PROTECTED_PAGE_READY = (async () => {
+      const access = await window.CCPermissions?.requirePageAccess('customer_experience', { force: true });
+      if (!access || access.unavailable || access.canView !== true) return false;
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'main.js'; script.onload = resolve; script.onerror = reject;
+        document.head.appendChild(script);
+      });
+      return true;
+    })();
   </script>
   <script src="js/app-shell.js" defer></script>
   <script src="shared/ticket-domain-config.js" defer></script>
@@ -83,7 +92,6 @@
   <script src="js/history.js" defer></script>
   <script src="js/tickets-render.js" defer></script>
   <script src="js/media-viewer.js" defer></script>
-  <script src="main.js" defer></script>
   <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
   <link rel="stylesheet" href="assets/css/components/buttons.css">
   <link rel="stylesheet" href="assets/css/components/icons.css">
@@ -210,7 +218,8 @@
       window.location.href = 'login.html';
     }
 
-    window.addEventListener('load', () => {
+    window.addEventListener('load', async () => {
+      if (await window.CC_PROTECTED_PAGE_READY !== true) return;
       CloudCrowdAppShell.buildSidebar(document.getElementById('ce-app-sidebar'));
       CloudCrowdAppShell.buildTopbar(document.getElementById('ce-app-topbar'), {
         eyebrow: 'Operations Hub',
