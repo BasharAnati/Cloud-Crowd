@@ -243,7 +243,7 @@ test("The shared route registry preserves Dashboard routes, titles, descriptions
     ["employee-deductions", "Employee Deductions", "employee-deductions.html", "employee_deductions", "Track employee deductions, personal orders, discounts, and financial adjustments."],
     ["client-profiles", "Client Profiles", "client-profiles.html", "client_profiles", "Maintain restaurant and brand profiles, ownership contacts, numbers, logos, and operational notes."],
     ["restaurant-ratings", "Restaurant Ratings", "restaurant-ratings.html", "restaurant_ratings", "Track weekly Talabat and Careem ratings across active restaurant and brand profiles."],
-    ["anati-admin", "Anati Admin Center", "anati-admin.html", "anati_admin", "Manage user profiles, roles, module access planning, and future workflow permissions."]
+    ["anati-admin", "Anati Admin Center", "anati-admin.html", "anati_admin", "Manage user accounts, roles, temporary-password lifecycle, and enforced module access."]
   ];
   assert.deepEqual(
     JSON.parse(JSON.stringify(api.getDashboardModules().map((module) => [

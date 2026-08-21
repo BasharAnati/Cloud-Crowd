@@ -186,7 +186,7 @@
     {
       id: 'anati-admin',
       title: 'Anati Admin Center',
-      description: 'Manage user profiles, roles, module access planning, and future workflow permissions.',
+      description: 'Manage user accounts, roles, temporary-password lifecycle, and enforced module access.',
       route: 'anati-admin.html',
       group: 'Administration',
       icon: 'shield-check',
@@ -217,8 +217,33 @@
     return (a.order - b.order) || a.title.localeCompare(b.title);
   }
 
+  function validateModuleRegistry(modules) {
+    if (!Array.isArray(modules) || modules.length === 0) {
+      throw new Error('Module registry unavailable');
+    }
+    const ids = new Set();
+    const routes = new Set();
+    modules.forEach((module) => {
+      const valid = module &&
+        ['id', 'title', 'description', 'route', 'group', 'icon', 'permissionKey'].every((field) => (
+          typeof module[field] === 'string'
+        )) &&
+        module.id.trim() && module.title.trim() && module.route.trim() &&
+        GROUPS.includes(module.group) && Number.isFinite(module.order) &&
+        typeof module.showInSidebar === 'boolean' &&
+        typeof module.showInDashboard === 'boolean' &&
+        (module.hidden === undefined || typeof module.hidden === 'boolean');
+      if (!valid || ids.has(module.id) || routes.has(module.route)) {
+        throw new Error('Module registry is malformed');
+      }
+      ids.add(module.id);
+      routes.add(module.route);
+    });
+    return modules;
+  }
+
   function getAllModules() {
-    return MODULES.slice().sort(byOrderThenTitle).map(cloneModule);
+    return validateModuleRegistry(MODULES).slice().sort(byOrderThenTitle).map(cloneModule);
   }
 
   function getSidebarModules() {
@@ -319,6 +344,31 @@
     })).filter((entry) => entry.modules.length > 0);
   }
 
+  function renderSidebarNavigation(nav, modules, activeId) {
+    if (!nav) return;
+    clearElement(nav);
+    groupModules(modules).forEach((entry) => {
+      const section = document.createElement('section');
+      section.className = 'cc-shell-nav-group';
+      section.dataset.group = entry.group;
+
+      const heading = document.createElement('h2');
+      heading.className = 'cc-shell-nav-heading';
+      heading.textContent = entry.group;
+      section.appendChild(heading);
+
+      entry.modules.forEach((module) => {
+        section.appendChild(createModuleLink(module, activeId));
+      });
+      nav.appendChild(section);
+    });
+  }
+
+  function clearSidebarNavigation(sidebar) {
+    const nav = sidebar?.querySelector('.cc-shell-nav');
+    if (nav) clearElement(nav);
+  }
+
   function createBrand(options) {
     const brand = document.createElement('a');
     brand.className = 'cc-shell-brand';
@@ -373,21 +423,7 @@
     nav.className = 'cc-shell-nav';
     nav.setAttribute('aria-label', options.ariaLabel || 'Application navigation');
 
-    groupModules(visibleModules).forEach((entry) => {
-      const section = document.createElement('section');
-      section.className = 'cc-shell-nav-group';
-      section.dataset.group = entry.group;
-
-      const heading = document.createElement('h2');
-      heading.className = 'cc-shell-nav-heading';
-      heading.textContent = entry.group;
-      section.appendChild(heading);
-
-      entry.modules.forEach((module) => {
-        section.appendChild(createModuleLink(module, activeModule?.id));
-      });
-      nav.appendChild(section);
-    });
+    renderSidebarNavigation(nav, visibleModules, activeModule?.id);
 
     container.appendChild(nav);
     return visibleModules.map(cloneModule);
@@ -536,6 +572,67 @@
       ? window.matchMedia('(max-width: 1024px)')
       : { matches: false };
     let isOpen = false;
+    let tornDown = false;
+    const cleanupActions = [];
+    const boundLinks = new Map();
+    const initialState = {
+      shellOpen: shell.classList.contains('is-nav-open'),
+      bodyLocked: document.body.classList.contains('cc-shell-nav-lock'),
+      triggerExpanded: trigger.getAttribute?.('aria-expanded') ?? null,
+      sidebarHidden: sidebar.getAttribute?.('aria-hidden') ?? null,
+      backdropHidden: backdrop.hidden,
+      sidebarInert: 'inert' in sidebar ? sidebar.inert : undefined
+    };
+
+    function restoreAttribute(element, name, value) {
+      if (!element) return;
+      if (value === null) element.removeAttribute?.(name);
+      else element.setAttribute(name, value);
+    }
+
+    function addCleanup(action) {
+      cleanupActions.push(action);
+    }
+
+    function clearLinkBindings() {
+      boundLinks.forEach((listener, link) => {
+        try {
+          link?.removeEventListener?.('click', listener);
+        } catch (_) {
+          // Teardown is best-effort and must preserve the initiating error.
+        }
+      });
+      boundLinks.clear();
+    }
+
+    function teardown() {
+      if (tornDown) return;
+      tornDown = true;
+      for (let index = cleanupActions.length - 1; index >= 0; index -= 1) {
+        try {
+          cleanupActions[index]();
+        } catch (_) {
+          // Cleanup must remain idempotent and must not replace the original error.
+        }
+      }
+      cleanupActions.length = 0;
+    }
+
+    function listen(target, type, listener) {
+      if (!target || typeof target.addEventListener !== 'function') return;
+      addCleanup(() => target?.removeEventListener?.(type, listener));
+      target.addEventListener(type, listener);
+    }
+
+    addCleanup(() => {
+      shell?.classList?.toggle('is-nav-open', initialState.shellOpen);
+      document.body?.classList?.toggle('cc-shell-nav-lock', initialState.bodyLocked);
+      restoreAttribute(trigger, 'aria-expanded', initialState.triggerExpanded);
+      restoreAttribute(sidebar, 'aria-hidden', initialState.sidebarHidden);
+      if (backdrop) backdrop.hidden = initialState.backdropHidden;
+      if (sidebar && initialState.sidebarInert !== undefined) sidebar.inert = initialState.sidebarInert;
+    });
+    addCleanup(clearLinkBindings);
 
     function applyState() {
       const compact = mediaQuery.matches;
@@ -562,61 +659,125 @@
       if (wasOpen && options.restoreFocus !== false) trigger.focus();
     }
 
-    trigger.addEventListener('click', openNavigation);
-    backdrop.addEventListener('click', closeNavigation);
-    sidebar.querySelector('.cc-shell-mobile-close')?.addEventListener('click', closeNavigation);
-    sidebar.querySelectorAll('.cc-shell-nav-link').forEach((link) => {
-      link.addEventListener('click', () => closeNavigation({ restoreFocus: false }));
-    });
-    document.addEventListener('keydown', (event) => {
+    function refreshBindings() {
+      clearLinkBindings();
+      sidebar.querySelectorAll('.cc-shell-nav-link').forEach((link) => {
+        const listener = () => closeNavigation({ restoreFocus: false });
+        boundLinks.set(link, listener);
+        link.addEventListener('click', listener);
+      });
+    }
+
+    const handleKeydown = (event) => {
       if (event.key === 'Escape' && isOpen) closeNavigation();
-    });
+    };
 
     const handleMediaChange = () => {
       isOpen = false;
       applyState();
     };
-    if (typeof mediaQuery.addEventListener === 'function') mediaQuery.addEventListener('change', handleMediaChange);
-    else if (typeof mediaQuery.addListener === 'function') mediaQuery.addListener(handleMediaChange);
-    applyState();
 
-    return { open: openNavigation, close: closeNavigation };
+    try {
+      listen(trigger, 'click', openNavigation);
+      listen(backdrop, 'click', closeNavigation);
+      listen(sidebar.querySelector('.cc-shell-mobile-close'), 'click', closeNavigation);
+      refreshBindings();
+      listen(document, 'keydown', handleKeydown);
+      if (typeof mediaQuery.addEventListener === 'function') {
+        addCleanup(() => mediaQuery.removeEventListener?.('change', handleMediaChange));
+        mediaQuery.addEventListener('change', handleMediaChange);
+      } else if (typeof mediaQuery.addListener === 'function') {
+        addCleanup(() => mediaQuery.removeListener?.(handleMediaChange));
+        mediaQuery.addListener(handleMediaChange);
+      }
+      applyState();
+    } catch (error) {
+      teardown();
+      throw error;
+    }
+
+    return { open: openNavigation, close: closeNavigation, refreshBindings, teardown };
   }
 
   async function initializeAppShell(options = {}) {
     const activeModule = options.activeModule || getActiveModuleByPath();
+    const registryModules = options.modules || getAllModules();
     const permittedModules = await filterPermittedModules(
-      options.modules || getAllModules(),
-      { fallbackMode: options.fallbackMode }
+      registryModules,
+      { fallbackMode: options.fallbackMode, accessModel: options.accessModel }
     );
     const sidebarModules = permittedModules.filter((module) => module.showInSidebar);
 
-    await buildSidebar(options.sidebar, {
-      activeModule,
-      modules: sidebarModules,
-      modulesArePermitted: true,
-      responsiveNavigation: true,
-      brandImage: options.brandImage,
-      ariaLabel: options.navigationLabel || 'Application navigation'
-    });
-    const topbar = buildTopbar(options.topbar, {
-      activeModule,
-      eyebrow: options.eyebrow,
-      title: options.title,
-      userId: options.userId,
-      roleId: options.roleId,
-      utilityActions: options.utilityActions,
-      onLogout: options.onLogout,
-      responsiveNavigation: true,
-      sidebarId: options.sidebar?.id
-    });
-    const navigation = setupResponsiveNavigation({
-      shell: options.shell,
-      sidebar: options.sidebar,
-      trigger: topbar?.navigationButton,
-      backdrop: options.backdrop
-    });
-    return { permittedModules, navigation, topbar };
+    let topbar;
+    let navigation;
+    try {
+      await buildSidebar(options.sidebar, {
+        activeModule,
+        modules: sidebarModules,
+        modulesArePermitted: true,
+        responsiveNavigation: true,
+        brandImage: options.brandImage,
+        ariaLabel: options.navigationLabel || 'Application navigation'
+      });
+      topbar = buildTopbar(options.topbar, {
+        activeModule,
+        eyebrow: options.eyebrow,
+        title: options.title,
+        userId: options.userId,
+        roleId: options.roleId,
+        utilityActions: options.utilityActions,
+        onLogout: options.onLogout,
+        responsiveNavigation: true,
+        sidebarId: options.sidebar?.id
+      });
+      navigation = setupResponsiveNavigation({
+        shell: options.shell,
+        sidebar: options.sidebar,
+        trigger: topbar?.navigationButton,
+        backdrop: options.backdrop
+      });
+    } catch (error) {
+      try {
+        navigation?.teardown();
+      } catch (_) {
+        // Preserve the initialization error even if defensive cleanup fails.
+      }
+      try {
+        clearSidebarNavigation(options.sidebar);
+      } catch (_) {
+        // Preserve the initialization error even if defensive cleanup fails.
+      }
+      throw error;
+    }
+
+    function setPermittedModules(nextModules) {
+      const safeModules = nextModules.filter((module) => module.hidden !== true);
+      const sidebarModules = safeModules.filter((module) => module.showInSidebar);
+      const nav = options.sidebar?.querySelector('.cc-shell-nav');
+      renderSidebarNavigation(nav, sidebarModules, activeModule?.id);
+      navigation?.refreshBindings();
+      return safeModules.map(cloneModule);
+    }
+
+    async function refreshModules(accessModel) {
+      const nextModules = await filterPermittedModules(registryModules, {
+        fallbackMode: options.fallbackMode,
+        accessModel
+      });
+      return setPermittedModules(nextModules);
+    }
+
+    function clearPermissionModules() {
+      return setPermittedModules([]);
+    }
+
+    return {
+      permittedModules,
+      navigation,
+      topbar,
+      refreshModules,
+      clearPermissionModules
+    };
   }
 
   window.CloudCrowdAppShell = {
