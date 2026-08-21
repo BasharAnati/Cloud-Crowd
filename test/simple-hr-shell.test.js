@@ -95,9 +95,11 @@ test('Authentication, permissions, idle logout, and maintenance contracts are pr
   assert.match(pages['agent-training.html'], /await[^\n]*requirePageAccess\('agent_training', \{ force: true \}\)/);
   assert.match(maintenanceRuntime, /const MAINTENANCE_ENDPOINT = '\/\.netlify\/functions\/maintenance'/);
   assert.match(maintenanceRuntime, /const POLL_INTERVAL = 3000/);
+  assert.match(maintenanceRuntime, /const REQUEST_DEADLINE = 10 \* 1000/);
   assert.match(maintenanceRuntime, /window\.location\.href = 'system-update\.html'/);
   assert.match(maintenanceRuntime, /method:\s*'POST'/);
-  assert.match(maintenanceRuntime, /JSON\.stringify\(\{ maintenance: !latestMaintenanceState \}\)/);
+  assert.match(maintenanceRuntime, /JSON\.stringify\(\{ maintenance: requestedMaintenance \}\)/);
+  assert.match(maintenanceRuntime, /startToggleUpdates\(\)[\s\S]*renderToggle\(\)/);
   assert.match(maintenanceRuntime, /CloudCrowdConfirmation\.request\(message/);
   assert.doesNotMatch(shellRuntime, /MAINTENANCE_ENDPOINT|fetchMaintenanceStatus|toggleMaintenanceMode/);
   assert.doesNotMatch(dashboardRuntime, /MAINTENANCE_ENDPOINT|fetchMaintenanceStatus|toggleMaintenanceMode/);

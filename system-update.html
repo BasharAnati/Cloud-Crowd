@@ -95,26 +95,15 @@
       Please check back soon.
     </p>
   </section>
+  <script src="js/maintenance.js"></script>
   <script>
     (function monitorAuthoritativeRecovery() {
-      const endpoint = '/.netlify/functions/maintenance';
-      async function check() {
-        try {
-          const token = sessionStorage.getItem('cc_token') || '';
-          const response = await fetch(endpoint, {
-            cache: 'no-store',
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (!response.ok) return;
-          const state = await response.json();
-          if (!state || typeof state.maintenance !== 'boolean' || typeof state.admin !== 'boolean') return;
-          if (state.maintenance === false || state.admin === true) window.location.replace('dashboard.html');
-        } catch {
-          // Remain on the safe unavailable page until authority recovers.
-        }
-      }
-      check();
-      window.setInterval(check, 3000);
+      if (window.CC_MAINTENANCE_RECOVERY_CONTROLLER) return;
+      const recovery = window.CloudCrowdMaintenance.createRecoveryLifecycle({
+        returnRoute: 'dashboard.html'
+      });
+      window.CC_MAINTENANCE_RECOVERY_CONTROLLER = recovery;
+      recovery.start();
     })();
   </script>
 </body>

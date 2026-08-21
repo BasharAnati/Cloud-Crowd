@@ -62,6 +62,9 @@ class FakeElement {
     this.listeners = new Map();
   }
   addEventListener(type, listener) { this.listeners.set(type, listener); }
+  removeEventListener(type, listener) {
+    if (this.listeners.get(type) === listener) this.listeners.delete(type);
+  }
   setAttribute(name, value) { this[name] = String(value); }
   appendChild(child) {
     this.children.push(child);
@@ -271,6 +274,11 @@ test("shared maintenance lifecycle preserves enforcement, polling, authorization
   context.CloudCrowdConfirmation = { request: async (message) => context.confirm(message) };
   context.location = { href: "attendance.html" };
   context.setInterval = (callback, delay) => { intervals.push({ callback, delay }); return intervals.length; };
+  context.clearInterval = () => {};
+  context.setTimeout = setTimeout;
+  context.clearTimeout = clearTimeout;
+  context.addEventListener = () => {};
+  context.removeEventListener = () => {};
   context.readSessionValue = (key) => sessionStorage.getItem(key) || "";
   vm.runInNewContext(maintenanceSource, context);
   const lifecycle = context.CloudCrowdMaintenance.createLifecycle({ button });
@@ -293,11 +301,12 @@ test("shared maintenance lifecycle preserves enforcement, polling, authorization
     }
     return jsonResponse({ maintenance: maintenanceState, admin: true });
   };
-  await lifecycle.updateMaintenanceToggleButton();
+  lifecycle.startToggleUpdates();
+  await lifecycle.enforceMaintenanceMode();
   assert.equal(button.hidden, false);
   assert.equal(button.textContent, "OFF");
   lifecycle.startToggleUpdates();
-  assert.equal(intervals[1].delay, 3000);
+  assert.equal(intervals.length, 1, "toggle consumes enforcement state without a second poller");
   await lifecycle.toggleMaintenanceMode();
   const post = fetchCalls.find((call) => call.options.method === "POST");
   assert.equal(post.url, "/.netlify/functions/maintenance");
@@ -344,9 +353,16 @@ test("System Update remains stable through failure and returns only on authorita
     sessionStorage: { getItem() { return "token"; } },
     fetch() { return responses.shift(); },
     setInterval(callback, delay) { checks.push({ callback, delay }); return 1; },
+    clearInterval() {},
+    setTimeout,
+    clearTimeout,
+    addEventListener() {},
+    removeEventListener() {},
     location: { replace(value) { replacements.push(value); } },
+    console: { warn() {} },
   };
   context.window = context;
+  vm.runInNewContext(maintenanceSource, context);
   vm.runInNewContext(script, context);
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(checks[0].delay, 3000);

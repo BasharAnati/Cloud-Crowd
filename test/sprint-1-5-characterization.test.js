@@ -128,6 +128,11 @@ test("maintenance cancellation preserves exact wording and performs no POST", as
     sessionStorage,
     location: { href: "dashboard.html" },
     setInterval() { return 1; },
+    clearInterval() {},
+    setTimeout,
+    clearTimeout,
+    addEventListener() {},
+    removeEventListener() {},
     readSessionValue(key) { return sessionStorage.getItem(key) || ""; },
     confirm(message) { confirmations.push(message); return false; },
     async fetch(url, options = {}) {
@@ -139,6 +144,7 @@ test("maintenance cancellation preserves exact wording and performs no POST", as
   context.CloudCrowdConfirmation = { request: async (message) => context.confirm(message) };
   vm.runInNewContext(read("js/maintenance.js"), context);
   const lifecycle = context.CloudCrowdMaintenance.createLifecycle({ button: new Control("OFF") });
+  await lifecycle.enforceMaintenanceMode();
   await lifecycle.updateMaintenanceToggleButton();
   calls.length = 0;
   await lifecycle.toggleMaintenanceMode();

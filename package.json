@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "audit:production": "node tools/audit/production/bin/cloud-crowd-audit.js",
+    "test:maintenance": "node --test test/sprint-1-15-maintenance.test.js",
     "test:dashboard": "node --test test/dashboard-shell.test.js test/sprint-1-14-dashboard.test.js",
     "test:hr-shell": "node --test test/simple-hr-shell.test.js test/simple-hr-behavior.test.js",
     "test:business-quality-shell": "node --test test/business-quality-shell.test.js",

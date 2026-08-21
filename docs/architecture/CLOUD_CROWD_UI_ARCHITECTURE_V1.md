@@ -1918,11 +1918,12 @@ Future Codex UI prompts must require:
 - **Risk:** Medium.
 - **DoD:** Permission-aware hybrid launcher using only supported data.
 
-## Sprint 1.15 — Public, Authentication, and Maintenance
+## Sprint 1.15 — Maintenance Lifecycle & Polling Consolidation
 
-- **Pages:** Index, Login, System Update.
-- **Risk:** Medium.
-- **DoD:** Production contact data, complete auth controls, approved maintenance recovery, responsive/accessibility acceptance.
+- **Pages:** All active internal routes and System Update, limited to Maintenance integration.
+- **Risk:** High because polling state controls fail-closed application access.
+- **Implemented boundary:** One enforcement-owned, page-local Maintenance GET stream supplies both enforcement and verified-Anati toggle presentation. Dashboard reuses its bounded initial authority result. System Update retains a distinct recovery controller and returns to Dashboard only on authoritative OFF or verified Anati.
+- **DoD:** One 3000 ms poll stream per normal lifecycle, one GET in flight, bounded authority completion, stale-result isolation, owned teardown, shared fail-closed legacy integration, and preserved backend-authoritative Anati control.
 
 ## Sprint 1.16 — Responsive and Accessibility Release Hardening
 
@@ -2010,7 +2011,7 @@ No arbitrary colors, typography, spacing, layers, inline visual styles, clickabl
 2. **Call Queue system of record:** Confirm its durable data source and exact relationship to CE/customer/order records.
 3. **Call Queue ownership:** Decide whether v1.0 requires assignment/claiming or only current-user attribution.
 4. **Admin v1.0 scope:** Decide whether Workflow Permissions, Maintenance, and Audit must be functional in v1.0 or may ship visibly marked as planned.
-5. **Maintenance recovery:** Approve Retry, Return to Login, both, or neither, and confirm the universal direct-route maintenance policy.
+5. **Maintenance recovery expansion:** Automatic authoritative return to Dashboard is implemented. Decide separately whether Retry, Return to Login, prior-route recovery, or other manual controls should be added.
 6. **Dashboard summaries:** Select which, if any, existing-API summaries belong in v1.0. Without approval, Dashboard remains a polished permission-aware launcher.
 7. **Profile planned modules:** Confirm whether Employee and Client profile “Coming soon” integrations are v1.0 requirements or explicitly scheduled post-v1.0.
 8. **Public production content:** Supply approved telephone, email, and social destinations.

@@ -40,7 +40,10 @@ async function getMaintenanceState() {
     [SETTINGS_KEY]
   );
 
-  return result.rows[0]?.value === "1";
+  if (!result.rows[0]) return false;
+  if (result.rows[0].value === "1") return true;
+  if (result.rows[0].value === "0") return false;
+  throw new Error("Maintenance state is malformed");
 }
 
 async function setMaintenanceState(maintenance) {

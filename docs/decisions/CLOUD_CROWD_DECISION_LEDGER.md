@@ -89,14 +89,14 @@ Records may use multiple provenance labels. Repository behavior alone is never `
 - **Area:** Maintenance authority
 - **Decision:** Only the specifically named admin user `Anati` is intended to control Maintenance Mode. Other admin-role accounts are not automatically maintenance authorities.
 - **Product-owner intent:** Maintenance authority is identity-specific, not a general consequence of the `admin` role.
-- **Current repository behavior:** `js/maintenance.js` special-cases `Anati`; backend/frontend authority details are not fully symmetrical.
+- **Current repository behavior:** Maintenance exemption and mutation authority are derived only from the backend `admin` result, which requires a current active `Anati` account with role `admin`, a valid session version, and no forced password reset. Local display identity is not authoritative.
 - **Why in ledger:** Code shows a special case but cannot establish whether it is intentional policy without confirmation.
 - **Provenance:** `PROJECT-OWNER CONFIRMED`; `REPOSITORY-EVIDENCED CURRENT BEHAVIOR`
 - **Consequences:** UI and backend enforcement must converge on the named-user policy. General admin expansion requires a new decision.
 - **Explicit non-goals:** General maintenance redesign, automatic recovery navigation, role-system redesign.
 - **Related:** Volume 3 `DL-003`, `V3-R016`, `V3-R017`; `js/maintenance.js`; `netlify/functions/maintenance.js`.
 - **Target sprint/workstream:** Maintenance parity/hardening; limited Employee parity is permitted in Sprint 1.11.
-- **Implementation state:** Partially implemented; policy is represented but authority mismatch remains an implementation gap.
+- **Implementation state:** Implemented with backend-authoritative identity and role verification. Sprint 1.15 consolidates polling without changing this authority policy.
 - **Required characterization/verification:** Test Anati, non-Anati admin, manager, and agent against frontend controls and backend mutations.
 - **Revisit trigger:** Identity rename, admin-role redesign, granular maintenance permission, or maintenance backend change.
 - **Date recorded:** 2026-08-12
@@ -108,15 +108,15 @@ Records may use multiple provenance labels. Repository behavior alone is never `
 - **Area:** Maintenance coverage and enforcement
 - **Decision:** When maintenance is enabled, every internal user except Anati must lose access, including users already inside the system. They must reach the System Update surface within the polling window. Employee Profiles is not exempt. When maintenance ends, internal access becomes available again.
 - **Product-owner intent:** Maintenance coverage is universal across authenticated internal routes, with Anati retained as operator.
-- **Current repository behavior:** Most internal pages use `js/maintenance.js`; `employee-profiles.html` omits it and remains an implementation gap. `system-update.html` does not automatically return users.
+- **Current repository behavior:** Every active internal page enforces Maintenance. Employee Profiles has shared enforcement parity, legacy inline pollers were consolidated in Sprint 1.15, and System Update returns to Dashboard only after authoritative OFF or verified Anati recovery.
 - **Why in ledger:** The Employee omission could not be classified as intentional or defective without owner confirmation.
 - **Provenance:** `PROJECT-OWNER CONFIRMED`; `REPOSITORY-EVIDENCED CURRENT BEHAVIOR`
-- **Consequences:** Employee Profiles must adopt enforcement parity. Existing-user polling remains required. Automatic post-maintenance return remains separately open.
+- **Consequences:** Universal fail-closed enforcement and existing-user polling remain required. Recovery UX beyond the implemented authoritative Dashboard return remains separately open.
 - **Explicit non-goals:** Replacing the polling architecture, changing the maintenance shell, or expanding control authority.
 - **Related:** Volume 3 `DL-004`, `V3-R015`–`V3-R017`; Sprint 1.11 readiness; `employee-profiles.html`; `js/maintenance.js`.
 - **Target sprint/workstream:** Employee parity may be completed in Sprint 1.11; broader maintenance improvements later.
-- **Implementation state:** Not fully implemented because Employee Profiles is omitted.
-- **Required characterization/verification:** Freeze current omission first, then test enabled/disabled transitions and Anati exemption on Employee Profiles and representative internal routes.
+- **Implementation state:** Implemented across active internal routes. Sprint 1.15 establishes one enforcement-owned GET stream per normal page lifecycle and a distinct fail-closed recovery controller for System Update.
+- **Required characterization/verification:** Test enabled/disabled transitions, unavailable authority, Employee Profiles, legacy Operations routes, and Anati exemption across representative internal routes.
 - **Revisit trigger:** Maintenance transport/polling redesign or route inventory change.
 - **Date recorded:** 2026-08-12
 - **Blocks Sprint 1.11:** No decision blocker; it creates an in-scope parity requirement.
@@ -621,18 +621,18 @@ This section retains the stable Volume 3 `DL-*` sequence for traceability. Recor
 
 ### DEC-011 — System Update Automatic Return
 
-- **Status:** `OPEN`
+- **Status:** `IMPLEMENTED CURRENT BEHAVIOR; UX EXPANSION OPEN`
 - **Area:** Maintenance recovery
 - **Decision/question:** After maintenance is disabled, should `system-update.html` automatically return users, offer Retry, return to Login, or combine these behaviors?
 - **Product-owner intent:** Access must become available again; navigation behavior is unresolved.
-- **Current repository behavior:** Users redirected to System Update are not automatically returned by a maintenance lifecycle.
+- **Current repository behavior:** System Update automatically uses `location.replace('dashboard.html')` only after authoritative Maintenance OFF or verified Anati exemption. Unavailable, malformed, timed-out, and ON/non-Anati authority remain on System Update.
 - **Why in ledger:** Availability after maintenance does not define navigation or session recovery UX.
 - **Provenance:** `UNRESOLVED`; `PROJECT-OWNER CONFIRMED` for restored availability; `REPOSITORY-EVIDENCED CURRENT BEHAVIOR`
 - **Consequences:** Options: automatic return to prior safe route; Retry; Login; Retry plus Login; remain until manual navigation. Security and stale-route handling must be considered.
 - **Explicit non-goals:** General maintenance redesign in Sprint 1.11.
 - **Related:** Volume 3 `V3-R017`; DEC-003; UI Architecture §27.
 - **Target sprint/workstream:** Maintenance/public-auth-system sprint.
-- **Implementation state:** Recovery navigation absent.
+- **Implementation state:** The automatic Dashboard return is implemented and behaviorally tested. Retry, Return to Login, prior-route recovery, and alternate recovery controls remain unresolved and are not implied by the implemented behavior.
 - **Required characterization/verification:** Session validity, prior-route safety, repeated polling, disabled users, unauthorized destinations, and browser history.
 - **Revisit trigger:** Before System Update completion.
 - **Recommended decision deadline:** Before maintenance recovery implementation; may be deferred from Sprint 1.11.

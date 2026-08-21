@@ -2403,7 +2403,12 @@ test("Employee maintenance parity executes polling enforcement and preserves the
     const values = { cc_auth: "1", cc_user: user, cc_role: role, cc_token: "token" };
     const window = {
       location: { href: "employee-profiles.html" },
-      setInterval: (callback, delay) => intervals.push([callback, delay])
+      setInterval: (callback, delay) => intervals.push([callback, delay]),
+      clearInterval() {},
+      setTimeout,
+      clearTimeout,
+      addEventListener() {},
+      removeEventListener() {}
     };
     window.window = window;
     vm.runInNewContext(maintenanceSource, {

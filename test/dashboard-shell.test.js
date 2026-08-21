@@ -486,9 +486,11 @@ test("Dashboard lifecycle preserves authentication, logout, maintenance, and idl
   assert.match(dashboardRuntime, /maintenance\.startToggleUpdates\(\)/);
   assert.match(maintenanceRuntime, /const MAINTENANCE_ENDPOINT = '\/\.netlify\/functions\/maintenance'/);
   assert.match(maintenanceRuntime, /const POLL_INTERVAL = 3000/);
+  assert.match(maintenanceRuntime, /const REQUEST_DEADLINE = 10 \* 1000/);
   assert.match(maintenanceRuntime, /window\.location\.href = 'system-update\.html'/);
   assert.match(maintenanceRuntime, /method: 'POST'/);
-  assert.match(maintenanceRuntime, /JSON\.stringify\(\{ maintenance: !latestMaintenanceState \}\)/);
+  assert.match(maintenanceRuntime, /JSON\.stringify\(\{ maintenance: requestedMaintenance \}\)/);
+  assert.match(maintenanceRuntime, /startToggleUpdates\(\)[\s\S]*renderToggle\(\)/);
   assert.match(maintenanceRuntime, /CloudCrowdConfirmation\.request\(message/);
 });
 
