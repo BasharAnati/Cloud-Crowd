@@ -458,8 +458,8 @@
       }, 5000);
     }
 
-    function openModal(id) {
-      if (window.CloudCrowdOverlay) window.CloudCrowdOverlay.open(id);
+    function openModal(id, options = {}) {
+      if (window.CloudCrowdOverlay) window.CloudCrowdOverlay.open(id, options);
       else {
         document.getElementById(id)?.classList.add('open');
         document.body.classList.add('cc-modal-lock');
@@ -808,10 +808,10 @@
       updateLogoPreview();
     }
 
-    function openCreateClient() {
+    function openCreateClient(event) {
       if (!canManageClients) return;
       resetClientForm();
-      openModal('client-modal');
+      openModal('client-modal', { trigger: event?.currentTarget });
       document.getElementById('brand-name').focus();
     }
 
@@ -1321,6 +1321,7 @@
         clientMasterDetail?.announce(partialDetail
           ? `${restaurant.brandName} details updated. Some linked modules are restricted or unavailable.`
           : `${restaurant.brandName} details updated.`);
+        if (options.focusWorkspace !== false) clientMasterDetail?.focusDetail?.();
       } catch (error) {
         if (requestToken !== workspaceRequestToken || restaurantId !== selectedRestaurantId) return;
         if (isPermissionDenied(error) || [404, 410].includes(Number(error?.status))) {
@@ -1333,6 +1334,7 @@
           );
         } else {
           renderWorkspaceError(error.message);
+          if (options.focusWorkspace !== false) clientMasterDetail?.focusDetail?.();
         }
       }
     }

@@ -68,6 +68,10 @@
   scrollbar-gutter: stable;
 }
 
+.admin-center-page .grid > * {
+  min-width: 0;
+}
+
 .admin-center-page table {
   color: var(--color-text);
   background: var(--color-surface);

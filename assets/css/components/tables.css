@@ -1,4 +1,5 @@
 .cc-table-wrap.cc-table-wrap {
+  box-sizing: border-box;
   max-width: 100%;
   overflow-x: auto;
   overflow-y: visible;

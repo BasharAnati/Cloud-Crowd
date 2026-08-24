@@ -970,6 +970,11 @@
   cursor: pointer;
 }
 
+body .cc-shell-nav-trigger.cc-button,
+body .cc-shell-mobile-close.cc-button {
+  min-height: 44px;
+}
+
 .cc-shell-nav-trigger,
 .cc-shell-mobile-close {
   display: none;
@@ -1146,14 +1151,28 @@
     z-index: var(--layer-nav-backdrop);
   }
 
+  .has-responsive-navigation .cc-shell-nav-backdrop[hidden] {
+    display: none;
+  }
+
   body.cc-shell-nav-lock {
     overflow: hidden;
   }
 }
 
 @media (max-width: 620px) {
+  body.client-profiles-page #client-modal .icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  body.client-profiles-page #client-modal .cc-form-actions button {
+    min-height: 44px;
+  }
+
   .has-responsive-navigation .cc-shell-topbar {
     align-items: stretch;
+    flex-wrap: wrap;
     padding: 12px;
   }
 

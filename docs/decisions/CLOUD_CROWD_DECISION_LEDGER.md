@@ -815,3 +815,9 @@ DL-011, DL-012, DL-013, the long-term retirement remainder of DL-014, DL-018/DEC
 10. Review this ledger when routes, data authority, permissions, authentication, maintenance, lifecycle semantics, storage integrations, or roadmap scope change.
 11. Record review date, reviewer, decision evidence, implementation status, and related commit when a decision changes.
 12. Never store secrets, unverifiable quotations, or private operational credentials in this ledger.
+
+## 15. Sprint 1.16 implementation record (2026-08-24)
+
+Sprint 1.16 accepted the existing product decisions without changing their status or intent. The implementation adds deterministic local real-browser acceptance and presentation/accessibility corrections only. No backend authority, permissions, Maintenance authority/lifecycle, workflow semantics, persistence, Operations source-of-truth policy, Remember Me behavior, public contact content, planned Admin areas, or dormant Call Queue scope changed.
+
+The executed matrix and limitations are documented in the UI architecture and Sprint 1.16 browser evidence. This is an implementation trace record, not a new product decision and not production release approval.

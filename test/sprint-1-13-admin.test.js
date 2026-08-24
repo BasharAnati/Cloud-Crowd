@@ -449,7 +449,8 @@ test("permission cache expires, revalidates on singleton lifecycle events, and r
   newerRequest.resolve(valid(false));
   assert.equal((await newer).access[0].canView, false);
   olderRequest.resolve(valid(true));
-  assert.equal((await older).reason, "superseded-permission-response");
+  assert.equal((await older).access[0].canView, false,
+    "an older consumer adopts the current authoritative operation");
   assert.equal((await context.CCPermissions.getMyAccessModel()).access[0].canView, false,
     "older completion cannot overwrite the newer model");
 

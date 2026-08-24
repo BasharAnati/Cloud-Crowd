@@ -1,5 +1,6 @@
 /* Sprint 1.5 toast, banner, inline-status, and narrow confirmation surfaces. */
 .cc-feedback {
+  box-sizing: border-box;
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);

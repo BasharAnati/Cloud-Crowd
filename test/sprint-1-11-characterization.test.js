@@ -2335,7 +2335,7 @@ test("Client Create/Edit dialog ownership uses actual overlay focus entry, conta
 
   const openModal = functionSource(clientSource, "openModal");
   const closeModal = functionSource(clientSource, "closeModal");
-  assert.match(openModal, /CloudCrowdOverlay\.open\(id\)/);
+  assert.match(openModal, /CloudCrowdOverlay\.open\(id, options\)/);
   assert.match(closeModal, /CloudCrowdOverlay\.close\(id, \{ reason: 'page-close' \}\)/);
   assert.match(clientSource.match(/if \(closeButton\)[^\n]+/)[0], /closeModal/);
 });
@@ -2345,14 +2345,15 @@ test("Client Add dialog executes management gate, dialog opening, and brand-fiel
     const focused = [];
     const opened = [];
     const reset = [];
+    const trigger = { id: "add-client-btn" };
     const document = documentFixture({ "brand-name": { focus: () => focused.push("brand") } });
     const { openCreateClient } = evaluateFunctions(clientSource, ["openCreateClient"], {
       canManageClients: canManage, document,
-      resetClientForm: () => reset.push("reset"), openModal: (id) => opened.push(id)
+      resetClientForm: () => reset.push("reset"), openModal: (id, options) => opened.push([id, options?.trigger])
     });
-    openCreateClient();
+    openCreateClient({ currentTarget: trigger });
     assert.deepEqual({ reset, opened, focused }, canManage
-      ? { reset: ["reset"], opened: ["client-modal"], focused: ["brand"] }
+      ? { reset: ["reset"], opened: [["client-modal", trigger]], focused: ["brand"] }
       : { reset: [], opened: [], focused: [] });
   }
   const edit = functionSource(clientSource, "editRestaurant");

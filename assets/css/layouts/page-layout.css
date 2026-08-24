@@ -4,6 +4,7 @@
 }
 
 .cc-page-container {
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
   margin-inline: auto;

@@ -5,6 +5,7 @@
   let cacheExpiresAt = 0;
   let accessModelPromise = null;
   let requestGeneration = 0;
+  let publishedGeneration = 0;
   let revalidationScheduled = false;
 
   function readSessionValue(key) {
@@ -86,6 +87,12 @@
     }
   }
 
+  function adoptCurrentAuthority() {
+    if (accessModelPromise) return accessModelPromise;
+    if (cachedAccessModel && publishedGeneration === requestGeneration) return cachedAccessModel;
+    return unavailableModel('permission-refresh-invalidated');
+  }
+
   function getMyAccessModel(options = {}) {
     const now = Date.now();
     if (options.force !== true && cachedAccessModel && now < cacheExpiresAt) {
@@ -101,8 +108,9 @@
       applyPermissionVisibility(window.CC_PAGE_ACCESS);
     }
     const request = fetchMyAccessModel().then((model) => {
-      if (generation !== requestGeneration) return unavailableModel('superseded-permission-response');
+      if (generation !== requestGeneration) return adoptCurrentAuthority();
       cachedAccessModel = model;
+      publishedGeneration = generation;
       cacheExpiresAt = model.available === true ? Date.now() + ACCESS_CACHE_TTL_MS : 0;
       return model;
     }).finally(() => {
@@ -117,6 +125,7 @@
     cachedAccessModel = null;
     cacheExpiresAt = 0;
     accessModelPromise = null;
+    publishedGeneration = 0;
     window.CC_PAGE_ACCESS = null;
   }
 

@@ -2019,3 +2019,13 @@ No arbitrary colors, typography, spacing, layers, inline visual styles, clickabl
 UI ARCHITECTURE STATUS:
 
 REQUIRES PRODUCT DECISIONS
+
+# 41. Sprint 1.16 automated browser acceptance
+
+Sprint 1.16 adds a local Playwright acceptance layer under `test/browser/`. It serves the repository through a minimal loopback-only static server, seeds realistic session storage, and intercepts only Netlify Function transport calls with deterministic permission, Maintenance, and data responses. Production authority and domain code remain the code under test; there are no production test branches.
+
+The primary contract runs every active surface at 1440, 1280, 1024, 768, 390, 360, and 320 CSS pixels in Chromium. Firefox and WebKit run representative critical paths for responsive navigation, dialog focus, keyboard focus visibility, reduced motion, Call Queue shutdown, and computed contrast. DOM geometry, overflow, focus, keyboard behavior, accessible names, touch targets, URL/history state, and scroll reachability are asserted; screenshots and traces are diagnostic artifacts only. The 320-pixel Kanban and table reachability contracts use representative populated domain fixtures, require real overflow, scroll to the final column or action region, and verify the resulting card or control is visible and keyboard reachable.
+
+Browser-proven corrections are deliberately narrow: border-box geometry for full-width page, feedback, and table-scroller components; correct hidden responsive-backdrop cascade; wrapping and 44px shell controls on narrow viewports; Admin grid-item shrinking; and post-render Client Profile detail focus. Backend, permissions, Maintenance, Dashboard runtime, workflow status, persistence, and Call Queue product scope are unchanged.
+
+This automated layer is evidence for the tested contracts, not a WCAG certification. Manual screen-reader behavior, OS-level touch behavior, platform font rendering, and accessibility-tree nuances remain manual review areas.
