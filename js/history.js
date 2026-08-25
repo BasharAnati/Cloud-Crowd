@@ -77,7 +77,24 @@ function buildHistoryHTML(rows) {
   return header + rowsHtml;
 }
 
-async function viewTicketHistory(ticketId, trigger){
+async function loadTicketHistory(ticketId, body){
+  if (!body) return;
+  body.innerHTML = `<div class="history-state history-state--loading">Loading&hellip;</div>`;
+  try {
+    const res = await fetch(`/.netlify/functions/tickets?history=1&id=${encodeURIComponent(ticketId)}`, {
+      headers: getAuthHeaders()
+    });
+    if (handleAuthFailure(res)) return;
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Failed loading history');
+    body.innerHTML = buildHistoryHTML(data.history || []);
+  } catch (err) {
+    body.innerHTML = `<div class="history-state history-state--error">${escapeHtml(err.message || 'Error')}</div>`;
+  }
+}
+
+async function viewTicketHistory(ticketId, trigger, inlineBody){
+  if (inlineBody) return loadTicketHistory(ticketId, inlineBody);
   const modal = ensureHistoryModal();
   const body  = modal.querySelector('#history-body');
 
@@ -99,4 +116,5 @@ async function viewTicketHistory(ticketId, trigger){
 }
 
 window.viewTicketHistory = viewTicketHistory;
+window.loadTicketHistory = loadTicketHistory;
 window.ensureHistoryModal = ensureHistoryModal;

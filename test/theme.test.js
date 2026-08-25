@@ -960,7 +960,10 @@ test("integrated HTML determines the real linked and embedded stylesheet order",
     "assets/css/components/kanban.css"
   ];
   Object.values(OPERATION_CONTRACTS).forEach(({ page }) => {
-    assert.deepEqual(extractPageSources(ROOT, page).map((source) => source.name), operationsOrder, `${page} stylesheet order`);
+    const expectedOrder = page === "cctv.html"
+      ? [...operationsOrder, "assets/css/pages/cctv-v2.css"]
+      : operationsOrder;
+    assert.deepEqual(extractPageSources(ROOT, page).map((source) => source.name), expectedOrder, `${page} stylesheet order`);
   });
   assert.deepEqual(extractPageSources(ROOT, "employee-profiles.html").map((source) => source.name), [
     "assets/css/design-tokens.css",

@@ -76,8 +76,9 @@
   <link rel="stylesheet" href="assets/css/components/dialogs.css">
   <link rel="stylesheet" href="assets/css/components/drawers.css">
   <link rel="stylesheet" href="assets/css/components/kanban.css">
+  <link rel="stylesheet" href="assets/css/pages/cctv-v2.css">
 </head>
-<body class="cctv-page cctv-ops-center">
+<body class="cctv-page cctv-ops-center cctv-v2">
   <div class="cctv-module-shell cc-shell-layout">
     <aside id="cctv-app-sidebar" aria-label="CCTV Operations Center navigation"></aside>
 
@@ -96,22 +97,22 @@
 
       <section class="cctv-stats cc-metric-grid" aria-label="CCTV case summary">
         <article class="cctv-stat-card cc-metric-card cctv-stat-total">
-          <span class="cctv-stat-icon" aria-hidden="true"></span>
+          <span class="cctv-stat-icon" data-cc-icon="video" aria-hidden="true"></span>
           <span class="cctv-stat-label">Total Cases</span>
           <strong id="cctv-stat-total">0</strong>
         </article>
         <article class="cctv-stat-card cc-metric-card cctv-stat-escalated">
-          <span class="cctv-stat-icon" aria-hidden="true"></span>
+          <span class="cctv-stat-icon" data-cc-icon="triangle-alert" aria-hidden="true"></span>
           <span class="cctv-stat-label">Escalated</span>
           <strong id="cctv-stat-escalated">0</strong>
         </article>
         <article class="cctv-stat-card cc-metric-card cctv-stat-review">
-          <span class="cctv-stat-icon" aria-hidden="true"></span>
+          <span class="cctv-stat-icon" data-cc-icon="refresh-cw" aria-hidden="true"></span>
           <span class="cctv-stat-label">Under Review</span>
           <strong id="cctv-stat-under-review">0</strong>
         </article>
         <article class="cctv-stat-card cc-metric-card cctv-stat-closed">
-          <span class="cctv-stat-icon" aria-hidden="true"></span>
+          <span class="cctv-stat-icon" data-cc-icon="badge-check" aria-hidden="true"></span>
           <span class="cctv-stat-label">Closed</span>
           <strong id="cctv-stat-closed">0</strong>
         </article>
@@ -173,21 +174,26 @@
     </div>
   </div>
 
-  <div class="drawer cc-drawer" id="ticket-drawer" aria-hidden="true">
+  <div class="drawer cc-drawer cctv-ticket-modal" id="ticket-drawer" aria-hidden="true">
     <div class="drawer-backdrop cc-drawer__backdrop"></div>
-    <aside class="drawer-panel cc-drawer__panel" role="dialog" aria-modal="true" aria-labelledby="drawer-title" data-cc-overlay-panel>
+    <section class="drawer-panel cc-drawer__panel cctv-ticket-modal__panel" role="dialog" aria-modal="true" aria-labelledby="drawer-title" data-cc-overlay-panel>
       <div class="drawer-header cc-drawer__header">
         <div>
-          <div class="drawer-case">Case: <span id="drawer-caseNumber"></span></div>
-          <h2 class="cc-modal-title" id="drawer-title">Details</h2>
+          <div class="drawer-case">Ticket details</div>
+          <h2 class="cc-modal-title" id="drawer-title"><span id="drawer-caseNumber"></span></h2>
         </div>
         <button class="drawer-close" type="button" onclick="closeTicketDrawer()" aria-label="Close">x</button>
       </div>
 
       <div class="drawer-meta" id="drawer-meta"></div>
-      <div class="drawer-body cc-drawer__body" id="drawer-body"></div>
+      <div class="cctv-ticket-tabs" role="tablist" aria-label="Ticket information">
+        <button id="drawer-details-tab" class="cctv-ticket-tab" type="button" role="tab" aria-selected="true" aria-controls="drawer-body">Details</button>
+        <button id="drawer-history-tab" class="cctv-ticket-tab" type="button" role="tab" aria-selected="false" aria-controls="drawer-history" tabindex="-1">History</button>
+      </div>
+      <div class="drawer-body cc-drawer__body" id="drawer-body" role="tabpanel" aria-labelledby="drawer-details-tab"></div>
+      <div class="drawer-body cc-drawer__body cctv-ticket-history" id="drawer-history" role="tabpanel" aria-labelledby="drawer-history-tab" hidden></div>
       <div class="drawer-actions cc-drawer__footer"><button class="edit-btn" id="drawer-edit-btn" type="button">Edit</button></div>
-    </aside>
+    </section>
   </div>
 
   <script>

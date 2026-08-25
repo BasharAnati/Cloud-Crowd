@@ -442,6 +442,13 @@ function cctvTicketMatchesFilters(ticket, filters){
 
 function getCctvCardContent(ticket){
   const status = ticket.status || 'Uncategorized';
+  const statusIcon = status === 'Escalated'
+    ? 'triangle-alert'
+    : status === 'Under Review'
+      ? 'refresh-cw'
+      : status === 'Closed'
+        ? 'badge-check'
+        : 'video';
   const dateText = formatTicketDate(ticket);
   const timeText = ticket.time ? String(ticket.time) : '';
   const dateTimeText = [dateText, timeText].filter(Boolean).join(' ');
@@ -452,7 +459,10 @@ function getCctvCardContent(ticket){
 
   return `
     <div class="cctv-ticket-top">
-      <span class="cctv-status-pill cc-status ${ticketStatusToneClass(status)}">${escapeHtml(ticketStatusPresentation(status).label)}</span>
+      <span class="cctv-status-pill cc-status ${ticketStatusToneClass(status)}" data-cctv-status-identity="${escapeHtml(status)}">
+        <span class="cctv-status-icon" data-cc-icon="${statusIcon}" aria-hidden="true"></span>
+        ${escapeHtml(ticketStatusPresentation(status).label)}
+      </span>
       ${dateTimeText ? `<span class="cctv-ticket-date">${escapeHtml(dateTimeText)}</span>` : ''}
     </div>
     <div class="cctv-ticket-case">${escapeHtml(getCaseDisplay(ticket))}</div>
@@ -690,7 +700,7 @@ function renderTickets(){
   const extras = Object.keys(grouped).filter(s=>!known.has(s));
 
   const HIDDEN = new Set(['Uncategorized','',null,undefined]);
-  const columns = [...desired, ...extras].filter(s => !HIDDEN.has(s));
+  const columns = (isCctv ? desired : [...desired, ...extras]).filter(s => !HIDDEN.has(s));
 
   wrap.style.setProperty('--cols', Math.max(1, columns.length));
 
@@ -706,7 +716,7 @@ function renderTickets(){
     header.className = 'col-header';
     header.innerHTML = `
       <div class="col-header-inner cc-kanban__header">
-        <h2 class="col-title cc-kanban__title" id="${titleId}">${escapeHtml(status)}${(isCe || isComplaints || isCctv || isFreeOrders) ? '' : ` (${count})`}</h2>
+        <h2 class="col-title cc-kanban__title" id="${titleId}">${escapeHtml(status)}${isCctv ? `<span class="cctv-lane-icon" data-cc-icon="${status === 'Escalated' ? 'triangle-alert' : status === 'Under Review' ? 'refresh-cw' : status === 'Closed' ? 'badge-check' : 'video'}" aria-hidden="true"></span>` : ''}${(isCe || isComplaints || isCctv || isFreeOrders) ? '' : ` (${count})`}</h2>
         ${(isCe || isComplaints || isCctv || isFreeOrders) ? `<span class="col-count cc-kanban__count">${count}</span>` : ''}
       </div>
     `;

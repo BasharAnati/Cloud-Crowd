@@ -316,12 +316,12 @@ function requiredControlInventory(source) {
 
 function assertDenseFilterReachable(cascade, filterGrid, width) {
   const columns = resolved(cascade, filterGrid, "grid-template-columns");
-  assert.equal(columns, "1fr", `dense filter columns at ${width}`);
+  assert.equal(columns, "repeat(2, minmax(0, 1fr))", `dense filter columns at ${width}`);
   const overflow = cascade.winner(filterGrid, "overflow")?.value || "visible";
   const maxHeight = cascade.winner(filterGrid, "max-height")?.value || "none";
   assert.doesNotMatch(overflow, /hidden|clip/, `dense filter overflow at ${width}`);
   if (/^[0-9.]+px$/.test(maxHeight)) {
-    const requiredHeight = (6 * 40) + (5 * 12);
+    const requiredHeight = (4 * 44) + (3 * 10);
     assert.ok(Number.parseFloat(maxHeight) >= requiredHeight, `dense filter max-height at ${width}`);
   }
 }
@@ -392,7 +392,7 @@ test("actual linked cascade wins legacy field surfaces in Light/Dark and preserv
     const field = element("div", { classes: ["cctv-filter-field"] }, filters);
     const input = element("input", { attributes: { type: "search" } }, field);
     const cascade = createCascade(ROOT, "cctv.html");
-    assert.equal(resolved(cascade, input, "min-height"), "40px");
+    assert.equal(resolved(cascade, input, "min-height"), "44px");
     assert.ok(resolved(cascade, input, "background").length > 0);
   }
 });
@@ -425,11 +425,11 @@ test("form and dense-filter geometry resolves at every required viewport", () =>
     const filterBody = element("body", { classes: bodyClasses("cctv.html") }, html);
     const filterGrid = element("section", { classes: ["cctv-filters", "cc-filter-bar", "cc-filter-bar--dense-six"] }, filterBody);
     const filterColumns = resolved(createCascade(ROOT, "cctv.html", { viewportWidth: width }), filterGrid, "grid-template-columns");
-    const expected = width > 1024
-      ? "minmax(240px, 1.25fr) repeat(5, minmax(130px, 1fr))"
-      : width > 620
-        ? "repeat(2, minmax(0, 1fr))"
-        : "1fr";
+    const expected = width > 1180
+      ? "minmax(240px, 1.7fr) repeat(5, minmax(128px, 1fr))"
+      : width > 700
+        ? "minmax(240px, 2fr) repeat(2, minmax(150px, 1fr))"
+        : "repeat(2, minmax(0, 1fr))";
     assert.equal(filterColumns, expected, `dense filter ${width}`);
   }
   assert.match(read("assets/css/components/forms.css"), /input\[type="file"\][\s\S]*overflow:\s*hidden/);
@@ -445,8 +445,8 @@ test("dense Operations filters remain fully reachable at narrow widths", () => {
   }
 
   for (const [width, css] of [
-    [360, "@media (max-width: 360px) { .cc-filter-bar--dense-six { max-height: 40px; overflow: hidden; } }"],
-    [320, "@media (max-width: 320px) { body .cctv-filters.cc-filter-bar--dense-six { max-height: 40px; overflow: clip; } }"]
+    [360, "@media (max-width: 360px) { body.cctv-v2 .cctv-filters.cc-filter-bar--dense-six { max-height: 40px; overflow: hidden; } }"],
+    [320, "@media (max-width: 320px) { body.cctv-v2 .cctv-filters.cc-filter-bar--dense-six { max-height: 40px; overflow: clip; } }"]
   ]) {
     const html = element("html", { attributes: { "data-theme": "light" } });
     const body = element("body", { classes: bodyClasses("cctv.html") }, html);

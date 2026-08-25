@@ -250,8 +250,8 @@ test("Operations whole-board empty, unknown, missing, alias, and no interaction 
     assert.equal(runtime.root.children.length, expectedChildren, `${section} empty behavior`);
   }
   const unknown = operationRuntime("cctv", [{ caseNumber: "U-1", status: "Future State" }, { caseNumber: "M-1" }]);
-  assert.equal(unknown.root.querySelectorAll(".group").length, 4, "unknown non-empty status appends a column");
-  assert.equal(unknown.root.querySelectorAll(".ticket-card").length, 1, "missing status remains hidden");
+  assert.equal(unknown.root.querySelectorAll(".group").length, 3, "CCTV keeps exactly its configured lanes");
+  assert.equal(unknown.root.querySelectorAll(".ticket-card").length, 0, "unsupported and missing CCTV statuses remain hidden");
   const ce = operationRuntime("ce", [{ orderNumber: "O-1", status: "Pending (Customer Call Required)" }]);
   assert.match(ce.root.children[2].children[0].innerHTML, /Pending \(Call Back\)/);
   assert.doesNotMatch(read("js/tickets-render.js"), /draggable|droppable|dragstart|collapsed|aria-expanded/i);

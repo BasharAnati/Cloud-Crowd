@@ -541,7 +541,7 @@ test("twenty-five isolated executable mutations fail their intended dialog contr
     ["preserve reset", runtime, s => s.replace("entry.element.classList.remove", "entry.element.querySelector('form')?.reset(); entry.element.classList.remove"), s => assert.doesNotMatch(s, /querySelector\('form'\).*reset/)],
     ["cancel retains parent", confirmation, s => s.replace("global.CloudCrowdOverlay.close(id", "global.CloudCrowdOverlay.close(global.CloudCrowdOverlay.top().id); global.CloudCrowdOverlay.close(id"), s => assert.doesNotMatch(s, /top\(\)\.id/)],
     ["media retains parent", media, s => s.replace("window.CloudCrowdOverlay.close(viewer.id", "window.CloudCrowdOverlay.close('parent'"), s => assert.match(s, /close\(viewer\.id/)],
-    ["history identity", history, s => s.replace("encodeURIComponent(ticketId)", "encodeURIComponent('wrong')"), s => assert.match(s, /encodeURIComponent\(ticketId\)/)],
+    ["history identity", history, s => s.replaceAll("encodeURIComponent(ticketId)", "encodeURIComponent('wrong')"), s => assert.match(s, /encodeURIComponent\(ticketId\)/)],
     ["admin fresh user", read("anati-admin.html"), s => s.replace('document.getElementById("user-id").value = user.userId;', 'document.getElementById("user-id").value ||= user.userId;'), s => assert.match(s, /getElementById\("user-id"\)\.value = user\.userId/)],
     ["final unlock", runtime, s => s.replace("lockOwners.delete(ownerId);", "return;"), s => assert.match(s, /lockOwners\.delete\(ownerId\)/)],
     ["second owner retained", runtime, s => s.replace("lockOwners.delete(ownerId);", "lockOwners.clear();"), s => assert.match(s, /lockOwners\.delete\(ownerId\)/)],

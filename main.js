@@ -615,13 +615,17 @@ function registerOperationalOverlays() {
   }
   if (drawer) {
     window.CloudCrowdOverlay.register(drawer, {
-      type: 'drawer',
+      type: _currentSection === 'cctv' ? 'dialog' : 'drawer',
       panel: '.drawer-panel',
       backdrop: '.drawer-backdrop',
       dismissOnEscape: true,
       dismissOnBackdrop: true,
       initialFocus: '.drawer-close',
       lockScroll: true,
+      onBeforeClose: ({ reason }) => {
+        if (_currentSection !== 'cctv' || reason !== 'backdrop') return true;
+        return !drawer.querySelector('#drawer-edit-form');
+      },
       onAfterClose: () => { drawerIndex = null; }
     });
   }
@@ -941,17 +945,31 @@ function buildCctvAttachmentsRow(ticket){
 }
 
 function buildCctvDrawerReadonly(ticket){
+  const group = (title, rows, className = '') => {
+    const content = rows.filter(Boolean).join('');
+    if (!content) return '';
+    return `<section class="cctv-detail-group ${className}"><h3>${escapeHtml(title)}</h3><div class="cctv-detail-group__grid">${content}</div></section>`;
+  };
   const html = [
-    cctvDetailRow('branch', 'Branch', ticket.branch),
-    cctvDetailRow('date-time', 'Date & Time', formatCctvDateTime(ticket)),
-    cctvDetailRow('camera', 'Camera', ticket.cameras),
-    cctvDetailRow('section', 'Section', ticket.sections),
-    cctvDetailRow('staff', 'Staff', ticket.staff),
-    cctvDetailRow('review-type', 'Review Type', ticket.reviewType),
-    cctvDetailRow('violated-policy', 'Violated Policy', ticket.violations),
-    cctvDetailRow('details', 'Details', ticket.notes || ticket.note || ticket.caseDescription),
-    cctvDetailRow('action-taken', 'Action Taken', ticket.actionTaken),
-    buildCctvAttachmentsRow(ticket)
+    group('Observation Context', [
+      cctvDetailRow('branch', 'Branch', ticket.branch),
+      cctvDetailRow('date-time', 'Date & Time', formatCctvDateTime(ticket)),
+      cctvDetailRow('review-type', 'Review Type', ticket.reviewType)
+    ]),
+    group('Footage & Location', [
+      cctvDetailRow('camera', 'Camera', ticket.cameras),
+      cctvDetailRow('section', 'Section', ticket.sections)
+    ]),
+    group('People & Policy', [
+      cctvDetailRow('staff', 'Staff', ticket.staff),
+      cctvDetailRow('violated-policy', 'Violated Policy', ticket.violations)
+    ]),
+    group('Details', [
+      cctvDetailRow('details', 'Details/Notes', ticket.notes || ticket.note || ticket.caseDescription)
+    ], 'cctv-detail-group--wide'),
+    group('Action Taken', [
+      cctvDetailRow('action-taken', 'Action Taken', ticket.actionTaken)
+    ], 'cctv-detail-group--wide')
   ].filter(Boolean).join('');
 
   return html || '<div class="no-tickets full-span">No details.</div>';
@@ -1120,31 +1138,93 @@ function createDrawerHistoryTrigger(ticket) {
   return historyButton;
 }
 
+function setCctvTicketModalView(view, ticket){
+  const drawer = document.getElementById('ticket-drawer');
+  if (!drawer) return;
+  const detailsTab = document.getElementById('drawer-details-tab');
+  const historyTab = document.getElementById('drawer-history-tab');
+  const detailsPanel = document.getElementById('drawer-body');
+  const historyPanel = document.getElementById('drawer-history');
+  if (!detailsTab || !historyTab || !detailsPanel || !historyPanel) return;
+
+  const showHistory = view === 'history';
+  detailsTab.setAttribute('aria-selected', String(!showHistory));
+  historyTab.setAttribute('aria-selected', String(showHistory));
+  detailsTab.tabIndex = showHistory ? -1 : 0;
+  historyTab.tabIndex = showHistory ? 0 : -1;
+  detailsPanel.hidden = showHistory;
+  historyPanel.hidden = !showHistory;
+  drawer.dataset.view = showHistory ? 'history' : 'details';
+
+  if (showHistory && historyPanel.dataset.loaded !== 'true') {
+    historyPanel.dataset.loaded = 'true';
+    if (!ticket?._id) {
+      historyPanel.innerHTML = '<div class="history-state history-state--error">No ticket id found.</div>';
+    } else {
+      viewTicketHistory(ticket._id, historyTab, historyPanel);
+    }
+  }
+}
+
+function bindCctvTicketModalTabs(ticket){
+  const detailsTab = document.getElementById('drawer-details-tab');
+  const historyTab = document.getElementById('drawer-history-tab');
+  const historyPanel = document.getElementById('drawer-history');
+  if (!detailsTab || !historyTab || !historyPanel) return;
+  historyPanel.dataset.loaded = 'false';
+  historyPanel.innerHTML = '';
+  detailsTab.onclick = () => setCctvTicketModalView('details', ticket);
+  historyTab.onclick = () => setCctvTicketModalView('history', ticket);
+  [detailsTab, historyTab].forEach((tab, index, tabs) => {
+    tab.onkeydown = (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      event.preventDefault();
+      const next = tabs[index === 0 ? 1 : 0];
+      next.click();
+      next.focus();
+    };
+  });
+  setCctvTicketModalView('details', ticket);
+}
+
 function openTicketDrawer(index, trigger){
   drawerIndex = index;
   const ticket = tickets[_currentSection][index];
   const drawer = document.getElementById('ticket-drawer');
   if (!drawer) return;
 
-  const line = `${drawerCaseLabel()}: <span id="drawer-caseNumber"></span>`;
-  drawer.querySelector('.drawer-case').innerHTML = line;
-  document.getElementById('drawer-caseNumber').textContent = getCaseDisplay(ticket);
+  if (_currentSection === 'cctv') {
+    drawer.querySelector('.drawer-case').textContent = 'Ticket details';
+    document.getElementById('drawer-title').innerHTML = '<span id="drawer-caseNumber"></span>';
+    document.getElementById('drawer-caseNumber').textContent = getCaseDisplay(ticket);
+  } else {
+    const line = `${drawerCaseLabel()}: <span id="drawer-caseNumber"></span>`;
+    drawer.querySelector('.drawer-case').innerHTML = line;
+    document.getElementById('drawer-caseNumber').textContent = getCaseDisplay(ticket);
+  }
 
   const titleEl = document.getElementById('drawer-title');
   const metaEl  = document.getElementById('drawer-meta');
   const bodyEl  = document.getElementById('drawer-body');
   const actions = ensureDrawerActionsContainer();
 
-  titleEl.textContent = displayStatusName(ticket.status || 'Details');
-  titleEl.style.color = statusColor(ticket.status);
+  if (_currentSection === 'cctv') {
+    titleEl.style.removeProperty('color');
+    drawer.dataset.mode = 'view';
+    bindCctvTicketModalTabs(ticket);
+  } else {
+    titleEl.textContent = displayStatusName(ticket.status || 'Details');
+    titleEl.style.color = statusColor(ticket.status);
+  }
 
   // شارة الحالة + رابط السجل
-   metaEl.innerHTML = `
+  metaEl.innerHTML = `
     <span class="meta-badge cc-status ${ticketStatusToneClass(ticket.status)}">
+      ${_currentSection === 'cctv' ? `<span class="cctv-status-icon" data-cc-icon="${ticket.status === 'Escalated' ? 'triangle-alert' : ticket.status === 'Under Review' ? 'refresh-cw' : ticket.status === 'Closed' ? 'badge-check' : 'video'}" aria-hidden="true"></span>` : ''}
       ${escapeHtml(ticketStatusPresentation(ticket.status || 'Uncategorized').label)}
     </span>
   `;
-  metaEl.appendChild(createDrawerHistoryTrigger(ticket));
+  if (_currentSection !== 'cctv') metaEl.appendChild(createDrawerHistoryTrigger(ticket));
 
   // محتوى القراءة
   bodyEl.innerHTML = buildDrawerReadonly(ticket);
@@ -1192,6 +1272,13 @@ function enterDrawerEditMode(){
   const actions = ensureDrawerActionsContainer();
   document.getElementById('drawer-title').textContent = `Edit • ${displayStatusName(ticket.status||'')}`;
 
+  const drawer = document.getElementById('ticket-drawer');
+  if (_currentSection === 'cctv' && drawer) {
+    drawer.dataset.mode = 'edit';
+    const historyPanel = document.getElementById('drawer-history');
+    if (historyPanel) historyPanel.hidden = true;
+    bodyEl.hidden = false;
+  }
   bodyEl.innerHTML = `<form id="drawer-edit-form">${buildDrawerEditForm(ticket)}</form>`;
   if (actions){
     actions.innerHTML = `
