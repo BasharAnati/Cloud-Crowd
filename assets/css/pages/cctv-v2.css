@@ -56,6 +56,67 @@ html[data-theme="dark"] body.cctv-v2 {
   --cctv-v2-shadow: 0 18px 48px rgb(0 0 0 / 36%);
 }
 
+@media (hover: hover) and (pointer: fine) {
+  html:has(> body.cctv-v2) {
+    scrollbar-width: thin;
+    scrollbar-color: #8091a2 transparent;
+  }
+
+  html[data-theme="dark"]:has(> body.cctv-v2) {
+    scrollbar-color: #657483 transparent;
+  }
+
+  html:has(> body.cctv-v2)::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  html:has(> body.cctv-v2)::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  html:has(> body.cctv-v2)::-webkit-scrollbar-thumb {
+    background: #8091a2;
+    border-radius: 999px;
+  }
+
+  html:has(> body.cctv-v2)::-webkit-scrollbar-thumb:hover,
+  html:has(> body.cctv-v2)::-webkit-scrollbar-thumb:active {
+    background: #647789;
+  }
+
+  html[data-theme="dark"]:has(> body.cctv-v2)::-webkit-scrollbar-thumb {
+    background: #657483;
+  }
+
+  html[data-theme="dark"]:has(> body.cctv-v2)::-webkit-scrollbar-thumb:hover,
+  html[data-theme="dark"]:has(> body.cctv-v2)::-webkit-scrollbar-thumb:active {
+    background: #7b8a99;
+  }
+
+  body.cctv-v2 #cctv-app-sidebar.cc-shell-sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: #566b7c transparent;
+  }
+
+  body.cctv-v2 #cctv-app-sidebar.cc-shell-sidebar::-webkit-scrollbar {
+    width: 7px;
+  }
+
+  body.cctv-v2 #cctv-app-sidebar.cc-shell-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  body.cctv-v2 #cctv-app-sidebar.cc-shell-sidebar::-webkit-scrollbar-thumb {
+    background: #566b7c;
+    border-radius: 999px;
+  }
+
+  body.cctv-v2 #cctv-app-sidebar.cc-shell-sidebar::-webkit-scrollbar-thumb:hover,
+  body.cctv-v2 #cctv-app-sidebar.cc-shell-sidebar::-webkit-scrollbar-thumb:active {
+    background: #6c8294;
+  }
+}
+
 body.cctv-v2 .cctv-module-shell.cc-shell-layout {
   display: grid;
   grid-template-columns: clamp(204px, 15vw, 216px) minmax(0, 1fr);
