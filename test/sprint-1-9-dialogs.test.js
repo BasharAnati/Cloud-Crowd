@@ -223,7 +223,8 @@ function renderOperationsTickets(source = read("js/tickets-render.js")) {
   });
   const productionFunctions = [
     "bandClassForStatus", "getCaseDisplay", "ticketStatusPresentation", "ticketStatusToneClass",
-    "formatTicketDate", "arrayText", "getCctvCardContent", "makeTicketCardInteractive", "renderTickets"
+    "formatTicketDate", "arrayText", "cctvCardValue", "formatCctvCardDate", "getCctvCardObservationDate",
+    "getCctvCardContent", "makeTicketCardInteractive", "renderTickets"
   ].map((name) => functionSource(source, name)).join("\n");
   new vm.Script(productionFunctions);
   vm.runInContext(`${productionFunctions}\nthis.renderOperationsTickets = renderTickets;`, context, { filename: "tickets-render.integration.js" });

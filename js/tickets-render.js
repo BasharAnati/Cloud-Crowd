@@ -351,6 +351,46 @@ function arrayText(value){
   return Array.isArray(value) ? value.join(', ') : String(value || '');
 }
 
+function cctvCardValue(value){
+  return arrayText(value).trim() || '—';
+}
+
+function formatCctvCardDate(value){
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const parsed = new Date(raw);
+  return isNaN(parsed) ? raw : parsed.toLocaleDateString('en-US');
+}
+
+function getCctvCardObservationDate(ticket){
+  const date = String(ticket.date || '').trim();
+  const time = String(ticket.time || '').trim();
+  if (date) {
+    const formattedDate = formatCctvCardDate(date);
+    return {
+      header: formattedDate,
+      snapshot: [formattedDate, time].filter(Boolean).join(' ')
+    };
+  }
+
+  const dateTime = String(ticket.dateTime || '').trim();
+  if (!dateTime) return { header: '', snapshot: '' };
+
+  const parsed = new Date(dateTime);
+  if (isNaN(parsed)) return { header: dateTime, snapshot: dateTime };
+
+  const formattedDate = parsed.toLocaleDateString('en-US');
+  const hasExplicitTime = /(?:T|\s)\d{1,2}:\d{2}/.test(dateTime);
+  if (!hasExplicitTime) return { header: formattedDate, snapshot: formattedDate };
+
+  const formattedTime = parsed.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+  return { header: formattedDate, snapshot: `${formattedDate} ${formattedTime}` };
+}
+
 function uniqueTicketValues(sectionTickets, field){
   const values = new Set();
   sectionTickets.forEach(ticket => {
@@ -441,38 +481,55 @@ function cctvTicketMatchesFilters(ticket, filters){
 }
 
 function getCctvCardContent(ticket){
-  const status = ticket.status || 'Uncategorized';
-  const statusIcon = status === 'Escalated'
-    ? 'triangle-alert'
-    : status === 'Under Review'
-      ? 'refresh-cw'
-      : status === 'Closed'
-        ? 'badge-check'
-        : 'video';
-  const dateText = formatTicketDate(ticket);
-  const timeText = ticket.time ? String(ticket.time) : '';
-  const dateTimeText = [dateText, timeText].filter(Boolean).join(' ');
-  const field = (label, value) => {
-    const text = arrayText(value);
-    return text ? `<span><strong>${label}</strong>${escapeHtml(text)}</span>` : '';
-  };
+  const status = ticket.status;
+  const statusIcon = ({
+    Escalated: 'triangle-alert',
+    'Under Review': 'refresh-cw',
+    Closed: 'badge-check'
+  })[status];
+  const observationDate = getCctvCardObservationDate(ticket);
+  const snapshotField = (icon, label, value) => `
+    <div class="cctv-evidence-cell">
+      <div class="cctv-evidence-label">
+        <span data-cc-icon="${icon}" aria-hidden="true"></span>
+        <span>${label}</span>
+      </div>
+      <div class="cctv-evidence-value">${escapeHtml(cctvCardValue(value))}</div>
+    </div>
+  `;
+  const supportingRow = (icon, label, value) => `
+    <div class="cctv-supporting-row">
+      <div class="cctv-supporting-label">
+        <span data-cc-icon="${icon}" aria-hidden="true"></span>
+        <span>${label}</span>
+      </div>
+      <div class="cctv-supporting-value">${escapeHtml(cctvCardValue(value))}</div>
+    </div>
+  `;
 
   return `
     <div class="cctv-ticket-top">
       <span class="cctv-status-pill cc-status ${ticketStatusToneClass(status)}" data-cctv-status-identity="${escapeHtml(status)}">
-        <span class="cctv-status-icon" data-cc-icon="${statusIcon}" aria-hidden="true"></span>
+        ${statusIcon ? `<span class="cctv-status-icon" data-cc-icon="${statusIcon}" aria-hidden="true"></span>` : ''}
         ${escapeHtml(ticketStatusPresentation(status).label)}
       </span>
-      ${dateTimeText ? `<span class="cctv-ticket-date">${escapeHtml(dateTimeText)}</span>` : ''}
+      <span class="cctv-ticket-date">${escapeHtml(cctvCardValue(observationDate.header))}</span>
     </div>
     <div class="cctv-ticket-case">${escapeHtml(getCaseDisplay(ticket))}</div>
     <div class="cctv-ticket-branch">${escapeHtml(ticket.branch || 'Branch not specified')}</div>
-    <div class="cctv-ticket-grid">
-      ${field('Review Type', ticket.reviewType)}
-      ${field('Cameras', ticket.cameras)}
-      ${field('Sections', ticket.sections)}
-      ${field('Staff', ticket.staff)}
-      ${field('Policies', ticket.violations)}
+    <div class="cctv-ticket-accent" data-cctv-status-accent="${escapeHtml(status)}" aria-hidden="true"></div>
+    <section class="cctv-evidence-snapshot" aria-label="Evidence Snapshot">
+      <div class="cctv-evidence-heading">Evidence Snapshot</div>
+      <div class="cctv-evidence-grid">
+        ${snapshotField('video', 'Camera', ticket.cameras)}
+        ${snapshotField('calendar-check', 'Date', observationDate.snapshot)}
+        ${snapshotField('users', 'Staff', ticket.staff)}
+      </div>
+    </section>
+    <div class="cctv-supporting-rows">
+      ${supportingRow('clipboard-list', 'Review Type', ticket.reviewType)}
+      ${supportingRow('layout-dashboard', 'Section', ticket.sections)}
+      ${supportingRow('shield-check', 'Violated Policy', ticket.violations)}
     </div>
   `;
 }

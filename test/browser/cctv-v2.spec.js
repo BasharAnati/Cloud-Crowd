@@ -5,10 +5,27 @@ const { test, expect, waitForSettledPage } = require('./fixtures');
 const ROOT = path.resolve(__dirname, '..', '..');
 const APPROVED_DARK_MODAL = 'rgb(27, 37, 48)';
 const VISUAL_CAPTURE_DIR = path.join(ROOT, 'artifacts', 'cctv-v2-visual-review');
+const EVIDENCE_CAPTURE_NAMES = new Set([
+  '1440-light-evidence-cards.png',
+  '1440-dark-evidence-cards.png',
+  '768-light-evidence-card.png',
+  '390-light-evidence-card.png',
+  '390-dark-evidence-card.png',
+  '320-light-evidence-card.png'
+]);
 
 async function captureVisualReview(page, filename, fullPage = true) {
+  if (process.env.CCTV_EVIDENCE_CAPTURE_ONLY === '1' && !EVIDENCE_CAPTURE_NAMES.has(filename)) return;
   fs.mkdirSync(VISUAL_CAPTURE_DIR, { recursive: true });
   await page.screenshot({ path: path.join(VISUAL_CAPTURE_DIR, filename), fullPage });
+}
+
+async function captureEvidenceReview(page, filename, desktop = false) {
+  fs.mkdirSync(VISUAL_CAPTURE_DIR, { recursive: true });
+  const target = desktop
+    ? page.locator('#tickets')
+    : page.locator('.cctv-column:visible .cctv-ticket-card').first();
+  await target.screenshot({ path: path.join(VISUAL_CAPTURE_DIR, filename) });
 }
 
 async function visualMetrics(page) {
@@ -255,7 +272,7 @@ test.describe('CCTV Precision Operations V2', () => {
         expect(metrics.hero.height).toBeLessThanOrEqual(100);
         expect(metrics.summary.height).toBeLessThanOrEqual(76);
         expect(metrics.filters.height).toBeLessThanOrEqual(86);
-        expect(metrics.card.height).toBeLessThanOrEqual(245);
+        expect(metrics.card.height).toBeLessThanOrEqual(360);
         await captureVisualReview(page, '1440-light-main.png');
       }
       if (width === 390) {
@@ -397,7 +414,7 @@ test.describe('CCTV Precision Operations V2', () => {
     await expect(page.locator('.cctv-column').nth(0).locator('[data-cc-icon-rendered="triangle-alert"]')).toHaveCount(1);
     await expect(page.locator('.cctv-column').nth(2).locator('[data-cc-icon-rendered="badge-check"]')).toHaveCount(2);
     await expect(reviewCard.locator('.cctv-ticket-case')).toContainText('CCTV-S116-1');
-    await expect(reviewCard.locator('.cctv-ticket-grid')).toBeVisible();
+    await expect(reviewCard.locator('.cctv-evidence-snapshot')).toBeVisible();
     expect(await reviewCard.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
   });
 
@@ -611,6 +628,131 @@ test.describe('CCTV Precision Operations V2', () => {
     await openCctv(page, 1440, 'light', 2);
     await expectExactCctvLanes(page);
     await expect(page.locator('#cctv-stat-total')).toHaveText('3');
+  });
+
+  test('Evidence Snapshot preserves every approved field, status accent, and observation date semantic', async ({ populatedPage: page }) => {
+    await routeCctvTickets(page, [
+      {
+        caseNumber: 'CCTV-EVIDENCE-1', status: 'Escalated', branch: 'Swefieh Village Operations Annex',
+        date: '2026-08-20', time: '09:15 AM', cameras: ['Back of Kitchen', 'Prep Back Area'],
+        staff: ['Olorunsola oluwafemi bk', 'Mohammed Abu Abdullah'], reviewType: 'Recorded',
+        sections: ['Kitchen', 'Prep Main Stove'], violations: ['Kitchen Tools Compliance', 'Safety/Compliance']
+      },
+      { caseNumber: 'CCTV-EVIDENCE-2', status: 'Under Review', branch: 'Wadi Saqra', dateTime: '2026-08-21T10:30:00Z' },
+      { caseNumber: 'CCTV-EVIDENCE-3', status: 'Closed', branch: 'Manara', dateTime: '2026-08-22' }
+    ]);
+    await openCctv(page, 1440, 'light', 3);
+
+    const card = page.locator('.cctv-ticket-card').filter({ hasText: 'CCTV-EVIDENCE-1' });
+    await expect(card).toHaveCount(1);
+    await expect(card.locator('.cctv-status-pill')).toContainText('Escalated');
+    await expect(card.locator('.cctv-ticket-date')).toHaveText('8/20/2026');
+    await expect(card.locator('.cctv-ticket-case')).toHaveText('CCTV-EVIDENCE-1');
+    await expect(card.locator('.cctv-ticket-branch')).toHaveText('Swefieh Village Operations Annex');
+    await expect(card.locator('.cctv-evidence-snapshot')).toContainText('Evidence Snapshot');
+    await expect(card.locator('.cctv-evidence-snapshot')).toContainText('Back of Kitchen, Prep Back Area');
+    await expect(card.locator('.cctv-evidence-snapshot')).toContainText('8/20/2026 09:15 AM');
+    await expect(card.locator('.cctv-evidence-snapshot')).toContainText('Olorunsola oluwafemi bk, Mohammed Abu Abdullah');
+    await expect(card.locator('.cctv-supporting-rows')).toContainText('Recorded');
+    await expect(card.locator('.cctv-supporting-rows')).toContainText('Kitchen, Prep Main Stove');
+    await expect(card.locator('.cctv-supporting-rows')).toContainText('Kitchen Tools Compliance, Safety/Compliance');
+    await expect(card.locator('[data-cc-icon-rendered="video"]')).toHaveCount(1);
+    await expect(card.locator('[data-cc-icon-rendered="calendar-check"]')).toHaveCount(1);
+    await expect(card.locator('[data-cc-icon-rendered="users"]')).toHaveCount(1);
+    await expect(card.locator('[data-cc-icon-rendered="clipboard-list"]')).toHaveCount(1);
+    await expect(card.locator('[data-cc-icon-rendered="layout-dashboard"]')).toHaveCount(1);
+    await expect(card.locator('[data-cc-icon-rendered="shield-check"]')).toHaveCount(1);
+
+    const structure = await card.evaluate((element) => {
+      const branch = element.querySelector('.cctv-ticket-branch');
+      const accent = element.querySelector('.cctv-ticket-accent');
+      const snapshot = element.querySelector('.cctv-evidence-snapshot');
+      return {
+        accents: element.querySelectorAll('.cctv-ticket-accent').length,
+        accentAfterBranch: Boolean(branch.compareDocumentPosition(accent) & Node.DOCUMENT_POSITION_FOLLOWING),
+        snapshotAfterAccent: Boolean(accent.compareDocumentPosition(snapshot) & Node.DOCUMENT_POSITION_FOLLOWING),
+        accentHorizontal: accent.getBoundingClientRect().width > accent.getBoundingClientRect().height * 20,
+        oldVerticalAccent: !['none', 'normal'].includes(getComputedStyle(element, '::before').content)
+      };
+    });
+    expect(structure).toEqual({
+      accents: 1,
+      accentAfterBranch: true,
+      snapshotAfterAccent: true,
+      accentHorizontal: true,
+      oldVerticalAccent: false
+    });
+
+    const accents = await page.locator('.cctv-ticket-accent').evaluateAll((nodes) => nodes.map((node) => ({
+      status: node.dataset.cctvStatusAccent,
+      color: getComputedStyle(node).backgroundColor
+    })));
+    expect(accents).toEqual([
+      { status: 'Escalated', color: 'rgb(199, 68, 68)' },
+      { status: 'Under Review', color: 'rgb(168, 103, 15)' },
+      { status: 'Closed', color: 'rgb(40, 122, 87)' }
+    ]);
+  });
+
+  test('Evidence Snapshot keeps fixed missing fields and never invents an observation time', async ({ populatedPage: page }) => {
+    await routeCctvTickets(page, [{
+      caseNumber: 'CCTV-MISSING-1', status: 'Closed', branch: '', date: '2026-08-23',
+      cameras: [], staff: [], sections: [], violations: [], reviewType: ''
+    }]);
+    await openCctv(page, 1440, 'light', 1);
+    const card = page.locator('.cctv-ticket-card');
+    await expect(card.locator('.cctv-ticket-branch')).toHaveText('Branch not specified');
+    await expect(card.locator('.cctv-ticket-date')).toHaveText('8/23/2026');
+    await expect(card.locator('.cctv-evidence-value')).toHaveText(['\u2014', '8/23/2026', '\u2014']);
+    await expect(card.locator('.cctv-supporting-value')).toHaveText(['\u2014', '\u2014', '\u2014']);
+    await expect(card).not.toContainText('12:00');
+  });
+
+  test('Evidence Snapshot reflows by card width and stacks at every required mobile width', async ({ populatedPage: page }) => {
+    for (const width of [1440, 1280, 1024, 768, 430, 390, 360, 320]) {
+      await openCctv(page, width, 'light');
+      const layout = await page.locator('.cctv-column:visible .cctv-ticket-card').first().evaluate((card) => ({
+        cardWidth: card.getBoundingClientRect().width,
+        columns: getComputedStyle(card.querySelector('.cctv-evidence-grid')).gridTemplateColumns.split(' ').length,
+        clipped: card.scrollWidth > card.clientWidth + 1
+      }));
+      expect(layout.clipped).toBe(false);
+      if (width >= 1280) expect(layout.columns).toBe(3);
+      if (width <= 768) expect(layout.columns).toBe(1);
+      if (width === 1024) expect(layout.columns).toBeLessThanOrEqual(2);
+    }
+  });
+
+  test('captures the six approved Evidence Snapshot card review images', async ({ populatedPage: page }) => {
+    const evidenceTickets = [
+      {
+        caseNumber: 'CCTV-494', status: 'Escalated', branch: 'Wadi Saqra', date: '2026-05-07', time: '09:15 AM',
+        cameras: ['3rd Pepsi Kitchen', 'Back of Kitchen'], staff: ['Amer Abu Laila', 'Mohammed Abu Abdullah'],
+        reviewType: 'Recorded', sections: ['Kitchen', 'Prep Main Stove'], violations: ['Cleanliness', 'Safety/Compliance']
+      },
+      {
+        caseNumber: 'CCTV-491', status: 'Under Review', branch: 'Wadi Saqra', dateTime: '2026-05-06T10:30:00Z',
+        cameras: ['3rd Pepsi Kitchen'], staff: ['Abdul Qadir'], reviewType: 'Live', sections: ['Kitchen'], violations: ['Cleanliness']
+      },
+      {
+        caseNumber: 'CCTV-467', status: 'Closed', branch: 'Wadi Saqra', date: '2026-05-01',
+        cameras: ['3rd Pepsi Kitchen'], staff: ['Unknown'], reviewType: 'Recorded', sections: ['Kitchen'], violations: ['Gloves']
+      }
+    ];
+    await routeCctvTickets(page, evidenceTickets);
+
+    await openCctv(page, 1440, 'light', 3);
+    await captureEvidenceReview(page, '1440-light-evidence-cards.png', true);
+    await openCctv(page, 1440, 'dark', 3);
+    await captureEvidenceReview(page, '1440-dark-evidence-cards.png', true);
+    await openCctv(page, 768, 'light', 3);
+    await captureEvidenceReview(page, '768-light-evidence-card.png');
+    await openCctv(page, 390, 'light', 3);
+    await captureEvidenceReview(page, '390-light-evidence-card.png');
+    await openCctv(page, 390, 'dark', 3);
+    await captureEvidenceReview(page, '390-dark-evidence-card.png');
+    await openCctv(page, 320, 'light', 3);
+    await captureEvidenceReview(page, '320-light-evidence-card.png');
   });
 
   test('read-only Details hides deferred PDF metadata while existing edit upload remains available', async ({ populatedPage: page }) => {
@@ -830,7 +972,7 @@ test.describe('CCTV Precision Operations V2', () => {
       const reviewIcon = document.querySelector('[data-cctv-status-identity="Under Review"] [data-cc-icon-rendered]');
       reviewIcon.dataset.ccIconRendered = 'triangle-alert';
 
-      const metadata = document.querySelector('.cctv-ticket-grid');
+      const metadata = document.querySelector('.cctv-evidence-snapshot');
       metadata.style.maxHeight = '8px';
       metadata.style.overflow = 'hidden';
       const board = document.querySelector('#tickets');
