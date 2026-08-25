@@ -64,6 +64,7 @@
   <script src="js/auth.js" defer></script>
   <script src="js/history.js" defer></script>
   <script src="js/tickets-render.js" defer></script>
+  <script src="js/cctv-responsive.js" defer></script>
   <script src="js/media-viewer.js" defer></script>
   <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
   <link rel="stylesheet" href="assets/css/components/buttons.css">
@@ -79,8 +80,9 @@
   <link rel="stylesheet" href="assets/css/pages/cctv-v2.css">
 </head>
 <body class="cctv-page cctv-ops-center cctv-v2">
-  <div class="cctv-module-shell cc-shell-layout">
+  <div class="cctv-module-shell cc-shell-layout has-responsive-navigation">
     <aside id="cctv-app-sidebar" aria-label="CCTV Operations Center navigation"></aside>
+    <button class="cctv-nav-backdrop" id="cctv-nav-backdrop" type="button" aria-label="Close application navigation" hidden></button>
 
     <main class="cctv-workspace cctv-main-area cc-page-container cc-page-container--workspace" id="main-content">
       <header id="cctv-app-topbar" role="banner"></header>
@@ -123,39 +125,50 @@
           <label for="cctv-search">Search</label>
           <input id="cctv-search" type="search" placeholder="Case, branch, staff, camera, section, or notes">
         </div>
-        <div class="cctv-filter-field">
-          <label for="cctv-status-filter">Status</label>
-          <select id="cctv-status-filter">
-            <option value="">All statuses</option>
-          </select>
-        </div>
-        <div class="cctv-filter-field">
-          <label for="cctv-branch-filter">Branch</label>
-          <select id="cctv-branch-filter">
-            <option value="">All branches</option>
-          </select>
-        </div>
-        <div class="cctv-filter-field">
-          <label for="cctv-review-filter">Review Type</label>
-          <select id="cctv-review-filter">
-            <option value="">All review types</option>
-          </select>
-        </div>
-        <div class="cctv-filter-field">
-          <label for="cctv-policy-filter">Violated Policy</label>
-          <select id="cctv-policy-filter">
-            <option value="">All policies</option>
-          </select>
-        </div>
-        <div class="cctv-filter-field">
-          <label for="cctv-staff-filter">Staff</label>
-          <select id="cctv-staff-filter">
-            <option value="">All staff</option>
-          </select>
+        <button class="cctv-filter-toggle" id="cctv-filter-toggle" type="button" aria-expanded="false" aria-controls="cctv-secondary-filters">
+          <span data-cc-icon="clipboard-list" aria-hidden="true"></span>
+          <span data-cctv-filter-label>Filters</span>
+        </button>
+        <div class="cctv-secondary-filters" id="cctv-secondary-filters">
+          <div class="cctv-filter-field">
+            <label for="cctv-status-filter">Status</label>
+            <select id="cctv-status-filter">
+              <option value="">All statuses</option>
+            </select>
+          </div>
+          <div class="cctv-filter-field">
+            <label for="cctv-branch-filter">Branch</label>
+            <select id="cctv-branch-filter">
+              <option value="">All branches</option>
+            </select>
+          </div>
+          <div class="cctv-filter-field">
+            <label for="cctv-review-filter">Review Type</label>
+            <select id="cctv-review-filter">
+              <option value="">All review types</option>
+            </select>
+          </div>
+          <div class="cctv-filter-field">
+            <label for="cctv-policy-filter">Violated Policy</label>
+            <select id="cctv-policy-filter">
+              <option value="">All policies</option>
+            </select>
+          </div>
+          <div class="cctv-filter-field">
+            <label for="cctv-staff-filter">Staff</label>
+            <select id="cctv-staff-filter">
+              <option value="">All staff</option>
+            </select>
+          </div>
         </div>
       </section>
 
       <div class="ticket-list cctv-board" id="ticket-list">
+        <div class="cctv-status-switcher" id="cctv-status-switcher" role="tablist" aria-label="CCTV workflow status">
+          <button id="cctv-status-tab-escalated" type="button" role="tab" aria-selected="false" data-cctv-lane="Escalated">Escalated <span data-cctv-lane-count>0</span></button>
+          <button id="cctv-status-tab-under-review" type="button" role="tab" aria-selected="false" data-cctv-lane="Under Review">Under Review <span data-cctv-lane-count>0</span></button>
+          <button id="cctv-status-tab-closed" type="button" role="tab" aria-selected="false" data-cctv-lane="Closed">Closed <span data-cctv-lane-count>0</span></button>
+        </div>
         <div id="tickets"></div>
       </div>
     </main>
@@ -178,14 +191,16 @@
     <div class="drawer-backdrop cc-drawer__backdrop"></div>
     <section class="drawer-panel cc-drawer__panel cctv-ticket-modal__panel" role="dialog" aria-modal="true" aria-labelledby="drawer-title" data-cc-overlay-panel>
       <div class="drawer-header cc-drawer__header">
-        <div>
-          <div class="drawer-case">Ticket details</div>
-          <h2 class="cc-modal-title" id="drawer-title"><span id="drawer-caseNumber"></span></h2>
+        <div class="cctv-ticket-identity">
+          <div class="drawer-meta" id="drawer-meta"></div>
+          <div class="cctv-ticket-heading">
+            <div class="drawer-case">Ticket details</div>
+            <h2 class="cc-modal-title" id="drawer-title"><span id="drawer-caseNumber"></span></h2>
+          </div>
         </div>
         <button class="drawer-close" type="button" onclick="closeTicketDrawer()" aria-label="Close">x</button>
       </div>
 
-      <div class="drawer-meta" id="drawer-meta"></div>
       <div class="cctv-ticket-tabs" role="tablist" aria-label="Ticket information">
         <button id="drawer-details-tab" class="cctv-ticket-tab" type="button" role="tab" aria-selected="true" aria-controls="drawer-body">Details</button>
         <button id="drawer-history-tab" class="cctv-ticket-tab" type="button" role="tab" aria-selected="false" aria-controls="drawer-history" tabindex="-1">History</button>
@@ -211,20 +226,19 @@
 
     window.addEventListener('load', async () => {
       if (await window.CC_PROTECTED_PAGE_READY !== true) return;
-      CloudCrowdAppShell.buildSidebar(
-        document.getElementById("cctv-app-sidebar")
-      );
-
-      CloudCrowdAppShell.buildTopbar(
-        document.getElementById("cctv-app-topbar"),
-        {
-          eyebrow: "Operations Hub",
-          title: "CCTV Operations Center",
-          userId: "cctv-current-user",
-          roleId: "cctv-current-role",
-          onLogout: logout
-        }
-      );
+      const shellController = await CloudCrowdAppShell.initializeAppShell({
+        shell: document.querySelector('.cctv-module-shell'),
+        sidebar: document.getElementById('cctv-app-sidebar'),
+        topbar: document.getElementById('cctv-app-topbar'),
+        backdrop: document.getElementById('cctv-nav-backdrop'),
+        eyebrow: 'Operations Hub',
+        title: 'Cloud Crowd',
+        userId: 'cctv-current-user',
+        roleId: 'cctv-current-role',
+        onLogout: logout,
+        navigationLabel: 'Cloud Crowd modules'
+      });
+      window.CloudCrowdCctvResponsive?.initialize(shellController);
 
       currentSection = 'cctv';
       if (typeof renderTickets === 'function') renderTickets();

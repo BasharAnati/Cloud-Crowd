@@ -4,6 +4,35 @@ const { test, expect, waitForSettledPage } = require('./fixtures');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const APPROVED_DARK_MODAL = 'rgb(27, 37, 48)';
+const VISUAL_CAPTURE_DIR = path.join(ROOT, 'artifacts', 'cctv-v2-visual-review');
+
+async function captureVisualReview(page, filename, fullPage = true) {
+  fs.mkdirSync(VISUAL_CAPTURE_DIR, { recursive: true });
+  await page.screenshot({ path: path.join(VISUAL_CAPTURE_DIR, filename), fullPage });
+}
+
+async function visualMetrics(page) {
+  return page.evaluate(() => {
+    const size = (selector) => {
+      const box = document.querySelector(selector)?.getBoundingClientRect();
+      return box ? { width: Math.round(box.width), height: Math.round(box.height) } : null;
+    };
+    return {
+      sidebar: size('#cctv-app-sidebar'),
+      hero: size('.cctv-hero'),
+      summary: size('.cctv-stats'),
+      filters: size('.cctv-filters'),
+      card: size('.cctv-ticket-card'),
+      modal: size('.cctv-ticket-modal__panel'),
+      details: size('#drawer-body'),
+      status: {
+        text: document.querySelector('#drawer-meta')?.textContent.trim() || '',
+        display: getComputedStyle(document.querySelector('#drawer-meta')).display,
+        badge: size('#drawer-meta .meta-badge')
+      }
+    };
+  });
+}
 
 async function openCctv(page, width = 1440, theme = 'light', expectedCards = 2) {
   await page.setViewportSize({ width, height: 900 });
@@ -140,9 +169,9 @@ async function expectOracleKilled(oracle) {
 }
 
 test.describe('CCTV Precision Operations V2', () => {
-  for (const width of [1440, 1280, 1024, 768, 390, 360, 320]) {
+  for (const width of [1440, 1280, 1024, 768, 430, 390, 360, 320]) {
     test(`layout remains reachable at ${width}px`, async ({ populatedPage: page }) => {
-      await openCctv(page, width, width <= 390 ? 'dark' : 'light');
+      await openCctv(page, width, width < 390 ? 'dark' : 'light');
 
       await expect(page.locator('body')).toHaveClass(/cctv-v2/);
       await expect(page.locator('.cctv-column')).toHaveCount(3);
@@ -154,15 +183,39 @@ test.describe('CCTV Precision Operations V2', () => {
         const rect = (selector) => {
           const element = document.querySelector(selector);
           const box = element.getBoundingClientRect();
-          return { x: box.x, y: box.y, width: box.width, height: box.height };
+          return { x: box.x, y: box.y, right: box.right, bottom: box.bottom, width: box.width, height: box.height };
         };
         const board = document.querySelector('#tickets');
         const kanban = document.querySelector('#tickets');
+        const sidebar = document.querySelector('#cctv-app-sidebar');
+        const topbar = document.querySelector('#cctv-app-topbar');
+        const firstCard = document.querySelector('.cctv-ticket-card');
+        const metricAlignment = [...document.querySelectorAll('.cctv-stat-card')].map((metric) => {
+          const card = metric.getBoundingClientRect();
+          const icon = metric.querySelector('.cctv-stat-icon').getBoundingClientRect();
+          const label = metric.querySelector('.cctv-stat-label').getBoundingClientRect();
+          const count = metric.querySelector('strong').getBoundingClientRect();
+          return {
+            headingCenterDelta: Math.abs((icon.top + icon.height / 2) - (label.top + label.height / 2)),
+            headingGap: label.left - icon.right,
+            countCenterDelta: Math.abs((count.left + count.width / 2) - (card.left + card.width / 2)),
+            clips: metric.scrollWidth - metric.clientWidth
+          };
+        });
         const pageOverflow = document.documentElement.scrollWidth - document.documentElement.clientWidth;
         return {
           header: rect('.cctv-hero'),
           filters: rect('.cctv-filters'),
           board: rect('#tickets'),
+          sidebar: rect('#cctv-app-sidebar'),
+          sidebarPosition: getComputedStyle(sidebar).position,
+          topbarBottom: topbar.getBoundingClientRect().bottom,
+          firstCardTop: firstCard?.getBoundingClientRect().top ?? null,
+          visibleLanes: [...document.querySelectorAll('.cctv-column')].filter((lane) => getComputedStyle(lane).display !== 'none').length,
+          switcherVisible: getComputedStyle(document.querySelector('#cctv-status-switcher')).display !== 'none',
+          secondaryFiltersHidden: document.querySelector('#cctv-secondary-filters').hidden,
+          cardClips: firstCard ? firstCard.scrollWidth - firstCard.clientWidth : 0,
+          metricAlignment,
           kanbanScrollWidth: kanban.scrollWidth,
           boardClientWidth: board.clientWidth,
           boardScrollWidth: board.scrollWidth,
@@ -173,15 +226,169 @@ test.describe('CCTV Precision Operations V2', () => {
       expect(geometry.header.height).toBeLessThan(width <= 700 ? 230 : 210);
       expect(geometry.filters.height).toBeLessThan(width <= 420 ? 350 : 220);
       expect(geometry.pageOverflow).toBeLessThanOrEqual(1);
-      if (width <= 900) {
-        expect(geometry.boardScrollWidth).toBeGreaterThan(geometry.boardClientWidth);
-        await page.locator('#tickets').evaluate((element) => element.scrollTo({ left: element.scrollWidth, behavior: 'instant' }));
-        await expect.poll(() => page.locator('#tickets').evaluate(
-          (element) => element.scrollLeft + element.offsetWidth >= element.scrollWidth - 2
-        )).toBe(true);
+      for (const metric of geometry.metricAlignment) {
+        expect(metric.headingCenterDelta).toBeLessThanOrEqual(1);
+        expect(metric.headingGap).toBeGreaterThanOrEqual(3);
+        expect(metric.headingGap).toBeLessThanOrEqual(9);
+        expect(metric.countCenterDelta).toBeLessThanOrEqual(1);
+        expect(metric.clips).toBeLessThanOrEqual(1);
       }
+      if (width <= 768) {
+        expect(geometry.sidebarPosition).toBe('fixed');
+        expect(geometry.sidebar.right).toBeLessThanOrEqual(0);
+        expect(geometry.header.y - geometry.topbarBottom).toBeLessThanOrEqual(1);
+        expect(geometry.secondaryFiltersHidden).toBe(true);
+        expect(geometry.switcherVisible).toBe(true);
+        expect(geometry.visibleLanes).toBe(1);
+        expect(geometry.boardScrollWidth).toBeLessThanOrEqual(geometry.boardClientWidth + 1);
+        expect(geometry.cardClips).toBeLessThanOrEqual(1);
+        expect(geometry.firstCardTop).toBeLessThan(844);
+      } else if (width >= 1025) {
+        expect(geometry.visibleLanes).toBe(3);
+        expect(geometry.switcherVisible).toBe(false);
+      }
+      if (width === 1440) {
+        const metrics = await visualMetrics(page);
+        console.log('CCTV_VISUAL_MAIN_1440', JSON.stringify(metrics));
+        expect(metrics.sidebar.width).toBeGreaterThanOrEqual(200);
+        expect(metrics.sidebar.width).toBeLessThanOrEqual(220);
+        expect(metrics.hero.height).toBeLessThanOrEqual(100);
+        expect(metrics.summary.height).toBeLessThanOrEqual(76);
+        expect(metrics.filters.height).toBeLessThanOrEqual(86);
+        expect(metrics.card.height).toBeLessThanOrEqual(245);
+        await captureVisualReview(page, '1440-light-main.png');
+      }
+      if (width === 390) {
+        await captureVisualReview(page, '390-light-main.png', false);
+      }
+      if (width === 768) await captureVisualReview(page, '768-light-main.png', false);
     });
   }
+
+  test('mobile navigation overlays content, contains focus, dismisses, and restores its trigger', async ({ populatedPage: page }) => {
+    await openCctv(page, 390, 'light');
+    const trigger = page.getByRole('button', { name: 'Open application navigation' });
+    await trigger.click();
+    await expect(page.locator('.cctv-module-shell')).toHaveClass(/is-nav-open/);
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('#cctv-nav-backdrop')).toBeVisible();
+    await expect(page.locator('#cctv-app-sidebar .cc-shell-nav-link.is-active')).toHaveAttribute('href', 'cctv.html');
+    await expect.poll(() => page.locator('#cctv-app-sidebar').evaluate(
+      (sidebar) => Math.abs(sidebar.getBoundingClientRect().left)
+    )).toBeLessThan(1);
+    const drawerGeometry = await page.locator('#cctv-app-sidebar').evaluate((sidebar) => {
+      const box = sidebar.getBoundingClientRect();
+      return { left: box.left, right: box.right, width: box.width, viewport: innerWidth };
+    });
+    expect(Math.abs(drawerGeometry.left)).toBeLessThan(1);
+    expect(drawerGeometry.width).toBeLessThanOrEqual(300);
+    expect(drawerGeometry.right).toBeLessThan(drawerGeometry.viewport);
+    await page.locator('#cctv-app-sidebar .cc-shell-nav-heading').first().click();
+    await expect(page.locator('.cctv-module-shell')).toHaveClass(/is-nav-open/);
+    for (let index = 0; index < 20; index += 1) {
+      await page.keyboard.press('Tab');
+      expect(await page.evaluate(() => document.getElementById('cctv-app-sidebar').contains(document.activeElement))).toBe(true);
+    }
+    await captureVisualReview(page, '390-light-navigation-drawer-open.png', false);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.cctv-module-shell')).not.toHaveClass(/is-nav-open/);
+    await expect(trigger).toBeFocused();
+
+    await trigger.click();
+    await page.locator('#cctv-nav-backdrop').click({ position: { x: 385, y: 400 } });
+    await expect(page.locator('.cctv-module-shell')).not.toHaveClass(/is-nav-open/);
+    await expect(trigger).toBeFocused();
+  });
+
+  test('mobile secondary filters disclose on demand and preserve immediate filter state', async ({ populatedPage: page }) => {
+    await openCctv(page, 390, 'light');
+    const toggle = page.locator('#cctv-filter-toggle');
+    const panel = page.locator('#cctv-secondary-filters');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(panel).toBeHidden();
+    await toggle.click();
+    await expect(panel).toBeVisible();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await captureVisualReview(page, '390-light-filters-open.png', false);
+    await page.locator('#cctv-branch-filter').selectOption('Swefieh');
+    await expect(page.locator('.cctv-ticket-card')).toHaveCount(1);
+    await expect(page.locator('.cctv-ticket-card')).toContainText('CCTV-S116-1');
+    await expect(toggle).toContainText('Filters · 1');
+    await toggle.click();
+    await expect(panel).toBeHidden();
+    await expect(page.locator('#cctv-branch-filter')).toHaveValue('Swefieh');
+  });
+
+  test('mobile status switcher exposes exactly one existing lane with matching counts and cards', async ({ populatedPage: page }) => {
+    await openCctv(page, 390, 'light');
+    const tabs = page.locator('#cctv-status-switcher [role="tab"]');
+    await expect(tabs).toHaveCount(3);
+    await expect(tabs).toContainText(['Escalated 0', 'Under Review 1', 'Closed 1']);
+    await expect(page.locator('[data-cctv-lane="Under Review"]')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('.cctv-column:visible')).toHaveCount(1);
+    await expect(page.locator('.cctv-column:visible .cctv-ticket-card')).toContainText('CCTV-S116-1');
+    await captureVisualReview(page, '390-light-status-under-review-selected.png', false);
+
+    await page.locator('[data-cctv-lane="Closed"]').click();
+    await expect(page.locator('[data-cctv-lane="Closed"]')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('.cctv-column:visible')).toHaveCount(1);
+    await expect(page.locator('.cctv-column:visible .cctv-ticket-card')).toContainText('CCTV-S116-2');
+    await page.locator('[data-cctv-lane="Escalated"]').click();
+    await expect(page.locator('.cctv-column:visible')).toContainText('No cases in this status');
+  });
+
+  test('navigation and ticket modal never own the viewport simultaneously', async ({ populatedPage: page }) => {
+    await openCctv(page, 390, 'light');
+    await openFirstTicket(page);
+    await page.getByRole('button', { name: 'Open application navigation' }).evaluate((button) => button.click());
+    await expect(page.locator('#ticket-drawer')).not.toHaveClass(/open/);
+    await expect(page.locator('.cctv-module-shell')).toHaveClass(/is-nav-open/);
+    await page.evaluate(() => window.openTicketDrawer(0));
+    await expect(page.locator('.cctv-module-shell')).not.toHaveClass(/is-nav-open/);
+    await expect(page.locator('#ticket-drawer')).toHaveClass(/open/);
+  });
+
+  test('desktop and mobile preserve identical summary, lane counts, cards, and filter outcomes', async ({ populatedPage: page }) => {
+    await openCctv(page, 1440, 'light');
+    const desktop = await page.evaluate(() => ({
+      summary: [...document.querySelectorAll('.cctv-stat-card strong')].map((node) => node.textContent.trim()),
+      lanes: [...document.querySelectorAll('.cctv-column .cc-kanban__count')].map((node) => node.textContent.trim()),
+      cards: [...document.querySelectorAll('.cctv-ticket-case')].map((node) => node.textContent.trim()).sort()
+    }));
+    await page.setViewportSize({ width: 390, height: 900 });
+    const mobile = await page.evaluate(() => ({
+      summary: [...document.querySelectorAll('.cctv-stat-card strong')].map((node) => node.textContent.trim()),
+      lanes: [...document.querySelectorAll('[data-cctv-lane-count]')].map((node) => node.textContent.trim()),
+      cards: [...document.querySelectorAll('.cctv-ticket-case')].map((node) => node.textContent.trim()).sort()
+    }));
+    expect(mobile).toEqual(desktop);
+
+    await page.locator('#cctv-filter-toggle').click();
+    await page.locator('#cctv-status-filter').selectOption('Closed');
+    await expect(page.locator('.cctv-ticket-card')).toHaveCount(1);
+    await expect(page.locator('[data-cctv-lane="Closed"]')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('.cctv-column:visible .cctv-ticket-card')).toContainText('CCTV-S116-2');
+  });
+
+  test('required dark, tablet, and narrow visual evidence is captured from real viewports', async ({ populatedPage: page }) => {
+    await openCctv(page, 1440, 'dark');
+    await captureVisualReview(page, '1440-dark-main.png', false);
+
+    await openCctv(page, 768, 'dark');
+    await openFirstTicket(page);
+    await captureVisualReview(page, '768-dark-ticket-modal.png', false);
+    await page.keyboard.press('Escape');
+
+    await openCctv(page, 390, 'dark');
+    await captureVisualReview(page, '390-dark-main.png', false);
+
+    await openCctv(page, 320, 'light');
+    await captureVisualReview(page, '320-light-main.png', false);
+
+    await openCctv(page, 320, 'dark');
+    await openFirstTicket(page);
+    await captureVisualReview(page, '320-dark-ticket-modal.png', false);
+  });
 
   test('status identities use distinct local icons and readable metadata', async ({ populatedPage: page }) => {
     await openCctv(page);
@@ -205,6 +412,21 @@ test.describe('CCTV Precision Operations V2', () => {
     expect(Math.abs((geometry.y + geometry.height / 2) - 450)).toBeLessThan(2);
     await expect(page.locator('.drawer-backdrop')).toHaveCSS('backdrop-filter', 'blur(3px)');
     await expect(page.locator('body')).toHaveClass(/cc-modal-lock/);
+    const metrics = await visualMetrics(page);
+    console.log('CCTV_VISUAL_MODAL_1440', JSON.stringify(metrics));
+    expect(metrics.modal.width).toBeGreaterThanOrEqual(720);
+    expect(metrics.modal.width).toBeLessThanOrEqual(820);
+    expect(metrics.modal.height).toBeLessThanOrEqual(700);
+    expect(metrics.details.width).toBeGreaterThanOrEqual(metrics.modal.width - 4);
+    await expect(page.locator('#drawer-meta .meta-badge')).toBeVisible();
+    await expect(page.locator('#drawer-meta .meta-badge')).toContainText('Under Review');
+    await expect(page.locator('.cctv-ticket-tabs')).toHaveCount(1);
+    await expect(page.locator('.cctv-ticket-tab')).toHaveCount(2);
+    await expect(page.getByRole('tab', { name: 'Details', exact: true })).toHaveCount(1);
+    await expect(page.getByRole('tab', { name: 'History', exact: true })).toHaveCount(1);
+    const detailColumns = await page.locator('.cctv-detail-layout').evaluate((layout) => getComputedStyle(layout).gridTemplateColumns.split(' ').length);
+    expect(detailColumns).toBe(2);
+    await captureVisualReview(page, '1440-light-ticket-modal.png', false);
 
     await panel.click({ position: { x: 20, y: 20 } });
     await expect(modal).toHaveClass(/open/);
@@ -334,6 +556,12 @@ test.describe('CCTV Precision Operations V2', () => {
     expect(dimensions.bottom).toBeLessThanOrEqual(dimensions.viewportHeight);
     expect(dimensions.horizontalOverflow).toBeLessThanOrEqual(1);
     expect(dimensions.width).toBeGreaterThanOrEqual(300);
+    const mobileDetailColumns = await page.locator('.cctv-detail-layout').evaluate((layout) => getComputedStyle(layout).gridTemplateColumns.split(' ').length);
+    expect(mobileDetailColumns).toBe(1);
+    const mobileGroupColumns = await page.locator('.cctv-detail-group__grid').evaluateAll((groups) => groups.map(
+      (group) => getComputedStyle(group).gridTemplateColumns.split(' ').length
+    ));
+    expect(mobileGroupColumns.every((count) => count === 1)).toBe(true);
   });
 
   test('Edit Save retains the existing mutation envelope and returns to read-only Details', async ({ populatedPage: page }) => {
@@ -341,7 +569,7 @@ test.describe('CCTV Precision Operations V2', () => {
     await page.route('**/.netlify/functions/tickets', async (route) => {
       if (route.request().method() !== 'PUT') return route.fallback();
       requests.push(await route.request().postDataJSON());
-      await new Promise((resolve) => setTimeout(resolve, 80));
+      await new Promise((resolve) => setTimeout(resolve, 250));
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
     });
     await page.route('**/.netlify/functions/sheets', async (route) => {
@@ -409,6 +637,7 @@ test.describe('CCTV Precision Operations V2', () => {
       await expect(page.locator('#drawer-edit-btn')).toBeVisible();
       const pageOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(pageOverflow).toBeLessThanOrEqual(1);
+      await captureVisualReview(page, `${width}-dark-ticket-modal.png`, false);
     });
   }
 

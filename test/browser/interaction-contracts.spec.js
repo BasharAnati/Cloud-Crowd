@@ -72,6 +72,11 @@ for (const [file, finalControlSelector] of kanbanCases) {
     await expect(board).toBeVisible();
     await expect(board.locator('.cc-kanban__column')).toHaveCount(file === 'free-order-share.html' ? 3 : file === 'cctv.html' || file === 'free-orders.html' ? 3 : 4);
     await expect.poll(() => board.locator('.cc-card').count()).toBeGreaterThanOrEqual(2);
+    if (file === 'cctv.html') {
+      await expect(page.locator('#cctv-status-switcher [role="tab"]')).toHaveCount(3);
+      await page.locator('[data-cctv-lane="Closed"]').click();
+      await expect(board.locator('.cc-kanban__column:visible')).toHaveCount(1);
+    }
     const finalControl = board.locator(finalControlSelector).first();
     await expect(finalControl).toBeVisible();
 
@@ -79,11 +84,15 @@ for (const [file, finalControlSelector] of kanbanCases) {
       max: node.scrollWidth - node.clientWidth,
       overflowX: getComputedStyle(node).overflowX
     }));
-    expect(overflow.max).toBeGreaterThan(1);
-    expect(['auto', 'scroll']).toContain(overflow.overflowX);
-
-    await board.evaluate((node) => node.scrollTo({ left: node.scrollWidth, behavior: 'instant' }));
-    await expect.poll(() => board.evaluate((node) => node.scrollLeft)).toBeGreaterThan(0);
+    if (file === 'cctv.html') {
+      expect(overflow.max).toBeLessThanOrEqual(1);
+      expect(['visible', 'hidden']).toContain(overflow.overflowX);
+    } else {
+      expect(overflow.max).toBeGreaterThan(1);
+      expect(['auto', 'scroll']).toContain(overflow.overflowX);
+      await board.evaluate((node) => node.scrollTo({ left: node.scrollWidth, behavior: 'instant' }));
+      await expect.poll(() => board.evaluate((node) => node.scrollLeft)).toBeGreaterThan(0);
+    }
     const visibleRegion = await finalControl.evaluate((node) => {
       const board = node.closest('.cc-kanban');
       const target = node.getBoundingClientRect();

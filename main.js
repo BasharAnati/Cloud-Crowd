@@ -953,8 +953,7 @@ function buildCctvDrawerReadonly(ticket){
   const html = [
     group('Observation Context', [
       cctvDetailRow('branch', 'Branch', ticket.branch),
-      cctvDetailRow('date-time', 'Date & Time', formatCctvDateTime(ticket)),
-      cctvDetailRow('review-type', 'Review Type', ticket.reviewType)
+      cctvDetailRow('date-time', 'Date & Time', formatCctvDateTime(ticket))
     ]),
     group('Footage & Location', [
       cctvDetailRow('camera', 'Camera', ticket.cameras),
@@ -962,6 +961,7 @@ function buildCctvDrawerReadonly(ticket){
     ]),
     group('People & Policy', [
       cctvDetailRow('staff', 'Staff', ticket.staff),
+      cctvDetailRow('review-type', 'Review Type', ticket.reviewType),
       cctvDetailRow('violated-policy', 'Violated Policy', ticket.violations)
     ]),
     group('Details', [
@@ -972,7 +972,9 @@ function buildCctvDrawerReadonly(ticket){
     ], 'cctv-detail-group--wide')
   ].filter(Boolean).join('');
 
-  return html || '<div class="no-tickets full-span">No details.</div>';
+  return html
+    ? `<div class="cctv-detail-layout">${html}</div>`
+    : '<div class="no-tickets full-span">No details.</div>';
 }
 
 function buildDrawerReadonly(ticket){
@@ -1219,7 +1221,7 @@ function openTicketDrawer(index, trigger){
 
   // شارة الحالة + رابط السجل
   metaEl.innerHTML = `
-    <span class="meta-badge cc-status ${ticketStatusToneClass(ticket.status)}">
+    <span class="meta-badge cc-status ${ticketStatusToneClass(ticket.status)}"${_currentSection === 'cctv' ? ` data-cctv-status-identity="${escapeHtml(ticket.status || 'Uncategorized')}"` : ''}>
       ${_currentSection === 'cctv' ? `<span class="cctv-status-icon" data-cc-icon="${ticket.status === 'Escalated' ? 'triangle-alert' : ticket.status === 'Under Review' ? 'refresh-cw' : ticket.status === 'Closed' ? 'badge-check' : 'video'}" aria-hidden="true"></span>` : ''}
       ${escapeHtml(ticketStatusPresentation(ticket.status || 'Uncategorized').label)}
     </span>

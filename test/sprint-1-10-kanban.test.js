@@ -69,7 +69,11 @@ function assertHorizontalContract(cascade, targets, label) {
   assert.equal(resolved(cascade, targets.board, "max-width"), "100%", `${label} board containment`);
   assert.equal(resolved(cascade, targets.board, "overflow-x"), "auto", `${label} board owns horizontal scrolling`);
   const flex = resolved(cascade, targets.column, "flex");
-  assert.match(flex, /^0 0 clamp\(/, `${label} columns do not wrap or shrink`);
+  if (label.startsWith("cctv.html@")) {
+    assert.equal(flex, "1 1 0", `${label} V2 columns balance available workspace`);
+  } else {
+    assert.match(flex, /^0 0 clamp\(/, `${label} columns do not wrap or shrink`);
+  }
   targets.ancestors.forEach((ancestor, index) => {
     const overflow = resolvedOrInitial(cascade, ancestor, "overflow-x", "visible");
     assert.ok(!["hidden", "clip"].includes(overflow), `${label} ancestor ${index} does not clip (${overflow})`);
@@ -106,16 +110,27 @@ test("actual Operations and Workflow renderers emit every required shared hook",
   }
 });
 
-test("actual cascade keeps both Kanban variants horizontal and reachable at all seven widths", () => {
+test("actual cascade keeps desktop Kanban horizontal and CCTV mobile purpose-built at all seven widths", () => {
   for (const page of PAGES) for (const width of VIEWPORTS) {
     const targets = tree(page);
     for (const theme of ["light", "dark"]) {
       targets.html.attributes["data-theme"] = theme;
       const cascade = createCascade(ROOT, page, { viewportWidth: width });
+      if (page === "cctv.html" && width <= 768) {
+        assert.equal(resolved(cascade, targets.board, "display"), "block", `${page}@${width}/${theme} mobile board layout`);
+        assert.equal(resolved(cascade, targets.board, "width"), "100%", `${page}@${width}/${theme} mobile board width`);
+        assert.equal(resolved(cascade, targets.board, "overflow"), "visible", `${page}@${width}/${theme} mobile board does not scroll horizontally`);
+        assert.equal(resolved(cascade, targets.column, "display"), "none", `${page}@${width}/${theme} inactive lane is removed from composition`);
+        assert.equal(resolved(cascade, targets.column, "min-width"), "0", `${page}@${width}/${theme} mobile lane shrinks to viewport`);
+        assert.equal(resolved(cascade, targets.column, "max-width"), "none", `${page}@${width}/${theme} mobile lane has no desktop cap`);
+        assert.equal(resolved(cascade, targets.stack, "display"), "flex");
+        continue;
+      }
       assertHorizontalContract(cascade, targets, `${page}@${width}/${theme}`);
-      assert.equal(resolved(cascade, targets.board, "gap"), "16px", `${page}@${width}`);
-      const expectedMin = page.startsWith("free-order-") && !page.startsWith("free-orders") ? "300px" : "280px";
-      const expectedMax = expectedMin === "300px" ? "340px" : "320px";
+      const cctvGap = width <= 1024 ? "8px" : "1px";
+      assert.equal(resolved(cascade, targets.board, "gap"), page === "cctv.html" ? cctvGap : "16px", `${page}@${width}`);
+      const expectedMin = page === "cctv.html" ? (width <= 1024 ? "280px" : "260px") : page.startsWith("free-order-") && !page.startsWith("free-orders") ? "300px" : "280px";
+      const expectedMax = page === "cctv.html" ? "none" : expectedMin === "300px" ? "340px" : "320px";
       assert.equal(resolved(cascade, targets.column, "min-width"), expectedMin, `${page}@${width}`);
       assert.equal(resolved(cascade, targets.column, "max-width"), expectedMax, `${page}@${width}`);
       assert.equal(resolved(cascade, targets.stack, "display"), "flex");

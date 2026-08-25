@@ -317,7 +317,7 @@ test("the complete static modal and drawer title inventory is frozen in Light an
     const cascade = createCascade(root, contract.page, { viewportWidth: 1440 });
     const isCctvV2 = contract.page === "cctv.html";
     const isCctvModal = isCctvV2 && contract.text === "Add New Ticket";
-    assert.equal(resolved(cascade, target, "font-size"), isCctvModal ? "22px" : isCctvV2 ? "25px" : "18px", `${label} ${theme}: title size`);
+    assert.equal(resolved(cascade, target, "font-size"), isCctvV2 ? (isCctvModal ? "22px" : "21px") : "18px", `${label} ${theme}: title size`);
     assert.equal(resolved(cascade, target, "font-weight"), isCctvV2 ? "700" : "600", `${label} ${theme}: title weight`);
     assert.equal(resolved(cascade, target, "line-height"), isCctvV2 ? (isCctvModal ? "1.35" : "1.2") : "1.35", `${label} ${theme}: title line height`);
   }));

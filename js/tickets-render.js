@@ -707,6 +707,14 @@ function renderTickets(){
   columns.forEach((status, columnIndex)=>{
     const col = document.createElement('section');
     col.className = `group cc-kanban__column ${isCe ? 'ce-column' : ''} ${isComplaints ? 'complaints-column' : ''} ${isCctv ? 'cctv-column' : ''} ${isFreeOrders ? 'free-orders-column' : ''}`;
+    if (isCctv) {
+      const statusSlug = status.toLowerCase().replace(/\s+/g, '-');
+      col.id = `cctv-status-panel-${statusSlug}`;
+      col.dataset.cctvStatus = status;
+      col.setAttribute('role', 'tabpanel');
+      col.setAttribute('aria-labelledby', `cctv-status-tab-${statusSlug}`);
+      document.querySelector(`[data-cctv-lane="${status}"]`)?.setAttribute('aria-controls', col.id);
+    }
 
     const count = (grouped[status]||[]).length;
     const titleId = `cc-${window.currentSection}-kanban-column-${columnIndex}`;
@@ -799,6 +807,11 @@ function renderTickets(){
     col.appendChild(stack);
     wrap.appendChild(col);
   });
+
+  if (isCctv) {
+    const counts = Object.fromEntries(columns.map((status) => [status, (grouped[status] || []).length]));
+    window.CloudCrowdCctvResponsive?.syncWorkflow(counts);
+  }
 }
 
 // -----------------------------

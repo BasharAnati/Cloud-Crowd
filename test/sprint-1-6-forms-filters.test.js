@@ -316,7 +316,7 @@ function requiredControlInventory(source) {
 
 function assertDenseFilterReachable(cascade, filterGrid, width) {
   const columns = resolved(cascade, filterGrid, "grid-template-columns");
-  assert.equal(columns, "repeat(2, minmax(0, 1fr))", `dense filter columns at ${width}`);
+  assert.equal(columns, width <= 360 ? "1fr" : "minmax(0, 1fr) auto", `dense mobile search/disclosure columns at ${width}`);
   const overflow = cascade.winner(filterGrid, "overflow")?.value || "visible";
   const maxHeight = cascade.winner(filterGrid, "max-height")?.value || "none";
   assert.doesNotMatch(overflow, /hidden|clip/, `dense filter overflow at ${width}`);
@@ -426,10 +426,12 @@ test("form and dense-filter geometry resolves at every required viewport", () =>
     const filterGrid = element("section", { classes: ["cctv-filters", "cc-filter-bar", "cc-filter-bar--dense-six"] }, filterBody);
     const filterColumns = resolved(createCascade(ROOT, "cctv.html", { viewportWidth: width }), filterGrid, "grid-template-columns");
     const expected = width > 1180
-      ? "minmax(240px, 1.7fr) repeat(5, minmax(128px, 1fr))"
-      : width > 700
-        ? "minmax(240px, 2fr) repeat(2, minmax(150px, 1fr))"
-        : "repeat(2, minmax(0, 1fr))";
+      ? "minmax(280px, 2.15fr) repeat(5, minmax(116px, 1fr))"
+      : width > 1024
+        ? "minmax(240px, 2fr) repeat(5, minmax(106px, 1fr))"
+        : width > 768
+          ? "minmax(240px, 1.6fr) minmax(0, 3fr)"
+          : width <= 360 ? "1fr" : "minmax(0, 1fr) auto";
     assert.equal(filterColumns, expected, `dense filter ${width}`);
   }
   assert.match(read("assets/css/components/forms.css"), /input\[type="file"\][\s\S]*overflow:\s*hidden/);
@@ -441,7 +443,11 @@ test("dense Operations filters remain fully reachable at narrow widths", () => {
     const html = element("html", { attributes: { "data-theme": "light" } });
     const body = element("body", { classes: bodyClasses("cctv.html") }, html);
     const filterGrid = element("section", { classes: ["cctv-filters", "cc-filter-bar", "cc-filter-bar--dense-six"] }, body);
-    assertDenseFilterReachable(createCascade(ROOT, "cctv.html", { viewportWidth: width }), filterGrid, width);
+    const secondaryFilters = element("div", { classes: ["cctv-secondary-filters"] }, filterGrid);
+    const cascade = createCascade(ROOT, "cctv.html", { viewportWidth: width });
+    assertDenseFilterReachable(cascade, filterGrid, width);
+    assert.equal(resolved(cascade, secondaryFilters, "display"), "grid", `secondary filters layout at ${width}`);
+    assert.equal(resolved(cascade, secondaryFilters, "grid-template-columns"), width <= 360 ? "1fr" : "repeat(2, minmax(0, 1fr))", `secondary filter columns at ${width}`);
   }
 
   for (const [width, css] of [

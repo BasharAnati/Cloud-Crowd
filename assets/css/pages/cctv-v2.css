@@ -58,7 +58,7 @@ html[data-theme="dark"] body.cctv-v2 {
 
 body.cctv-v2 .cctv-module-shell.cc-shell-layout {
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
+  grid-template-columns: clamp(204px, 15vw, 216px) minmax(0, 1fr);
   min-height: 100vh;
   background: var(--cctv-v2-canvas);
 }
@@ -67,15 +67,63 @@ body.cctv-v2 #cctv-app-sidebar.cc-shell-sidebar {
   position: sticky;
   top: 0;
   align-self: start;
-  width: 248px;
+  width: clamp(204px, 15vw, 216px);
   height: 100vh;
   min-height: 0;
   overflow-y: auto;
   color: #dce7ef;
-  background: #101e2b;
+  padding: 10px 8px;
+  gap: 8px;
+  background: #0f1d29;
   border: 0;
   border-right: 1px solid #26394a;
   box-shadow: none;
+}
+
+body.cctv-v2 #cctv-app-sidebar .cc-shell-brand {
+  min-height: 34px;
+  gap: 8px;
+  padding: 0 7px 8px;
+  font-size: 13px;
+}
+
+body.cctv-v2 #cctv-app-sidebar .cc-shell-nav {
+  gap: 6px;
+}
+
+body.cctv-v2 #cctv-app-sidebar .cc-shell-nav-group {
+  gap: 2px;
+}
+
+body.cctv-v2 #cctv-app-sidebar .cc-shell-nav-heading {
+  margin: 5px 7px 2px;
+  font-size: 9px;
+  letter-spacing: .09em;
+}
+
+body.cctv-v2 #cctv-app-sidebar .cc-shell-nav-link {
+  min-height: 36px;
+  gap: 7px;
+  padding: 4px 7px;
+  color: #aebdca;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  box-shadow: none;
+}
+
+body.cctv-v2 #cctv-app-sidebar .cc-shell-module-icon {
+  width: 24px;
+  height: 24px;
+  flex-basis: 24px;
+  color: #8fa5b6;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+}
+
+body.cctv-v2 #cctv-app-sidebar .cc-shell-nav-text {
+  font-size: 12px;
 }
 
 html[data-theme="dark"] body.cctv-v2 #cctv-app-sidebar.cc-shell-sidebar {
@@ -83,7 +131,7 @@ html[data-theme="dark"] body.cctv-v2 #cctv-app-sidebar.cc-shell-sidebar {
   border-right-color: #26323d;
 }
 
-body.cctv-v2 #cctv-app-sidebar :is(.cc-shell-nav-link, .cc-shell-brand) {
+body.cctv-v2 #cctv-app-sidebar .cc-shell-brand {
   color: #dce7ef;
 }
 
@@ -92,15 +140,31 @@ body.cctv-v2 #cctv-app-sidebar .cc-shell-nav-heading {
 }
 
 body.cctv-v2 #cctv-app-sidebar .cc-shell-nav-link:is(:hover, :focus-visible) {
-  background: #192d3e;
-  border-color: #304a60;
+  color: #e7eef4;
+  background: rgb(255 255 255 / 6%);
+  border-color: transparent;
 }
 
 body.cctv-v2 #cctv-app-sidebar .cc-shell-nav-link.is-active {
   color: #ffffff;
-  background: #1b3548;
-  border-color: #547f98;
-  box-shadow: inset 3px 0 0 #73aec4;
+  background: #173247;
+  border-color: #2c4f66;
+  box-shadow: inset 2px 0 0 #73aec4;
+}
+
+body.cctv-v2 #cctv-app-sidebar .cc-shell-nav-link.is-active .cc-shell-module-icon {
+  color: #dff5fd;
+  background: rgb(115 174 196 / 12%);
+}
+
+body.cctv-v2 #cctv-app-sidebar .cc-shell-sidebar-header {
+  display: contents;
+}
+
+body.cctv-v2 #cctv-app-sidebar .cc-shell-mobile-close,
+body.cctv-v2 #cctv-app-topbar .cc-shell-nav-trigger,
+body.cctv-v2 .cctv-nav-backdrop {
+  display: none;
 }
 
 body.cctv-v2 .cctv-workspace {
@@ -108,14 +172,14 @@ body.cctv-v2 .cctv-workspace {
   width: 100%;
   min-width: 0;
   max-width: none;
-  padding: 0 clamp(16px, 2.2vw, 32px) 32px;
+  padding: 0 clamp(16px, 2vw, 28px) 28px;
   background: var(--cctv-v2-canvas);
 }
 
 body.cctv-v2 #cctv-app-topbar.cc-shell-topbar {
-  min-height: 64px;
-  margin-inline: calc(clamp(16px, 2.2vw, 32px) * -1);
-  padding-inline: clamp(16px, 2.2vw, 32px);
+  min-height: 58px;
+  margin-inline: calc(clamp(16px, 2vw, 28px) * -1);
+  padding-inline: clamp(16px, 2vw, 28px);
   color: var(--cctv-v2-text);
   background: color-mix(in srgb, var(--cctv-v2-surface) 94%, transparent);
   border: 0;
@@ -132,11 +196,11 @@ body.cctv-v2 .cctv-hero.cc-page-header {
   flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 20px;
   width: 100%;
   min-height: 0;
   margin: 0;
-  padding: 28px 0 22px;
+  padding: 18px 0 15px;
   color: var(--cctv-v2-text);
   background: transparent;
   border: 0;
@@ -162,7 +226,7 @@ body.cctv-v2 .cctv-hero :is(.cc-page-header-content, .cc-page-header-actions) {
 body.cctv-v2 .cctv-hero .cc-page-header-title {
   margin: 0;
   color: var(--cctv-v2-text);
-  font-size: clamp(28px, 2.5vw, 38px);
+  font-size: clamp(27px, 2.15vw, 34px);
   font-weight: 700;
   line-height: 1.14;
   letter-spacing: -0.025em;
@@ -170,7 +234,7 @@ body.cctv-v2 .cctv-hero .cc-page-header-title {
 
 body.cctv-v2 .cctv-hero .cc-page-header-description {
   max-width: 760px;
-  margin: 8px 0 0;
+  margin: 5px 0 0;
   color: var(--cctv-v2-text-secondary);
   font-size: 15px;
   line-height: 1.55;
@@ -191,7 +255,7 @@ body.cctv-v2 .add-ticket-btn {
   background: var(--cctv-v2-accent-strong);
   border: 1px solid var(--cctv-v2-accent-strong);
   border-radius: var(--cctv-v2-radius-sm);
-  box-shadow: none;
+  box-shadow: none !important;
 }
 
 body.cctv-v2 :is([data-permission-create], [data-permission-edit], [data-permission-delete])[hidden] {
@@ -208,24 +272,27 @@ body.cctv-v2 .cctv-stats.cc-metric-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
   width: 100%;
-  margin: 0 0 16px;
+  margin: 0 0 12px;
   padding: 0;
-  background: var(--cctv-v2-surface);
-  border: 1px solid var(--cctv-v2-border);
-  border-radius: var(--cctv-v2-radius-md);
+  background: transparent;
+  border: 0;
+  border-block: 1px solid var(--cctv-v2-border);
+  border-radius: 0;
   box-shadow: none;
   overflow: hidden;
 }
 
 body.cctv-v2 .cctv-stat-card.cc-metric-card {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
-  grid-template-rows: auto auto;
+  grid-template-columns: 22px auto;
+  grid-template-rows: 22px auto;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  column-gap: 7px;
+  row-gap: 1px;
   min-width: 0;
-  min-height: 72px;
-  padding: 14px 18px;
+  min-height: 58px;
+  padding: 5px 16px;
   color: var(--cctv-v2-text);
   background: transparent;
   border: 0;
@@ -239,38 +306,55 @@ body.cctv-v2 .cctv-stat-card:last-child {
 }
 
 body.cctv-v2 .cctv-stat-icon {
+  position: static;
+  inset: auto;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 22px;
+  height: 22px;
   color: var(--cctv-v2-accent);
-  background: var(--cctv-v2-surface-selected);
+  background: color-mix(in srgb, var(--cctv-v2-surface-selected) 68%, transparent);
+  border: 0;
   border-radius: 50%;
+  box-shadow: none;
   grid-column: 1;
-  grid-row: 1 / 3;
-  justify-self: start;
+  grid-row: 1;
+  justify-self: center;
+}
+
+body.cctv-v2 .cctv-stat-icon::before,
+body.cctv-v2 .cctv-stat-icon::after {
+  content: none;
 }
 
 body.cctv-v2 .cctv-stat-icon .cc-icon {
-  width: 17px;
-  height: 17px;
+  width: 13px;
+  height: 13px;
 }
 
 body.cctv-v2 .cctv-stat-label {
   grid-column: 2;
+  grid-row: 1;
+  align-self: center;
   color: var(--cctv-v2-text-secondary);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.3;
+  white-space: nowrap;
 }
 
 body.cctv-v2 .cctv-stat-card strong {
-  grid-column: 2;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  justify-self: center;
+  align-self: center;
+  margin: 0;
   color: var(--cctv-v2-text);
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.02em;
+  text-align: center;
 }
 
 body.cctv-v2 .cctv-stat-escalated .cctv-stat-icon,
@@ -282,12 +366,12 @@ body.cctv-v2 .cctv-stat-closed strong { color: var(--cctv-v2-closed); }
 
 body.cctv-v2 .cctv-filters.cc-filter-bar {
   display: grid;
-  grid-template-columns: minmax(240px, 1.7fr) repeat(5, minmax(128px, 1fr));
+  grid-template-columns: minmax(280px, 2.15fr) repeat(5, minmax(116px, 1fr));
   align-items: end;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
-  margin: 0 0 18px;
-  padding: 14px 0 16px;
+  margin: 0 0 14px;
+  padding: 10px 0 12px;
   background: transparent;
   border: 0;
   border-top: 1px solid var(--cctv-v2-border);
@@ -297,16 +381,24 @@ body.cctv-v2 .cctv-filters.cc-filter-bar {
   overflow: visible;
 }
 
+body.cctv-v2 .cctv-secondary-filters {
+  display: contents;
+}
+
+body.cctv-v2 .cctv-filter-toggle {
+  display: none;
+}
+
 body.cctv-v2 .cctv-filter-field {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
 body.cctv-v2 .cctv-filter-field label {
   margin: 0;
   color: var(--cctv-v2-text-secondary);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.2;
 }
@@ -317,9 +409,9 @@ body.cctv-v2 .cctv-filter-field :is(input, select) {
   min-width: 0;
   height: 44px;
   min-height: 44px;
-  padding: 0 12px;
+  padding: 0 10px;
   color: var(--cctv-v2-text);
-  font-size: 14px;
+  font-size: 13px;
   background-color: var(--cctv-v2-surface);
   border: 1px solid var(--cctv-v2-border-strong);
   border-radius: var(--cctv-v2-radius-sm);
@@ -342,15 +434,19 @@ body.cctv-v2 .cctv-board {
   margin: 0;
 }
 
+body.cctv-v2 .cctv-status-switcher {
+  display: none;
+}
+
 body.cctv-v2 #tickets.cc-kanban {
   display: flex;
-  gap: 16px;
+  gap: 1px;
   width: 100%;
   min-width: 0;
-  padding: 0 0 8px;
-  background: transparent;
+  padding: 1px 1px 8px;
+  background: var(--cctv-v2-border);
   border: 0;
-  border-radius: 0;
+  border-radius: var(--cctv-v2-radius-md);
   box-shadow: none;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
@@ -358,12 +454,17 @@ body.cctv-v2 #tickets.cc-kanban {
 }
 
 body.cctv-v2 #tickets > .cctv-column.cc-kanban__column {
-  padding: 0 14px 14px;
+  flex: 1 1 0;
+  width: auto;
+  min-width: 260px;
+  max-width: none;
+  gap: 7px;
+  padding: 0 11px 13px;
   color: var(--cctv-v2-text);
-  background: color-mix(in srgb, var(--cctv-v2-surface) 62%, transparent);
+  background: color-mix(in srgb, var(--cctv-v2-surface) 84%, var(--cctv-v2-canvas));
   border: 0;
-  border-top: 3px solid var(--cctv-v2-border-strong);
-  border-radius: 0 0 var(--cctv-v2-radius-md) var(--cctv-v2-radius-md);
+  border-top: 2px solid var(--cctv-v2-border-strong);
+  border-radius: 0;
   box-shadow: none;
 }
 
@@ -381,18 +482,20 @@ body.cctv-v2 .cctv-column .cc-kanban__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 58px;
+  min-height: 40px;
   padding: 0 2px;
+  background: transparent !important;
   border: 0;
+  box-shadow: none !important;
 }
 
 body.cctv-v2 .cctv-column .cc-kanban__title {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   margin: 0;
   color: var(--cctv-v2-text);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 650;
   line-height: 1.3;
 }
@@ -423,11 +526,11 @@ body.cctv-v2 .cctv-column .cc-kanban__count {
   align-items: center;
   justify-content: center;
   place-items: center;
-  min-width: 28px;
-  height: 28px;
-  padding: 0 8px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
   color: var(--cctv-v2-text-secondary);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   background: var(--cctv-v2-surface);
   border: 1px solid var(--cctv-v2-border);
@@ -442,7 +545,7 @@ body.cctv-v2 .cctv-column .cc-kanban__stack {
   display: flex;
   flex-direction: column;
   align-content: start;
-  gap: 10px;
+  gap: 8px;
   padding: 0;
 }
 
@@ -450,12 +553,12 @@ body.cctv-v2 .cctv-ticket-card.cc-card {
   position: relative;
   display: block;
   min-width: 0;
-  min-height: 228px;
-  padding: 16px;
+  min-height: 0;
+  padding: 12px 13px;
   color: var(--cctv-v2-text);
   background: var(--cctv-v2-surface-raised);
   border: 1px solid var(--cctv-v2-border);
-  border-radius: var(--cctv-v2-radius-md);
+  border-radius: 7px;
   box-shadow: none;
   cursor: pointer;
   overflow: hidden;
@@ -491,7 +594,7 @@ body.cctv-v2 .cctv-ticket-top {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 9px;
 }
 
 body.cctv-v2 .cctv-status-pill.cc-status,
@@ -499,8 +602,8 @@ body.cctv-v2 .cctv-ticket-modal .meta-badge.cc-status {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 28px;
-  padding: 4px 9px;
+  min-height: 25px;
+  padding: 3px 8px;
   font-size: 12px;
   font-weight: 600;
   line-height: 1.2;
@@ -524,7 +627,7 @@ body.cctv-v2 .cctv-ticket-date {
 body.cctv-v2 .cctv-ticket-case {
   margin: 0 0 4px;
   color: var(--cctv-v2-text);
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1.25;
   letter-spacing: -0.02em;
@@ -532,9 +635,9 @@ body.cctv-v2 .cctv-ticket-case {
 }
 
 body.cctv-v2 .cctv-ticket-branch {
-  margin: 0 0 15px;
+  margin: 0 0 10px;
   color: var(--cctv-v2-text-secondary);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 1.35;
 }
@@ -542,25 +645,27 @@ body.cctv-v2 .cctv-ticket-branch {
 body.cctv-v2 .cctv-ticket-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 14px;
-  padding-top: 13px;
-  border-top: 1px solid var(--cctv-v2-border);
+  gap: 7px 12px;
+  padding-top: 7px;
+  border-top: 1px solid color-mix(in srgb, var(--cctv-v2-border) 76%, transparent);
 }
 
 body.cctv-v2 .cctv-ticket-grid > span {
   display: grid;
-  gap: 2px;
+  gap: 0;
   min-width: 0;
   color: var(--cctv-v2-text-secondary);
-  font-size: 13px;
-  line-height: 1.35;
+  font-size: 12px;
+  line-height: 1.25;
   overflow-wrap: anywhere;
 }
 
 body.cctv-v2 .cctv-ticket-grid > span strong {
   color: var(--cctv-v2-text-muted);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 body.cctv-v2 .cc-empty-state,
@@ -598,7 +703,7 @@ body.cctv-v2 .cctv-ticket-modal {
   place-items: center;
   width: auto;
   height: auto;
-  padding: 24px;
+  padding: 20px;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -629,18 +734,19 @@ body.cctv-v2 #ticket-drawer .cctv-ticket-modal__panel.drawer-panel {
   inset: auto;
   z-index: 1;
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
-  width: min(880px, 100%);
-  max-width: 880px;
-  height: auto;
-  max-height: min(820px, calc(100vh - 48px));
+  grid-template-rows: auto auto minmax(0, auto) auto;
+  width: min(790px, 100%);
+  max-width: 790px;
+  height: fit-content;
+  min-height: 0;
+  max-height: min(760px, calc(100vh - 40px));
   margin: 0;
   padding: 0;
   color: var(--cctv-v2-text);
   background: var(--cctv-v2-surface-raised);
   border: 1px solid var(--cctv-v2-border-strong);
-  border-radius: var(--cctv-v2-radius-lg);
-  box-shadow: var(--cctv-v2-shadow);
+  border-radius: 12px;
+  box-shadow: 0 16px 42px rgb(15 28 41 / 18%);
   transform: translateY(8px) scale(.99);
   overflow: hidden;
   transition: transform var(--cctv-v2-motion);
@@ -654,25 +760,32 @@ body.cctv-v2 .cctv-ticket-modal .drawer-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  min-height: 82px;
-  padding: 18px 24px 10px;
+  gap: 14px;
+  min-height: 62px;
+  padding: 12px 18px 8px;
   background: transparent;
   border: 0;
 }
 
+body.cctv-v2 .cctv-ticket-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+body.cctv-v2 .cctv-ticket-heading {
+  min-width: 0;
+}
+
 body.cctv-v2 .cctv-ticket-modal .drawer-case {
-  margin-bottom: 3px;
-  color: var(--cctv-v2-text-muted);
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.3;
+  display: none;
 }
 
 body.cctv-v2 .cctv-ticket-modal #drawer-title {
   margin: 0;
   color: var(--cctv-v2-text);
-  font-size: 25px;
+  font-size: 21px;
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.02em;
@@ -682,14 +795,14 @@ body.cctv-v2 .cctv-ticket-modal .drawer-close {
   display: grid;
   flex: 0 0 auto;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   min-width: 44px;
   min-height: 44px;
   padding: 0;
   color: var(--cctv-v2-text-secondary);
   background: transparent;
-  border: 1px solid var(--cctv-v2-border);
+  border: 1px solid transparent;
   border-radius: var(--cctv-v2-radius-sm);
 }
 
@@ -702,29 +815,46 @@ body.cctv-v2 .cctv-ticket-modal .drawer-close:is(:hover, :focus-visible) {
 body.cctv-v2 .cctv-ticket-modal .drawer-meta {
   display: flex;
   align-items: center;
-  min-height: 36px;
-  padding: 0 24px 12px;
+  flex: 0 0 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
   background: transparent;
   border: 0;
+}
+
+body.cctv-v2 .cctv-ticket-modal .drawer-meta::before {
+  content: none;
+}
+
+body.cctv-v2 .cctv-ticket-modal .drawer-meta .meta-badge {
+  display: inline-flex !important;
+  min-height: 23px;
+  padding: 2px 7px;
+  font-size: 11px;
+  margin: 0;
 }
 
 body.cctv-v2 .cctv-ticket-modal .meta-badge.cc-status--danger { color: var(--cctv-v2-escalated); background: var(--cctv-v2-escalated-soft); }
 body.cctv-v2 .cctv-ticket-modal .meta-badge.cc-status--warning { color: var(--cctv-v2-review); background: var(--cctv-v2-review-soft); }
 body.cctv-v2 .cctv-ticket-modal .meta-badge.cc-status--success { color: var(--cctv-v2-closed); background: var(--cctv-v2-closed-soft); }
+body.cctv-v2 .cctv-ticket-modal .drawer-meta .meta-badge[data-cctv-status-identity="Escalated"] { color: var(--cctv-v2-escalated); background: var(--cctv-v2-escalated-soft); }
+body.cctv-v2 .cctv-ticket-modal .drawer-meta .meta-badge[data-cctv-status-identity="Under Review"] { color: var(--cctv-v2-review); background: var(--cctv-v2-review-soft); }
+body.cctv-v2 .cctv-ticket-modal .drawer-meta .meta-badge[data-cctv-status-identity="Closed"] { color: var(--cctv-v2-closed); background: var(--cctv-v2-closed-soft); }
 
 body.cctv-v2 .cctv-ticket-tabs {
   display: flex;
   gap: 4px;
-  min-height: 48px;
-  padding: 0 24px;
+  min-height: 38px;
+  padding: 0 18px;
   border-bottom: 1px solid var(--cctv-v2-border);
 }
 
 body.cctv-v2 .cctv-ticket-tab {
   position: relative;
-  min-width: 96px;
-  min-height: 44px;
-  padding: 0 14px;
+  min-width: 86px;
+  min-height: 38px;
+  padding: 0 12px;
   color: var(--cctv-v2-text-secondary);
   font-size: 14px;
   font-weight: 600;
@@ -753,7 +883,7 @@ body.cctv-v2 .cctv-ticket-modal[data-mode="edit"] .cctv-ticket-tabs {
 
 body.cctv-v2 .cctv-ticket-modal .drawer-body {
   min-height: 0;
-  padding: 20px 24px 24px;
+  padding: 11px 18px 13px !important;
   color: var(--cctv-v2-text);
   background: transparent;
   overflow: auto;
@@ -765,14 +895,31 @@ body.cctv-v2 .cctv-ticket-modal .drawer-body[hidden] {
 }
 
 body.cctv-v2 .cctv-ticket-modal[data-mode="view"] #drawer-body {
+  align-content: start;
+}
+
+body.cctv-v2 .cctv-detail-layout {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-content: start;
-  gap: 18px 20px;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+body.cctv-v2 .cctv-detail-layout > .cctv-detail-group:first-child {
+  grid-column: 1 / -1;
+}
+
+body.cctv-v2 .cctv-detail-layout > .cctv-detail-group:first-child .cctv-detail-group__grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 body.cctv-v2 .cctv-detail-group {
   min-width: 0;
+  background: color-mix(in srgb, var(--cctv-v2-surface-selected) 44%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cctv-v2-border) 82%, transparent);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 body.cctv-v2 .cctv-detail-group--wide,
@@ -781,30 +928,55 @@ body.cctv-v2 #drawer-body > .cctv-detail-row[data-field="attachments"] {
 }
 
 body.cctv-v2 .cctv-detail-group h3 {
-  margin: 0 0 9px;
-  color: var(--cctv-v2-text);
-  font-size: 14px;
+  margin: 0;
+  padding: 6px 10px 3px;
+  color: var(--cctv-v2-text-muted);
+  font-size: 10px;
   font-weight: 650;
   line-height: 1.35;
+  letter-spacing: .025em;
 }
 
 body.cctv-v2 .cctv-detail-group__grid {
   display: grid;
+  grid-template-columns: 1fr;
   gap: 0;
-  border-top: 1px solid var(--cctv-v2-border);
+  padding: 0 10px 4px;
+  border: 0;
+}
+
+body.cctv-v2 .cctv-detail-group--wide .cctv-detail-row {
+  grid-column: 1 / -1;
 }
 
 body.cctv-v2 .cctv-detail-row.kv {
   display: grid;
-  grid-template-columns: minmax(105px, .8fr) minmax(0, 1.4fr);
-  gap: 12px;
+  grid-template-columns: 1fr;
+  gap: 2px;
   min-width: 0;
-  padding: 10px 0;
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--cctv-v2-border);
+  min-height: 40px;
+  padding: 4px 1px !important;
+  background: transparent !important;
+  border: 0 !important;
   border-radius: 0;
   box-shadow: none;
+}
+
+body.cctv-v2 .cctv-detail-group__grid > .cctv-detail-row {
+  border-top: 1px solid color-mix(in srgb, var(--cctv-v2-border) 74%, transparent) !important;
+}
+
+body.cctv-v2 .cctv-detail-group__grid > .cctv-detail-row:first-child {
+  border-top: 0 !important;
+}
+
+body.cctv-v2 .cctv-detail-layout > .cctv-detail-group:first-child .cctv-detail-row {
+  border-top: 0 !important;
+}
+
+body.cctv-v2 .cctv-detail-layout > .cctv-detail-group:first-child .cctv-detail-row:last-child {
+  padding-left: 11px !important;
+  border-left: 1px solid color-mix(in srgb, var(--cctv-v2-border) 74%, transparent) !important;
 }
 
 body.cctv-v2 .cctv-detail-row .cctv-detail-icon {
@@ -817,18 +989,29 @@ body.cctv-v2 .cctv-detail-row .cctv-detail-copy {
 
 body.cctv-v2 .cctv-detail-row .k {
   color: var(--cctv-v2-text-muted);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .015em;
+  text-transform: none;
   line-height: 1.45;
 }
 
 body.cctv-v2 .cctv-detail-row .v {
   min-width: 0;
   color: var(--cctv-v2-text);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  line-height: 1.45;
+  line-height: 1.4;
   overflow-wrap: anywhere;
+}
+
+body.cctv-v2 .cctv-detail-group--wide .cctv-detail-row {
+  min-height: 44px;
+  background: transparent !important;
+}
+
+body.cctv-v2 .cctv-detail-group--wide:last-child .cctv-detail-row {
+  background: transparent !important;
 }
 
 body.cctv-v2 .cctv-ticket-history .history-grid {
@@ -870,18 +1053,18 @@ body.cctv-v2 .cctv-ticket-modal .drawer-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  min-height: 70px;
-  padding: 12px 24px;
+  min-height: 54px;
+  padding: 8px 18px;
   background: var(--cctv-v2-surface);
   border: 0;
   border-top: 1px solid var(--cctv-v2-border);
 }
 
 body.cctv-v2 .cctv-ticket-modal .drawer-actions button {
-  min-width: 92px;
-  min-height: 44px;
-  padding: 0 16px;
-  font-size: 14px;
+  min-width: 84px;
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 13px;
   font-weight: 600;
   border-radius: var(--cctv-v2-radius-sm);
   box-shadow: none;
@@ -967,107 +1150,463 @@ body.cctv-v2 :is(button, [role="button"], input, select, textarea):focus-visible
   outline-offset: 2px;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1180px) and (min-width: 1025px) {
   body.cctv-v2 .cctv-filters.cc-filter-bar {
-    grid-template-columns: minmax(240px, 2fr) repeat(2, minmax(150px, 1fr));
+    grid-template-columns: minmax(240px, 2fr) repeat(5, minmax(106px, 1fr));
+    gap: 8px;
   }
 }
 
-@media (max-width: 900px) {
+/* Tablet shell: navigation overlays the workspace while the three-lane board remains intact. */
+@media (max-width: 1024px) {
   body.cctv-v2 .cctv-module-shell.cc-shell-layout {
     display: block;
+    min-height: 100vh;
   }
 
   body.cctv-v2 #cctv-app-sidebar.cc-shell-sidebar {
-    position: relative;
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 1100;
+    display: flex;
+    width: min(82vw, 300px);
+    height: 100dvh;
+    padding: 10px;
+    border-right: 1px solid #304355;
+    transform: translateX(-104%);
+    transition: none;
+  }
+
+  body.cctv-v2 .cctv-module-shell.is-nav-ready #cctv-app-sidebar {
+    transition: transform var(--cctv-v2-motion);
+  }
+
+  body.cctv-v2 .cctv-module-shell.is-nav-open #cctv-app-sidebar {
+    transform: translateX(0);
+  }
+
+  body.cctv-v2 #cctv-app-sidebar .cc-shell-sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  body.cctv-v2 #cctv-app-sidebar .cc-shell-sidebar-header .cc-shell-brand {
+    min-width: 0;
+    padding: 0;
+  }
+
+  body.cctv-v2 #cctv-app-sidebar .cc-shell-mobile-close {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 10px;
+    color: #eaf1f6;
+    background: rgb(255 255 255 / 7%);
+    border-color: #365064;
+  }
+
+  body.cctv-v2 .cctv-nav-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1090;
+    display: block;
     width: 100%;
-    height: auto;
-    max-height: 238px;
-    overflow-y: auto;
-    border-right: 0;
-    border-bottom: 1px solid #26394a;
+    height: 100%;
+    padding: 0;
+    background: rgb(7 16 24 / 54%);
+    border: 0;
+    border-radius: 0;
+    backdrop-filter: blur(2px);
   }
 
-  body.cctv-v2 .cctv-workspace {
-    padding-inline: 16px;
-  }
-
-  body.cctv-v2 #cctv-app-topbar.cc-shell-topbar {
-    margin-inline: -16px;
-    padding-inline: 16px;
-  }
-
-  body.cctv-v2 #cctv-app-topbar .cc-shell-topbar-title {
+  body.cctv-v2 .cctv-nav-backdrop[hidden] {
     display: none;
   }
 
-  body.cctv-v2 .cctv-hero.cc-page-header {
-    flex: 0 0 auto;
-    min-height: 0;
-    padding-block: 22px 18px;
+  body.cctv-v2.cc-shell-nav-lock {
+    overflow: hidden;
   }
 
-  body.cctv-v2 .cctv-hero :is(.cc-page-header-content, .cc-page-header-actions) {
-    flex: 0 0 auto;
-    flex-basis: auto;
-    width: auto;
+  body.cctv-v2 .cctv-workspace {
+    padding-inline: 18px;
   }
 
-  body.cctv-v2 .cctv-stats.cc-metric-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  body.cctv-v2 #cctv-app-topbar.cc-shell-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    min-height: 58px;
+    margin-inline: -18px;
+    padding-inline: 18px;
   }
 
-  body.cctv-v2 .cctv-stat-card:nth-child(2) { border-right: 0; }
-  body.cctv-v2 .cctv-stat-card:nth-child(-n + 2) { border-bottom: 1px solid var(--cctv-v2-border); }
+  body.cctv-v2 #cctv-app-topbar .cc-shell-nav-trigger {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 11px;
+  }
 
-  body.cctv-v2 .cctv-board {
-    width: 100%;
+  body.cctv-v2 #cctv-app-topbar .cc-shell-topbar-context {
+    min-width: 0;
+  }
+
+  body.cctv-v2 #cctv-app-topbar .cc-shell-topbar-title {
+    min-width: 0;
+  }
+
+  body.cctv-v2 #cctv-app-topbar .cc-shell-topbar-eyebrow {
+    display: none;
+  }
+
+  body.cctv-v2 .cctv-filters.cc-filter-bar {
+    grid-template-columns: minmax(240px, 1.6fr) minmax(0, 3fr);
+  }
+
+  body.cctv-v2 .cctv-secondary-filters {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(130px, 1fr));
+    gap: 8px;
+  }
+
+  body.cctv-v2 #tickets.cc-kanban {
+    gap: 8px;
+    background: transparent;
+  }
+
+  body.cctv-v2 #tickets > .cctv-column.cc-kanban__column {
+    min-width: 280px;
+    border: 1px solid var(--cctv-v2-border);
+    border-top-width: 2px;
+    border-radius: var(--cctv-v2-radius-sm);
   }
 }
 
-@media (max-width: 700px) {
-  body.cctv-v2 #cctv-app-sidebar.cc-shell-sidebar {
-    max-height: 210px;
+/* Mobile is a distinct composition: compact shell, on-demand filters, one workflow lane. */
+@media (max-width: 768px) {
+  body.cctv-v2 .cctv-workspace {
+    padding: 0 12px 24px;
+  }
+
+  body.cctv-v2 #cctv-app-topbar.cc-shell-topbar {
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    min-height: 54px;
+    margin-inline: -12px;
+    padding-inline: 10px;
+  }
+
+  body.cctv-v2 #cctv-app-topbar .cc-shell-topbar-title strong {
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  body.cctv-v2 #cctv-app-topbar :is(.cc-shell-user-badge, .cc-shell-role-badge) {
+    display: none;
+  }
+
+  body.cctv-v2 #cctv-app-topbar .cc-shell-topbar-actions {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    gap: 5px;
+  }
+
+  body.cctv-v2 #cctv-app-topbar :is(.cc-theme-toggle, .cc-shell-logout) {
+    min-width: 42px;
+    min-height: 42px;
+    padding-inline: 9px;
+  }
+
+  body.cctv-v2 #cctv-app-topbar .cc-shell-logout {
+    width: 42px;
+    overflow: hidden;
+    gap: 0;
+    font-size: 0;
+  }
+
+  body.cctv-v2 #cctv-app-topbar .cc-shell-logout .cc-icon-host {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    margin: 0 !important;
+    color: var(--cctv-v2-text);
   }
 
   body.cctv-v2 .cctv-hero.cc-page-header {
     display: grid;
-    gap: 16px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 8px 12px;
+    padding: 13px 0 11px;
   }
 
-  body.cctv-v2 .cctv-hero :is(.cc-page-header-content, .cc-page-header-actions) {
-    width: 100%;
+  body.cctv-v2 .cctv-hero .cc-page-header-title {
+    font-size: clamp(21px, 6vw, 25px);
   }
 
-  body.cctv-v2 .cctv-actions,
+  body.cctv-v2 .cctv-hero .cc-page-header-description {
+    display: -webkit-box;
+    margin-top: 3px;
+    font-size: 12px;
+    line-height: 1.35;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
   body.cctv-v2 .add-ticket-btn {
-    width: 100%;
+    min-width: 0;
+    height: 44px;
+    min-height: 44px;
+    padding-inline: 12px;
+    font-size: 12px;
+  }
+
+  body.cctv-v2 .cctv-stats.cc-metric-grid {
+    display: flex;
+    gap: 0;
+    margin-bottom: 9px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+  }
+
+  body.cctv-v2 .cctv-stat-card.cc-metric-card {
+    grid-template-columns: 20px auto;
+    grid-template-rows: 20px auto;
+    column-gap: 5px;
+    flex: 0 0 126px;
+    min-height: 52px;
+    padding: 4px 8px;
+    scroll-snap-align: start;
+  }
+
+  body.cctv-v2 .cctv-stat-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  body.cctv-v2 .cctv-stat-icon .cc-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  body.cctv-v2 .cctv-stat-label {
+    font-size: 10px;
+  }
+
+  body.cctv-v2 .cctv-stat-card strong {
+    font-size: 18px;
   }
 
   body.cctv-v2 .cctv-filters.cc-filter-bar {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    margin-bottom: 9px;
+    padding: 7px 0 9px;
   }
 
   body.cctv-v2 .cctv-filter-search {
-    grid-column: 1 / -1;
+    grid-column: 1;
   }
 
-  body.cctv-v2 .cctv-ticket-modal {
+  body.cctv-v2 .cctv-filter-field label {
+    font-size: 10px;
+  }
+
+  body.cctv-v2 .cctv-filter-field :is(input, select) {
+    height: 42px;
+    min-height: 42px;
+  }
+
+  body.cctv-v2 .cctv-filter-toggle {
+    display: inline-flex;
+    align-items: center;
+    align-self: end;
+    justify-content: center;
+    gap: 6px;
+    min-width: 96px;
+    min-height: 42px;
+    padding: 0 10px;
+    color: var(--cctv-v2-text);
+    font-size: 12px;
+    font-weight: 650;
+    background: var(--cctv-v2-surface);
+    border: 1px solid var(--cctv-v2-border-strong);
+    border-radius: var(--cctv-v2-radius-sm);
+  }
+
+  body.cctv-v2 .cctv-filter-toggle [data-cc-icon] {
+    width: 16px;
+    height: 16px;
+  }
+
+  body.cctv-v2 .cctv-secondary-filters {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding-top: 2px;
+  }
+
+  body.cctv-v2 .cctv-secondary-filters[hidden] {
+    display: none;
+  }
+
+  body.cctv-v2 .cctv-status-switcher {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3px;
+    margin: 0 0 8px;
+    padding: 3px;
+    background: var(--cctv-v2-surface-selected);
+    border: 1px solid var(--cctv-v2-border);
+    border-radius: 8px;
+  }
+
+  body.cctv-v2 .cctv-status-switcher button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+    min-height: 38px;
+    padding: 4px 5px;
+    color: var(--cctv-v2-text-secondary);
+    font-size: 10px;
+    font-weight: 650;
+    line-height: 1.1;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+  }
+
+  body.cctv-v2 .cctv-status-switcher button[aria-selected="true"] {
+    color: var(--cctv-v2-text);
+    background: var(--cctv-v2-surface);
+    border-color: var(--cctv-v2-border-strong);
+    box-shadow: 0 1px 2px rgb(15 28 41 / 8%);
+  }
+
+  body.cctv-v2 .cctv-status-switcher [data-cctv-lane-count] {
+    display: inline-grid;
+    place-items: center;
+    min-width: 19px;
+    height: 19px;
+    padding-inline: 4px;
+    font-size: 10px;
+    background: var(--cctv-v2-canvas);
+    border-radius: 999px;
+  }
+
+  body.cctv-v2 #tickets.cc-kanban {
+    display: block;
+    width: 100%;
+    padding: 0;
+    overflow: visible;
+    scrollbar-gutter: auto;
+  }
+
+  body.cctv-v2 #tickets > .cctv-column.cc-kanban__column {
+    display: none;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+  }
+
+  body.cctv-v2 #tickets > .cctv-column.is-mobile-active {
+    display: flex;
+  }
+
+  body.cctv-v2 .cctv-column .col-header {
+    display: none;
+  }
+
+  body.cctv-v2 .cctv-column .cc-kanban__stack {
+    gap: 8px;
+  }
+
+  body.cctv-v2 .cctv-ticket-card.cc-card {
+    width: 100%;
     padding: 12px;
   }
 
+  body.cctv-v2 .cctv-ticket-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.cctv-v2 .cctv-ticket-modal {
+    padding: 8px;
+  }
+
   body.cctv-v2 #ticket-drawer .cctv-ticket-modal__panel.drawer-panel {
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
     width: 100%;
-    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 16px);
     border-radius: var(--cctv-v2-radius-md);
   }
 
-  body.cctv-v2 .cctv-ticket-modal[data-mode="view"] #drawer-body {
+  body.cctv-v2 .cctv-ticket-modal .drawer-header {
+    min-height: 56px;
+    padding: 8px 10px 6px;
+  }
+
+  body.cctv-v2 .cctv-ticket-identity {
+    gap: 8px;
+  }
+
+  body.cctv-v2 .cctv-ticket-modal #drawer-title {
+    font-size: 17px;
+    overflow-wrap: anywhere;
+  }
+
+  body.cctv-v2 .cctv-ticket-modal .drawer-close {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  body.cctv-v2 .cctv-ticket-tabs {
+    padding: 0 10px;
+  }
+
+  body.cctv-v2 .cctv-ticket-tab {
+    flex: 1;
+    min-width: 0;
+  }
+
+  body.cctv-v2 .cctv-ticket-modal .drawer-body {
+    padding: 8px !important;
+  }
+
+  body.cctv-v2 .cctv-detail-layout,
+  body.cctv-v2 .cctv-detail-group__grid,
+  body.cctv-v2 .cctv-detail-layout > .cctv-detail-group:first-child .cctv-detail-group__grid {
     grid-template-columns: 1fr;
+  }
+
+  body.cctv-v2 .cctv-detail-layout {
+    gap: 6px;
   }
 
   body.cctv-v2 .cctv-detail-group--wide {
     grid-column: auto;
+  }
+
+  body.cctv-v2 .cctv-detail-row.kv {
+    min-height: 40px;
+    padding: 4px 1px !important;
+  }
+
+  body.cctv-v2 .cctv-detail-layout > .cctv-detail-group:first-child .cctv-detail-row:last-child {
+    padding-left: 1px !important;
+    border-top: 1px solid color-mix(in srgb, var(--cctv-v2-border) 74%, transparent) !important;
+    border-left: 0 !important;
   }
 
   body.cctv-v2 .cctv-ticket-history .history-grid {
@@ -1078,103 +1617,144 @@ body.cctv-v2 :is(button, [role="button"], input, select, textarea):focus-visible
   body.cctv-v2 .cctv-ticket-history .history-grid--header {
     display: none;
   }
-}
-
-@media (max-width: 420px) {
-  body.cctv-v2 .cctv-workspace {
-    padding-inline: 12px;
-    padding-bottom: 24px;
-  }
-
-  body.cctv-v2 #cctv-app-topbar.cc-shell-topbar {
-    min-height: 58px;
-    margin-inline: -12px;
-    padding-inline: 12px;
-  }
-
-  body.cctv-v2 .cctv-hero.cc-page-header {
-    padding-block: 18px 16px;
-  }
-
-  body.cctv-v2 .cctv-hero .cc-page-header-title {
-    font-size: 26px;
-  }
-
-  body.cctv-v2 .cctv-stats.cc-metric-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  body.cctv-v2 .cctv-stat-card.cc-metric-card {
-    grid-template-columns: 30px minmax(0, 1fr);
-    min-height: 68px;
-    padding: 12px;
-  }
-
-  body.cctv-v2 .cctv-stat-icon {
-    width: 30px;
-    height: 30px;
-  }
-
-  body.cctv-v2 .cctv-stat-card strong {
-    font-size: 21px;
-  }
-
-  body.cctv-v2 #cctv-app-topbar :is(.cc-shell-user-badge, .cc-shell-role-badge) {
-    display: none;
-  }
-
-  body.cctv-v2 .cctv-filters.cc-filter-bar {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  body.cctv-v2 .cctv-filter-search {
-    grid-column: 1 / -1;
-  }
-
-  body.cctv-v2 .cctv-ticket-modal {
-    padding: 8px;
-  }
-
-  body.cctv-v2 #ticket-drawer .cctv-ticket-modal__panel.drawer-panel {
-    max-height: calc(100vh - 16px);
-  }
-
-  body.cctv-v2 .cctv-ticket-modal .drawer-header {
-    min-height: 72px;
-    padding: 14px 16px 8px;
-  }
-
-  body.cctv-v2 .cctv-ticket-modal .drawer-meta {
-    padding: 0 16px 10px;
-  }
-
-  body.cctv-v2 .cctv-ticket-tabs {
-    padding: 0 12px;
-  }
-
-  body.cctv-v2 .cctv-ticket-tab {
-    flex: 1;
-    min-width: 0;
-  }
-
-  body.cctv-v2 .cctv-ticket-modal .drawer-body {
-    padding: 16px;
-  }
-
-  body.cctv-v2 .cctv-detail-row.kv {
-    grid-template-columns: 1fr;
-    gap: 3px;
-  }
 
   body.cctv-v2 .cctv-ticket-modal .drawer-actions {
-    min-height: 68px;
-    padding: 12px 16px;
+    min-height: 58px;
+    padding: 8px 10px;
   }
 
   body.cctv-v2 .cctv-ticket-modal .drawer-actions button {
     flex: 1;
     min-width: 0;
+  }
+}
+
+@media (max-width: 360px) {
+  body.cctv-v2 .cctv-workspace {
+    padding-inline: 10px;
+  }
+
+  body.cctv-v2 #cctv-app-topbar.cc-shell-topbar {
+    margin-inline: -10px;
+    padding-inline: 8px;
+  }
+
+  body.cctv-v2 #cctv-app-topbar .cc-shell-nav-trigger {
+    width: 44px;
+    min-width: 44px;
+    overflow: hidden;
+    gap: 0;
+    font-size: 0;
+  }
+
+  body.cctv-v2 #cctv-app-topbar .cc-shell-nav-trigger .cc-icon-host {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    margin: 0 !important;
+  }
+
+  body.cctv-v2 #cctv-app-topbar .cc-shell-topbar-context {
+    gap: 7px;
+  }
+
+  body.cctv-v2 #cctv-app-topbar .cc-shell-topbar-title strong {
+    font-size: 12px;
+  }
+
+  body.cctv-v2 .cctv-hero.cc-page-header {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding-block: 12px 10px;
+  }
+
+  body.cctv-v2 .cctv-actions,
+  body.cctv-v2 .add-ticket-btn {
+    width: 100%;
+  }
+
+  body.cctv-v2 .cctv-stats.cc-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: hidden;
+  }
+
+  body.cctv-v2 .cctv-stat-card.cc-metric-card {
+    grid-template-columns: 20px auto;
+    width: auto;
+    min-height: 48px;
+    padding: 5px 8px;
+    border-right: 1px solid var(--cctv-v2-border);
+    border-bottom: 1px solid var(--cctv-v2-border);
+  }
+
+  body.cctv-v2 .cctv-stat-card:nth-child(2n) {
+    border-right: 0;
+  }
+
+  body.cctv-v2 .cctv-stat-card:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  body.cctv-v2 .cctv-stat-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  body.cctv-v2 .cctv-stat-label {
+    font-size: 9px;
+    white-space: nowrap;
+  }
+
+  body.cctv-v2 .cctv-filters.cc-filter-bar {
+    grid-template-columns: 1fr;
+  }
+
+  body.cctv-v2 .cctv-filter-search,
+  body.cctv-v2 .cctv-filter-toggle {
+    grid-column: 1;
+    width: 100%;
+  }
+
+  body.cctv-v2 .cctv-secondary-filters {
+    grid-column: 1;
+    grid-template-columns: 1fr;
+  }
+
+  body.cctv-v2 .cctv-status-switcher button {
+    gap: 3px;
+    padding-inline: 3px;
+    font-size: 9px;
+  }
+
+  body.cctv-v2 .cctv-status-switcher [data-cctv-lane-count] {
+    min-width: 17px;
+    height: 17px;
+    padding-inline: 3px;
+    font-size: 9px;
+  }
+
+  body.cctv-v2 .cctv-ticket-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body.cctv-v2 .cctv-ticket-modal .drawer-header {
+    gap: 6px;
+    padding-inline: 8px;
+  }
+
+  body.cctv-v2 .cctv-ticket-identity {
+    gap: 7px;
+  }
+
+  body.cctv-v2 .cctv-ticket-modal #drawer-title {
+    font-size: 16px;
+  }
+
+  body.cctv-v2 .cctv-ticket-modal .drawer-meta .meta-badge {
+    gap: 4px;
+    padding-inline: 6px;
+    font-size: 10px;
   }
 }
 
