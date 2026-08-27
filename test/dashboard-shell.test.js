@@ -214,7 +214,14 @@ test("Dashboard has one page heading and only semantic launcher navigation", () 
   assert.equal((dashboardSource.match(/<h1\b/g) || []).length, 1);
   assert.match(dashboardSource, /<aside id="dashboard-app-sidebar"/);
   assert.match(dashboardSource, /<main class="cc-shell-main" id="main-content">/);
-  assert.match(dashboardSource, /<header class="cc-page-header">/);
+  assert.match(dashboardSource, /<header class="dashboard-hero cc-page-header">/);
+  assert.match(dashboardSource, /class="dashboard-hero-earth"/);
+  assert.match(dashboardSource, /src="assets\/images\/dashboard\/dashboard-hero-earth\.png"/);
+  assert.match(dashboardSource, /alt=""/);
+  assert.match(dashboardSource, /aria-hidden="true"/);
+  assert.match(dashboardSource, /width="1772"/);
+  assert.match(dashboardSource, /height="887"/);
+  assert.match(dashboardSource, /decoding="async"/);
   assert.match(dashboardSource, /<div class="cc-page-header-content">/);
   assert.match(dashboardSource, /<p class="cc-page-header-context">/);
   assert.match(dashboardSource, /<h1 class="cc-page-header-title">/);
@@ -416,6 +423,21 @@ test("Responsive navigation opens, closes, restores focus, and exposes current r
   sidebar.querySelectorAll(".cc-shell-nav-link")[1].click();
   assert.equal(shell.classList.contains("is-nav-open"), false);
   assert.equal(document.body.classList.contains("cc-shell-nav-lock"), false);
+});
+
+test("shared responsive controls remain hidden on desktop and visible only in drawer mode", () => {
+  for (const [width, expectedDisplay] of [[1440, "none"], [1025, "none"], [1024, "inline-flex"], [390, "inline-flex"]]) {
+    const cascade = createCascade(ROOT, "dashboard.html", { viewportWidth: width });
+    const html = cssElement("html");
+    const body = cssElement("body", { classes: ["dashboard-page"] }, html);
+    const shell = cssElement("div", { classes: ["cc-shell-layout", "has-responsive-navigation"] }, body);
+    const sidebar = cssElement("aside", { classes: ["cc-shell-sidebar"] }, shell);
+    const topbar = cssElement("header", { classes: ["cc-shell-topbar"] }, shell);
+    const trigger = cssElement("button", { classes: ["cc-shell-nav-trigger", "cc-button", "cc-button--secondary", "cc-button--md"] }, topbar);
+    const close = cssElement("button", { classes: ["cc-shell-mobile-close", "cc-button", "cc-button--secondary", "cc-button--md"] }, sidebar);
+    assert.equal(cascade.winner(trigger, "display").value, expectedDisplay, `${width} Menu visibility`);
+    assert.equal(cascade.winner(close, "display").value, expectedDisplay, `${width} Close visibility`);
+  }
 });
 
 test("Responsive shell geometry is opt-in and leaves existing production pages unchanged", () => {

@@ -1,6 +1,6 @@
 const { test, expect, waitForSettledPage } = require('./fixtures');
 
-const widths = [1440, 1280, 1024, 768, 390, 360, 320];
+const widths = [1440, 1280, 1024, 768, 430, 390, 360, 320];
 const pages = [
   ['public', 'index.html'],
   ['authentication', 'login.html'],

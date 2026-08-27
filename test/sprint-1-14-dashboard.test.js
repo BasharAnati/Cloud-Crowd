@@ -685,8 +685,8 @@ test("Dashboard runtime owns no domain, summary, metric, chart, activity, or Cal
   assert.match(shellSource, /ACCESS_ENDPOINT|CCPermissions\.getMyAccessModel/);
 });
 
-test("actual Dashboard launcher grid is shrinkable and reachable at all seven contract widths", () => {
-  for (const width of [1440, 1280, 1024, 768, 390, 360, 320]) {
+test("actual Dashboard launcher grid is shrinkable and reachable at all eight contract widths", () => {
+  for (const width of [1440, 1280, 1024, 768, 430, 390, 360, 320]) {
     const cascade = createCascade(ROOT, "dashboard.html", { viewportWidth: width });
     const html = cssElement("html", { attributes: { "data-theme": "light" } });
     const body = cssElement("body", { classes: ["dashboard-page"] }, html);
@@ -707,7 +707,8 @@ test("actual Dashboard launcher grid is shrinkable and reachable at all seven co
     assert.notEqual(cascade.winner(container, "overflow-x")?.value, "hidden", `${width} page not clipped`);
     const columns = cascade.resolveValue(grid, cascade.winner(grid, "grid-template-columns").value);
     if (width <= 620) assert.equal(columns, "1fr", `${width} one-column launcher`);
-    else assert.match(columns, /auto-fit.*minmax\(240px, 1fr\)/, `${width} fluid launcher`);
+    else if (width <= 900) assert.match(columns, /auto-fit.*minmax\(min\(100%, 300px\), 1fr\)/, `${width} two-column launcher`);
+    else assert.match(columns, /auto-fit.*minmax\(min\(100%, 205px\), 1fr\)/, `${width} precision launcher`);
     assert.equal(cascade.winner(sidebar, "position").value, width <= 1024 ? "fixed" : "sticky", `${width} shell relationship`);
   }
   assert.match(dashboardCss, /\.dashboard-page\s*\{[\s\S]*?min-width:\s*320px/);

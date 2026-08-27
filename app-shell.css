@@ -973,6 +973,7 @@
 body .cc-shell-nav-trigger.cc-button,
 body .cc-shell-mobile-close.cc-button {
   min-height: 44px;
+  display: none;
 }
 
 .cc-shell-nav-trigger,
@@ -1134,8 +1135,8 @@ body .cc-shell-mobile-close.cc-button {
     transform: translateX(0);
   }
 
-  .has-responsive-navigation .cc-shell-nav-trigger,
-  .has-responsive-navigation .cc-shell-mobile-close {
+  body .has-responsive-navigation .cc-shell-nav-trigger.cc-button,
+  body .has-responsive-navigation .cc-shell-mobile-close.cc-button {
     display: inline-flex;
   }
 

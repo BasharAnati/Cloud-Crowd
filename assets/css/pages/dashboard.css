@@ -1,6 +1,97 @@
 .dashboard-page {
+  --dashboard-canvas: color-mix(in srgb, var(--color-bg) 94%, var(--color-primary-soft));
+  --dashboard-card-surface: var(--color-surface);
+  --dashboard-card-border: color-mix(in srgb, var(--color-border) 90%, var(--color-primary));
+  --dashboard-card-hover-border: color-mix(in srgb, var(--color-primary) 60%, var(--color-border));
+  --dashboard-hero-image-opacity: 0.16;
+  --dashboard-hero-fade-strong: color-mix(in srgb, var(--dashboard-canvas) 98%, transparent);
+  --dashboard-hero-fade-soft: color-mix(in srgb, var(--dashboard-canvas) 62%, transparent);
+  --dashboard-module-accent: var(--color-primary);
   min-width: 320px;
   margin: 0;
+  background: var(--dashboard-canvas);
+}
+
+:root[data-theme="dark"] .dashboard-page {
+  --dashboard-canvas: color-mix(in srgb, var(--brand-deep-navy) 46%, var(--color-shadow));
+  --dashboard-card-surface: color-mix(in srgb, var(--color-neutral-soft) 32%, var(--color-shadow));
+  --dashboard-card-border: color-mix(in srgb, var(--color-border) 18%, transparent);
+  --dashboard-card-hover-border: color-mix(in srgb, var(--color-primary) 58%, var(--color-border));
+  --dashboard-hero-image-opacity: 0.44;
+  --dashboard-hero-fade-strong: color-mix(in srgb, var(--dashboard-canvas) 98%, transparent);
+  --dashboard-hero-fade-soft: color-mix(in srgb, var(--dashboard-canvas) 52%, transparent);
+}
+
+.dashboard-page .cc-shell-layout,
+.dashboard-page .cc-shell-main {
+  background: var(--dashboard-canvas);
+}
+
+:root[data-theme="dark"] .dashboard-page .cc-shell-layout,
+:root[data-theme="dark"] .dashboard-page .cc-shell-main {
+  background-image:
+    radial-gradient(circle at 72% 8%, color-mix(in srgb, var(--color-primary) 5%, transparent), transparent 34%),
+    linear-gradient(var(--color-shadow), var(--color-shadow));
+}
+
+.dashboard-page .has-responsive-navigation .cc-shell-topbar {
+  box-sizing: border-box;
+  min-height: 60px;
+  padding: var(--space-2) var(--space-5);
+  border-color: color-mix(in srgb, var(--color-divider) 76%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+  box-shadow: none;
+}
+
+:root[data-theme="dark"] .dashboard-page .cc-shell-topbar {
+  border-color: color-mix(in srgb, var(--color-border) 32%, transparent);
+  background:
+    linear-gradient(var(--color-shadow), var(--color-shadow)),
+    color-mix(in srgb, var(--brand-deep-navy) 62%, var(--color-surface));
+}
+
+.dashboard-page .cc-shell-topbar-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  opacity: 0.68;
+}
+
+.dashboard-page .cc-shell-topbar-actions {
+  gap: 6px;
+}
+
+.dashboard-page .cc-shell-user-badge,
+.dashboard-page .cc-shell-role-badge {
+  min-height: 28px;
+  padding: var(--space-1) var(--space-2);
+}
+
+:root[data-theme="dark"] .dashboard-page :is(
+  .cc-shell-user-badge,
+  .cc-shell-role-badge,
+  .cc-theme-toggle,
+  .cc-shell-maintenance-toggle,
+  .cc-shell-logout
+) {
+  border-color: color-mix(in srgb, var(--color-border) 40%, transparent);
+  background-color: color-mix(in srgb, var(--dashboard-card-surface) 78%, transparent);
+  box-shadow: none;
+}
+
+:root[data-theme="dark"] .dashboard-page #dashboard-app-sidebar {
+  border-color: color-mix(in srgb, var(--color-border) 20%, transparent);
+  background:
+    linear-gradient(var(--color-shadow), var(--color-shadow)),
+    var(--brand-deep-navy);
+}
+
+:root[data-theme="dark"] .dashboard-page #dashboard-app-sidebar .cc-shell-nav-link.is-active {
+  border-color: color-mix(in srgb, var(--color-primary) 24%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 11%, transparent);
+}
+
+.dashboard-page .cc-shell-maintenance-toggle[hidden] {
+  display: none;
 }
 
 .dashboard-page-container {
@@ -10,10 +101,88 @@
   padding: var(--page-padding);
 }
 
+.dashboard-page .dashboard-hero {
+  position: relative;
+  box-sizing: border-box;
+  isolation: isolate;
+  min-height: 120px;
+  align-items: flex-start;
+  overflow: visible;
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dashboard-page .dashboard-hero::before,
+.dashboard-page .dashboard-hero::after {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  content: "";
+}
+
+.dashboard-page .dashboard-hero::before {
+  inset: 0;
+  width: auto;
+  background: none;
+}
+
+.dashboard-page .dashboard-hero::after {
+  inset: 0;
+  background: none;
+}
+
+.dashboard-page .dashboard-hero-earth {
+  position: absolute;
+  inset: calc(var(--space-4) * -1) 0 calc(var(--space-8) * -1);
+  z-index: 1;
+  width: 100%;
+  height: calc(100% + var(--space-4) + var(--space-8));
+  object-fit: cover;
+  object-position: 62% 49%;
+  opacity: var(--dashboard-hero-image-opacity);
+  filter: saturate(0.98) brightness(0.92);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+:root:not([data-theme="dark"]) .dashboard-page .dashboard-hero-earth {
+  filter: saturate(0.72) brightness(1.32);
+  mix-blend-mode: multiply;
+}
+
+.dashboard-page .dashboard-hero .cc-page-header-content {
+  position: relative;
+  z-index: 3;
+  max-width: 760px;
+}
+
+.dashboard-page .dashboard-hero .cc-page-header-context {
+  margin-bottom: var(--space-1);
+  color: color-mix(in srgb, var(--color-primary) 70%, var(--color-text-muted));
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dashboard-page .cc-page-header-title {
+  max-width: 640px;
+  font-size: 28px;
+  letter-spacing: -0.03em;
+}
+
+.dashboard-page .dashboard-hero .cc-page-header-description {
+  max-width: 720px;
+  margin-top: 6px;
+}
+
 .dashboard-module-groups {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: var(--space-4);
+  margin-top: -10px;
   min-width: 0;
 }
 
@@ -22,6 +191,11 @@
   gap: var(--space-2);
   max-width: 720px;
   margin-inline: auto;
+  padding: var(--space-6);
+  border: 1px solid var(--dashboard-card-border);
+  border-radius: var(--radius-md);
+  background: var(--dashboard-card-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .dashboard-launcher-state[hidden] {
@@ -48,33 +222,747 @@
   margin-top: var(--space-2);
 }
 
-.cc-dashboard-module-group-title {
-  margin: 0 0 var(--space-4);
-  color: var(--color-text);
-  font-size: var(--font-size-section-title);
+.dashboard-page .cc-dashboard-module-group {
+  --dashboard-section-accent: var(--color-primary);
+  min-width: 0;
+}
+
+.dashboard-page .cc-dashboard-module-group[data-group="HR"],
+.dashboard-page .cc-dashboard-module-group[data-group="Administration"] {
+  --dashboard-section-accent: color-mix(in srgb, var(--color-primary) 46%, var(--color-danger));
+}
+
+.dashboard-page .cc-dashboard-module-group[data-group="Business"] {
+  --dashboard-section-accent: color-mix(in srgb, var(--color-primary) 76%, var(--color-secondary));
+}
+
+.dashboard-page .cc-dashboard-module-group-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 10px;
+  color: color-mix(in srgb, var(--dashboard-section-accent) 82%, var(--color-text));
+  font-size: var(--font-size-small);
   font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-section-title);
+  line-height: var(--line-height-small);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.dashboard-page .cc-dashboard-module-group-title::before {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 9px;
+  border: 2px solid var(--dashboard-section-accent);
+  border-radius: 3px;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--dashboard-section-accent) 52%, transparent);
+  transform: rotate(45deg);
+  content: "";
+}
+
+.dashboard-page .cc-dashboard-module-group-title::after {
+  height: 1px;
+  flex: 1 1 auto;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--dashboard-section-accent) 42%, var(--color-border)),
+    color-mix(in srgb, var(--color-border) 34%, transparent)
+  );
+  content: "";
 }
 
 .dashboard-page .cc-shell-dashboard-grid {
-  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 205px), 1fr));
+  gap: 10px;
   min-width: 0;
 }
 
-.dashboard-page .cc-shell-module-card {
+.dashboard-page .cc-dashboard-module-group[data-group="Business"] .cc-shell-dashboard-grid {
+  max-width: 640px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+}
+
+.dashboard-page .cc-dashboard-module-group[data-group="Administration"] .cc-shell-dashboard-grid {
+  max-width: 380px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.dashboard-page .cc-shell-module-card.cc-card {
+  position: relative;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  grid-template-rows: auto 1fr auto;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 8px;
   min-width: 0;
+  min-height: 164px;
+  padding: 13px;
+  overflow: hidden;
   overflow-wrap: anywhere;
+  border-color: var(--dashboard-card-border);
+  border-radius: 9px;
+  background-color: var(--dashboard-card-surface);
+  background-image: linear-gradient(
+    138deg,
+    color-mix(in srgb, var(--dashboard-module-accent) 5%, transparent),
+    transparent 36%
+  );
+  box-shadow:
+    inset 0 -1px 0 color-mix(in srgb, var(--dashboard-module-accent) 18%, transparent),
+    0 8px 22px color-mix(in srgb, var(--color-shadow) 42%, transparent);
+  transition:
+    transform var(--duration-normal) var(--ease-standard),
+    border-color var(--duration-normal) var(--ease-standard),
+    box-shadow var(--duration-normal) var(--ease-standard),
+    background-color var(--duration-normal) var(--ease-standard);
+}
+
+.dashboard-page .cc-shell-module-card:hover,
+.dashboard-page .cc-shell-module-card:focus-visible {
+  border-color: var(--dashboard-card-hover-border);
+  background-color: color-mix(in srgb, var(--dashboard-card-surface) 94%, var(--dashboard-module-accent));
+  box-shadow:
+    inset 0 -1px 0 color-mix(in srgb, var(--dashboard-module-accent) 58%, transparent),
+    0 10px 24px color-mix(in srgb, var(--color-shadow) 58%, transparent);
+  transform: translateY(-1px);
 }
 
 .dashboard-page .cc-shell-module-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  grid-column: 1;
+  grid-row: 1;
+  place-items: center;
+  flex-basis: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--dashboard-module-accent) 9%, transparent);
+  color: var(--dashboard-module-accent);
+  box-shadow:
+    0 0 5px color-mix(in srgb, var(--dashboard-module-accent) 28%, transparent),
+    0 0 12px color-mix(in srgb, var(--dashboard-module-accent) 12%, transparent);
+}
+
+.dashboard-page .cc-shell-module-icon > svg {
   width: 24px;
   height: 24px;
-  flex-basis: 24px;
-  color: var(--color-primary);
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--dashboard-module-accent) 48%, transparent));
+}
+
+.dashboard-page .cc-shell-module-card-title {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.dashboard-page .cc-shell-module-card-description {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  align-self: start;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.dashboard-page .cc-shell-module-card-action {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  align-self: end;
+  min-height: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: color-mix(in srgb, var(--dashboard-module-accent) 72%, var(--color-text));
+  font-size: 12px;
+}
+
+.dashboard-page .cc-dashboard-module-group:is([data-group="Business"], [data-group="Administration"])
+  .cc-shell-module-card.cc-card {
+  min-height: 124px;
+}
+
+.dashboard-page .cc-shell-module-card-action::after {
+  font-size: 1.15em;
+  line-height: 1;
+  content: "\2192";
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.dashboard-page .cc-shell-module-card:hover .cc-shell-module-card-action::after,
+.dashboard-page .cc-shell-module-card:focus-visible .cc-shell-module-card-action::after {
+  transform: translateX(3px);
+}
+
+.dashboard-page [data-module-id="cctv"],
+.dashboard-page [data-module-id="free-order-share"],
+.dashboard-page [data-module-id="client-profiles"] {
+  --dashboard-module-accent: var(--color-primary);
+}
+
+.dashboard-page [data-module-id="customer-experience"],
+.dashboard-page [data-module-id="attendance"],
+.dashboard-page [data-module-id="restaurant-ratings"] {
+  --dashboard-module-accent: var(--color-secondary);
+}
+
+.dashboard-page [data-module-id="daily-complaints"],
+.dashboard-page [data-module-id="weekly-quality"] {
+  --dashboard-module-accent: var(--color-warning);
+}
+
+.dashboard-page [data-module-id="complimentary-orders"],
+.dashboard-page [data-module-id="employee-profiles"],
+.dashboard-page [data-module-id="anati-admin"] {
+  --dashboard-module-accent: color-mix(in srgb, var(--color-primary) 52%, var(--color-danger));
+}
+
+.dashboard-page [data-module-id="free-order-requests"],
+.dashboard-page [data-module-id="agent-training"] {
+  --dashboard-module-accent: var(--color-success);
+}
+
+.dashboard-page [data-module-id="employee-deductions"] {
+  --dashboard-module-accent: color-mix(in srgb, var(--color-danger) 70%, var(--color-primary));
+}
+
+@media (max-width: 1024px) {
+  .dashboard-page #dashboard-app-sidebar {
+    transform: translateX(-100%);
+  }
+
+  .dashboard-page .is-nav-open #dashboard-app-sidebar {
+    transform: translateX(0);
+  }
+
+  .dashboard-page .dashboard-hero {
+    min-height: 132px;
+  }
+
+  .dashboard-page .dashboard-hero .cc-page-header-content {
+    flex: 0 1 auto;
+    width: 100%;
+  }
+
+  .dashboard-page .dashboard-hero-earth {
+    object-position: 58% 49%;
+  }
+}
+
+@media (max-width: 900px) {
+  .dashboard-page .dashboard-hero {
+    min-height: 116px;
+  }
+
+  .dashboard-page .dashboard-hero-earth {
+    object-position: 55% 49%;
+  }
+
+  .dashboard-page .cc-shell-dashboard-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  }
 }
 
 @media (max-width: 620px) {
+  .dashboard-page {
+    --dashboard-hero-image-opacity: 0.07;
+  }
+
+  :root[data-theme="dark"] .dashboard-page {
+    --dashboard-hero-image-opacity: 0.34;
+  }
+
   .dashboard-module-groups {
     gap: var(--space-6);
   }
+
+  .dashboard-page .dashboard-hero {
+    min-height: 88px;
+    padding: var(--space-4);
+  }
+
+  .dashboard-page .dashboard-hero::before {
+    background: linear-gradient(
+      90deg,
+      var(--dashboard-hero-fade-strong) 0%,
+      var(--dashboard-hero-fade-strong) 52%,
+      var(--dashboard-hero-fade-soft) 82%,
+      transparent 100%
+    );
+  }
+
+  .dashboard-page .dashboard-hero-earth {
+    object-position: 50% 48%;
+  }
+
+  .dashboard-page .dashboard-hero .cc-page-header-description {
+    margin-top: var(--space-2);
+    font-size: var(--font-size-small);
+  }
+
+  .dashboard-page .cc-shell-dashboard-grid,
+  .dashboard-page .cc-dashboard-module-group[data-group="Business"] .cc-shell-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-page .cc-shell-module-card.cc-card {
+    min-height: 0;
+    padding: var(--space-4);
+    row-gap: var(--space-3);
+  }
+}
+
+@media (max-width: 390px) {
+  .dashboard-page .dashboard-hero {
+    min-height: 80px;
+  }
+
+  .dashboard-page .cc-shell-topbar-actions {
+    gap: var(--space-1);
+  }
+
+  .dashboard-page .cc-shell-user-badge,
+  .dashboard-page .cc-shell-role-badge {
+    padding-inline: var(--space-2);
+  }
+
+  .dashboard-page .cc-theme-toggle,
+  .dashboard-page .cc-shell-logout {
+    padding-inline: var(--space-2);
+  }
+}
+
+@media (max-width: 340px) {
+  .dashboard-page .dashboard-hero {
+    min-height: 76px;
+  }
+}
+
+/* Phase 4 canonical parity layer. Kept Dashboard-local so shared product shells retain their geometry. */
+.dashboard-page {
+  --dashboard-canvas: color-mix(in srgb, var(--color-bg) 96%, var(--color-primary-soft));
+  --dashboard-card-surface: var(--color-surface);
+  --dashboard-card-surface-deep: color-mix(in srgb, var(--color-surface) 94%, var(--color-bg));
+  --dashboard-card-border: color-mix(in srgb, var(--color-border) 88%, var(--color-primary));
+  --dashboard-card-hover-border: color-mix(in srgb, var(--color-primary) 62%, var(--color-border));
+  --dashboard-section-divider: color-mix(in srgb, var(--color-divider) 82%, transparent);
+  --dashboard-sidebar-separator: color-mix(in srgb, var(--color-sidebar-border) 72%, transparent);
+  --dashboard-topbar-separator: color-mix(in srgb, var(--color-divider) 82%, transparent);
+  --dashboard-control-border: color-mix(in srgb, var(--color-border) 86%, transparent);
+  --dashboard-active-nav-border: color-mix(in srgb, var(--color-primary) 34%, transparent);
+  --dashboard-card-radius: 9px;
+  --dashboard-control-radius: 8px;
+  --dashboard-nav-radius: 7px;
+  --dashboard-grid-gap: 10px;
+  --dashboard-card-padding: 14px;
+  --dashboard-icon-glow: 0 0 10px color-mix(in srgb, var(--dashboard-module-accent) 24%, transparent);
+  --dashboard-corner-glow-opacity: 0.22;
+  --dashboard-section-glow: 0 0 9px color-mix(in srgb, var(--dashboard-section-accent) 28%, transparent);
+  --sidebar-width: 252px;
+}
+
+:root[data-theme="dark"] .dashboard-page {
+  --dashboard-canvas: color-mix(in srgb, var(--brand-deep-navy) 46%, var(--color-shadow));
+  --dashboard-card-surface: color-mix(in srgb, var(--color-neutral-soft) 32%, var(--color-shadow));
+  --dashboard-card-surface-deep: color-mix(in srgb, var(--dashboard-card-surface) 88%, var(--color-shadow));
+  --dashboard-card-border: color-mix(in srgb, var(--color-border) 28%, transparent);
+  --dashboard-card-hover-border: color-mix(in srgb, var(--color-primary) 62%, transparent);
+  --dashboard-section-divider: color-mix(in srgb, var(--color-divider) 32%, transparent);
+  --dashboard-sidebar-separator: color-mix(in srgb, var(--color-sidebar-border) 72%, transparent);
+  --dashboard-topbar-separator: color-mix(in srgb, var(--color-divider) 28%, transparent);
+  --dashboard-control-border: color-mix(in srgb, var(--color-border) 30%, transparent);
+  --dashboard-active-nav-border: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  --dashboard-hero-image-opacity: 0.36;
+  --dashboard-corner-glow-opacity: 0.28;
+}
+
+.dashboard-page .cc-shell-main {
+  background-image:
+    radial-gradient(circle at 78% 2%, color-mix(in srgb, var(--color-primary) 6%, transparent), transparent 34%),
+    linear-gradient(145deg, color-mix(in srgb, var(--dashboard-canvas) 94%, var(--color-surface)) 0%, var(--dashboard-canvas) 43%);
+}
+
+.dashboard-page #dashboard-app-sidebar {
+  box-sizing: border-box;
+  gap: 12px;
+  padding: 14px 10px 18px;
+  border-color: var(--dashboard-sidebar-separator);
+  background: color-mix(in srgb, var(--color-sidebar-bg) 96%, var(--color-shadow));
+}
+
+:root[data-theme="dark"] .dashboard-page #dashboard-app-sidebar {
+  background: color-mix(in srgb, var(--brand-deep-navy) 46%, var(--color-shadow));
+}
+
+.dashboard-page #dashboard-app-sidebar .cc-shell-sidebar-header {
+  min-height: 42px;
+  padding-inline: 6px;
+}
+
+.dashboard-page #dashboard-app-sidebar .cc-shell-brand {
+  min-height: 42px;
+  gap: 8px;
+  font-size: 15px;
+}
+
+.dashboard-page #dashboard-app-sidebar .cc-shell-brand-logo {
+  width: 32px;
+  height: 32px;
+}
+
+.dashboard-page #dashboard-app-sidebar .cc-shell-nav { gap: 12px; }
+.dashboard-page #dashboard-app-sidebar .cc-shell-nav-group { gap: 3px; }
+
+.dashboard-page #dashboard-app-sidebar .cc-shell-nav-heading {
+  margin: 0 6px 3px;
+  font-size: 10px;
+  letter-spacing: 0.045em;
+}
+
+.dashboard-page #dashboard-app-sidebar .cc-shell-nav-link {
+  min-height: 34px;
+  gap: 8px;
+  padding: 6px 7px;
+  border-radius: var(--dashboard-nav-radius);
+  color: color-mix(in srgb, var(--color-sidebar-text) 88%, var(--color-sidebar-muted));
+}
+
+.dashboard-page #dashboard-app-sidebar .cc-shell-nav-link:hover,
+.dashboard-page #dashboard-app-sidebar .cc-shell-nav-link:focus-visible {
+  border-color: color-mix(in srgb, var(--dashboard-sidebar-separator) 74%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+.dashboard-page #dashboard-app-sidebar .cc-shell-nav-link.is-active {
+  border-color: var(--dashboard-active-nav-border);
+  background: color-mix(in srgb, var(--color-primary) 17%, transparent);
+  color: var(--color-sidebar-text);
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--color-primary) 64%, transparent);
+}
+
+.dashboard-page #dashboard-app-sidebar .cc-shell-nav-link .cc-shell-module-icon {
+  width: 17px;
+  height: 17px;
+  flex-basis: 17px;
+  border: 0;
+  border-radius: 0;
+  color: var(--color-sidebar-muted);
+  opacity: 0.82;
+  filter: none;
+}
+
+.dashboard-page #dashboard-app-sidebar .cc-shell-nav-link.is-active .cc-shell-module-icon {
+  color: color-mix(in srgb, var(--color-primary) 78%, var(--color-sidebar-text));
+  opacity: 1;
+}
+
+.dashboard-page #dashboard-app-sidebar .cc-shell-nav-text {
+  overflow: visible;
+  text-overflow: clip;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.dashboard-page .has-responsive-navigation .cc-shell-topbar {
+  min-height: 60px;
+  padding: 10px 20px;
+  border-color: var(--dashboard-topbar-separator);
+  background: color-mix(in srgb, var(--color-surface) 93%, var(--dashboard-canvas));
+}
+
+:root[data-theme="dark"] .dashboard-page .has-responsive-navigation .cc-shell-topbar {
+  background: color-mix(in srgb, var(--dashboard-canvas) 98%, transparent);
+}
+
+.dashboard-page .cc-shell-topbar-title { display: block; line-height: 1; }
+.dashboard-page .cc-shell-topbar-title strong { font-size: 13px; font-weight: 600; line-height: 1.2; }
+.dashboard-page .cc-shell-topbar-eyebrow { display: none; }
+.dashboard-page .cc-shell-topbar-actions { gap: 7px; flex-wrap: nowrap; }
+
+.dashboard-page :is(.cc-theme-toggle, .cc-shell-user-badge, .cc-shell-role-badge, .cc-shell-maintenance-toggle, .cc-shell-logout) {
+  box-sizing: border-box;
+  min-height: 34px;
+  border-color: var(--dashboard-control-border);
+  border-radius: var(--dashboard-control-radius);
+  background: color-mix(in srgb, var(--dashboard-card-surface) 80%, transparent);
+  box-shadow: none;
+  font-size: 12px;
+}
+
+.dashboard-page .cc-shell-user-badge {
+  margin-left: 7px;
+  border-radius: var(--dashboard-control-radius) 0 0 var(--dashboard-control-radius);
+}
+
+.dashboard-page .cc-shell-role-badge {
+  margin-left: -8px;
+  border-left: 0;
+  border-radius: 0 var(--dashboard-control-radius) var(--dashboard-control-radius) 0;
+  color: color-mix(in srgb, var(--color-primary) 48%, var(--color-danger));
+}
+
+.dashboard-page .cc-shell-maintenance-toggle { min-width: 108px; }
+
+.dashboard-page .cc-shell-maintenance-toggle::before {
+  margin-right: 7px;
+  color: var(--color-text-muted);
+  font-weight: 400;
+  content: "Maintenance";
+}
+
+.dashboard-page .cc-shell-maintenance-toggle.is-active {
+  border-color: color-mix(in srgb, var(--color-success) 52%, var(--dashboard-control-border));
+  background: color-mix(in srgb, var(--color-success) 20%, var(--dashboard-card-surface));
+}
+
+.dashboard-page .cc-shell-logout { padding-inline: 11px; color: color-mix(in srgb, var(--color-primary) 72%, var(--color-text)); }
+
+.dashboard-page-container.cc-page-container {
+  max-width: var(--content-max-width);
+  margin-inline: auto;
+  padding: 10px var(--page-padding-desktop) var(--page-padding-desktop);
+}
+
+.dashboard-page .dashboard-hero {
+  min-height: 108px;
+  overflow: hidden;
+  margin: 0 0 var(--space-8);
+  padding: 2px 8px 14px;
+}
+
+.dashboard-page .dashboard-hero::before {
+  background: linear-gradient(90deg, var(--dashboard-canvas) 0%, color-mix(in srgb, var(--dashboard-canvas) 96%, transparent) 35%, color-mix(in srgb, var(--dashboard-canvas) 30%, transparent) 67%, transparent 100%);
+}
+
+.dashboard-page .dashboard-hero::after {
+  inset: auto 0 0;
+  height: 38%;
+  background: linear-gradient(transparent, var(--dashboard-canvas));
+}
+
+.dashboard-page .dashboard-hero-earth {
+  inset: -18px 0 -12px 30%;
+  width: 70%;
+  height: calc(100% + 30px);
+  object-position: 63% 42%;
+  opacity: var(--dashboard-hero-image-opacity);
+  filter: saturate(0.72) brightness(0.74) contrast(0.98);
+}
+
+:root:not([data-theme="dark"]) .dashboard-page .dashboard-hero-earth {
+  filter: saturate(0.36) brightness(1.18) contrast(0.7);
+}
+
+.dashboard-page .dashboard-hero .cc-page-header-context {
+  margin-bottom: 3px;
+  font-size: 9px;
+  line-height: 1.3;
+  letter-spacing: 0.075em;
+}
+
+.dashboard-page .cc-page-header-title {
+  font-size: var(--font-size-page-title);
+  line-height: var(--line-height-page-title);
+}
+
+.dashboard-page .dashboard-hero .cc-page-header-description {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.dashboard-module-groups { gap: 22px; margin-top: calc(var(--space-8) * -1); }
+
+.dashboard-page .cc-dashboard-module-group { --dashboard-section-accent: var(--color-primary); }
+.dashboard-page .cc-dashboard-module-group[data-group="HR"],
+.dashboard-page .cc-dashboard-module-group[data-group="Administration"] { --dashboard-section-accent: color-mix(in srgb, var(--color-primary) 46%, var(--color-danger)); }
+.dashboard-page .cc-dashboard-module-group[data-group="Business"] { --dashboard-section-accent: color-mix(in srgb, var(--color-primary) 76%, var(--color-secondary)); }
+
+.dashboard-page .cc-dashboard-module-group-title {
+  min-height: 18px;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  line-height: 18px;
+  letter-spacing: 0.055em;
+}
+
+.dashboard-page .cc-dashboard-module-group-title::before {
+  width: 17px;
+  height: 17px;
+  flex-basis: 17px;
+  border: 0;
+  border-radius: 0;
+  background: var(--dashboard-section-accent);
+  box-shadow: none;
+  filter: drop-shadow(var(--dashboard-section-glow));
+  transform: none;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+}
+
+.dashboard-page .cc-dashboard-module-group[data-group="Operations"] .cc-dashboard-module-group-title::before {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23000' stroke-width='2' d='m12 2 8 4.6v9.2L12 20.5 4 15.8V6.6L12 2Zm0 5-4 2.3v4.5l4 2.3 4-2.3V9.3L12 7Z'/%3E%3C/svg%3E");
+}
+
+.dashboard-page .cc-dashboard-module-group[data-group="HR"] .cc-dashboard-module-group-title::before {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='9' cy='8' r='3'/%3E%3Cpath d='M3.5 19c.5-3.4 2.2-5 5.5-5s5 1.6 5.5 5M15 5.5a3 3 0 0 1 0 5.5M16 14c2.7.2 4 1.8 4.5 4.5'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.dashboard-page .cc-dashboard-module-group[data-group="Business"] .cc-dashboard-module-group-title::before {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M4 21V5h10v16M14 10h6v11M8 9h2m-2 4h2m-2 4h2m9-3h-2m2 4h-2M2 21h20'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.dashboard-page .cc-dashboard-module-group[data-group="Administration"] .cc-dashboard-module-group-title::before {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23000' stroke-width='2' d='M12 2 20 5v6c0 5-3.2 8.6-8 11-4.8-2.4-8-6-8-11V5l8-3Zm-3 10 2 2 4-5'/%3E%3C/svg%3E");
+}
+
+.dashboard-page .cc-dashboard-module-group-title::after {
+  margin-left: 3px;
+  background: linear-gradient(90deg, var(--dashboard-section-divider), color-mix(in srgb, var(--dashboard-section-divider) 45%, transparent));
+}
+
+.dashboard-page .cc-shell-dashboard-grid { gap: var(--dashboard-grid-gap); }
+
+.dashboard-page .cc-dashboard-module-group[data-group="Business"] .cc-shell-dashboard-grid {
+  max-width: 590px;
+  grid-template-columns: repeat(2, minmax(0, 290px));
+}
+
+.dashboard-page .cc-dashboard-module-group[data-group="Administration"] .cc-shell-dashboard-grid { max-width: 380px; }
+
+.dashboard-page .cc-shell-module-card.cc-card {
+  min-height: 184px;
+  grid-template-columns: 38px minmax(0, 1fr);
+  column-gap: 9px;
+  row-gap: 9px;
+  padding: var(--dashboard-card-padding);
+  border-radius: var(--dashboard-card-radius);
+  background-image: linear-gradient(142deg, color-mix(in srgb, var(--color-text) 3%, transparent), transparent 44%);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-text-inverse) 5%, transparent), 0 7px 20px color-mix(in srgb, var(--color-shadow) 24%, transparent);
+}
+
+.dashboard-page .cc-shell-module-card.cc-card::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--dashboard-module-accent) 88%, transparent), transparent) 0 100% / 62px 1px no-repeat,
+    linear-gradient(0deg, color-mix(in srgb, var(--dashboard-module-accent) 82%, transparent), transparent) 0 100% / 1px 42px no-repeat,
+    radial-gradient(
+      ellipse 58px 44px at 0 100%,
+      color-mix(in srgb, var(--dashboard-module-accent) 76%, transparent) 0,
+      color-mix(in srgb, var(--dashboard-module-accent) 34%, transparent) 22%,
+      transparent 72%
+    );
+  opacity: var(--dashboard-corner-glow-opacity);
+  pointer-events: none;
+  content: "";
+}
+
+.dashboard-page .cc-shell-module-card.cc-card > * { position: relative; z-index: 1; }
+
+.dashboard-page .cc-shell-module-card:hover {
+  border-color: var(--dashboard-card-hover-border);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-text-inverse) 7%, transparent), 0 9px 22px color-mix(in srgb, var(--color-shadow) 36%, transparent);
+}
+
+.dashboard-page .cc-shell-module-card:focus-visible {
+  border-color: var(--color-focus);
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-focus) 22%, transparent);
+}
+
+.dashboard-page .cc-shell-module-icon {
+  width: 38px;
+  height: 38px;
+  flex-basis: 38px;
+  background: color-mix(in srgb, var(--dashboard-module-accent) 8%, transparent);
+  box-shadow: var(--dashboard-icon-glow);
+}
+
+.dashboard-page .cc-shell-module-icon > svg {
+  width: 25px;
+  height: 25px;
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--dashboard-module-accent) 34%, transparent));
+}
+
+.dashboard-page .cc-shell-module-card-title { font-weight: 600; letter-spacing: -0.01em; }
+.dashboard-page .cc-shell-module-card-description { color: color-mix(in srgb, var(--color-text-muted) 94%, var(--color-text)); }
+.dashboard-page .cc-shell-module-card-action { color: color-mix(in srgb, var(--color-primary) 84%, var(--color-text)); font-weight: 600; }
+
+.dashboard-page .cc-dashboard-module-group:is([data-group="Business"], [data-group="Administration"]) .cc-shell-module-card.cc-card { min-height: 132px; }
+
+@media (min-width: 1400px) {
+  .dashboard-page .cc-dashboard-module-group[data-group="Operations"] .cc-shell-dashboard-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .dashboard-page .cc-dashboard-module-group[data-group="HR"] .cc-shell-dashboard-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1024px) {
+  .dashboard-page #dashboard-app-sidebar .cc-shell-nav-link { min-height: 44px; padding-block: 10px; }
+  .dashboard-page-container.cc-page-container { padding: 16px; }
+  .dashboard-page .dashboard-hero { min-height: 106px; padding-inline: 4px; }
+  .dashboard-page .dashboard-hero-earth { inset-inline-start: 24%; width: 76%; }
+}
+
+@media (max-width: 900px) {
+  .dashboard-page .cc-dashboard-module-group[data-group="Business"] .cc-shell-dashboard-grid {
+    max-width: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  :root[data-theme="dark"] .dashboard-page { --dashboard-hero-image-opacity: 0.17; }
+  .dashboard-page .has-responsive-navigation .cc-shell-topbar { min-height: 58px; align-items: center; flex-wrap: nowrap; padding: 7px 12px; }
+  .dashboard-page .cc-shell-topbar-actions { min-width: 0; gap: 4px; overflow: hidden; }
+  .dashboard-page .cc-shell-topbar-title,
+  .dashboard-page .cc-shell-user-badge,
+  .dashboard-page .cc-shell-role-badge { display: none; }
+  .dashboard-page :is(.cc-theme-toggle, .cc-shell-maintenance-toggle, .cc-shell-logout) { min-height: 44px; padding-inline: 9px; }
+  .dashboard-page-container.cc-page-container { padding: 12px; }
+  .dashboard-page .dashboard-hero { min-height: 102px; margin-bottom: var(--space-6); padding: 2px 4px 12px; }
+  .dashboard-page .dashboard-hero-earth { inset: -10px 0 -8px 33%; width: 67%; height: calc(100% + 18px); object-position: 57% 42%; }
+  .dashboard-page .dashboard-hero .cc-page-header-description { max-width: 94%; font-size: 12px; }
+  .dashboard-module-groups { gap: 20px; margin-top: calc(var(--space-6) * -1); }
+  .dashboard-page .cc-shell-module-card.cc-card,
+  .dashboard-page .cc-dashboard-module-group:is([data-group="Business"], [data-group="Administration"]) .cc-shell-module-card.cc-card { min-height: 0; padding: 15px; row-gap: 10px; }
+  .dashboard-page .cc-dashboard-module-group[data-group="Business"] .cc-shell-dashboard-grid { grid-template-columns: 1fr; }
+  .dashboard-page .cc-shell-maintenance-toggle { min-width: 48px; }
+  .dashboard-page .cc-shell-maintenance-toggle::before { display: none; }
+}
+
+@media (max-width: 340px) {
+  .dashboard-page .has-responsive-navigation .cc-shell-topbar {
+    align-items: center;
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .dashboard-page .cc-shell-topbar-context,
+  .dashboard-page .cc-shell-topbar-actions {
+    flex: 1 0 100%;
+    width: 100%;
+  }
+
+  .dashboard-page .cc-shell-topbar-actions {
+    justify-content: flex-start;
+    overflow: visible;
+  }
+
+  .dashboard-page .cc-shell-topbar-actions > * {
+    flex: 0 0 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-page .cc-shell-module-card,
+  .dashboard-page .cc-shell-module-card-action::after { transition: none; }
 }
