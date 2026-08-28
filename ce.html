@@ -68,15 +68,25 @@
   <link rel="stylesheet" href="assets/css/components/dialogs.css">
   <link rel="stylesheet" href="assets/css/components/drawers.css">
   <link rel="stylesheet" href="assets/css/components/kanban.css">
+  <link rel="stylesheet" href="assets/css/pages/ce-v2.css">
 </head>
 <body class="ce-page ce-ops-center">
-  <div class="ce-module-shell cc-shell-layout">
+  <div class="ce-module-shell cc-shell-layout has-responsive-navigation" id="ce-shell">
     <aside id="ce-app-sidebar" aria-label="Customer Experience navigation"></aside>
 
     <main class="ce-workspace ce-main-area cc-page-container cc-page-container--workspace" id="main-content">
       <header id="ce-app-topbar" role="banner"></header>
 
       <header class="ce-hero cc-page-header" aria-labelledby="ce-page-title">
+        <img
+          class="ce-hero-earth"
+          src="assets/images/customer-experience/ce-hero-earth.png"
+          alt=""
+          aria-hidden="true"
+          width="1536"
+          height="1024"
+          decoding="async"
+        >
         <div class="ce-hero-copy cc-page-header-content">
           <h1 class="cc-page-header-title" id="ce-page-title">Customer Experience Operations Center</h1>
           <p class="cc-page-header-description">Track customer feedback, order issues, callbacks, and resolution progress.</p>
@@ -138,6 +148,15 @@
       <div id="tickets"></div>
     </div>
     </main>
+
+    <button
+      id="ce-nav-backdrop"
+      class="cc-shell-nav-backdrop"
+      type="button"
+      aria-label="Close Customer Experience navigation"
+      tabindex="-1"
+      hidden
+    ></button>
   </div>
 
   <div class="modal cc-dialog" id="modal" aria-hidden="true">
@@ -185,8 +204,14 @@
 
     window.addEventListener('load', async () => {
       if (await window.CC_PROTECTED_PAGE_READY !== true) return;
-      CloudCrowdAppShell.buildSidebar(document.getElementById('ce-app-sidebar'));
-      CloudCrowdAppShell.buildTopbar(document.getElementById('ce-app-topbar'), {
+      await CloudCrowdAppShell.initializeAppShell({
+        shell: document.getElementById('ce-shell'),
+        sidebar: document.getElementById('ce-app-sidebar'),
+        topbar: document.getElementById('ce-app-topbar'),
+        backdrop: document.getElementById('ce-nav-backdrop'),
+        activeModule: CloudCrowdAppShell.getModuleById('customer-experience'),
+        fallbackMode: 'legacy',
+        brandImage: 'assets/images/logo.png',
         eyebrow: 'Operations Hub',
         title: 'Customer Experience',
         userId: 'ce-current-user',

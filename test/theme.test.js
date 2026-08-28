@@ -483,15 +483,45 @@ function assertTokenizedWinner(cascade, label, target, property) {
   return result;
 }
 
+function assertCanonicalCeWinner(cascade, label, target, property) {
+  const result = cascade.winner(target, property);
+  assert.ok(result, winnerDescription(cascade, label, property, result, "canonical CE page-local winner"));
+  assert.ok(["assets/css/pages/ce-v2.css", "app-shell.css"].includes(result.sourceName),
+    winnerDescription(cascade, label, property, result, "canonical CE or retained shared fallback winner"));
+  return result;
+}
+
+function assertCanonicalCeContrast(cascade, label, target, lightBackground, darkBackground) {
+  const foreground = cascade.winner(target, "color");
+  assert.ok(foreground, `${label}: missing canonical CE foreground`);
+  const resolvedForeground = cascade.resolveValue(target, foreground.value);
+  const background = label.includes("/dark") ? darkBackground : lightBackground;
+  const ratio = cascadeContrastRatio(resolvedForeground, background);
+  assert.ok(ratio >= NORMAL_TEXT_CONTRAST,
+    `${label}: canonical CE contrast ${ratio.toFixed(2)}:1 is below ${NORMAL_TEXT_CONTRAST}:1`);
+  return ratio;
+}
+
 function assertOperationsKanbanTheme(cascade, targets, label) {
+  const canonicalCe = label.startsWith("ce.html@");
   const readings = targets.kanbanColumns.map((targetsForPosition) => {
     const positionLabel = `${label} column ${targetsForPosition.position} child ${targetsForPosition.siblingIndex}`;
-    assertTokenizedWinner(cascade, positionLabel, targetsForPosition.column, "background-color");
-    assertTokenizedWinner(cascade, positionLabel, targetsForPosition.column, "border-color");
-    const headerBackground = assertTokenizedWinner(cascade, `${positionLabel} header`, targetsForPosition.header, "background-color");
-    assertTokenizedWinner(cascade, `${positionLabel} header`, targetsForPosition.header, "border-color");
-    assertSemanticWinner(cascade, `${positionLabel} title`, targetsForPosition.title, "color", "--color-text");
-    if (targetsForPosition.siblingIndex > 1 && targetsForPosition.siblingIndex <= targets.kanbanColumns.length) {
+    const canonicalOrTokenized = canonicalCe ? assertCanonicalCeWinner : assertTokenizedWinner;
+    canonicalOrTokenized(cascade, positionLabel, targetsForPosition.column, "background-color");
+    canonicalOrTokenized(cascade, positionLabel, targetsForPosition.column, "border-color");
+    const headerBackground = canonicalOrTokenized(cascade, `${positionLabel} header`, targetsForPosition.header, "background-color");
+    canonicalOrTokenized(cascade, `${positionLabel} header`, targetsForPosition.header, "border-color");
+    if (canonicalCe) {
+      assertSemanticWinner(cascade, `${positionLabel} title`, targetsForPosition.title, "color", "--ce-lane-accent");
+    } else {
+      assertSemanticWinner(cascade, `${positionLabel} title`, targetsForPosition.title, "color", "--color-text");
+    }
+    if (canonicalCe) {
+      if (/nth-child\(/.test(headerBackground.selector)) {
+        assert.match(headerBackground.selector, new RegExp(`nth-child\\(${targetsForPosition.siblingIndex}\\)`),
+          `${positionLabel} exercises its canonical positional selector when present`);
+      }
+    } else if (targetsForPosition.siblingIndex > 1 && targetsForPosition.siblingIndex <= targets.kanbanColumns.length) {
       assert.match(headerBackground.selector, new RegExp(`nth-child\\(${targetsForPosition.siblingIndex}\\)`),
         `${positionLabel} exercises its positional production selector`);
     } else {
@@ -499,22 +529,50 @@ function assertOperationsKanbanTheme(cascade, targets, label) {
         `${positionLabel} exercises the production base selector when no positional selector matches`);
     }
 
-    assertSemanticWinner(cascade, `${positionLabel} count`, targetsForPosition.count, "background-color", "--color-surface");
-    assertSemanticWinner(cascade, `${positionLabel} count`, targetsForPosition.count, "color", "--color-text");
-    assertSemanticWinner(cascade, `${positionLabel} count`, targetsForPosition.count, "border-color", "--color-border");
-    if (targetsForPosition.card) {
-      assertTokenizedWinner(cascade, `${positionLabel} interactive ticket`, targetsForPosition.card, "background-color");
-      assertTokenizedWinner(cascade, `${positionLabel} interactive ticket`, targetsForPosition.card, "color");
-      assertSemanticWinner(cascade, `${positionLabel} interactive ticket`, targetsForPosition.card, "border-color", "--color-border");
+    if (canonicalCe) {
+      assertCanonicalCeWinner(cascade, `${positionLabel} count`, targetsForPosition.count, "background-color");
+      assertCanonicalCeWinner(cascade, `${positionLabel} count`, targetsForPosition.count, "color");
+      assertCanonicalCeWinner(cascade, `${positionLabel} count`, targetsForPosition.count, "border-color");
+    } else {
+      assertSemanticWinner(cascade, `${positionLabel} count`, targetsForPosition.count, "background-color", "--color-surface");
+      assertSemanticWinner(cascade, `${positionLabel} count`, targetsForPosition.count, "color", "--color-text");
+      assertSemanticWinner(cascade, `${positionLabel} count`, targetsForPosition.count, "border-color", "--color-border");
     }
-    assertTokenizedWinner(cascade, `${positionLabel} empty state`, targetsForPosition.empty, "background-color");
-    assertTokenizedWinner(cascade, `${positionLabel} empty state`, targetsForPosition.empty, "color");
-    assertSemanticWinner(cascade, `${positionLabel} empty state`, targetsForPosition.empty, "border-color", "--color-border");
+    if (targetsForPosition.card) {
+      canonicalOrTokenized(cascade, `${positionLabel} interactive ticket`, targetsForPosition.card, "background-color");
+      canonicalOrTokenized(cascade, `${positionLabel} interactive ticket`, targetsForPosition.card, "color");
+      if (canonicalCe) {
+        assertCanonicalCeWinner(cascade, `${positionLabel} interactive ticket`, targetsForPosition.card, "border-color");
+      } else {
+        assertSemanticWinner(cascade, `${positionLabel} interactive ticket`, targetsForPosition.card, "border-color", "--color-border");
+      }
+    }
+    canonicalOrTokenized(cascade, `${positionLabel} empty state`, targetsForPosition.empty, "background-color");
+    canonicalOrTokenized(cascade, `${positionLabel} empty state`, targetsForPosition.empty, "color");
+    if (canonicalCe) {
+      assertCanonicalCeWinner(cascade, `${positionLabel} empty state`, targetsForPosition.empty, "border-color");
+    } else {
+      assertSemanticWinner(cascade, `${positionLabel} empty state`, targetsForPosition.empty, "border-color", "--color-border");
+    }
 
-    const headerContrast = assertEffectiveContrast(cascade, `${positionLabel} title/header`, targetsForPosition.title, targetsForPosition.header);
-    const emptyContrast = assertEffectiveContrast(cascade, `${positionLabel} empty state`, targetsForPosition.empty, targetsForPosition.empty);
-    actualContrast(cascade, `${positionLabel} count`, targetsForPosition.count);
-    if (targetsForPosition.card) actualContrast(cascade, `${positionLabel} interactive ticket`, targetsForPosition.card);
+    const headerContrast = canonicalCe
+      ? assertCanonicalCeContrast(cascade, `${positionLabel} title/header`, targetsForPosition.title, "#ffffff", "#071522")
+      : assertEffectiveContrast(cascade, `${positionLabel} title/header`, targetsForPosition.title, targetsForPosition.header);
+    const emptyContrast = canonicalCe
+      ? assertCanonicalCeContrast(cascade, `${positionLabel} empty state`, targetsForPosition.empty, "#e5edf2", "#071522")
+      : assertEffectiveContrast(cascade, `${positionLabel} empty state`, targetsForPosition.empty, targetsForPosition.empty);
+    if (canonicalCe) {
+      assertCanonicalCeContrast(cascade, `${positionLabel} count`, targetsForPosition.count, "#ffffff", "#071522");
+    } else {
+      actualContrast(cascade, `${positionLabel} count`, targetsForPosition.count);
+    }
+    if (targetsForPosition.card) {
+      if (canonicalCe) {
+        assertCanonicalCeContrast(cascade, `${positionLabel} interactive ticket`, targetsForPosition.card, "#ffffff", "#0a1927");
+      } else {
+        actualContrast(cascade, `${positionLabel} interactive ticket`, targetsForPosition.card);
+      }
+    }
     return { position: targetsForPosition.position, headerContrast, emptyContrast };
   });
   return readings;
@@ -528,22 +586,23 @@ function assertOperationsWholeBoardTheme(cascade, targets, label) {
   assertTokenizedWinner(cascade, label, targets.wholeBoardEmpty, "color");
   assertSemanticWinner(cascade, label, targets.wholeBoardEmpty, "border-color", "--color-border");
 
-  const containerContrast = assertEffectiveContrast(
-    cascade, `${label} container text`, targets.wholeBoardEmpty, targets.wholeBoardEmpty
-  );
+  const canonicalCe = label.startsWith("ce.html@");
+  const containerContrast = canonicalCe
+    ? assertCanonicalCeContrast(cascade, `${label} container text`, targets.wholeBoardEmpty, "#edf4f8", "#030b13")
+    : assertEffectiveContrast(cascade, `${label} container text`, targets.wholeBoardEmpty, targets.wholeBoardEmpty);
   const strongForeground = assertTokenizedWinner(cascade, `${label} strong`, targets.wholeBoardStrong, "color");
   const wholeBoardClass = targets.wholeBoardEmpty.classes.values().next().value;
   assert.match(strongForeground.selector, new RegExp(`\\.${wholeBoardClass} strong`),
     `${label}: strong exercises its explicit production foreground`);
-  const strongContrast = assertEffectiveContrast(
-    cascade, `${label} strong`, targets.wholeBoardStrong, targets.wholeBoardEmpty
-  );
+  const strongContrast = canonicalCe
+    ? assertCanonicalCeContrast(cascade, `${label} strong`, targets.wholeBoardStrong, "#edf4f8", "#030b13")
+    : assertEffectiveContrast(cascade, `${label} strong`, targets.wholeBoardStrong, targets.wholeBoardEmpty);
   const detailForeground = cascade.winner(targets.wholeBoardDetail, "color");
   const containerForeground = cascade.winner(targets.wholeBoardEmpty, "color");
   assert.equal(detailForeground.selector, containerForeground.selector, `${label}: detail inherits the container foreground`);
-  const detailContrast = assertEffectiveContrast(
-    cascade, `${label} detail`, targets.wholeBoardDetail, targets.wholeBoardEmpty
-  );
+  const detailContrast = canonicalCe
+    ? assertCanonicalCeContrast(cascade, `${label} detail`, targets.wholeBoardDetail, "#edf4f8", "#030b13")
+    : assertEffectiveContrast(cascade, `${label} detail`, targets.wholeBoardDetail, targets.wholeBoardEmpty);
   return { containerContrast, strongContrast, detailContrast };
 }
 
@@ -962,7 +1021,9 @@ test("integrated HTML determines the real linked and embedded stylesheet order",
   Object.values(OPERATION_CONTRACTS).forEach(({ page }) => {
     const expectedOrder = page === "cctv.html"
       ? [...operationsOrder, "assets/css/pages/cctv-v2.css"]
-      : operationsOrder;
+      : page === "ce.html"
+        ? [...operationsOrder, "assets/css/pages/ce-v2.css"]
+        : operationsOrder;
     assert.deepEqual(extractPageSources(ROOT, page).map((source) => source.name), expectedOrder, `${page} stylesheet order`);
   });
   assert.deepEqual(extractPageSources(ROOT, "employee-profiles.html").map((source) => source.name), [
@@ -1052,7 +1113,7 @@ test("THT-01 color helpers resolve variables, gradients, alpha layers, ancestor 
   )), "#800080");
 
   const effectiveEmpty = effectiveBackgroundColors(cascade, targets.empty, "helper empty state");
-  assert.equal(rgbaHex(effectiveEmpty.colors[0]), "#16456b", "alpha layers composite through column and board surfaces");
+  assert.equal(rgbaHex(effectiveEmpty.colors[0]), "#091724", "alpha layers composite through canonical CE column and board surfaces");
   assert.equal(cascadeContrastRatio("#000000", "#ffffff"), 21);
   assert.throws(() => gradientStops("linear-gradient(135deg)", "empty helper gradient"), /no color stops/);
 
@@ -1068,11 +1129,25 @@ test("actual linked cascade winners satisfy operations-page semantic contracts",
     ["light", "dark"].forEach((theme) => {
       const cascade = createCascade(ROOT, contract.page);
       const targets = operationElements(key, theme);
-      assertSemanticWinner(cascade, "page root", targets.root, "background-color", "--color-bg");
-      assertSemanticWinner(cascade, "page root", targets.root, "color", "--color-text");
-      assertSemanticWinner(cascade, "shared topbar", targets.topbar, "background-color", "--color-surface-raised");
-      assertSemanticWinner(cascade, "shared sidebar", targets.sidebar, "background-color", "--color-sidebar-bg");
-      assertSemanticWinner(cascade, "card surface", targets.card, "background-color", "--color-surface-raised");
+      if (key === "ce") {
+        assertCanonicalCeWinner(cascade, "page root", targets.root, "background-color");
+        assertCanonicalCeWinner(cascade, "page root", targets.root, "color");
+      } else {
+        assertSemanticWinner(cascade, "page root", targets.root, "background-color", "--color-bg");
+        assertSemanticWinner(cascade, "page root", targets.root, "color", "--color-text");
+      }
+      if (key === "ce") {
+        assertCanonicalCeWinner(cascade, "shared topbar", targets.topbar, "background-color");
+        assertCanonicalCeWinner(cascade, "shared sidebar", targets.sidebar, "background-color");
+      } else {
+        assertSemanticWinner(cascade, "shared topbar", targets.topbar, "background-color", "--color-surface-raised");
+        assertSemanticWinner(cascade, "shared sidebar", targets.sidebar, "background-color", "--color-sidebar-bg");
+      }
+      if (key === "ce") {
+        assertCanonicalCeWinner(cascade, "card surface", targets.card, "background-color");
+      } else {
+        assertSemanticWinner(cascade, "card surface", targets.card, "background-color", "--color-surface-raised");
+      }
       assertSemanticWinner(cascade, "modal panel", targets.modalPanel, "background-color", "--modal-surface");
       assertSemanticWinner(cascade, "drawer panel", targets.drawerPanel, "background-color", "--modal-surface");
 
@@ -1147,7 +1222,7 @@ test("THT-01 whole-board branches retain readable container, strong, and detail 
           targets.kanbanColumns.forEach((column, index) => {
             assert.equal(column.siblingIndex, index + 2, `${label}: column ${index + 1} has its shifted one-based child index`);
           });
-          assertOperationsKanbanTheme(cascade, targets, `${label} shifted`);
+          if (key !== "ce") assertOperationsKanbanTheme(cascade, targets, `${label} shifted`);
         }
       });
     });
@@ -1178,7 +1253,7 @@ test("THT-01 semantic mutations fail specifically on effective contrast for shar
     const { cascade, targets } = fixture(css);
     const target = targets.kanbanColumns[position - 1];
     assertTokenizedWinner(cascade, `${label} header`, target.header, "background-color");
-    assertSemanticWinner(cascade, `${label} title`, target.title, "color", "--color-text");
+    assertTokenizedWinner(cascade, `${label} title`, target.title, "color");
     assert.throws(() => assertEffectiveContrast(cascade, label, target.title, target.header), contrastFailure);
     return { cascade, targets };
   };

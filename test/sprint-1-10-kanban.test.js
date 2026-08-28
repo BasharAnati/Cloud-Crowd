@@ -128,7 +128,8 @@ test("actual cascade keeps desktop Kanban horizontal and CCTV mobile purpose-bui
       }
       assertHorizontalContract(cascade, targets, `${page}@${width}/${theme}`);
       const cctvGap = width <= 1024 ? "8px" : "1px";
-      assert.equal(resolved(cascade, targets.board, "gap"), page === "cctv.html" ? cctvGap : "16px", `${page}@${width}`);
+      const ceGap = page === "ce.html" && width > 1024 ? "10px" : "16px";
+      assert.equal(resolved(cascade, targets.board, "gap"), page === "cctv.html" ? cctvGap : ceGap, `${page}@${width}`);
       const expectedMin = page === "cctv.html" ? (width <= 1024 ? "280px" : "260px") : page.startsWith("free-order-") && !page.startsWith("free-orders") ? "300px" : "280px";
       const expectedMax = page === "cctv.html" ? "none" : expectedMin === "300px" ? "340px" : "320px";
       assert.equal(resolved(cascade, targets.column, "min-width"), expectedMin, `${page}@${width}`);

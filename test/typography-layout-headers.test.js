@@ -277,8 +277,13 @@ test("real production cascade winners enforce titles, gutters, rhythm, widths, a
       assert.equal(resolved(cascade, tree.sectionTitle, "font-weight"), "700", `${page}@${viewportWidth}: section weight`);
       assert.equal(resolved(cascade, tree.sectionTitle, "line-height"), "1.3", `${page}@${viewportWidth}: section line height`);
     }
-    assert.equal(resolved(cascade, tree.header, "margin-bottom"), viewportWidth <= 620 ? "24px" : "32px", `${page}@${viewportWidth}: header rhythm`);
-    const expectedGutter = viewportWidth <= 620 ? "12px" : viewportWidth <= 1024 ? "16px" : "24px";
+    const expectedHeaderRhythm = page === "ce.html" && viewportWidth > 1024
+      ? "11px"
+      : viewportWidth <= 620 ? "24px" : "32px";
+    assert.equal(resolved(cascade, tree.header, "margin-bottom"), expectedHeaderRhythm, `${page}@${viewportWidth}: header rhythm`);
+    const expectedGutter = page === "ce.html" && viewportWidth > 1024
+      ? "16px"
+      : viewportWidth <= 620 ? "12px" : viewportWidth <= 1024 ? "16px" : "24px";
     assert.equal(resolved(cascade, tree.container, "padding-left"), expectedGutter, `${page}@${viewportWidth}: left gutter`);
     assert.equal(resolved(cascade, tree.container, "padding-right"), expectedGutter, `${page}@${viewportWidth}: right gutter`);
     assert.equal(resolved(cascade, tree.container, "min-width"), "0", `${page}@${viewportWidth}: shrinkable`);
