@@ -34,8 +34,8 @@ const populatedTickets = {
     { caseNumber: 'CE-S116-2', orderNumber: 'CE-1002', status: 'Closed', customerName: 'Omar', branch: 'Wadi Saqra', restaurant: 'Bun Run', creationDate: '2026-08-21T10:00:00Z' }
   ],
   complaints: [
-    { caseNumber: 'CMP-S116-1', orderNumber: 'CMP-1001', status: 'Under Review', customerName: 'Lina', branch: 'Swefieh', issueCategory: 'Service Quality', creationDate: '2026-08-20' },
-    { caseNumber: 'CMP-S116-2', orderNumber: 'CMP-1002', status: 'Closed', customerName: 'Sami', branch: 'Wadi Saqra', issueCategory: 'Food Quality', creationDate: '2026-08-21' }
+    { caseNumber: 'CMP-S116-1', orderNumber: 'CMP-1001', status: 'Under Review', customerName: 'Lina', branch: 'Swefieh', restaurant: 'Sager', issueCategory: 'Service Quality', department: 'Customer Service', phone: '0790000000', creationDate: '2026-08-20' },
+    { caseNumber: 'CMP-S116-2', orderNumber: 'CMP-1002', status: 'Closed', customerName: 'Sami', branch: 'Wadi Saqra', restaurant: 'Sager', issueCategory: 'Food Quality', department: 'Customer Service', phone: '0790000000', creationDate: '2026-08-21' }
   ],
   'free-orders': [
     { caseNumber: 'FO-S116-1', orderNumber: 'FO-1001', status: 'Active', customerName: 'Rami', discountAmount: '4.00', orderDate: '2026-08-20T09:00:00Z' },

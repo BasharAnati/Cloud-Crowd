@@ -165,7 +165,7 @@ const sharedShellPages = [
 ];
 
 const responsiveShellPages = new Set([
-  'dashboard.html', 'cctv.html', 'ce.html', 'free-order-requests.html', 'free-order-share.html',
+  'dashboard.html', 'cctv.html', 'ce.html', 'complaints.html', 'free-order-requests.html', 'free-order-share.html',
   'attendance.html', 'client-profiles.html', 'anati-admin.html'
 ]);
 

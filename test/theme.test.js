@@ -1023,7 +1023,9 @@ test("integrated HTML determines the real linked and embedded stylesheet order",
       ? [...operationsOrder, "assets/css/pages/cctv-v2.css"]
       : page === "ce.html"
         ? [...operationsOrder, "assets/css/pages/ce-v2.css"]
-        : operationsOrder;
+        : page === "complaints.html"
+          ? [...operationsOrder, "assets/css/pages/complaints-v2.css"]
+          : operationsOrder;
     assert.deepEqual(extractPageSources(ROOT, page).map((source) => source.name), expectedOrder, `${page} stylesheet order`);
   });
   assert.deepEqual(extractPageSources(ROOT, "employee-profiles.html").map((source) => source.name), [
