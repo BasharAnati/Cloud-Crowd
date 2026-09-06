@@ -837,6 +837,10 @@
 .dashboard-page .cc-dashboard-module-group[data-group="Administration"] .cc-shell-dashboard-grid { max-width: 380px; }
 
 .dashboard-page .cc-shell-module-card.cc-card {
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
   min-height: 184px;
   grid-template-columns: 38px minmax(0, 1fr);
   column-gap: 9px;
@@ -866,6 +870,23 @@
   content: "";
 }
 
+.dashboard-page .cc-shell-module-card.cc-card::after {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at var(--mouse-x) var(--mouse-y),
+    color-mix(in srgb, var(--dashboard-module-accent) 14%, transparent) 0,
+    color-mix(in srgb, var(--dashboard-module-accent) 6%, transparent) 18%,
+    transparent 42%
+  );
+  opacity: 0;
+  transition: opacity 160ms var(--ease-standard);
+  pointer-events: none;
+  content: "";
+}
+
 .dashboard-page .cc-shell-module-card.cc-card > * { position: relative; z-index: 1; }
 
 .dashboard-page .cc-shell-module-card:hover {
@@ -878,6 +899,38 @@
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-focus) 22%, transparent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dashboard-page .cc-shell-module-card.cc-card[data-dashboard-tilt="ready"] {
+    transform-style: preserve-3d;
+  }
+
+  .dashboard-page .cc-shell-module-card.cc-card.is-dashboard-tilting {
+    transform: perspective(1000px) translateY(-1px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) scale(1.01);
+    transition:
+      border-color var(--duration-normal) var(--ease-standard),
+      box-shadow var(--duration-normal) var(--ease-standard),
+      background-color var(--duration-normal) var(--ease-standard);
+    will-change: transform;
+  }
+
+  .dashboard-page .cc-shell-module-card.cc-card.is-dashboard-tilt-resetting {
+    transform: perspective(1000px) translateY(0) rotateX(0deg) rotateY(0deg) scale(1);
+    transition:
+      transform 220ms var(--ease-standard),
+      border-color var(--duration-normal) var(--ease-standard),
+      box-shadow var(--duration-normal) var(--ease-standard),
+      background-color var(--duration-normal) var(--ease-standard);
+  }
+
+  .dashboard-page .cc-shell-module-card.cc-card.is-dashboard-tilting::after {
+    opacity: 1;
+  }
+
+  .dashboard-page .cc-shell-module-card.cc-card.is-dashboard-tilting .cc-shell-module-icon {
+    transform: translateZ(8px);
+  }
 }
 
 .dashboard-page .cc-shell-module-icon {
@@ -964,5 +1017,20 @@
 
 @media (prefers-reduced-motion: reduce) {
   .dashboard-page .cc-shell-module-card,
-  .dashboard-page .cc-shell-module-card-action::after { transition: none; }
+  .dashboard-page .cc-shell-module-card-action::after,
+  .dashboard-page .cc-shell-module-card::after { transition: none; }
+
+  .dashboard-page .cc-shell-module-card.cc-card,
+  .dashboard-page .cc-shell-module-card.cc-card.is-dashboard-tilting,
+  .dashboard-page .cc-shell-module-card.cc-card.is-dashboard-tilt-resetting {
+    transform: none;
+  }
+
+  .dashboard-page .cc-shell-module-card.cc-card.is-dashboard-tilting::after {
+    opacity: 0;
+  }
+
+  .dashboard-page .cc-shell-module-card.cc-card.is-dashboard-tilting .cc-shell-module-icon {
+    transform: none;
+  }
 }

@@ -7,6 +7,70 @@
   let refreshGeneration = 0;
   let refreshInFlight = null;
   let lifecycleListenersBound = false;
+  const initializedTiltCards = new WeakSet();
+
+  function initDashboardTiltCards() {
+    const finePointer = window.matchMedia?.('(hover: hover) and (pointer: fine)');
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (!finePointer?.matches || reducedMotion?.matches) return;
+
+    modulesElement()?.querySelectorAll('.cc-shell-module-card').forEach((card) => {
+      if (initializedTiltCards.has(card)) return;
+      initializedTiltCards.add(card);
+      card.dataset.dashboardTilt = 'ready';
+
+      let frameId = 0;
+      let pointerPosition = null;
+
+      const renderTilt = () => {
+        frameId = 0;
+        if (!pointerPosition) return;
+
+        const bounds = card.getBoundingClientRect();
+        if (!bounds.width || !bounds.height) return;
+
+        const relativeX = Math.min(Math.max(pointerPosition.x - bounds.left, 0), bounds.width);
+        const relativeY = Math.min(Math.max(pointerPosition.y - bounds.top, 0), bounds.height);
+        const normalizedX = (relativeX / bounds.width) * 2 - 1;
+        const normalizedY = (relativeY / bounds.height) * 2 - 1;
+
+        card.style.setProperty('--mouse-x', `${((relativeX / bounds.width) * 100).toFixed(2)}%`);
+        card.style.setProperty('--mouse-y', `${((relativeY / bounds.height) * 100).toFixed(2)}%`);
+        card.style.setProperty('--tilt-x', `${(-normalizedY * 4).toFixed(2)}deg`);
+        card.style.setProperty('--tilt-y', `${(normalizedX * 4).toFixed(2)}deg`);
+      };
+
+      const scheduleTilt = (event) => {
+        pointerPosition = { x: event.clientX, y: event.clientY };
+        if (!frameId) frameId = window.requestAnimationFrame(renderTilt);
+      };
+
+      card.addEventListener('pointerenter', (event) => {
+        card.classList.remove('is-dashboard-tilt-resetting');
+        card.classList.add('is-dashboard-tilting');
+        scheduleTilt(event);
+      });
+      card.addEventListener('pointermove', scheduleTilt);
+      card.addEventListener('pointerleave', () => {
+        pointerPosition = null;
+        if (frameId) {
+          window.cancelAnimationFrame(frameId);
+          frameId = 0;
+        }
+        card.classList.remove('is-dashboard-tilting');
+        card.classList.add('is-dashboard-tilt-resetting');
+        card.style.setProperty('--mouse-x', '50%');
+        card.style.setProperty('--mouse-y', '50%');
+        card.style.setProperty('--tilt-x', '0deg');
+        card.style.setProperty('--tilt-y', '0deg');
+      });
+      card.addEventListener('transitionend', (event) => {
+        if (event.propertyName === 'transform' && !card.classList.contains('is-dashboard-tilting')) {
+          card.classList.remove('is-dashboard-tilt-resetting');
+        }
+      });
+    });
+  }
 
   function launcherStateElement() {
     return document.getElementById('dashboard-launcher-state');
@@ -177,6 +241,7 @@
       modulesArePermitted: true
     });
     if (generation !== refreshGeneration) return;
+    initDashboardTiltCards();
 
     if (dashboardModules.length === 0) {
       renderLauncherState(

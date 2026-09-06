@@ -158,6 +158,79 @@ test('Dashboard V2 preserves Light, Dark, and System while maintenance remains a
   await expect(page.locator('#maintenance-toggle-btn')).toHaveText('OFF');
 });
 
+test('Dashboard launcher tilt tracks a fine pointer, resets, and respects reduced motion', async ({ appPage: page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Dashboard pointer behavior is characterized in Chromium.');
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await useDashboardAccess(page, ['cctv']);
+  await page.goto('/dashboard.html');
+  await waitForSettledPage(page);
+
+  const card = page.locator('.cc-shell-module-card[data-module-id="cctv"]');
+  await expect(card).toHaveAttribute('data-dashboard-tilt', 'ready');
+  await expect(card).toHaveAttribute('href', 'cctv.html');
+  expect(await card.evaluate((node) => getComputedStyle(node, '::after').pointerEvents)).toBe('none');
+
+  const bounds = await card.boundingBox();
+  await page.mouse.move(bounds.x + bounds.width * 0.8, bounds.y + bounds.height * 0.2);
+  await expect(card).toHaveClass(/is-dashboard-tilting/);
+  await expect.poll(() => card.evaluate((node) => {
+    const mouseX = Number.parseFloat(node.style.getPropertyValue('--mouse-x'));
+    const mouseY = Number.parseFloat(node.style.getPropertyValue('--mouse-y'));
+    const tiltX = Number.parseFloat(node.style.getPropertyValue('--tilt-x'));
+    const tiltY = Number.parseFloat(node.style.getPropertyValue('--tilt-y'));
+    return mouseX > 70 && mouseX < 90
+      && mouseY > 10 && mouseY < 30
+      && tiltX > 1.5 && tiltX < 3.5
+      && tiltY > 1.5 && tiltY < 3.5
+      && getComputedStyle(node, '::after').opacity === '1';
+  })).toBe(true);
+
+  await page.mouse.move(0, 0);
+  await expect(card).not.toHaveClass(/is-dashboard-tilting/);
+  await expect.poll(() => card.evaluate((node) => ({
+    mouseX: node.style.getPropertyValue('--mouse-x'),
+    mouseY: node.style.getPropertyValue('--mouse-y'),
+    tiltX: node.style.getPropertyValue('--tilt-x'),
+    tiltY: node.style.getPropertyValue('--tilt-y')
+  }))).toEqual({ mouseX: '50%', mouseY: '50%', tiltX: '0deg', tiltY: '0deg' });
+
+  await page.mouse.move(bounds.x + bounds.width * 0.7, bounds.y + bounds.height * 0.3);
+  await expect(card).toHaveClass(/is-dashboard-tilting/);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect.poll(() => card.evaluate((node) => ({
+    transform: getComputedStyle(node).transform,
+    glowOpacity: getComputedStyle(node, '::after').opacity,
+    iconTransform: getComputedStyle(node.querySelector('.cc-shell-module-icon')).transform
+  }))).toEqual({ transform: 'none', glowOpacity: '0', iconTransform: 'none' });
+  await page.reload();
+  await waitForSettledPage(page);
+  await expect(page.locator('.cc-shell-module-card[data-module-id="cctv"]')).not.toHaveAttribute('data-dashboard-tilt');
+});
+
+test('Dashboard launcher tilt stays inactive without a fine hover pointer', async ({ appPage: page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Dashboard pointer capability behavior is characterized in Chromium.');
+  await page.addInitScript(() => {
+    const nativeMatchMedia = window.matchMedia.bind(window);
+    window.matchMedia = (query) => query === '(hover: hover) and (pointer: fine)'
+      ? { matches: false, media: query, onchange: null, addEventListener() {}, removeEventListener() {} }
+      : nativeMatchMedia(query);
+  });
+  await page.setViewportSize({ width: 390, height: 1000 });
+  await useDashboardAccess(page, ['cctv']);
+  await page.goto('/dashboard.html');
+  await waitForSettledPage(page);
+
+  const card = page.locator('.cc-shell-module-card[data-module-id="cctv"]');
+  await expect(card).not.toHaveAttribute('data-dashboard-tilt');
+  const geometry = await page.evaluate(() => ({
+    viewport: innerWidth,
+    documentWidth: document.documentElement.scrollWidth,
+    cardTransform: getComputedStyle(document.querySelector('.cc-shell-module-card[data-module-id="cctv"]')).transform
+  }));
+  expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewport + 1);
+  expect(geometry.cardTransform).toBe('none');
+});
+
 const sharedShellPages = [
   'dashboard.html', 'cctv.html', 'ce.html', 'complaints.html', 'free-orders.html',
   'free-order-requests.html', 'free-order-share.html', 'attendance.html', 'weekly-quality.html',
