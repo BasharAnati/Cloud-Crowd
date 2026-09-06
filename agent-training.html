@@ -119,8 +119,10 @@
   <link rel="stylesheet" href="assets/css/components/status.css">
   <link rel="stylesheet" href="assets/css/components/tables.css">
   <link rel="stylesheet" href="assets/css/components/dialogs.css">
+  <link rel="stylesheet" href="assets/css/pages/internal-platform-v2.css">
+  <link rel="stylesheet" href="assets/css/pages/agent-training-v2.css">
 </head>
-<body class="people-management-page agent-training-page" data-shell-module="agent-training" data-shell-user-id="current-user" data-shell-role-id="current-role">
+<body class="people-management-page agent-training-page agent-training-v2 platform-v2-page" data-shell-module="agent-training" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
     <aside id="internal-app-sidebar" aria-label="Application navigation"></aside>
 
@@ -130,7 +132,7 @@
       </header>
 
       <div class="people-management-container cc-page-container cc-page-container--standard">
-      <header class="cc-page-header">
+      <header class="cc-page-header platform-v2-hero">
         <div class="cc-page-header-content">
           <p class="cc-page-header-context">People Operations</p>
           <h1 class="cc-page-header-title" id="page-title">Agent Training</h1>
@@ -144,11 +146,11 @@
       <div class="message" id="page-message" role="status"></div>
 
       <section class="stats-grid cc-metric-grid" aria-label="Training summary">
-        <article class="stat-card cc-metric-card"><span>Total Employees</span><strong id="stat-employees">0</strong></article>
-        <article class="stat-card cc-metric-card"><span>Assigned Brands</span><strong id="stat-assigned">0</strong></article>
-        <article class="stat-card cc-metric-card"><span>Fully Trained</span><strong id="stat-trained">0</strong></article>
-        <article class="stat-card cc-metric-card"><span>Coaching Needed</span><strong id="stat-coaching">0</strong></article>
-        <article class="stat-card cc-metric-card"><span>Unassigned Brands</span><strong id="stat-unassigned">0</strong></article>
+        <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="users" aria-hidden="true"></span><span>Total Employees</span><strong id="stat-employees">0</strong></article>
+        <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="briefcase-business" aria-hidden="true"></span><span>Assigned Brands</span><strong id="stat-assigned">0</strong></article>
+        <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="badge-check" aria-hidden="true"></span><span>Fully Trained</span><strong id="stat-trained">0</strong></article>
+        <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="messages-square" aria-hidden="true"></span><span>Coaching Needed</span><strong id="stat-coaching">0</strong></article>
+        <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="triangle-alert" aria-hidden="true"></span><span>Unassigned Brands</span><strong id="stat-unassigned">0</strong></article>
       </section>
 
       <div class="section-layout">

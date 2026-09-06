@@ -522,8 +522,10 @@
   <link rel="stylesheet" href="assets/css/components/status.css">
   <link rel="stylesheet" href="assets/css/components/dialogs.css">
   <link rel="stylesheet" href="assets/css/components/kanban.css">
+  <link rel="stylesheet" href="assets/css/pages/internal-platform-v2.css">
+  <link rel="stylesheet" href="assets/css/pages/free-order-share-v2.css">
 </head>
-<body class="workflow-page free-order-share-page" data-shell-module="free-order-share" data-shell-user-id="workflow-user" data-shell-role-id="workflow-role">
+<body class="workflow-page free-order-share-page free-order-share-v2 platform-v2-page" data-shell-module="free-order-share" data-shell-user-id="workflow-user" data-shell-role-id="workflow-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
     <aside id="internal-app-sidebar" aria-label="Application navigation"></aside>
 
@@ -533,7 +535,7 @@
       </header>
 
       <div class="workflow-container cc-page-container cc-page-container--workspace">
-        <header class="cc-page-header">
+        <header class="cc-page-header platform-v2-hero">
           <div class="cc-page-header-content">
             <p class="cc-page-header-context">Free Order Workflow</p>
             <h1 class="cc-page-header-title" id="page-title">Free Order Share</h1>
@@ -548,10 +550,10 @@
     <div class="message" id="message" role="status" aria-live="polite"></div>
 
     <section class="stats-grid cc-metric-grid" aria-label="Free order share statistics">
-      <article class="stat-card cc-metric-card"><span>Received</span><strong id="stat-received">0</strong></article>
-      <article class="stat-card cc-metric-card"><span>Needs Response</span><strong id="stat-needs-response">0</strong></article>
-      <article class="stat-card cc-metric-card"><span>Done</span><strong id="stat-done">0</strong></article>
-      <article class="stat-card cc-metric-card"><span>Total Share Items</span><strong id="stat-total">0</strong></article>
+      <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="truck" aria-hidden="true"></span><span>Received</span><strong id="stat-received">0</strong></article>
+      <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="messages-square" aria-hidden="true"></span><span>Needs Response</span><strong id="stat-needs-response">0</strong></article>
+      <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="badge-check" aria-hidden="true"></span><span>Done</span><strong id="stat-done">0</strong></article>
+      <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="clipboard-list" aria-hidden="true"></span><span>Total Share Items</span><strong id="stat-total">0</strong></article>
     </section>
 
     <section class="toolbar cc-filter-bar cc-filter-bar--compact" aria-label="Share filters">
@@ -747,20 +749,35 @@
     }
 
     function cardFields(item) {
-      return [
+      const summaryFields = [
         ['Phone', item.phoneNumber],
         ['Discount', formatAmount(item.discountAmount)],
-        ['Reason', item.reasonForDiscount],
+        ['Reason', item.reasonForDiscount]
+      ];
+      const decisionFields = [
         ['Decision Maker', item.decisionMaker],
-        ['Deduction From', item.deductionFrom],
+        ['Deduction From', item.deductionFrom]
+      ];
+      const creationFields = [
         ['Created By', item.createdBy],
         ['Creation Time', item.creationTime]
-      ].map(([label, value]) => `
-        <div class="field-line">
-          <span>${escapeHtml(label)}</span>
-          <strong>${escapeHtml(valueOrDash(value))}</strong>
-        </div>
-      `).join('');
+      ];
+      const renderGroup = (label, className, fields) => `
+        <section class="share-card-group ${className}" aria-label="${escapeHtml(label)}">
+          <h4>${escapeHtml(label)}</h4>
+          ${fields.map(([fieldLabel, value]) => `
+            <div class="field-line field-${fieldLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-')}">
+              <span>${escapeHtml(fieldLabel)}</span>
+              <strong>${escapeHtml(valueOrDash(value))}</strong>
+            </div>
+          `).join('')}
+        </section>
+      `;
+      return [
+        renderGroup('Discount and reason', 'share-card-summary', summaryFields),
+        renderGroup('Decision and deduction', 'share-card-decision', decisionFields),
+        renderGroup('Creation metadata', 'share-card-creation', creationFields)
+      ].join('');
     }
 
     function shareNoteMarkup(item) {
@@ -791,11 +808,12 @@
       return `
         <article class="share-card cc-card ${needsResponse ? 'needs-response' : ''} ${done ? 'done' : ''}">
           <div class="card-head">
-            <div>
+            <div class="share-card-identity">
+              <span class="share-card-kicker">Request ID</span>
               <h3>${escapeHtml(item.orderNumber)}</h3>
               <p>${escapeHtml(item.customerName)}</p>
             </div>
-            <div>${badge}</div>
+            <div class="share-card-stage">${badge}</div>
           </div>
           <div class="field-list">${cardFields(item)}</div>
           ${shareNoteMarkup(item)}
@@ -927,6 +945,15 @@
       `;
     }
 
+    function detailSection(title, items) {
+      return `
+        <section class="share-detail-section" aria-label="${escapeHtml(title)}">
+          <h4>${escapeHtml(title)}</h4>
+          <div class="share-detail-rows">${items.join('')}</div>
+        </section>
+      `;
+    }
+
     function openViewDetails(id) {
       const item = itemById(id);
       if (!item) return;
@@ -934,28 +961,36 @@
       document.getElementById('view-modal-title').textContent = `Share ${item.orderNumber}`;
       document.getElementById('view-modal-subtitle').textContent = `${item.customerName} - ${stageLabel(shareStage(item))}`;
       document.getElementById('details-grid').innerHTML = [
-        detailItem('Order Number', item.orderNumber),
-        detailItem('Customer Name', item.customerName),
-        detailItem('Phone Number', item.phoneNumber),
-        detailItem('Creation Time', item.creationTime),
-        detailItem('Discount Amount', formatAmount(item.discountAmount)),
-        detailItem('Reason for Discount', item.reasonForDiscount, true),
-        detailItem('Decision Maker', item.decisionMaker),
-        detailItem('Attached', item.attached),
-        detailItem('Deduction From', item.deductionFrom),
-        detailItem('Case Description', item.caseDescription, true),
-        detailItem('Notes', item.notes, true),
-        detailItem('Internal Stage', item.internalStage),
-        detailItem('Share Stage', stageLabel(shareStage(item))),
-        detailItem('Share Note', item.shareNote, true),
-        detailItem('Share Note By', item.shareNoteBy),
-        detailItem('Share Note At', formatDateTime(item.shareNoteAt)),
-        detailItem('Completed By', item.completedBy),
-        detailItem('Completed At', formatDateTime(item.completedAt)),
-        detailItem('Created By', item.createdBy),
-        detailItem('Created At', formatDateTime(item.createdAt)),
-        detailItem('Updated By', item.updatedBy),
-        detailItem('Updated At', formatDateTime(item.updatedAt))
+        detailSection('Request context', [
+          detailItem('Order Number', item.orderNumber),
+          detailItem('Customer Name', item.customerName),
+          detailItem('Phone Number', item.phoneNumber),
+          detailItem('Creation Time', item.creationTime)
+        ]),
+        detailSection('Discount and reason', [
+          detailItem('Discount Amount', formatAmount(item.discountAmount)),
+          detailItem('Reason for Discount', item.reasonForDiscount, true)
+        ]),
+        detailSection('Decision and case', [
+          detailItem('Decision Maker', item.decisionMaker),
+          detailItem('Attached', item.attached),
+          detailItem('Deduction From', item.deductionFrom),
+          detailItem('Case Description', item.caseDescription, true),
+          detailItem('Notes', item.notes, true)
+        ]),
+        detailSection('Workflow activity', [
+          detailItem('Internal Stage', item.internalStage),
+          detailItem('Share Stage', stageLabel(shareStage(item))),
+          detailItem('Share Note', item.shareNote, true),
+          detailItem('Share Note By', item.shareNoteBy),
+          detailItem('Share Note At', formatDateTime(item.shareNoteAt)),
+          detailItem('Completed By', item.completedBy),
+          detailItem('Completed At', formatDateTime(item.completedAt)),
+          detailItem('Created By', item.createdBy),
+          detailItem('Created At', formatDateTime(item.createdAt)),
+          detailItem('Updated By', item.updatedBy),
+          detailItem('Updated At', formatDateTime(item.updatedAt))
+        ])
       ].join('');
       openModal('view-modal');
     }

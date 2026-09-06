@@ -443,8 +443,7 @@ test("shared responsive controls remain hidden on desktop and visible only in dr
 test("Responsive shell geometry is opt-in and leaves existing production pages unchanged", () => {
   const existingPages = [
     ["cctv.html", ["cctv-page", "cctv-ops-center"], "cctv-module-shell", "cctv-app-sidebar"],
-    ["complaints.html", ["complaints-page", "complaints-ops-center"], "complaints-module-shell", "complaints-app-sidebar"],
-    ["free-orders.html", ["free-orders-page", "free-orders-ops-center"], "free-orders-module-shell", "free-orders-app-sidebar"]
+    ["complaints.html", ["complaints-page", "complaints-ops-center"], "complaints-module-shell", "complaints-app-sidebar"]
   ];
 
   existingPages.forEach(([page, bodyClasses, shellClass, sidebarId]) => {
@@ -476,6 +475,17 @@ test("Customer Experience explicitly opts into the shared responsive drawer", ()
   const body = cssElement("body", { classes: ["ce-page", "ce-ops-center"] }, html);
   const shell = cssElement("div", { classes: ["ce-module-shell", "cc-shell-layout", "has-responsive-navigation"] }, body);
   const sidebar = cssElement("aside", { id: "ce-app-sidebar", classes: ["cc-shell-sidebar"] }, shell);
+  assert.equal(cascade.winner(sidebar, "position").value, "fixed");
+  assert.equal(cascade.winner(sidebar, "height").value, "100vh");
+});
+
+test("Complimentary Orders explicitly opts into the shared responsive drawer", () => {
+  assert.match(fs.readFileSync(path.join(ROOT, "free-orders.html"), "utf8"), /free-orders-module-shell cc-shell-layout has-responsive-navigation/);
+  const cascade = createCascade(ROOT, "free-orders.html", { viewportWidth: 1024 });
+  const html = cssElement("html");
+  const body = cssElement("body", { classes: ["free-orders-page", "free-orders-ops-center", "free-orders-v2", "platform-v2-page"] }, html);
+  const shell = cssElement("div", { classes: ["free-orders-module-shell", "cc-shell-layout", "has-responsive-navigation"] }, body);
+  const sidebar = cssElement("aside", { id: "free-orders-app-sidebar", classes: ["cc-shell-sidebar"] }, shell);
   assert.equal(cascade.winner(sidebar, "position").value, "fixed");
   assert.equal(cascade.winner(sidebar, "height").value, "100vh");
 });

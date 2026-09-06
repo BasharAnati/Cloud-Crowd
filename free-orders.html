@@ -68,15 +68,17 @@
   <link rel="stylesheet" href="assets/css/components/dialogs.css">
   <link rel="stylesheet" href="assets/css/components/drawers.css">
   <link rel="stylesheet" href="assets/css/components/kanban.css">
+  <link rel="stylesheet" href="assets/css/pages/internal-platform-v2.css">
+  <link rel="stylesheet" href="assets/css/pages/free-orders-v2.css">
 </head>
-<body class="free-orders-page free-orders-ops-center">
-  <div class="free-orders-module-shell cc-shell-layout">
+<body class="free-orders-page free-orders-ops-center free-orders-v2 platform-v2-page">
+  <div class="free-orders-module-shell cc-shell-layout has-responsive-navigation" id="free-orders-shell">
     <aside id="free-orders-app-sidebar" aria-label="Complimentary Orders navigation"></aside>
 
     <main class="free-orders-workspace free-orders-main-area cc-page-container cc-page-container--workspace" id="main-content">
       <header id="free-orders-app-topbar" role="banner"></header>
 
-      <header class="free-orders-hero cc-page-header" aria-labelledby="free-orders-page-title">
+      <header class="free-orders-hero cc-page-header platform-v2-hero" aria-labelledby="free-orders-page-title">
         <div class="free-orders-hero-copy cc-page-header-content">
           <h1 class="cc-page-header-title" id="free-orders-page-title">Complimentary Orders Operations Center</h1>
           <p class="cc-page-header-description">Track complimentary orders, approvals, usage status, and case resolution progress.</p>
@@ -87,26 +89,31 @@
       </header>
 
     <section class="free-orders-stats cc-metric-grid" aria-label="Complimentary order stats">
-      <div class="free-orders-stat-card cc-metric-card">
+      <article class="free-orders-stat-card cc-metric-card free-orders-stat-total">
+        <span class="free-orders-stat-icon" data-cc-icon="shopping-bag" aria-hidden="true"></span>
         <span class="free-orders-stat-label">Total Orders</span>
         <strong id="free-orders-stat-total">0</strong>
-      </div>
-      <div class="free-orders-stat-card cc-metric-card">
+      </article>
+      <article class="free-orders-stat-card cc-metric-card free-orders-stat-new">
+        <span class="free-orders-stat-icon" data-cc-icon="clipboard-list" aria-hidden="true"></span>
         <span class="free-orders-stat-label">New</span>
         <strong id="free-orders-stat-new">0</strong>
-      </div>
-      <div class="free-orders-stat-card cc-metric-card">
+      </article>
+      <article class="free-orders-stat-card cc-metric-card free-orders-stat-active">
+        <span class="free-orders-stat-icon" data-cc-icon="refresh-cw" aria-hidden="true"></span>
         <span class="free-orders-stat-label">Active</span>
         <strong id="free-orders-stat-active">0</strong>
-      </div>
-      <div class="free-orders-stat-card cc-metric-card">
+      </article>
+      <article class="free-orders-stat-card cc-metric-card free-orders-stat-taken">
+        <span class="free-orders-stat-icon" data-cc-icon="badge-check" aria-hidden="true"></span>
         <span class="free-orders-stat-label">Taken</span>
         <strong id="free-orders-stat-taken">0</strong>
-      </div>
-      <div class="free-orders-stat-card cc-metric-card">
+      </article>
+      <article class="free-orders-stat-card cc-metric-card free-orders-stat-discount">
+        <span class="free-orders-stat-icon" data-cc-icon="receipt" aria-hidden="true"></span>
         <span class="free-orders-stat-label">Total Discount Value</span>
         <strong id="free-orders-stat-discount">0</strong>
-      </div>
+      </article>
     </section>
 
     <section class="free-orders-filters cc-filter-bar cc-filter-bar--dense" aria-label="Complimentary order filters">
@@ -146,11 +153,18 @@
       <div id="tickets"></div>
     </div>
     </main>
+
+    <button
+      id="free-orders-nav-backdrop"
+      class="free-orders-nav-backdrop cc-shell-nav-backdrop"
+      type="button"
+      aria-label="Close Complimentary Orders navigation"
+    ></button>
   </div>
 
   <div class="modal cc-dialog" id="modal" aria-hidden="true">
     <div class="modal-content cc-dialog__panel cc-dialog__panel--600" role="dialog" aria-modal="true" aria-labelledby="operations-modal-title" data-cc-overlay-panel>
-      <div class="cc-dialog__header"><h2 class="cc-modal-title cc-dialog__title" id="operations-modal-title">Add New Ticket</h2><button class="drawer-close cc-dialog__close" type="button" aria-label="Close Add New Ticket form" onclick="closeModal()">&times;</button></div>
+      <div class="cc-dialog__header"><span class="free-orders-modal-icon" data-cc-icon="receipt" aria-hidden="true"></span><h2 class="cc-modal-title cc-dialog__title" id="operations-modal-title">Add New Ticket</h2><button class="drawer-close cc-dialog__close" type="button" aria-label="Close Add New Ticket form" onclick="closeModal()">&times;</button></div>
       <form id="ticket-form" class="cc-form">
         <div id="dynamic-form" class="cc-dialog__body"></div>
         <div class="form-actions cc-form-actions cc-dialog__footer">
@@ -191,23 +205,35 @@
       window.location.href = 'login.html';
     }
 
+    function decorateComplimentaryOrderForm() {
+      const icons = ['users', 'receipt', 'shield-check', 'calendar-check', 'file-text'];
+      document.querySelectorAll('#dynamic-form > .cc-form-section > .cc-form-section__title').forEach((title, index) => {
+        if (title.querySelector('[data-cc-section-icon]')) return;
+        const icon = document.createElement('span');
+        icon.dataset.ccIcon = icons[index] || 'file-text';
+        icon.dataset.ccSectionIcon = '';
+        icon.setAttribute('aria-hidden', 'true');
+        title.prepend(icon);
+      });
+    }
+
     window.addEventListener('load', async () => {
       if (await window.CC_PROTECTED_PAGE_READY !== true) return;
-      CloudCrowdAppShell.buildSidebar(
-        document.getElementById('free-orders-app-sidebar')
-      );
-
-      CloudCrowdAppShell.buildTopbar(
-        document.getElementById('free-orders-app-topbar'),
-        {
-          eyebrow: 'Operations Hub',
-          title: 'Complimentary Orders',
-          userId: 'free-orders-current-user',
-          roleId: 'free-orders-current-role',
-          onLogout: logout
-        }
-      );
-
+      await CloudCrowdAppShell.initializeAppShell({
+        shell: document.getElementById('free-orders-shell'),
+        sidebar: document.getElementById('free-orders-app-sidebar'),
+        topbar: document.getElementById('free-orders-app-topbar'),
+        backdrop: document.getElementById('free-orders-nav-backdrop'),
+        activeModule: CloudCrowdAppShell.getModuleById('complimentary-orders'),
+        fallbackMode: 'legacy',
+        brandImage: 'assets/images/logo.png',
+        eyebrow: 'Operations Hub',
+        title: 'Complimentary Orders',
+        userId: 'free-orders-current-user',
+        roleId: 'free-orders-current-role',
+        onLogout: logout
+      });
+      document.querySelector('.free-orders-actions .add-ticket-btn')?.addEventListener('click', decorateComplimentaryOrderForm);
       currentSection = 'free-orders';
       renderTickets();
     });

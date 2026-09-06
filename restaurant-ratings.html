@@ -147,8 +147,10 @@
   <link rel="stylesheet" href="assets/css/components/status.css">
   <link rel="stylesheet" href="assets/css/components/tables.css">
   <link rel="stylesheet" href="assets/css/components/dialogs.css">
+  <link rel="stylesheet" href="assets/css/pages/internal-platform-v2.css">
+  <link rel="stylesheet" href="assets/css/pages/restaurant-ratings-v2.css">
 </head>
-<body class="business-quality-page restaurant-ratings-page" data-shell-module="restaurant-ratings" data-shell-user-id="current-user" data-shell-role-id="current-role">
+<body class="business-quality-page restaurant-ratings-page restaurant-ratings-v2 platform-v2-page" data-shell-module="restaurant-ratings" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
     <aside id="internal-app-sidebar" aria-label="Application navigation"></aside>
 
@@ -158,7 +160,7 @@
       </header>
 
       <div class="business-quality-container cc-page-container cc-page-container--standard">
-      <header class="cc-page-header">
+      <header class="cc-page-header platform-v2-hero">
         <div class="cc-page-header-content">
           <p class="cc-page-header-context">Client Profiles Module</p>
           <h1 class="cc-page-header-title" id="page-title">Restaurant Ratings</h1>
@@ -172,11 +174,11 @@
       <div class="message" id="page-message" role="status"></div>
 
       <section class="stats-grid cc-metric-grid" aria-label="Restaurant ratings summary">
-        <article class="stat-card cc-metric-card"><span>Restaurants Tracked</span><strong id="stat-restaurants">0</strong></article>
-        <article class="stat-card cc-metric-card"><span>Average Talabat Rating</span><strong id="stat-talabat">-</strong></article>
-        <article class="stat-card cc-metric-card"><span>Average Careem Rating</span><strong id="stat-careem">-</strong></article>
-        <article class="stat-card cc-metric-card"><span>Best Rated Restaurant</span><strong id="stat-best">-</strong><small id="stat-best-score"></small></article>
-        <article class="stat-card cc-metric-card"><span>Lowest Rated Restaurant</span><strong id="stat-lowest">-</strong><small id="stat-lowest-score"></small></article>
+        <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="briefcase-business" aria-hidden="true"></span><span>Restaurants Tracked</span><strong id="stat-restaurants">0</strong></article>
+        <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="star" aria-hidden="true"></span><span>Average Talabat Rating</span><strong id="stat-talabat">-</strong></article>
+        <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="star" aria-hidden="true"></span><span>Average Careem Rating</span><strong id="stat-careem">-</strong></article>
+        <article class="stat-card cc-metric-card rating-extreme-metric"><span class="platform-v2-metric-icon" data-cc-icon="badge-check" aria-hidden="true"></span><span>Best Rated Restaurant</span><strong id="stat-best">-</strong><small id="stat-best-score"></small></article>
+        <article class="stat-card cc-metric-card rating-extreme-metric"><span class="platform-v2-metric-icon" data-cc-icon="triangle-alert" aria-hidden="true"></span><span>Lowest Rated Restaurant</span><strong id="stat-lowest">-</strong><small id="stat-lowest-score"></small></article>
       </section>
 
       <section class="content-card" aria-labelledby="records-title">

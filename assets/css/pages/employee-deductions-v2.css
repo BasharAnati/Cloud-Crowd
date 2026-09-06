@@ -1,0 +1,98 @@
+body.employee-deductions-v2 {
+  --pv2-accent: #9b6514;
+  --pv2-accent-rgb: 155, 101, 20;
+}
+
+:root[data-theme="dark"] body.employee-deductions-v2 {
+  --pv2-accent: #efae43;
+  --pv2-accent-rgb: 239, 174, 67;
+}
+
+body.employee-deductions-v2 .calculation-band {
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(var(--pv2-accent-rgb), 0.25);
+  border-radius: 12px;
+  background: rgba(var(--pv2-accent-rgb), 0.07);
+}
+
+body.employee-deductions-v2 .calculation-band-header {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 13px;
+  border-bottom: 1px solid rgba(var(--pv2-accent-rgb), 0.22);
+  color: var(--pv2-text);
+  background: rgba(var(--pv2-accent-rgb), 0.08);
+  font-size: 12px;
+}
+
+body.employee-deductions-v2 .calculation-band-header > [data-cc-icon] {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  border: 1px solid rgba(var(--pv2-accent-rgb), 0.32);
+  border-radius: 7px;
+  color: var(--pv2-accent);
+  background: rgba(var(--pv2-accent-rgb), 0.1);
+}
+
+body.employee-deductions-v2 .calculation-band-header svg {
+  width: 15px;
+  height: 15px;
+}
+
+body.employee-deductions-v2 .calculation-item {
+  min-width: 0;
+  padding: 13px;
+}
+
+body.employee-deductions-v2 .calculation-item {
+  border-left: 1px solid rgba(var(--pv2-accent-rgb), 0.2);
+}
+
+body.employee-deductions-v2 .calculation-item span {
+  color: var(--pv2-subtle);
+}
+
+body.employee-deductions-v2 .calculation-item strong {
+  color: var(--pv2-text);
+}
+
+body.employee-deductions-v2 .calculation-item:last-child {
+  background: rgba(var(--pv2-accent-rgb), 0.1);
+}
+
+body.employee-deductions-v2 .calculation-item:last-child strong {
+  color: var(--pv2-accent);
+  font-size: 24px;
+}
+
+body.employee-deductions-v2 .table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+@media (max-width: 620px) {
+  body.employee-deductions-v2 .calculation-band {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.employee-deductions-v2 .calculation-band-header,
+  body.employee-deductions-v2 .calculation-item:last-child {
+    grid-column: 1 / -1;
+  }
+
+  body.employee-deductions-v2 .calculation-item {
+    border-left: 1px solid rgba(var(--pv2-accent-rgb), 0.2);
+  }
+
+  body.employee-deductions-v2 .calculation-item:last-child {
+    border-top: 1px solid rgba(var(--pv2-accent-rgb), 0.22);
+    border-left: 0;
+  }
+}

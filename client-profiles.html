@@ -202,8 +202,10 @@
   <link rel="stylesheet" href="assets/css/components/tables.css">
   <link rel="stylesheet" href="assets/css/components/dialogs.css">
   <link rel="stylesheet" href="assets/css/components/master-detail.css">
+  <link rel="stylesheet" href="assets/css/pages/internal-platform-v2.css">
+  <link rel="stylesheet" href="assets/css/pages/client-profiles-v2.css">
 </head>
-<body class="business-quality-page client-profiles-page" data-shell-module="client-profiles" data-shell-user-id="current-user" data-shell-role-id="current-role">
+<body class="business-quality-page client-profiles-page client-profiles-v2 platform-v2-page" data-shell-module="client-profiles" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
     <aside id="internal-app-sidebar" aria-label="Application navigation"></aside>
 
@@ -213,7 +215,7 @@
       </header>
 
       <div class="business-quality-container cc-page-container cc-page-container--workspace">
-      <header class="cc-page-header">
+      <header class="cc-page-header platform-v2-hero">
         <div class="cc-page-header-content">
           <p class="cc-page-header-context">Client Operations</p>
           <h1 class="cc-page-header-title" id="page-title">Client Profiles</h1>
@@ -227,10 +229,10 @@
       <div class="message" id="page-message" role="status"></div>
 
       <section class="stats-grid cc-metric-grid" aria-label="Client summary">
-        <article class="stat-card cc-metric-card"><span>Total Clients</span><strong id="stat-total">0</strong></article>
-        <article class="stat-card cc-metric-card"><span>Active Clients</span><strong id="stat-active">0</strong></article>
-        <article class="stat-card cc-metric-card"><span>Archived Clients</span><strong id="stat-archived">0</strong></article>
-        <article class="stat-card cc-metric-card"><span>Assigned Agents</span><strong id="stat-agents">0</strong></article>
+        <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="briefcase-business" aria-hidden="true"></span><span>Total Clients</span><strong id="stat-total">0</strong></article>
+        <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="badge-check" aria-hidden="true"></span><span>Active Clients</span><strong id="stat-active">0</strong></article>
+        <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="archive" aria-hidden="true"></span><span>Archived Clients</span><strong id="stat-archived">0</strong></article>
+        <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="users" aria-hidden="true"></span><span>Assigned Agents</span><strong id="stat-agents">0</strong></article>
       </section>
 
       <section class="client-profiles-workspace-layout cc-master-detail" id="client-master-detail" data-view="list" aria-label="Client directory and workspace">
@@ -285,7 +287,7 @@
           <p class="cc-form__required-note"><strong>*</strong> indicates a required field.</p>
           <div class="form-grid cc-form-grid">
             <section class="cc-form-section cc-form-grid__full" aria-labelledby="client-brand-title">
-              <h4 class="cc-form-section__title" id="client-brand-title">Brand Identity</h4>
+              <h4 class="cc-form-section__title" id="client-brand-title"><span data-cc-icon="briefcase-business" aria-hidden="true"></span>Brand Identity</h4>
               <div class="cc-form-grid">
                 <div class="field">
                   <label class="cc-field__label--required" for="brand-name">Brand Name</label>
@@ -301,7 +303,7 @@
               </div>
             </section>
             <section class="cc-form-section cc-form-grid__full" aria-labelledby="client-media-title">
-              <h4 class="cc-form-section__title" id="client-media-title">Media</h4>
+              <h4 class="cc-form-section__title" id="client-media-title"><span data-cc-icon="file-text" aria-hidden="true"></span>Media</h4>
               <div class="field full">
                 <label for="logo-upload">Logo Upload</label>
                 <div class="logo-upload-row">
@@ -312,7 +314,7 @@
               </div>
             </section>
             <section class="cc-form-section cc-form-grid__full" aria-labelledby="client-numbers-title">
-              <h4 class="cc-form-section__title" id="client-numbers-title">Contact Numbers</h4>
+              <h4 class="cc-form-section__title" id="client-numbers-title"><span data-cc-icon="phone-call" aria-hidden="true"></span>Contact Numbers</h4>
               <div class="cc-form-grid">
                 <div class="field"><label for="call-center-number">Call Center Number</label><input class="control" id="call-center-number" name="callCenterNumber" type="text" maxlength="80"></div>
                 <div class="field"><label for="original-restaurant-number">Original Restaurant Number</label><input class="control" id="original-restaurant-number" name="originalRestaurantNumber" type="text" maxlength="80"></div>
@@ -320,7 +322,7 @@
               </div>
             </section>
             <section class="cc-form-section cc-form-grid__full" aria-labelledby="client-management-title">
-              <h4 class="cc-form-section__title" id="client-management-title">Ownership and Management</h4>
+              <h4 class="cc-form-section__title" id="client-management-title"><span data-cc-icon="users" aria-hidden="true"></span>Ownership and Management</h4>
               <div class="cc-form-grid">
                 <div class="field"><label for="brand-owner-name">Brand Owner Name</label><input class="control" id="brand-owner-name" name="brandOwnerName" type="text" maxlength="200"></div>
                 <div class="field"><label for="brand-owner-phone">Brand Owner Phone</label><input class="control" id="brand-owner-phone" name="brandOwnerPhone" type="text" maxlength="80"></div>
@@ -329,7 +331,7 @@
               </div>
             </section>
             <section class="cc-form-section cc-form-grid__full" aria-labelledby="client-notes-title">
-              <h4 class="cc-form-section__title" id="client-notes-title">Notes</h4>
+              <h4 class="cc-form-section__title" id="client-notes-title"><span data-cc-icon="file-text" aria-hidden="true"></span>Notes</h4>
               <div class="field full"><label for="notes">Notes</label><textarea class="control" id="notes" name="notes" maxlength="5000"></textarea></div>
             </section>
           </div>

@@ -416,12 +416,12 @@ test("isolated negative fixtures detect all nine material regression classes", (
 
   const mutations = [
     ["wrong title size contract", "dashboard.html", 1440, ".dashboard-page .cc-page-header-title{font-size:31px}", "title", "font-size", "28px"],
-    ["wrong mobile gutter contract", "attendance.html", 390, ".attendance-page .cc-page-container{padding:20px}", "container", "padding-left", "12px"],
+    ["wrong mobile gutter contract", "attendance.html", 390, "body.platform-v2-page.attendance-page .cc-page-container{padding:20px}", "container", "padding-left", "12px"],
     ["standard width contract", "dashboard.html", 1440, ".dashboard-page .cc-page-container{max-width:none}", "container", "max-width", "1440px"],
     ["workspace max width contract", "call-queue.html", 1440, ".call-queue-page .cc-page-container{max-width:1440px}", "container", "max-width", "none"],
     ["horizontal overflow contract", "attendance.html", 390, ".attendance-page .cc-page-container{overflow-x:hidden}", "container", "overflow-x", "visible"],
     ["header action wrapping contract", "attendance.html", 390, ".attendance-page .cc-page-header-actions{flex-wrap:nowrap}", "actions", "flex-wrap", "wrap"],
-    ["shared main shrinkability contract", "employee-profiles.html", 768, ".employee-profiles-ops-center .cc-page-container{min-width:auto}", "container", "min-width", "0"]
+    ["shared main shrinkability contract", "employee-profiles.html", 768, "body.platform-v2-page.employee-profiles-ops-center .cc-page-container{min-width:auto}", "container", "min-width", "0"]
   ];
   mutations.forEach(([label, page, viewportWidth, css, target, property, expected], index) => {
     const cascade = createCascade(root, page, { viewportWidth, extraSources: [{ name: `negative-${index}.css`, css }] });
@@ -436,11 +436,11 @@ test("in-memory remediation mutations expose the original production false-posit
     ["operational desktop legacy gutter", "cctv.html", 1440, ".cctv-ops-center .cctv-workspace{padding:0 18px 24px}", "container", "padding-left", "24px"],
     ["operational tablet legacy gutter", "cctv.html", 768, ".cctv-ops-center .cctv-workspace{padding:0 14px 24px}", "container", "padding-left", "16px"],
     ["operational mobile legacy gutter", "cctv.html", 390, ".cctv-ops-center .cctv-workspace{padding:0 14px 24px}", "container", "padding-left", "12px"],
-    ["Employee Profiles clamp gutter", "employee-profiles.html", 1440, ".employee-profiles-ops-center .main-area{padding:24px clamp(18px,3vw,38px) 42px}", "container", "padding-left", "24px"],
+    ["Employee Profiles clamp gutter", "employee-profiles.html", 1440, "body.platform-v2-page.employee-profiles-ops-center .main-area{padding:24px clamp(18px,3vw,38px) 42px}", "container", "padding-left", "24px"],
     ["operational legacy header rhythm", "cctv.html", 1440, ".cctv-ops-center .cctv-hero{margin:14px 0 12px}", "header", "margin-bottom", "32px"],
     ["operational mobile legacy header rhythm", "cctv.html", 390, ".cctv-ops-center .cctv-hero{margin:14px 0 12px}", "header", "margin-bottom", "24px"],
-    ["Employee Profiles legacy header rhythm", "employee-profiles.html", 1440, ".employee-profiles-ops-center .hero{margin-bottom:16px}", "header", "margin-bottom", "32px"],
-    ["workspace effective width cap", "free-order-requests.html", 1440, ".workflow-page .workflow-container{max-width:none;width:min(1440px,100%)}", "container", "width", "100%"],
+    ["Employee Profiles legacy header rhythm", "employee-profiles.html", 1440, "body.platform-v2-page.employee-profiles-ops-center .platform-v2-hero{margin-bottom:16px}", "header", "margin-bottom", "32px"],
+    ["workspace effective width cap", "free-order-requests.html", 1440, "body.platform-v2-page.workflow-page .workflow-container.cc-page-container{max-width:none;width:min(1440px,100%)}", "container", "width", "100%"],
     ["modal title legacy size", "employee-deductions.html", 1440, ".people-management-page .modal-header .cc-modal-title{font-size:24px}", "modalTitles.0", "font-size", "18px"],
     ["modal title legacy weight", "employee-deductions.html", 1440, ".people-management-page .modal-header .cc-modal-title{font-weight:950}", "modalTitles.0", "font-weight", "600"],
     ["modal title legacy line height", "free-order-requests.html", 1440, ".workflow-page .modal-header .cc-modal-title{line-height:1.15}", "modalTitles.0", "line-height", "1.35"],

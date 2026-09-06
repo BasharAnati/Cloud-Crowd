@@ -309,10 +309,12 @@
   <link rel="stylesheet" href="assets/css/components/tables.css">
   <link rel="stylesheet" href="assets/css/components/dialogs.css">
   <link rel=stylesheet href=assets/css/components/master-detail.css>
+  <link rel="stylesheet" href="assets/css/pages/internal-platform-v2.css">
+  <link rel="stylesheet" href="assets/css/pages/employee-profiles-v2.css">
   <script src="assets/js/components/master-detail.js"></script>
 </head>
-<body class="employee-profiles-ops-center">
-  <div class="profiles-shell cc-shell-layout">
+<body class="employee-profiles-ops-center employee-profiles-v2 platform-v2-page" data-shell-module="employee-profiles" data-shell-user-id="current-user" data-shell-role-id="current-role">
+  <div id="employee-profiles-shell" class="profiles-shell cc-shell-layout has-responsive-navigation">
     <aside id="employee-profiles-app-sidebar" aria-label="Employee Profiles navigation"></aside>
 
     <div class="profiles-main cc-shell-main">
@@ -324,7 +326,7 @@
 
       <main class="main-area cc-page-container cc-page-container--workspace" id="main-content">
 
-      <header class="hero cc-page-header" aria-labelledby="page-title">
+      <header class="hero cc-page-header platform-v2-hero" aria-labelledby="page-title">
         <div class="hero-content cc-page-header-content">
           <p class="eyebrow cc-page-header-context">People Operations</p>
           <h1 class="cc-page-header-title" id="page-title">Employee Profiles</h1>
@@ -338,10 +340,10 @@
       <div class="message" id="page-message" role="status"></div>
 
       <section class="stats-grid cc-metric-grid" aria-label="Employee summary">
-        <article class="stat-card cc-metric-card stat-total"><span class="stat-icon" aria-hidden="true">&#9783;</span><div><span>Total Employees</span><strong id="stat-total">0</strong></div></article>
-        <article class="stat-card cc-metric-card stat-active"><span class="stat-icon" aria-hidden="true">&#10003;</span><div><span>Active Employees</span><strong id="stat-active">0</strong></div></article>
-        <article class="stat-card cc-metric-card stat-archived"><span class="stat-icon" aria-hidden="true">&#8635;</span><div><span>Archived Employees</span><strong id="stat-archived">0</strong></div></article>
-        <article class="stat-card cc-metric-card stat-restaurants"><span class="stat-icon" aria-hidden="true">&#9670;</span><div><span>Assigned Restaurants</span><strong id="stat-restaurants">0</strong></div></article>
+        <article class="stat-card cc-metric-card stat-total"><span class="stat-icon platform-v2-metric-icon" data-cc-icon="users" aria-hidden="true"></span><div><span>Total Employees</span><strong id="stat-total">0</strong></div></article>
+        <article class="stat-card cc-metric-card stat-active"><span class="stat-icon platform-v2-metric-icon" data-cc-icon="badge-check" aria-hidden="true"></span><div><span>Active Employees</span><strong id="stat-active">0</strong></div></article>
+        <article class="stat-card cc-metric-card stat-archived"><span class="stat-icon platform-v2-metric-icon" data-cc-icon="archive" aria-hidden="true"></span><div><span>Archived Employees</span><strong id="stat-archived">0</strong></div></article>
+        <article class="stat-card cc-metric-card stat-restaurants"><span class="stat-icon platform-v2-metric-icon" data-cc-icon="briefcase-business" aria-hidden="true"></span><div><span>Assigned Restaurants</span><strong id="stat-restaurants">0</strong></div></article>
       </section>
 
       <section class="employee-profiles-workspace-layout cc-master-detail" id="employee-master-detail" data-view="list" aria-label="Employee directory and workspace">
@@ -382,6 +384,7 @@
       <p class="cc-master-detail__announcement" id="employee-detail-announcement" aria-live="polite" aria-atomic="true"></p>
       </main>
     </div>
+    <button id="employee-profiles-nav-backdrop" class="cc-shell-nav-backdrop" type="button" aria-label="Close application navigation" tabindex="-1" hidden></button>
   </div>
 
   <div class="modal" id="employee-modal" role="dialog" aria-modal="true" aria-labelledby="employee-modal-title">
@@ -396,7 +399,7 @@
           <p class="cc-form__required-note"><strong>*</strong> indicates a required field.</p>
           <div class="form-grid cc-form-grid">
             <section class="form-section cc-form-section" aria-labelledby="employee-identity-title">
-              <h4 class="cc-form-section__title" id="employee-identity-title">Identity and Notes</h4>
+              <h4 class="cc-form-section__title" id="employee-identity-title"><span data-cc-icon="file-text" aria-hidden="true"></span>Identity and Notes</h4>
               <div class="cc-form-grid">
                 <div class="field full">
                   <label class="cc-field__label--required" for="full-name">Full Name</label>
@@ -411,7 +414,7 @@
 
             <section class="form-section cc-form-section" aria-labelledby="employee-phones-title">
               <div class="section-heading">
-                <h4 id="employee-phones-title">Phone Numbers</h4>
+                <h4 id="employee-phones-title"><span data-cc-icon="phone-call" aria-hidden="true"></span>Phone Numbers</h4>
                 <button class="small-btn" type="button" id="add-phone-btn">+ Add Number</button>
               </div>
               <div class="dynamic-list" id="phone-list"></div>
@@ -419,7 +422,7 @@
 
             <section class="form-section cc-form-section" aria-labelledby="employee-contacts-title">
               <div class="section-heading">
-                <h4 id="employee-contacts-title">Emergency Contacts</h4>
+                <h4 id="employee-contacts-title"><span data-cc-icon="users" aria-hidden="true"></span>Emergency Contacts</h4>
                 <button class="small-btn" type="button" id="add-contact-btn">+ Add Contact</button>
               </div>
               <div class="dynamic-list" id="contact-list"></div>
@@ -427,7 +430,7 @@
 
             <section class="form-section cc-form-section" aria-labelledby="employee-restaurants-title">
               <div class="section-heading">
-                <h4 id="employee-restaurants-title">Assigned Restaurants</h4>
+                <h4 id="employee-restaurants-title"><span data-cc-icon="briefcase-business" aria-hidden="true"></span>Assigned Restaurants</h4>
                 <button class="small-btn" type="button" id="add-restaurant-btn">+ Add Restaurant</button>
               </div>
               <div class="dynamic-list" id="restaurant-list"></div>
@@ -1649,21 +1652,20 @@
     maintenance.startEnforcement();
 
     const activeModule = window.CloudCrowdAppShell.getModuleById('employee-profiles');
-    window.CloudCrowdAppShell.buildSidebar(
-      document.getElementById('employee-profiles-app-sidebar'),
-      { activeModule }
-    );
-    window.CloudCrowdAppShell.buildTopbar(
-      document.getElementById('employee-profiles-app-topbar'),
-      {
-        activeModule,
-        eyebrow: 'People Operations',
-        title: 'Employee Profiles',
-        userId: 'current-user',
-        roleId: 'current-role',
-        onLogout: () => logout(true)
-      }
-    );
+    await window.CloudCrowdAppShell.initializeAppShell({
+      shell: document.getElementById('employee-profiles-shell'),
+      sidebar: document.getElementById('employee-profiles-app-sidebar'),
+      topbar: document.getElementById('employee-profiles-app-topbar'),
+      backdrop: document.getElementById('employee-profiles-nav-backdrop'),
+      activeModule,
+      fallbackMode: 'legacy',
+      brandImage: 'assets/images/logo.png',
+      eyebrow: 'People Operations',
+      title: 'Employee Profiles',
+      userId: 'current-user',
+      roleId: 'current-role',
+      onLogout: () => logout(true)
+    });
     document.querySelector('#employee-profiles-app-topbar .cc-shell-logout').id = 'logout-btn';
     document.querySelectorAll('.write-control').forEach((element) => {
       element.hidden = !canManageEmployees;

@@ -475,7 +475,7 @@ test("Sprint 1.3D pages consume the shared shell, theme, Page Header, and no loc
     assert.match(source, /<aside id="internal-app-sidebar" aria-label="Application navigation"><\/aside>/);
     assert.match(source, /<header id="internal-app-topbar" role="banner">/);
     assert.match(source, /id="internal-nav-backdrop" class="cc-shell-nav-backdrop"/);
-    assert.match(source, /<header class="cc-page-header">/);
+    assert.match(source, /<header class="[^"]*\bcc-page-header\b[^"]*">/);
     assert.equal(count(source, /<h1\b/g), 1, `${kind} has one h1`);
     assert.doesNotMatch(source, /(?:for|share)-topbar|(?:for|share)-brand|(?:for|share)-logo/);
     assert.doesNotMatch(source, /onclick="window\.location\.href='dashboard\.html'"/);

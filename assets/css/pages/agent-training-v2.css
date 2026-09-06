@@ -1,0 +1,25 @@
+body.agent-training-v2 {
+  --pv2-accent: #5362bd;
+  --pv2-accent-rgb: 83, 98, 189;
+}
+
+:root[data-theme="dark"] body.agent-training-v2 {
+  --pv2-accent: #8f9cff;
+  --pv2-accent-rgb: 143, 156, 255;
+}
+
+body.agent-training-v2 .section-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+  gap: 14px;
+}
+
+body.agent-training-v2 .quick-form,
+body.agent-training-v2 .guide-list {
+  padding: 18px;
+}
+
+@media (max-width: 1040px) {
+  body.agent-training-v2 .section-layout {
+    grid-template-columns: 1fr;
+  }
+}

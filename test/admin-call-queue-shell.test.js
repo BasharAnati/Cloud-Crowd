@@ -948,7 +948,7 @@ test("Sprint 1.3E pages consume the shared shell, theme, Page Header, and mainte
     assert.match(source, /<aside id="internal-app-sidebar" aria-label="Application navigation"><\/aside>/);
     assert.match(source, /<header id="internal-app-topbar" role="banner">/);
     assert.match(source, /id="internal-nav-backdrop" class="cc-shell-nav-backdrop"/);
-    assert.match(source, /<header class="cc-page-header">/);
+    assert.match(source, /<header class="[^"]*\bcc-page-header\b[^"]*">/);
     assert.equal((source.match(/<h1\b/g) || []).length, 1, `${kind} has one h1`);
     assert.doesNotMatch(source, /class="(?:sidebar|topbar|nav|brand|logout)"/);
     assert.doesNotMatch(source, /function logout\s*\(/);

@@ -1,0 +1,172 @@
+body.restaurant-ratings-v2 {
+  --pv2-accent: #a05a17;
+  --pv2-accent-rgb: 160, 90, 23;
+}
+
+:root[data-theme="dark"] body.restaurant-ratings-v2 {
+  --pv2-accent: #f0a24b;
+  --pv2-accent-rgb: 240, 162, 75;
+}
+
+body.restaurant-ratings-v2 .filters {
+  grid-template-columns: minmax(210px, 1fr) repeat(4, minmax(128px, 0.7fr));
+}
+
+body.restaurant-ratings-v2 .rating-extreme-metric {
+  grid-template-columns: 38px minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+  align-content: center;
+  align-items: center;
+  column-gap: 10px;
+  padding: 16px;
+}
+
+body.restaurant-ratings-v2 .rating-extreme-metric .platform-v2-metric-icon {
+  grid-row: 1 / span 3;
+  align-self: center;
+}
+
+body.restaurant-ratings-v2 .rating-extreme-metric > span:not(.platform-v2-metric-icon),
+body.restaurant-ratings-v2 .rating-extreme-metric > strong,
+body.restaurant-ratings-v2 .rating-extreme-metric > small {
+  grid-column: 2;
+  min-width: 0;
+}
+
+body.restaurant-ratings-v2 .rating-extreme-metric > span:not(.platform-v2-metric-icon) {
+  min-height: 0;
+  line-height: 1.25;
+}
+
+body.restaurant-ratings-v2 .rating-extreme-metric > strong {
+  margin-top: 5px;
+  font-size: clamp(18px, 1.7vw, 24px);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+body.restaurant-ratings-v2 .rating-extreme-metric > small {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 6px;
+  padding: 3px 7px;
+  border: 1px solid rgba(var(--pv2-accent-rgb), 0.22);
+  border-radius: 999px;
+  color: var(--pv2-accent);
+  background: rgba(var(--pv2-accent-rgb), 0.07);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+body.restaurant-ratings-v2 #rating-modal .modal-panel {
+  max-height: min(92dvh, 860px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--pv2-line);
+  border-radius: 16px;
+  color: var(--pv2-text);
+  background: var(--pv2-surface);
+}
+
+body.restaurant-ratings-v2 #rating-modal .modal-header {
+  position: static;
+  flex: 0 0 auto;
+  padding: 17px 20px;
+  border-color: var(--pv2-line);
+  background: linear-gradient(110deg, rgba(var(--pv2-accent-rgb), 0.12), var(--pv2-surface) 58%);
+}
+
+body.restaurant-ratings-v2 #rating-modal .modal-header h3 {
+  color: var(--pv2-text);
+  font-size: 18px;
+}
+
+body.restaurant-ratings-v2 #rating-modal .icon-btn {
+  border-radius: 9px;
+  color: var(--pv2-text);
+  background: var(--pv2-surface-raised);
+}
+
+body.restaurant-ratings-v2 #rating-modal .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px;
+}
+
+body.restaurant-ratings-v2 #rating-modal .cc-form__required-note {
+  width: fit-content;
+  margin: 0 0 16px;
+  padding: 6px 9px;
+  border: 1px solid rgba(var(--pv2-accent-rgb), 0.2);
+  border-radius: 999px;
+  color: var(--pv2-muted);
+  background: rgba(var(--pv2-accent-rgb), 0.06);
+  font-size: 11px;
+}
+
+body.restaurant-ratings-v2 #rating-modal .form-grid {
+  gap: 14px;
+}
+
+body.restaurant-ratings-v2 #rating-modal .modal-actions {
+  position: sticky;
+  bottom: -20px;
+  z-index: 1;
+  margin: 18px -20px -20px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--pv2-line);
+  background: var(--pv2-surface-raised);
+}
+
+@media (max-width: 920px) {
+  body.restaurant-ratings-v2 .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  body.restaurant-ratings-v2 .filters {
+    grid-template-columns: 1fr;
+  }
+
+  body.restaurant-ratings-v2 .rating-extreme-metric {
+    min-height: 120px;
+    padding: 14px;
+  }
+
+  body.restaurant-ratings-v2 .rating-extreme-metric > strong {
+    font-size: 20px;
+  }
+
+  body.restaurant-ratings-v2 #rating-modal {
+    align-items: stretch;
+    padding: 8px;
+  }
+
+  body.restaurant-ratings-v2 #rating-modal .modal-panel {
+    align-self: stretch;
+    max-height: calc(100dvh - 16px);
+  }
+
+  body.restaurant-ratings-v2 #rating-modal .modal-header {
+    padding: 13px 14px;
+  }
+
+  body.restaurant-ratings-v2 #rating-modal .modal-body {
+    padding: 15px;
+  }
+
+  body.restaurant-ratings-v2 #rating-modal .form-grid {
+    gap: 12px;
+  }
+
+  body.restaurant-ratings-v2 #rating-modal .modal-actions {
+    bottom: -15px;
+    margin: 16px -15px -15px;
+    padding: 11px 15px;
+  }
+}

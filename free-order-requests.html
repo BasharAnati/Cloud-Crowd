@@ -498,8 +498,10 @@
   <link rel="stylesheet" href="assets/css/components/status.css">
   <link rel="stylesheet" href="assets/css/components/dialogs.css">
   <link rel="stylesheet" href="assets/css/components/kanban.css">
+  <link rel="stylesheet" href="assets/css/pages/internal-platform-v2.css">
+  <link rel="stylesheet" href="assets/css/pages/free-order-requests-v2.css">
 </head>
-<body class="workflow-page free-order-requests-page" data-shell-module="free-order-requests" data-shell-user-id="workflow-user" data-shell-role-id="workflow-role">
+<body class="workflow-page free-order-requests-page free-order-requests-v2 platform-v2-page" data-shell-module="free-order-requests" data-shell-user-id="workflow-user" data-shell-role-id="workflow-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
     <aside id="internal-app-sidebar" aria-label="Application navigation"></aside>
 
@@ -509,7 +511,7 @@
       </header>
 
       <div class="workflow-container cc-page-container cc-page-container--workspace">
-        <header class="cc-page-header">
+        <header class="cc-page-header platform-v2-hero">
           <div class="cc-page-header-content">
             <p class="cc-page-header-context">Free Order Workflow</p>
             <h1 class="cc-page-header-title" id="page-title">Free Order Requests</h1>
@@ -524,11 +526,11 @@
     <div class="message" id="message" role="status" aria-live="polite"></div>
 
     <section class="stats-grid cc-metric-grid" aria-label="Free order request statistics">
-      <article class="stat-card cc-metric-card"><span>Total Requests</span><strong id="stat-total">0</strong></article>
-      <article class="stat-card cc-metric-card"><span>Pending Details</span><strong id="stat-pending">0</strong></article>
-      <article class="stat-card cc-metric-card"><span>Ready to Share</span><strong id="stat-ready">0</strong></article>
-      <article class="stat-card cc-metric-card"><span>Needs Response</span><strong id="stat-needs-response">0</strong></article>
-      <article class="stat-card cc-metric-card"><span>Done</span><strong id="stat-done">0</strong></article>
+      <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="file-text" aria-hidden="true"></span><span>Total Requests</span><strong id="stat-total">0</strong></article>
+      <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="history" aria-hidden="true"></span><span>Pending Details</span><strong id="stat-pending">0</strong></article>
+      <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="truck" aria-hidden="true"></span><span>Ready to Share</span><strong id="stat-ready">0</strong></article>
+      <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="messages-square" aria-hidden="true"></span><span>Needs Response</span><strong id="stat-needs-response">0</strong></article>
+      <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="badge-check" aria-hidden="true"></span><span>Done</span><strong id="stat-done">0</strong></article>
     </section>
 
     <section class="toolbar cc-filter-bar cc-filter-bar--compact" aria-label="Request filters">
@@ -551,7 +553,8 @@
   <div class="modal" id="request-modal" role="dialog" aria-modal="true" aria-labelledby="request-modal-title" data-cc-dismiss-backdrop="false">
     <div class="modal-panel">
       <div class="modal-header">
-        <div>
+        <span class="request-modal-icon" data-cc-icon="file-text" aria-hidden="true"></span>
+        <div class="request-modal-heading">
           <h3 class="cc-modal-title" id="request-modal-title">New Request</h3>
           <p id="request-modal-subtitle">Create the entry. It will move directly to Pending Details.</p>
         </div>
@@ -559,31 +562,43 @@
       </div>
       <div class="modal-body">
         <form id="request-form" class="cc-form">
-          <p class="cc-form__required-note"><strong>*</strong> indicates a required field.</p>
-          <div class="form-grid cc-form-grid">
-            <div class="form-group">
-              <label class="cc-field__label--required" for="order-number">Order Number</label>
-              <input class="control" id="order-number" name="orderNumber" type="text" maxlength="120" required>
-            </div>
-            <div class="form-group">
-              <label class="cc-field__label--required" for="customer-name">Customer Name</label>
-              <input class="control" id="customer-name" name="customerName" type="text" maxlength="200" required>
-            </div>
-            <div class="form-group">
-              <label for="phone-number">Phone Number</label>
-              <input class="control" id="phone-number" name="phoneNumber" type="text" maxlength="80">
-            </div>
-            <div class="form-group">
-              <label class="cc-field__label--required" for="creation-time">Creation Time</label>
-              <input class="control" id="creation-time" name="creationTime" type="text" maxlength="120" placeholder="2026-06-07 14:08:27" required>
-            </div>
-            <div class="form-group">
-              <label class="cc-field__label--required" for="discount-amount">Discount Amount</label>
-              <input class="control" id="discount-amount" name="discountAmount" type="number" min="0" step="0.01" required>
-            </div>
-            <div class="form-group full">
-              <label class="cc-field__label--required" for="reason-for-discount">Reason for Discount</label>
-              <textarea class="control" id="reason-for-discount" name="reasonForDiscount" maxlength="5000" required></textarea>
+          <div class="request-form-scroll">
+            <p class="cc-form__required-note"><strong>*</strong> indicates a required field.</p>
+            <div class="request-form-sections">
+              <section class="request-form-section" aria-labelledby="request-identity-title">
+                <h4 id="request-identity-title"><span data-cc-icon="file-text" aria-hidden="true"></span>Request Identity</h4>
+                <div class="form-grid cc-form-grid">
+                  <div class="form-group">
+                    <label class="cc-field__label--required" for="order-number">Order Number</label>
+                    <input class="control" id="order-number" name="orderNumber" type="text" maxlength="120" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="cc-field__label--required" for="customer-name">Customer Name</label>
+                    <input class="control" id="customer-name" name="customerName" type="text" maxlength="200" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="phone-number">Phone Number</label>
+                    <input class="control" id="phone-number" name="phoneNumber" type="text" maxlength="80">
+                  </div>
+                  <div class="form-group">
+                    <label class="cc-field__label--required" for="creation-time">Creation Time</label>
+                    <input class="control" id="creation-time" name="creationTime" type="text" maxlength="120" placeholder="2026-06-07 14:08:27" required>
+                  </div>
+                </div>
+              </section>
+              <section class="request-form-section" aria-labelledby="request-compensation-title">
+                <h4 id="request-compensation-title"><span data-cc-icon="receipt" aria-hidden="true"></span>Compensation</h4>
+                <div class="form-grid cc-form-grid">
+                  <div class="form-group">
+                    <label class="cc-field__label--required" for="discount-amount">Discount Amount</label>
+                    <input class="control" id="discount-amount" name="discountAmount" type="number" min="0" step="0.01" required>
+                  </div>
+                  <div class="form-group full">
+                    <label class="cc-field__label--required" for="reason-for-discount">Reason for Discount</label>
+                    <textarea class="control" id="reason-for-discount" name="reasonForDiscount" maxlength="5000" required></textarea>
+                  </div>
+                </div>
+              </section>
             </div>
           </div>
           <div class="form-actions cc-form-actions">
@@ -790,45 +805,53 @@
 
     function cardFields(request) {
       const needsResponse = request.shareStage === 'needs_response';
-      const fields = needsResponse
+      const summaryFields = [
+        ['Phone', request.phoneNumber],
+        ['Discount', formatAmount(request.discountAmount)],
+        ['Reason', request.reasonForDiscount]
+      ];
+      const workflowFields = needsResponse
         ? [
-            ['Phone', request.phoneNumber],
-            ['Discount', formatAmount(request.discountAmount)],
-            ['Reason', request.reasonForDiscount],
             ['Share Note', request.shareNote],
             ['Share Note By', request.shareNoteBy],
             ['Share Note At', formatDateTime(request.shareNoteAt)]
           ]
         : [
-            ['Phone', request.phoneNumber],
-            ['Discount', formatAmount(request.discountAmount)],
-            ['Reason', request.reasonForDiscount],
             ['Created By', request.createdBy],
             ['Creation Time', request.creationTime],
             ['Current Stage', stageLabel(requestDisplayStage(request))]
           ];
 
       if (request.internalStage === 'ready_to_share' || request.internalStage === 'done') {
-        fields.push(['Decision Maker', request.decisionMaker]);
-        fields.push(['Deduction From', request.deductionFrom]);
+        workflowFields.push(['Decision Maker', request.decisionMaker]);
+        workflowFields.push(['Deduction From', request.deductionFrom]);
       }
 
-      return fields.map(([label, value]) => `
-        <div class="field-line">
-          <span>${escapeHtml(label)}</span>
-          <strong>${escapeHtml(valueOrDash(value))}</strong>
-        </div>
-      `).join('');
+      const renderGroup = (label, className, fields) => `
+        <section class="request-card-group ${className}" aria-label="${escapeHtml(label)}">
+          <h4>${escapeHtml(label)}</h4>
+          ${fields.map(([fieldLabel, value]) => `
+            <div class="field-line field-${fieldLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-')}">
+              <span>${escapeHtml(fieldLabel)}</span>
+              <strong>${escapeHtml(valueOrDash(value))}</strong>
+            </div>
+          `).join('')}
+        </section>
+      `;
+
+      return [
+        renderGroup('Request summary', 'request-card-summary', summaryFields),
+        renderGroup('Workflow metadata', 'request-card-workflow', workflowFields)
+      ].join('');
     }
 
     function renderCard(request) {
       const needsResponse = request.shareStage === 'needs_response';
-      const readyBadge = request.internalStage === 'ready_to_share' && !needsResponse
-        ? requestStageBadge('ready_to_share', 'stage-badge')
-        : '';
-      const responseBadge = needsResponse
-        ? requestStageBadge('needs_response', 'response-badge')
-        : '';
+      const displayStage = requestDisplayStage(request);
+      const stageBadge = requestStageBadge(
+        displayStage,
+        needsResponse ? 'response-badge' : 'stage-badge'
+      );
       const completeButton = request.internalStage === 'pending_details'
         ? `<button class="small-btn" type="button" data-complete-id="${escapeHtml(request.requestId)}" data-permission-edit>Complete Details</button>`
         : '';
@@ -839,11 +862,12 @@
       return `
         <article class="request-card cc-card ${needsResponse ? 'needs-response' : ''}">
           <div class="card-head">
-            <div>
+            <div class="request-card-identity">
+              <span class="request-card-kicker">Request ID</span>
               <h3>${escapeHtml(request.orderNumber)}</h3>
               <p>${escapeHtml(request.customerName)}</p>
             </div>
-            <div>${readyBadge}${responseBadge}</div>
+            <div class="request-card-stage">${stageBadge}</div>
           </div>
           <div class="field-list">${cardFields(request)}</div>
           <div class="card-actions">

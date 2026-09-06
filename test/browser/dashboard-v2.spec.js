@@ -160,14 +160,12 @@ test('Dashboard V2 preserves Light, Dark, and System while maintenance remains a
 
 const sharedShellPages = [
   'dashboard.html', 'cctv.html', 'ce.html', 'complaints.html', 'free-orders.html',
-  'free-order-requests.html', 'free-order-share.html', 'attendance.html',
-  'employee-profiles.html', 'client-profiles.html', 'anati-admin.html'
+  'free-order-requests.html', 'free-order-share.html', 'attendance.html', 'weekly-quality.html',
+  'agent-training.html', 'employee-deductions.html', 'employee-profiles.html',
+  'client-profiles.html', 'restaurant-ratings.html', 'anati-admin.html'
 ];
 
-const responsiveShellPages = new Set([
-  'dashboard.html', 'cctv.html', 'ce.html', 'complaints.html', 'free-order-requests.html', 'free-order-share.html',
-  'attendance.html', 'client-profiles.html', 'anati-admin.html'
-]);
+const responsiveShellPages = new Set(sharedShellPages);
 
 test('shared Menu and Close visibility is corrected across active shell pages', async ({ appPage: page, browserName }) => {
   test.skip(browserName !== 'chromium', 'The shared visibility matrix is exhaustive in Chromium.');

@@ -112,8 +112,10 @@
   <link rel="stylesheet" href="assets/css/components/status.css">
   <link rel="stylesheet" href="assets/css/components/tables.css">
   <link rel="stylesheet" href="assets/css/components/dialogs.css">
+  <link rel="stylesheet" href="assets/css/pages/internal-platform-v2.css">
+  <link rel="stylesheet" href="assets/css/pages/employee-deductions-v2.css">
 </head>
-<body class="people-management-page employee-deductions-page" data-shell-module="employee-deductions" data-shell-user-id="current-user" data-shell-role-id="current-role">
+<body class="people-management-page employee-deductions-page employee-deductions-v2 platform-v2-page" data-shell-module="employee-deductions" data-shell-user-id="current-user" data-shell-role-id="current-role">
   <div id="internal-page-shell" class="cc-shell-layout has-responsive-navigation">
     <aside id="internal-app-sidebar" aria-label="Application navigation"></aside>
 
@@ -123,7 +125,7 @@
       </header>
 
       <div class="people-management-container cc-page-container cc-page-container--standard">
-      <header class="cc-page-header">
+      <header class="cc-page-header platform-v2-hero">
         <div class="cc-page-header-content">
           <p class="cc-page-header-context">People Operations</p>
           <h1 class="cc-page-header-title" id="page-title">Employee Deductions</h1>
@@ -137,10 +139,10 @@
       <div class="message" id="page-message" role="status"></div>
 
       <section class="stats-grid cc-metric-grid" aria-label="Deduction summary">
-        <article class="stat-card cc-metric-card"><span>Total Deductions Amount</span><strong id="stat-total">0.00</strong></article>
-        <article class="stat-card cc-metric-card"><span>This Month Deductions</span><strong id="stat-month">0.00</strong></article>
-        <article class="stat-card cc-metric-card"><span>Employees With Deductions</span><strong id="stat-employees">0</strong></article>
-        <article class="stat-card cc-metric-card"><span>Most Common Deduction Type</span><strong id="stat-type">-</strong></article>
+        <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="receipt" aria-hidden="true"></span><span>Total Deductions Amount</span><strong id="stat-total">0.00</strong></article>
+        <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="history" aria-hidden="true"></span><span>This Month Deductions</span><strong id="stat-month">0.00</strong></article>
+        <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="users" aria-hidden="true"></span><span>Employees With Deductions</span><strong id="stat-employees">0</strong></article>
+        <article class="stat-card cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="clipboard-list" aria-hidden="true"></span><span>Most Common Deduction Type</span><strong id="stat-type">-</strong></article>
       </section>
 
       <section class="content-card" aria-labelledby="records-title">
@@ -230,6 +232,7 @@
               </div>
             </div>
             <div class="calculation-band" aria-live="polite">
+              <div class="calculation-band-header"><span data-cc-icon="receipt" aria-hidden="true"></span><strong>Calculation Summary</strong></div>
               <div class="calculation-item"><span>Original Amount</span><strong id="calculated-original">0.00</strong></div>
               <div class="calculation-item"><span>Discount Value</span><strong id="calculated-discount">0.00</strong></div>
               <div class="calculation-item"><span>Final Deduction Amount</span><strong id="calculated-final">0.00</strong></div>

@@ -1,0 +1,21 @@
+body.attendance-v2 {
+  --pv2-accent: #1777a8;
+  --pv2-accent-rgb: 23, 119, 168;
+}
+
+:root[data-theme="dark"] body.attendance-v2 {
+  --pv2-accent: #4ab9e8;
+  --pv2-accent-rgb: 74, 185, 232;
+}
+
+body.attendance-v2 .content-card + .content-card {
+  margin-top: 18px;
+}
+
+body.attendance-v2 .attendance-form {
+  padding: 20px;
+}
+
+body.attendance-v2 .records-table {
+  min-width: 980px;
+}

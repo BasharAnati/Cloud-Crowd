@@ -1025,6 +1025,8 @@ test("integrated HTML determines the real linked and embedded stylesheet order",
         ? [...operationsOrder, "assets/css/pages/ce-v2.css"]
         : page === "complaints.html"
           ? [...operationsOrder, "assets/css/pages/complaints-v2.css"]
+          : page === "free-orders.html"
+            ? [...operationsOrder, "assets/css/pages/internal-platform-v2.css", "assets/css/pages/free-orders-v2.css"]
           : operationsOrder;
     assert.deepEqual(extractPageSources(ROOT, page).map((source) => source.name), expectedOrder, `${page} stylesheet order`);
   });
@@ -1042,7 +1044,9 @@ test("integrated HTML determines the real linked and embedded stylesheet order",
     "assets/css/components/cards.css",
     "assets/css/components/status.css",
     "assets/css/components/tables.css",
-    "assets/css/components/dialogs.css"
+    "assets/css/components/dialogs.css",
+    "assets/css/pages/internal-platform-v2.css",
+    "assets/css/pages/employee-profiles-v2.css"
   ]);
 });
 

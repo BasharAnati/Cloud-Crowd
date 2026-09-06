@@ -1,0 +1,241 @@
+body.anati-admin-v2 {
+  --pv2-accent: #6f4bc2;
+  --pv2-accent-rgb: 111, 75, 194;
+}
+
+:root[data-theme="dark"] body.anati-admin-v2 {
+  --pv2-accent: #aa83ff;
+  --pv2-accent-rgb: 170, 131, 255;
+}
+
+body.anati-admin-v2 .grid {
+  grid-template-columns: minmax(0, 1.25fr) minmax(340px, 0.75fr);
+  gap: 16px;
+}
+
+body.anati-admin-v2 .panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+body.anati-admin-v2 .panel > :not(.panel-head, .table-wrap) {
+  margin-inline: 20px;
+}
+
+body.anati-admin-v2 .panel > .table-wrap {
+  margin: 0 20px 20px;
+}
+
+body.anati-admin-v2 #refresh-users-btn:not(:disabled) {
+  border: 1px solid rgba(var(--pv2-accent-rgb), 0.38);
+  color: var(--pv2-text);
+  background: rgba(var(--pv2-accent-rgb), 0.12);
+  box-shadow: 0 8px 20px rgba(var(--pv2-accent-rgb), 0.08);
+  opacity: 1;
+}
+
+body.anati-admin-v2 #refresh-users-btn:disabled {
+  border: 1px solid var(--pv2-line-soft);
+  color: var(--pv2-subtle);
+  background: var(--pv2-surface-muted);
+  box-shadow: none;
+  opacity: 0.58;
+}
+
+body.anati-admin-v2 #user-form {
+  padding-bottom: 2px;
+}
+
+body.anati-admin-v2 #user-form .cc-form__required-note {
+  width: fit-content;
+  margin: 0 0 14px;
+  padding: 6px 9px;
+  border: 1px solid rgba(var(--pv2-accent-rgb), 0.2);
+  border-radius: 999px;
+  color: var(--pv2-muted);
+  background: rgba(var(--pv2-accent-rgb), 0.06);
+  font-size: 11px;
+}
+
+body.anati-admin-v2 #user-form > .form-grid {
+  gap: 0;
+}
+
+body.anati-admin-v2 #user-form .cc-form-section {
+  display: grid;
+  gap: 13px;
+  padding: 0 0 17px;
+  border: 0;
+  border-bottom: 1px solid var(--pv2-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+body.anati-admin-v2 #user-form .cc-form-section:not(:first-child) {
+  padding-top: 17px;
+}
+
+body.anati-admin-v2 #user-form .cc-form-section:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+body.anati-admin-v2 #user-form .cc-form-section > .cc-form-grid {
+  gap: 12px;
+}
+
+body.anati-admin-v2 #user-form .cc-form-section__title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  color: var(--pv2-text);
+  font-size: 14px;
+}
+
+body.anati-admin-v2 #user-form .cc-form-section__title > [data-cc-icon] {
+  display: grid;
+  flex: 0 0 30px;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(var(--pv2-accent-rgb), 0.3);
+  border-radius: 8px;
+  color: var(--pv2-accent);
+  background: rgba(var(--pv2-accent-rgb), 0.1);
+}
+
+body.anati-admin-v2 #user-form .cc-form-section__title svg {
+  width: 16px;
+  height: 16px;
+}
+
+body.anati-admin-v2 #user-form label {
+  color: var(--pv2-muted);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+body.anati-admin-v2 #user-form .cc-field__label--required::after {
+  content: none;
+}
+
+body.anati-admin-v2 #user-form .admin-field-label {
+  display: block;
+}
+
+body.anati-admin-v2 #user-form .admin-required-mark {
+  display: none;
+  color: var(--pv2-danger);
+}
+
+body.anati-admin-v2 #user-form .cc-field__label--required .admin-required-mark {
+  display: inline;
+}
+
+body.anati-admin-v2 #user-form :is(input:not([type="checkbox"]), select) {
+  border: 1px solid rgba(var(--pv2-accent-rgb), 0.32);
+  border-radius: 9px;
+  color: var(--pv2-text);
+  background: var(--pv2-surface-raised);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  opacity: 1;
+}
+
+body.anati-admin-v2 #user-form :is(input:not([type="checkbox"]), select):focus {
+  border-color: var(--pv2-accent);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--pv2-accent-rgb), 0.14);
+}
+
+body.anati-admin-v2 #user-form :is(input:not([type="checkbox"]), select):disabled {
+  border-color: var(--pv2-line-soft);
+  border-style: dashed;
+  color: var(--pv2-subtle);
+  background: var(--pv2-surface-muted);
+  box-shadow: none;
+  opacity: 0.62;
+}
+
+body.anati-admin-v2 #user-form #temporary-password-help {
+  display: block;
+  margin-top: 6px;
+  color: var(--pv2-subtle);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.4;
+  text-transform: none;
+}
+
+body.anati-admin-v2 #user-form .actions {
+  padding-top: 2px;
+  border-top: 0;
+}
+
+body.anati-admin-v2 .table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+body.anati-admin-v2 #users-body > tr > td {
+  padding: 13px 14px;
+  line-height: 1.4;
+}
+
+body.anati-admin-v2 #users-body > tr > td:first-child strong {
+  color: var(--pv2-text);
+  font-weight: 900;
+}
+
+body.anati-admin-v2 .panel:first-child .table-wrap table {
+  min-width: 940px;
+}
+
+body.anati-admin-v2 .panel:first-child .table-wrap th {
+  padding: 11px 14px;
+  color: var(--pv2-muted);
+  background: rgba(var(--pv2-accent-rgb), 0.07);
+  white-space: nowrap;
+}
+
+body.anati-admin-v2 .chip {
+  min-height: 25px;
+  border: 1px solid rgba(var(--pv2-accent-rgb), 0.16);
+  line-height: 1;
+}
+
+@media (max-width: 1120px) {
+  body.anati-admin-v2 .grid {
+    grid-template-columns: 1fr;
+  }
+
+  body.anati-admin-v2 .panel > :not(.panel-head, .table-wrap),
+  body.anati-admin-v2 .panel > .table-wrap {
+    margin-inline: 16px;
+  }
+}
+
+@media (max-width: 700px) {
+  body.anati-admin-v2 .panel-head {
+    gap: 12px;
+  }
+
+  body.anati-admin-v2 #refresh-users-btn {
+    width: fit-content;
+  }
+
+  body.anati-admin-v2 #user-form .cc-form-section,
+  body.anati-admin-v2 #user-form .cc-form-section.cc-form-grid__full {
+    grid-column: auto;
+    padding-bottom: 15px;
+  }
+
+  body.anati-admin-v2 #user-form .cc-form-section:not(:first-child) {
+    padding-top: 15px;
+  }
+
+  body.anati-admin-v2 #user-form .cc-form-section > .cc-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

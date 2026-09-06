@@ -211,7 +211,7 @@ test("Sprint 1.3C pages use the shared theme, shell, Page Header, and one h1", (
     assert.match(source, /<aside id="internal-app-sidebar" aria-label="Application navigation"><\/aside>/);
     assert.match(source, /<header id="internal-app-topbar" role="banner">/);
     assert.match(source, /id="internal-nav-backdrop" class="cc-shell-nav-backdrop"/);
-    assert.match(source, /<header class="cc-page-header">/);
+    assert.match(source, /<header class="[^"]*\bcc-page-header\b[^"]*">/);
     assert.equal(count(source, /<h1\b/g), 1, `${name} has one h1`);
     assert.doesNotMatch(source, /class="(?:sidebar|topbar|app-shell|quality-shell|clients-shell|nav-item|breadcrumb|user-tools|logout|hero)\b/);
     assert.doesNotMatch(source, /<nav class="sidebar-nav"|onclick="logout\(\)"/);

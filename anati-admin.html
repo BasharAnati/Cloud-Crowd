@@ -277,8 +277,10 @@
   <link rel="stylesheet" href="assets/css/components/forms.css">
   <link rel="stylesheet" href="assets/css/components/tables.css">
   <link rel="stylesheet" href="assets/css/components/dialogs.css">
+  <link rel="stylesheet" href="assets/css/pages/internal-platform-v2.css">
+  <link rel="stylesheet" href="assets/css/pages/anati-admin-v2.css">
 </head>
-<body class="admin-call-queue-page admin-center-page" data-shell-module="anati-admin" data-shell-user-id="admin-shell-user" data-shell-role-id="admin-shell-role">
+<body class="admin-call-queue-page admin-center-page anati-admin-v2 platform-v2-page" data-shell-module="anati-admin" data-shell-user-id="admin-shell-user" data-shell-role-id="admin-shell-role">
   <script>
     if (readSessionValue("cc_auth") !== "1" || !readSessionValue("cc_token") || !readSessionValue("cc_role")) {
       clearStoredSession();
@@ -296,7 +298,7 @@
       </header>
 
       <div class="admin-call-queue-container admin-center-container cc-page-container cc-page-container--workspace">
-        <header class="cc-page-header">
+        <header class="cc-page-header platform-v2-hero">
           <div class="cc-page-header-content">
             <p class="cc-page-header-context">Administration</p>
             <h1 class="cc-page-header-title" id="page-title">Anati Admin Center</h1>
@@ -307,10 +309,10 @@
         <div class="notice cc-feedback cc-feedback--banner cc-feedback--info" role="status" aria-live="polite" aria-atomic="true">Admin-set passwords are temporary. Users must create a new password before entering the application.</div>
 
       <section class="stats cc-metric-grid" aria-label="Admin Center stats">
-        <div class="stat cc-metric-card"><span>Total Users</span><strong id="stat-total">0</strong></div>
-        <div class="stat cc-metric-card"><span>Active Users</span><strong id="stat-active">0</strong></div>
-        <div class="stat cc-metric-card"><span>Disabled Users</span><strong id="stat-disabled">0</strong></div>
-        <div class="stat cc-metric-card"><span>Admins / Managers</span><strong id="stat-leaders">0</strong></div>
+        <div class="stat cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="users" aria-hidden="true"></span><span>Total Users</span><strong id="stat-total">0</strong></div>
+        <div class="stat cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="badge-check" aria-hidden="true"></span><span>Active Users</span><strong id="stat-active">0</strong></div>
+        <div class="stat cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="x" aria-hidden="true"></span><span>Disabled Users</span><strong id="stat-disabled">0</strong></div>
+        <div class="stat cc-metric-card"><span class="platform-v2-metric-icon" data-cc-icon="shield-check" aria-hidden="true"></span><span>Admins / Managers</span><strong id="stat-leaders">0</strong></div>
       </section>
 
       <section class="grid" aria-label="User management">
@@ -359,32 +361,32 @@
             <p class="cc-form__required-note"><strong>*</strong> indicates a required field.</p>
             <div class="form-grid cc-form-grid">
               <section class="cc-form-section cc-form-grid__full" aria-labelledby="admin-identity-title">
-                <h3 class="cc-form-section__title" id="admin-identity-title">Account Identity</h3>
+                <h3 class="cc-form-section__title" id="admin-identity-title"><span data-cc-icon="file-text" aria-hidden="true"></span>Account Identity</h3>
                 <div class="cc-form-grid">
-                  <label class="cc-field__label--required">Username<input id="username" autocomplete="off" required aria-describedby="username-error"><span class="field-error" id="username-error"></span></label>
+                  <label class="cc-field__label--required"><span class="admin-field-label">Username <span class="admin-required-mark" aria-hidden="true">*</span></span><input id="username" autocomplete="off" required aria-describedby="username-error"><span class="field-error" id="username-error"></span></label>
                   <label>Display Name<input id="display-name" autocomplete="off"></label>
                   <label>Email<input id="email" type="email" autocomplete="off"></label>
                 </div>
               </section>
               <section class="cc-form-section cc-form-grid__full" aria-labelledby="admin-linkage-title">
-                <h3 class="cc-form-section__title" id="admin-linkage-title">Account Linkage</h3>
+                <h3 class="cc-form-section__title" id="admin-linkage-title"><span data-cc-icon="external-link" aria-hidden="true"></span>Account Linkage</h3>
                 <div class="cc-form-grid">
                   <label>Account Type<select id="account-type"><option value="employee">Employee</option><option value="external">External</option><option value="system" disabled>Existing System</option><option value="client" disabled>Existing Client - login deferred</option></select></label>
-                  <label id="employee-link-field">Linked Employee<select id="employee-id"></select></label>
+                  <label id="employee-link-field"><span class="admin-field-label">Linked Employee <span class="admin-required-mark" aria-hidden="true">*</span></span><select id="employee-id"></select></label>
                 </div>
               </section>
               <section class="cc-form-section cc-form-grid__full" aria-labelledby="admin-role-title">
-                <h3 class="cc-form-section__title" id="admin-role-title">Role and Status</h3>
+                <h3 class="cc-form-section__title" id="admin-role-title"><span data-cc-icon="users" aria-hidden="true"></span>Role and Status</h3>
                 <div class="cc-form-grid">
                   <label>Role<select id="role"><option value="agent">Agent</option><option value="manager">Manager</option><option value="admin">Admin</option></select></label>
                   <label>Status<select id="status"><option value="active">Active</option><option value="disabled">Disabled</option></select></label>
                 </div>
               </section>
               <section class="cc-form-section cc-form-grid__full" aria-labelledby="admin-security-title">
-                <h3 class="cc-form-section__title" id="admin-security-title">Access and Security</h3>
+                <h3 class="cc-form-section__title" id="admin-security-title"><span data-cc-icon="shield-check" aria-hidden="true"></span>Access and Security</h3>
                 <div class="cc-form-grid">
                   <label>Temporary Password<input id="temporary-password" type="password" minlength="12" autocomplete="new-password" placeholder="Leave blank to keep current password" aria-describedby="temporary-password-help temporary-password-error"><span id="temporary-password-help">At least 12 characters. A password entered here always requires reset at next sign-in.</span><span class="field-error" id="temporary-password-error"></span></label>
-                  <label class="check-row cc-checkbox" id="system-account-row" hidden><input id="is-system-account" type="checkbox">Confirm system/admin account</label>
+                  <label class="check-row cc-checkbox" id="system-account-row" hidden><input id="is-system-account" type="checkbox"><span>Confirm system/admin account <span class="admin-required-mark" aria-hidden="true">*</span></span></label>
                 </div>
               </section>
             </div>

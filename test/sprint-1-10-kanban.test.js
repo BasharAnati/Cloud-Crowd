@@ -69,7 +69,9 @@ function assertHorizontalContract(cascade, targets, label) {
   assert.equal(resolved(cascade, targets.board, "max-width"), "100%", `${label} board containment`);
   assert.equal(resolved(cascade, targets.board, "overflow-x"), "auto", `${label} board owns horizontal scrolling`);
   const flex = resolved(cascade, targets.column, "flex");
-  if (label.startsWith("cctv.html@")) {
+  const workflowV2 = /^free-order-(requests|share)\.html@/.test(label);
+  const viewport = Number(label.match(/@(\d+)/)?.[1]);
+  if (label.startsWith("cctv.html@") || (workflowV2 && viewport > 700)) {
     assert.equal(flex, "1 1 0", `${label} V2 columns balance available workspace`);
   } else {
     assert.match(flex, /^0 0 clamp\(/, `${label} columns do not wrap or shrink`);
@@ -128,10 +130,15 @@ test("actual cascade keeps desktop Kanban horizontal and CCTV mobile purpose-bui
       }
       assertHorizontalContract(cascade, targets, `${page}@${width}/${theme}`);
       const cctvGap = width <= 1024 ? "8px" : "1px";
+      const workflowV2 = page === "free-order-requests.html" || page === "free-order-share.html";
       const ceGap = page === "ce.html" && width > 1024 ? "10px" : "16px";
-      assert.equal(resolved(cascade, targets.board, "gap"), page === "cctv.html" ? cctvGap : ceGap, `${page}@${width}`);
-      const expectedMin = page === "cctv.html" ? (width <= 1024 ? "280px" : "260px") : page.startsWith("free-order-") && !page.startsWith("free-orders") ? "300px" : "280px";
-      const expectedMax = page === "cctv.html" ? "none" : expectedMin === "300px" ? "340px" : "320px";
+      assert.equal(resolved(cascade, targets.board, "gap"), page === "cctv.html" ? cctvGap : workflowV2 ? "12px" : ceGap, `${page}@${width}`);
+      const expectedMin = page === "cctv.html"
+        ? (width <= 1024 ? "280px" : "260px")
+        : workflowV2
+          ? width <= 700 ? "270px" : page === "free-order-requests.html" ? "250px" : "275px"
+          : "280px";
+      const expectedMax = page === "cctv.html" ? "none" : workflowV2 ? width <= 700 ? "310px" : "none" : "320px";
       assert.equal(resolved(cascade, targets.column, "min-width"), expectedMin, `${page}@${width}`);
       assert.equal(resolved(cascade, targets.column, "max-width"), expectedMax, `${page}@${width}`);
       assert.equal(resolved(cascade, targets.stack, "display"), "flex");

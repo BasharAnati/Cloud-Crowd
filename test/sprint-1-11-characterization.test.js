@@ -2439,14 +2439,16 @@ test("Profile stylesheet order and Light/Dark cascade winners remain determinist
     "assets/css/layouts/page-layout.css", "assets/css/components/buttons.css", "assets/css/components/icons.css",
     "assets/css/components/feedback.css", "assets/css/components/forms.css", "assets/css/components/filters.css",
     "assets/css/components/cards.css", "assets/css/components/status.css", "assets/css/components/tables.css",
-    "assets/css/components/dialogs.css", "assets/css/components/master-detail.css"
+    "assets/css/components/dialogs.css", "assets/css/components/master-detail.css",
+    "assets/css/pages/internal-platform-v2.css", "assets/css/pages/employee-profiles-v2.css"
   ]);
   assert.deepEqual(linkedStyles(clientSource), [
     "assets/css/design-tokens.css", "app-shell.css", "assets/css/theme-base.css", "media-viewer.css",
     "assets/css/pages/business-quality.css", "assets/css/layouts/page-layout.css", "assets/css/components/buttons.css",
     "assets/css/components/icons.css", "assets/css/components/feedback.css", "assets/css/components/forms.css",
     "assets/css/components/filters.css", "assets/css/components/cards.css", "assets/css/components/status.css",
-    "assets/css/components/tables.css", "assets/css/components/dialogs.css", "assets/css/components/master-detail.css"
+    "assets/css/components/tables.css", "assets/css/components/dialogs.css", "assets/css/components/master-detail.css",
+    "assets/css/pages/internal-platform-v2.css", "assets/css/pages/client-profiles-v2.css"
   ]);
   assert.match(employeeSource, /assets\/js\/components\/master-detail\.js/);
   assert.match(employeeSource, /<link rel=stylesheet href=assets\/css\/components\/master-detail\.css>/);

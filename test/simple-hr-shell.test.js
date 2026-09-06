@@ -58,7 +58,7 @@ test('Sprint 1.3B pages load the shared theme and Internal CRM Shell', () => {
 test('Sprint 1.3B pages have one shared Page Header and no local navigation shell', () => {
   Object.entries(pages).forEach(([name, source]) => {
     assert.equal(count(source, /<h1\b/g), 1, `${name} has one page-title h1`);
-    assert.match(source, /<header class="cc-page-header">/);
+    assert.match(source, /<header class="[^"]*\bcc-page-header\b[^"]*">/);
     assert.match(source, /class="cc-page-header-content"/);
     assert.match(source, /class="cc-page-header-context"/);
     assert.match(source, /class="cc-page-header-title"/);
