@@ -39,6 +39,7 @@ test('the authoritative registry exposes the eleven migrated modules and keeps C
 });
 
 test('every migrated page has exact identity, responsive shell hooks, and final page-local V2 ownership', () => {
+  const harmonizedTicketPages = new Set(['free-orders.html', 'free-order-requests.html', 'free-order-share.html']);
   pages.forEach(([id, file, bodyClass, h1]) => {
     const html = read(file);
     const localStylesheet = `assets/css/pages/${bodyClass}.css`;
@@ -50,7 +51,10 @@ test('every migrated page has exact identity, responsive shell hooks, and final 
     assert.match(html, /has-responsive-navigation/);
     assert.match(html, /cc-shell-nav-backdrop/);
     assert.ok(stylesheets.includes('assets/css/pages/internal-platform-v2.css'), `${file} shared V2 foundation`);
-    assert.equal(stylesheets.at(-1), localStylesheet, `${file} final stylesheet`);
+    const expectedFinalStylesheet = harmonizedTicketPages.has(file)
+      ? 'assets/css/pages/ticket-harmonization.css'
+      : localStylesheet;
+    assert.equal(stylesheets.at(-1), expectedFinalStylesheet, `${file} final stylesheet`);
     const css = read(localStylesheet);
     assert.match(css, new RegExp(`body\\.${bodyClass}`));
     assert.doesNotMatch(css, /!important/);

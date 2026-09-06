@@ -1022,11 +1022,11 @@ test("integrated HTML determines the real linked and embedded stylesheet order",
     const expectedOrder = page === "cctv.html"
       ? [...operationsOrder, "assets/css/pages/cctv-v2.css"]
       : page === "ce.html"
-        ? [...operationsOrder, "assets/css/pages/ce-v2.css"]
+        ? [...operationsOrder, "assets/css/pages/ce-v2.css", "assets/css/pages/ticket-harmonization.css"]
         : page === "complaints.html"
-          ? [...operationsOrder, "assets/css/pages/complaints-v2.css"]
+          ? [...operationsOrder, "assets/css/pages/complaints-v2.css", "assets/css/pages/ticket-harmonization.css"]
           : page === "free-orders.html"
-            ? [...operationsOrder, "assets/css/pages/internal-platform-v2.css", "assets/css/pages/free-orders-v2.css"]
+            ? [...operationsOrder, "assets/css/pages/internal-platform-v2.css", "assets/css/pages/free-orders-v2.css", "assets/css/pages/ticket-harmonization.css"]
           : operationsOrder;
     assert.deepEqual(extractPageSources(ROOT, page).map((source) => source.name), expectedOrder, `${page} stylesheet order`);
   });

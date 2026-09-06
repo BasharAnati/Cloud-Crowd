@@ -1,0 +1,1437 @@
+/* CCTV-led visual grammar for the five ticket workflow modules only. */
+body.ticket-harmonized-page.ticket-harmonized-page {
+  --th-canvas: #f4f6f8;
+  --th-surface: #ffffff;
+  --th-raised: #ffffff;
+  --th-selected: #eef4f8;
+  --th-lane: #f8fafb;
+  --th-text: #17212f;
+  --th-secondary: #4b5b6c;
+  --th-muted: #718096;
+  --th-border: #dbe2e8;
+  --th-border-strong: #c7d0d9;
+  --th-motion: 160ms;
+  color: var(--th-text);
+  background: var(--th-canvas);
+}
+
+:root[data-theme="dark"] body.ticket-harmonized-page.ticket-harmonized-page {
+  --th-canvas: #10161d;
+  --th-surface: #171f28;
+  --th-raised: #1b2530;
+  --th-selected: #202e3a;
+  --th-lane: #141c24;
+  --th-text: #edf2f6;
+  --th-secondary: #b4c0cb;
+  --th-muted: #8d9aa7;
+  --th-border: #2d3945;
+  --th-border-strong: #3a4856;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .cc-page-container--workspace {
+  box-sizing: border-box;
+  padding-inline: 28px;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header {
+  min-height: 0;
+  margin: 0;
+  padding: 18px 0 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  color: var(--th-text);
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header::before,
+body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header::after {
+  content: none !important;
+  display: none !important;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-content {
+  width: auto;
+  max-width: 760px;
+  margin: 0;
+  padding: 0;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-title,
+body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-content h1 {
+  margin: 0;
+  color: var(--th-text);
+  font-size: clamp(27px, 2.15vw, 34px);
+  font-weight: 700;
+  line-height: 1.14;
+  letter-spacing: -0.025em;
+  text-shadow: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-description,
+body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-content p:not(.cc-page-header-context) {
+  max-width: 760px;
+  margin: 5px 0 0;
+  color: var(--th-secondary);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-context {
+  margin: 0 0 4px;
+  color: var(--th-muted);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-actions {
+  position: static;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-actions :is(button, a),
+body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header > :is(button, a) {
+  min-width: 156px;
+  min-height: 44px;
+  border-radius: 8px;
+  box-shadow: none !important;
+  transform: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics {
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--metric-count, 5), minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  border-block: 1px solid var(--th-border);
+  border-inline: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.ce-page.ticket-harmonized-page .ticket-metrics,
+body.free-order-share-page.ticket-harmonized-page .ticket-metrics {
+  --metric-count: 4;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :is(.cc-metric-card, .stat-card) {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 58px;
+  margin: 0;
+  padding: 5px 16px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 2px 8px;
+  border: 0;
+  border-inline-start: 1px solid var(--th-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :first-child {
+  border-inline-start: 0;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :is(.cc-metric-card, .stat-card)::before,
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :is(.cc-metric-card, .stat-card)::after {
+  content: none !important;
+  display: none !important;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics :is(.ce-stat-icon, .complaints-stat-icon, .free-orders-stat-icon, .platform-v2-metric-icon) {
+  position: static;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics :is(.ce-stat-icon, .complaints-stat-icon, .free-orders-stat-icon, .platform-v2-metric-icon) svg {
+  width: 13px;
+  height: 13px;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :is(.cc-metric-card, .stat-card) > span:not([class*="icon"]) {
+  align-self: center;
+  color: var(--th-muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :is(.cc-metric-card, .stat-card) > strong {
+  grid-column: 1 / -1;
+  justify-self: center;
+  margin: 0;
+  color: var(--th-text);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-filters {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 0;
+  margin: 0 0 14px;
+  padding: 10px 0 12px;
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) repeat(4, minmax(120px, 1fr));
+  align-items: end;
+  gap: 10px;
+  border-block: 1px solid var(--th-border);
+  border-inline: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.ce-page.ticket-harmonized-page .ticket-filters {
+  grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(140px, 1fr));
+}
+
+body.free-order-requests-page.ticket-harmonized-page .ticket-filters,
+body.free-order-share-page.ticket-harmonized-page .ticket-filters {
+  grid-template-columns: minmax(220px, 2fr) minmax(180px, 0.8fr);
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-filter-secondary {
+  display: contents;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-filters label {
+  display: block;
+  margin: 0 0 5px;
+  color: var(--th-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-filters :is(input, select, .control) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 10px;
+  border: 1px solid var(--th-border);
+  border-radius: 6px;
+  color: var(--th-text);
+  font: inherit;
+  font-size: 13px;
+  background: var(--th-surface);
+  box-shadow: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-filters :is(input, select, .control):focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  border-color: var(--th-border-strong);
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-filter-toggle {
+  display: none;
+  height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--th-border);
+  border-radius: 6px;
+  color: var(--th-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  background: var(--th-surface);
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-stage-switcher {
+  display: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-board {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 1px 1px 8px;
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+  overflow-x: auto;
+  overflow-y: visible;
+  border: 1px solid var(--th-border);
+  border-radius: 10px;
+  background: var(--th-border);
+  box-shadow: none;
+  scrollbar-gutter: stable;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-board > .ticket-lane {
+  --ticket-lane-accent: #2d7fb8;
+  box-sizing: border-box;
+  flex: 1 1 0;
+  width: auto;
+  min-width: 260px;
+  max-width: none;
+  margin: 0;
+  padding: 0 8px 8px;
+  overflow: visible;
+  border: 0;
+  border-top: 2px solid var(--ticket-lane-accent);
+  border-radius: 0;
+  background: var(--th-lane);
+  box-shadow: none;
+}
+
+body.ce-page .ticket-lane:nth-child(1),
+body.complaints-page .ticket-lane:nth-child(1) { --ticket-lane-accent: #2f9e69; }
+body.ce-page .ticket-lane:nth-child(2),
+body.complaints-page .ticket-lane:nth-child(2) { --ticket-lane-accent: #2d7fb8; }
+body.ce-page .ticket-lane:nth-child(3),
+body.complaints-page .ticket-lane:nth-child(3) { --ticket-lane-accent: #d94b5f; }
+body.ce-page .ticket-lane:nth-child(4),
+body.complaints-page .ticket-lane:nth-child(4) { --ticket-lane-accent: #c88719; }
+
+body.free-orders-page .ticket-lane:nth-child(1),
+body.free-order-share-page .ticket-lane:nth-child(1) { --ticket-lane-accent: #2d7fb8; }
+body.free-orders-page .ticket-lane:nth-child(2),
+body.free-order-requests-page .ticket-lane:nth-child(1),
+body.free-order-share-page .ticket-lane:nth-child(2) { --ticket-lane-accent: #c88719; }
+body.free-orders-page .ticket-lane:nth-child(3),
+body.free-order-requests-page .ticket-lane:nth-child(4),
+body.free-order-share-page .ticket-lane:nth-child(3) { --ticket-lane-accent: #2f9e69; }
+body.free-order-requests-page .ticket-lane:nth-child(2) { --ticket-lane-accent: #2d7fb8; }
+body.free-order-requests-page .ticket-lane:nth-child(3) { --ticket-lane-accent: #8b63c7; }
+body.ticket-harmonized-page .ticket-lane:nth-child(n + 5) { --ticket-lane-accent: #718096; }
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-lane > :is(.col-header, .stage-head, .column-head),
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-lane .cc-kanban__header {
+  box-sizing: border-box;
+  min-height: 40px;
+  margin: 0;
+  padding: 7px 2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-lane .cc-kanban__header::before,
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-lane .cc-kanban__header::after,
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-lane > .col-underbar,
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-lane > .cc-icon-host {
+  content: none !important;
+  display: none !important;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-lane :is(.cc-kanban__title, .col-title) {
+  margin: 0;
+  color: var(--th-text);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-lane :is(.cc-kanban__count, .col-count) {
+  min-width: 24px;
+  min-height: 24px;
+  padding: 2px 7px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--ticket-lane-accent) 55%, var(--th-border));
+  border-radius: 999px;
+  color: var(--ticket-lane-accent);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-lane .cc-kanban__stack {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 112px;
+  padding: 0;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-board .ticket-record {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 13px;
+  overflow: visible;
+  border: 1px solid var(--th-border);
+  border-radius: 7px;
+  color: var(--th-text);
+  background: var(--th-raised);
+  background-image: none;
+  box-shadow: none;
+  transform: none;
+  transition: transform var(--th-motion) ease, border-color var(--th-motion) ease, background-color var(--th-motion) ease;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-board .ticket-record::before,
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-board .ticket-record::after {
+  content: none !important;
+  display: none !important;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-board .ticket-record:hover {
+  border-color: var(--th-border-strong);
+  background: color-mix(in srgb, var(--th-raised) 92%, var(--th-selected));
+  box-shadow: none;
+  transform: translateY(-1px);
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-board .ticket-record:focus-visible,
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-board .ticket-record:has(:focus-visible) {
+  outline: 2px solid var(--ticket-lane-accent);
+  outline-offset: 2px;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-record :is(.ce-ticket-top, .complaints-ticket-top, .free-orders-ticket-top, .card-head) {
+  min-height: 24px;
+  margin: 0 0 6px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-record :is(.ce-ticket-date, .complaints-ticket-date, .free-orders-ticket-date) {
+  color: var(--th-muted);
+  font-size: 11px;
+  font-weight: 550;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-record-title {
+  margin: 0;
+  color: var(--th-text);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-record-secondary {
+  margin: 2px 0 0;
+  color: var(--th-secondary);
+  font-size: 12px;
+  font-weight: 550;
+  line-height: 1.35;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-status-accent {
+  width: 100%;
+  height: 2px;
+  margin: 10px 0;
+  border-radius: 999px;
+  background: var(--ticket-lane-accent);
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-snapshot {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 9px 10px 10px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 0;
+  border: 1px solid var(--th-border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--th-selected) 76%, var(--th-raised));
+  box-shadow: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-snapshot-heading,
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-snapshot > h4 {
+  grid-column: 1 / -1;
+  margin: 0 0 1px;
+  color: var(--th-muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-snapshot > :is(span, .field-line) {
+  min-width: 0;
+  margin: 0;
+  padding: 0 8px;
+  display: block;
+  border: 0;
+  border-inline-start: 1px solid var(--th-border);
+  background: transparent;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-snapshot > :is(span, .field-line):nth-of-type(1) {
+  padding-inline-start: 0;
+  border-inline-start: 0;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-snapshot :is(strong, .field-line span) {
+  display: block;
+  margin: 0 0 2px;
+  color: var(--th-muted);
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-snapshot .field-line strong,
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-snapshot > strong {
+  margin: 0;
+  color: var(--th-text);
+  font-size: 11px;
+  font-weight: 550;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-metadata-rows {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-metadata-rows > :is(span, .field-line) {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 28px;
+  margin: 0;
+  padding: 7px 1px;
+  display: grid;
+  grid-template-columns: minmax(112px, auto) minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  border: 0;
+  border-bottom: 1px solid var(--th-border);
+  background: transparent;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-metadata-rows > :is(span, .field-line):last-child {
+  border-bottom: 0;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-metadata-rows > h4 {
+  margin: 8px 1px 0;
+  padding: 0 0 5px;
+  border-bottom: 1px solid var(--th-border);
+  color: var(--th-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-metadata-rows > :is(span, .field-line) > :is(strong, span) {
+  margin: 0;
+  color: var(--th-muted);
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-metadata-rows > .field-line > strong {
+  color: var(--th-text);
+  font-size: 11px;
+  font-weight: 550;
+  text-align: end;
+  overflow-wrap: anywhere;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-metadata-rows > span {
+  color: var(--th-text);
+  font-size: 11px;
+  font-weight: 550;
+  line-height: 1.35;
+  text-align: end;
+  overflow-wrap: anywhere;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-metadata-rows > span > strong {
+  text-align: start;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-record .card-actions {
+  margin-top: 10px;
+  padding-top: 9px;
+  gap: 6px;
+  border-top: 1px solid var(--th-border);
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-record .card-actions button {
+  min-height: 34px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-board > .cc-empty-state,
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-lane .cc-kanban__empty {
+  box-sizing: border-box;
+  min-height: 112px;
+  padding: 20px 12px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--th-muted);
+  background: transparent;
+  box-shadow: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page .ticket-board > .cc-empty-state {
+  width: 100%;
+  min-height: 180px;
+  border: 1px solid var(--th-border);
+  background: var(--th-surface);
+}
+
+@media (max-width: 1024px) {
+  body.ticket-harmonized-page.ticket-harmonized-page .cc-page-container--workspace {
+    padding-inline: 18px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-board {
+    gap: 8px;
+    padding: 0 0 8px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-board > .ticket-lane {
+    min-width: 280px;
+    padding: 0 8px 8px;
+    border: 1px solid var(--th-border);
+    border-top: 2px solid var(--ticket-lane-accent);
+    border-radius: 6px;
+  }
+}
+
+@media (max-width: 768px) {
+  body.ticket-harmonized-page.ticket-harmonized-page .cc-page-container--workspace {
+    padding-inline: 12px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header {
+    padding: 14px 0 12px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-title,
+  body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-content h1 {
+    font-size: clamp(21px, 6.2vw, 25px);
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-description,
+  body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-content p:not(.cc-page-header-context) {
+    display: -webkit-box;
+    margin-top: 4px;
+    overflow: hidden;
+    font-size: 12px;
+    line-height: 1.35;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-actions :is(button, a),
+  body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header > :is(button, a) {
+    min-width: 0;
+    min-height: 42px;
+    padding-inline: 12px;
+    font-size: 12px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :is(.cc-metric-card, .stat-card) {
+    flex: 0 0 126px;
+    min-height: 52px;
+    padding: 5px 10px;
+    grid-template-columns: 20px minmax(0, 1fr);
+    scroll-snap-align: start;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics :is(.ce-stat-icon, .complaints-stat-icon, .free-orders-stat-icon, .platform-v2-metric-icon) {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :is(.cc-metric-card, .stat-card) > span:not([class*="icon"]) {
+    font-size: 10px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :is(.cc-metric-card, .stat-card) > strong {
+    font-size: 18px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-filters {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 8px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-filter-search {
+    grid-column: 1;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-filter-toggle {
+    grid-column: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-filter-secondary {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-filters :is(input, select, .control) {
+    min-height: 42px;
+    height: 42px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-stage-switcher {
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0 0 8px;
+    padding: 3px;
+    display: grid;
+    grid-template-columns: repeat(var(--switcher-count, 3), minmax(0, 1fr));
+    gap: 3px;
+    border: 1px solid var(--th-border);
+    border-radius: 8px;
+    background: var(--th-selected);
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-stage-switcher[hidden] {
+    display: none;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-stage-tab {
+    min-width: 0;
+    min-height: 38px;
+    padding: 5px 4px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 3px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--th-secondary);
+    font: inherit;
+    font-size: 10px;
+    font-weight: 650;
+    line-height: 1.15;
+    text-align: start;
+    background: transparent;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-stage-tab span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-stage-tab strong {
+    min-width: 18px;
+    min-height: 18px;
+    padding: 2px 4px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 999px;
+    font-size: 10px;
+    background: color-mix(in srgb, currentColor 10%, transparent);
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-stage-tab.is-active {
+    border-color: var(--th-border);
+    color: var(--th-text);
+    background: var(--th-surface);
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-stage-tab:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 1px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-board {
+    display: block !important;
+    width: 100%;
+    padding: 0;
+    overflow: visible;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-board > .ticket-lane {
+    display: none !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 8px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-board > .ticket-lane.is-mobile-active {
+    display: block !important;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-lane > :is(.col-header, .stage-head, .column-head) {
+    display: none !important;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-snapshot {
+    grid-template-columns: 1fr;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-snapshot > :is(span, .field-line),
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-snapshot > :is(span, .field-line):nth-of-type(1) {
+    padding: 6px 0;
+    border-inline-start: 0;
+    border-bottom: 1px solid var(--th-border);
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-snapshot > :is(span, .field-line):last-child {
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 360px) {
+  body.ticket-harmonized-page.ticket-harmonized-page .cc-page-container--workspace {
+    padding-inline: 10px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header {
+    grid-template-columns: 1fr;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-actions,
+  body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-actions :is(button, a),
+  body.ticket-harmonized-page.ticket-harmonized-page .cc-page-header > :is(button, a) {
+    width: 100%;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: hidden;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :is(.cc-metric-card, .stat-card) {
+    min-width: 0;
+    min-height: 48px;
+    padding: 4px 7px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :is(.cc-metric-card, .stat-card):last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :is(.cc-metric-card, .stat-card) > span:not([class*="icon"]) {
+    font-size: 9px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-filters,
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-filter-secondary {
+    grid-template-columns: 1fr;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-filter-search,
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-filter-toggle,
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-filter-secondary {
+    grid-column: 1;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-stage-switcher {
+    overflow-x: auto;
+    grid-template-columns: repeat(var(--switcher-count, 3), minmax(92px, 1fr));
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-board .ticket-record {
+    padding: 11px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-metadata-rows > :is(span, .field-line) {
+    grid-template-columns: minmax(92px, auto) minmax(0, 1fr);
+    gap: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-record,
+  body.ticket-harmonized-page.ticket-harmonized-page .ticket-stage-tab {
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Final precedence guard against legacy V2 presentation layers. */
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 18px 0 15px;
+  flex-direction: row;
+  border: 0;
+  border-radius: 0;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-content,
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-actions {
+  position: static;
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-title,
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-content h1 {
+  max-width: none;
+  margin: 0;
+  font-size: clamp(27px, 2.15vw, 34px);
+  line-height: 1.14;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics {
+  min-height: 0;
+  padding: 0;
+  gap: 0;
+  border-block: 1px solid var(--th-border);
+  border-inline: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :is(.cc-metric-card, .stat-card) {
+  min-height: 58px;
+  padding: 5px 16px;
+  border: 0;
+  border-inline-start: 1px solid var(--th-border);
+  border-radius: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :first-child {
+  border-inline-start: 0;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics :is(.ce-stat-icon, .complaints-stat-icon, .free-orders-stat-icon, .platform-v2-metric-icon) {
+  position: static;
+  inset: auto;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-filters {
+  min-height: 0;
+  margin: 0 0 14px;
+  padding: 10px 0 12px;
+  gap: 10px;
+  border-block: 1px solid var(--th-border);
+  border-inline: 0;
+  border-radius: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-filters > :is(div, input, select),
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-filter-secondary > div {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-filters :is(input, select, .control) {
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--th-border);
+  border-radius: 6px;
+  background: var(--th-surface);
+  box-shadow: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-board {
+  gap: 1px;
+  padding: 1px 1px 8px;
+  border: 1px solid var(--th-border);
+  border-radius: 10px;
+  background: var(--th-border);
+  box-shadow: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-board > .ticket-lane {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 260px;
+  max-width: none;
+  min-height: 0;
+  padding: 0 8px 8px;
+  overflow: visible;
+  border: 0;
+  border-top: 2px solid var(--ticket-lane-accent);
+  border-radius: 0;
+  background: var(--th-lane);
+  background-image: none;
+  box-shadow: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-lane > :is(.col-header, .stage-head, .column-head),
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-lane .cc-kanban__header {
+  min-height: 40px;
+  margin: 0;
+  padding: 7px 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-board .ticket-record {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  padding: 12px 13px;
+  overflow: visible;
+  border: 1px solid var(--th-border);
+  border-radius: 7px;
+  background: var(--th-raised);
+  background-image: none;
+  box-shadow: none;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-record :is(.ce-ticket-top, .complaints-ticket-top, .free-orders-ticket-top, .card-head) {
+  min-height: 24px;
+  margin: 0 0 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.free-orders-v2.ticket-harmonized-page.ticket-harmonized-page .ticket-record .ticket-snapshot,
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-record .ticket-snapshot {
+  position: static;
+  grid-column: auto;
+  grid-row: auto;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 9px 10px 10px;
+  border: 1px solid var(--th-border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--th-selected) 76%, var(--th-raised));
+  box-shadow: none;
+}
+
+body.free-orders-v2.ticket-harmonized-page.ticket-harmonized-page .ticket-record .free-orders-ticket-phone,
+body.free-orders-v2.ticket-harmonized-page.ticket-harmonized-page .ticket-record .free-orders-ticket-reason,
+body.free-orders-v2.ticket-harmonized-page.ticket-harmonized-page .ticket-record .free-orders-ticket-grid {
+  grid-column: auto;
+  grid-row: auto;
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-board {
+    gap: 8px;
+    padding: 0 0 8px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-board > .ticket-lane {
+    min-width: 280px;
+    padding: 0 8px 8px;
+    border: 1px solid var(--th-border);
+    border-top: 2px solid var(--ticket-lane-accent);
+    border-radius: 6px;
+  }
+}
+
+@media (max-width: 768px) {
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header {
+    padding: 14px 0 12px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-title,
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-content h1 {
+    font-size: clamp(21px, 6.2vw, 25px);
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :is(.cc-metric-card, .stat-card) {
+    min-height: 52px;
+    padding: 5px 10px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-filters {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-filters :is(input, select, .control) {
+    height: 42px;
+    min-height: 42px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-stage-switcher {
+    overflow-x: auto;
+    grid-template-columns: repeat(var(--switcher-count, 3), minmax(92px, 1fr));
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-board {
+    display: block !important;
+    width: 100%;
+    padding: 0;
+    overflow: visible;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-board > .ticket-lane {
+    display: none !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 8px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-board > .ticket-lane.is-mobile-active {
+    display: block !important;
+  }
+}
+
+@media (max-width: 360px) {
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Final parity remediation: tighter mobile rhythm and workflow-card density. */
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-record-title {
+  color: var(--th-text) !important;
+}
+
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics :is(.ce-stat-icon, .complaints-stat-icon, .free-orders-stat-icon, .platform-v2-metric-icon)::before,
+body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics :is(.ce-stat-icon, .complaints-stat-icon, .free-orders-stat-icon, .platform-v2-metric-icon)::after {
+  content: none !important;
+  display: none !important;
+}
+
+body.free-order-requests-page.ticket-harmonized-page.ticket-harmonized-page .ticket-board .ticket-record,
+body.free-order-share-page.ticket-harmonized-page.ticket-harmonized-page .ticket-board .ticket-record {
+  padding: 10px 11px;
+}
+
+body.free-order-requests-page.ticket-harmonized-page.ticket-harmonized-page .ticket-status-accent,
+body.free-order-share-page.ticket-harmonized-page.ticket-harmonized-page .ticket-status-accent {
+  margin-block: 8px;
+}
+
+body.free-order-requests-page.ticket-harmonized-page.ticket-harmonized-page .ticket-record .ticket-snapshot,
+body.free-order-share-page.ticket-harmonized-page.ticket-harmonized-page .ticket-record .ticket-snapshot {
+  padding: 8px 9px;
+  gap: 6px 0;
+}
+
+body.free-order-requests-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metadata-rows > h4,
+body.free-order-share-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metadata-rows > h4 {
+  margin-top: 6px;
+  padding-bottom: 3px;
+}
+
+body.free-order-requests-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metadata-rows > :is(span, .field-line),
+body.free-order-share-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metadata-rows > :is(span, .field-line) {
+  min-height: 24px;
+  padding-block: 5px;
+  gap: 8px;
+}
+
+body.free-order-requests-page.ticket-harmonized-page.ticket-harmonized-page .ticket-record .card-actions,
+body.free-order-share-page.ticket-harmonized-page.ticket-harmonized-page .ticket-record .card-actions {
+  margin-top: 6px;
+  padding-top: 6px;
+  gap: 6px;
+}
+
+body.free-order-requests-page.ticket-harmonized-page.ticket-harmonized-page .ticket-record .card-actions button,
+body.free-order-share-page.ticket-harmonized-page.ticket-harmonized-page .ticket-record .card-actions button {
+  flex: 0 1 auto;
+  width: auto;
+  min-height: 32px;
+  padding: 5px 10px;
+}
+
+body.free-order-share-page.ticket-harmonized-page.ticket-harmonized-page .ticket-record .share-note {
+  margin: 6px 0 0;
+  padding: 8px 9px;
+  border-radius: 6px;
+  line-height: 1.35;
+}
+
+body.free-order-share-page.ticket-harmonized-page.ticket-harmonized-page .ticket-record .share-note strong {
+  margin-bottom: 2px;
+}
+
+body.free-orders-page.ticket-harmonized-page.ticket-harmonized-page .free-orders-ticket-discount.ticket-snapshot {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 8px 10px;
+}
+
+body.free-orders-page.ticket-harmonized-page.ticket-harmonized-page .free-orders-ticket-discount.ticket-snapshot > .ticket-snapshot-heading {
+  grid-column: 1 / -1;
+  margin: 0;
+  text-align: start;
+}
+
+body.free-orders-page.ticket-harmonized-page.ticket-harmonized-page .free-orders-ticket-discount.ticket-snapshot > span,
+body.free-orders-page.ticket-harmonized-page.ticket-harmonized-page .free-orders-ticket-discount.ticket-snapshot > strong {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+body.free-orders-page.ticket-harmonized-page.ticket-harmonized-page .free-orders-ticket-discount.ticket-snapshot > strong {
+  justify-self: end;
+}
+
+@media (max-width: 768px) {
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header {
+    padding: 10px 0 9px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-content {
+    min-width: 0;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-title,
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-content h1 {
+    font-size: clamp(21px, 5.6vw, 23px);
+    line-height: 1.08;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-context {
+    margin-bottom: 2px;
+    font-size: 10px;
+    line-height: 1.2;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-description,
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-content p:not(.cc-page-header-context) {
+    margin-top: 3px;
+    font-size: 12px;
+    line-height: 1.3;
+  }
+
+  body.workflow-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-content .cc-page-header-description {
+    -webkit-line-clamp: 1;
+  }
+
+  body.workflow-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-content .cc-page-header-description + .cc-page-header-description {
+    margin-top: 2px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-actions,
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-actions :is(button, a),
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header > :is(button, a) {
+    width: auto;
+    min-width: 140px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-actions :is(button, a),
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header > :is(button, a) {
+    min-height: 40px;
+    padding-inline: 10px;
+    font-size: 11px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :is(.cc-metric-card, .stat-card) {
+    flex: 0 0 112px;
+    min-height: 50px;
+    padding: 4px 7px;
+    grid-template-columns: 20px minmax(0, 1fr);
+    grid-template-rows: minmax(20px, auto) 18px;
+    gap: 0 5px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics :is(.ce-stat-icon, .complaints-stat-icon, .free-orders-stat-icon, .platform-v2-metric-icon) {
+    grid-column: 1;
+    grid-row: 1;
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics :is(.ce-stat-icon, .complaints-stat-icon, .free-orders-stat-icon, .platform-v2-metric-icon) svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :is(.cc-metric-card, .stat-card) > span:not([class*="icon"]) {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+    font-size: 9.5px;
+    line-height: 1.1;
+    overflow-wrap: normal;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :is(.cc-metric-card, .stat-card) > strong {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    align-self: end;
+    justify-self: center;
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-stage-switcher {
+    display: flex;
+    gap: 3px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-stage-tab {
+    flex: 0 0 auto;
+    min-width: max-content;
+    min-height: 36px;
+    padding: 5px 7px;
+    gap: 5px;
+    scroll-snap-align: start;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-stage-tab span {
+    overflow-wrap: normal;
+    white-space: nowrap;
+  }
+
+  body.free-order-requests-page.ticket-harmonized-page.ticket-harmonized-page .ticket-snapshot > :is(span, .field-line),
+  body.free-order-share-page.ticket-harmonized-page.ticket-harmonized-page .ticket-snapshot > :is(span, .field-line) {
+    padding-block: 4px;
+  }
+
+  body.free-orders-page.ticket-harmonized-page.ticket-harmonized-page .free-orders-ticket-discount.ticket-snapshot {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  body.free-orders-page.ticket-harmonized-page.ticket-harmonized-page .free-orders-ticket-discount.ticket-snapshot > span,
+  body.free-orders-page.ticket-harmonized-page.ticket-harmonized-page .free-orders-ticket-discount.ticket-snapshot > strong {
+    padding: 0;
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 360px) {
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header {
+    grid-template-columns: 1fr;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-actions,
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header-actions :is(button, a),
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .cc-page-header > :is(button, a) {
+    width: 100%;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: hidden;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :is(.cc-metric-card, .stat-card) {
+    min-width: 0;
+    min-height: 48px;
+    padding: 4px 7px;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :is(.cc-metric-card, .stat-card):nth-child(odd) {
+    border-inline-start: 0;
+  }
+
+  body.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metrics > :is(.cc-metric-card, .stat-card):last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  body.free-order-requests-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metadata-rows > :is(span, .field-line),
+  body.free-order-share-page.ticket-harmonized-page.ticket-harmonized-page .ticket-metadata-rows > :is(span, .field-line) {
+    grid-template-columns: minmax(88px, auto) minmax(0, 1fr);
+    gap: 7px;
+  }
+}

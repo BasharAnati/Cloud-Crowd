@@ -56,6 +56,7 @@
   <script src="js/auth.js" defer></script>
   <script src="js/history.js" defer></script>
   <script src="js/tickets-render.js" defer></script>
+  <script src="js/ticket-harmonization.js" defer></script>
   <script src="js/media-viewer.js" defer></script>
   <link rel="stylesheet" href="assets/css/layouts/page-layout.css">
   <link rel="stylesheet" href="assets/css/components/buttons.css">
@@ -69,8 +70,9 @@
   <link rel="stylesheet" href="assets/css/components/drawers.css">
   <link rel="stylesheet" href="assets/css/components/kanban.css">
   <link rel="stylesheet" href="assets/css/pages/ce-v2.css">
+  <link rel="stylesheet" href="assets/css/pages/ticket-harmonization.css">
 </head>
-<body class="ce-page ce-ops-center">
+<body class="ce-page ce-ops-center ce-v2">
   <div class="ce-module-shell cc-shell-layout has-responsive-navigation" id="ce-shell">
     <aside id="ce-app-sidebar" aria-label="Customer Experience navigation"></aside>
 
@@ -78,15 +80,6 @@
       <header id="ce-app-topbar" role="banner"></header>
 
       <header class="ce-hero cc-page-header" aria-labelledby="ce-page-title">
-        <img
-          class="ce-hero-earth"
-          src="assets/images/customer-experience/ce-hero-earth.png"
-          alt=""
-          aria-hidden="true"
-          width="1536"
-          height="1024"
-          decoding="async"
-        >
         <div class="ce-hero-copy cc-page-header-content">
           <h1 class="cc-page-header-title" id="ce-page-title">Customer Experience Operations Center</h1>
           <p class="cc-page-header-description">Track customer feedback, order issues, callbacks, and resolution progress.</p>
@@ -98,22 +91,22 @@
 
     <section class="ce-stats cc-metric-grid" aria-label="Customer Experience case summary">
       <article class="ce-stat-card cc-metric-card ce-stat-total">
-        <span class="ce-stat-icon" aria-hidden="true"></span>
+        <span class="ce-stat-icon" data-cc-icon="clipboard-list" aria-hidden="true"></span>
         <span class="ce-stat-label">Total Cases</span>
         <strong id="ce-stat-total">0</strong>
       </article>
       <article class="ce-stat-card cc-metric-card ce-stat-review">
-        <span class="ce-stat-icon" aria-hidden="true"></span>
+        <span class="ce-stat-icon" data-cc-icon="history" aria-hidden="true"></span>
         <span class="ce-stat-label">Under Review</span>
         <strong id="ce-stat-under-review">0</strong>
       </article>
       <article class="ce-stat-card cc-metric-card ce-stat-pending">
-        <span class="ce-stat-icon" aria-hidden="true"></span>
+        <span class="ce-stat-icon" data-cc-icon="phone-call" aria-hidden="true"></span>
         <span class="ce-stat-label">Pending Call Back</span>
         <strong id="ce-stat-pending">0</strong>
       </article>
       <article class="ce-stat-card cc-metric-card ce-stat-closed">
-        <span class="ce-stat-icon" aria-hidden="true"></span>
+        <span class="ce-stat-icon" data-cc-icon="badge-check" aria-hidden="true"></span>
         <span class="ce-stat-label">Closed</span>
         <strong id="ce-stat-closed">0</strong>
       </article>

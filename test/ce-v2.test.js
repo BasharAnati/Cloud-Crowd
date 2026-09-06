@@ -38,10 +38,11 @@ test('CE statuses and cards retain the real data contract', () => {
   assert.doesNotMatch(renderer, /dragstart|draggable/i);
 });
 
-test('CE stylesheet and Earth asset are page-local and decorative', () => {
+test('CE loads the target-only harmonization layer and removes the Earth hero presentation', () => {
   assert.ok(html.indexOf('assets/css/pages/ce-v2.css') > html.indexOf('assets/css/components/kanban.css'));
-  assert.equal((html.match(/ce-hero-earth\.png/g) || []).length, 1);
-  assert.match(html, /src="assets\/images\/customer-experience\/ce-hero-earth\.png"[\s\S]*?alt=""[\s\S]*?aria-hidden="true"[\s\S]*?width="1536"[\s\S]*?height="1024"[\s\S]*?decoding="async"/);
+  assert.match(html, /assets\/css\/pages\/ticket-harmonization\.css/);
+  assert.match(html, /js\/ticket-harmonization\.js/);
+  assert.equal((html.match(/ce-hero-earth\.png/g) || []).length, 0);
   assert.ok(fs.statSync(path.join(ROOT, 'assets/images/customer-experience/ce-hero-earth.png')).size > 0);
   const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
   const ruleOpeners = withoutComments.split(/\r?\n/).map((line) => line.trim())
